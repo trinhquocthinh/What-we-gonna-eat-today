@@ -1,6 +1,6 @@
 {
   "*.{ts,tsx}": [
-    "eslint --fix",
+    "oxlint --fix",
     "prettier --write"
   ],
   "*.{json,css,md}": [
