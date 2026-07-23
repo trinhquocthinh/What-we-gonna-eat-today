@@ -1,7 +1,8 @@
 {
   "*.{ts,tsx}": [
     "oxlint --fix",
-    "prettier --write"
+    "prettier --write",
+    "vitest related --run"
   ],
   "*.{json,css,md}": [
     "prettier --write"
