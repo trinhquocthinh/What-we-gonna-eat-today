@@ -1,0 +1,23 @@
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  plugins: [react()],
+  // Alias `@/*` đọc thẳng từ tsconfig.json, không cần plugin riêng (Vite 8).
+  resolve: { tsconfigPaths: true },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/tests/setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      // Tech Spec §8.2: chỉ domain/ và application/ có ngưỡng.
+      // infrastructure/ và presentation/ được đo nhưng không đặt ngưỡng.
+      include: ['src/features/*/domain/**/*.ts', 'src/features/*/application/**/*.ts'],
+      // Ngưỡng 80% được CI ép ở E6-T5. Bật sớm sẽ chặn E1 khi mới có vài use
+      // case, nên giai đoạn này chỉ báo cáo.
+      // thresholds: { lines: 80 },
+    },
+  },
+})

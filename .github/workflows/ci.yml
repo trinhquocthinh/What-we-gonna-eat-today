@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # `yarn verify` không chạm database, nhưng drizzle.config.ts đọc biến này
+      # lúc import. Giá trị giả là đủ và tránh phải gắn secret vào mọi PR.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=require
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - name: Bật corepack
+        run: corepack enable
+
+      - name: Cài phụ thuộc
+        run: yarn install --immutable
+
+      # Tech Spec §8.1 — sáu công cụ, gộp trong một lệnh.
+      - name: Verify
+        run: yarn verify
+
+      # Luật tầng §2.2–2.3 im lặng khi cấu hình hỏng, nên phải kiểm bằng file vi
+      # phạm cố ý chứ không tin vào việc `yarn lint` xanh.
+      - name: Kiểm luật kiến trúc
+        run: yarn arch:probe
+
+      - name: Build
+        run: yarn build
