@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#EDE8E1;font-family:"Be Vietnam Pro",Inter,system-ui,sans-serif;color:#1C1917;-webkit-font-smoothing:antialiased}
+a{color:#B4531F;text-decoration:none}
+a:hover{color:#9A4419}
+button:focus-visible{outline:2px solid #B4531F;outline-offset:2px}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px 16px 48px">
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:560px">
+    <sc-for list="{{ views }}" as="v" hint-placeholder-count="4">
+      <button type="button" onClick="{{ v.go }}" style="min-height:36px;padding:8px 14px;background:{{ v.bg }};color:{{ v.fg }};border:1px solid {{ v.bd }};border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif;cursor:pointer">{{ v.label }}</button>
+    </sc-for>
+  </div>
+  <span style="font:400 12px/18px 'Be Vietnam Pro',sans-serif;color:rgba(28,25,23,.5);text-align:center;max-width:420px;text-wrap:pretty">Hàng nút trên là công cụ xem trạng thái, không thuộc thiết kế. Trạng thái đầu tiên là màn hình mà mọi gia đình mới đều gặp.</span>
+
+  <div style="width:390px;height:844px;background:#FBF8F4;border:1px solid #D2C7B8;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10)">
+
+    <div style="padding:24px 16px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Thứ Ba · 16 tháng 8</span>
+        <h1 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Nhà Bảy Hiền</h1>
+      </div>
+      <button type="button" aria-label="Cài đặt nhóm" style="min-height:44px;min-width:44px;padding:12px;background:transparent;border:none;border-radius:12px;font:600 15px/20px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer" style-hover="background:#F3EEE7">Nhóm</button>
+    </div>
+
+    <div style="flex:1;padding:0 16px;display:flex;flex-direction:column;gap:24px;min-height:0;overflow:hidden">
+
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+          <h2 style="margin:0;font:700 28px/34px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">Trước tiên hãy thêm vài món nhà bạn hay ăn.</h2>
+          <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Chưa có món thì chưa mở phiên chọn được. Khoảng 15–20 món là đủ để bắt đầu.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid #E7E0D6">
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Cứ viết như cách cả nhà gọi tên</span>
+            <span style="font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#9C9187">Cá basa kho tiêu</span>
+            <span style="font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#9C9187">Canh chua cá lóc</span>
+            <span style="font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#9C9187">Gà chiên nước mắm</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isReady }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+          <span style="align-self:flex-start;padding:6px 12px;background:#F3EEE7;color:#6B6259;border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif">Hôm nay chưa có phiên</span>
+          <h2 style="margin:0;font:700 28px/34px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">Cả nhà chưa chọn món cho tối nay.</h2>
+          <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">32 món trong danh mục. Mở phiên rồi mỗi người vuốt khoảng 30 giây.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid #E7E0D6">
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Tối qua cả nhà ăn</span>
+            <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif">Thịt ba rọi rang · Canh cải nấu tôm</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isActive }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <span style="padding:6px 12px;background:#FBEDE4;color:#B4531F;border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif">Phiên đang mở</span>
+            <span style="font:600 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">2 / 4 người xong</span>
+          </div>
+          <h2 style="margin:0;font:700 28px/34px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">Lượt của bạn chưa xong.</h2>
+          <div style="display:flex;flex-direction:column;gap:12px;padding-top:16px;border-top:1px solid #E7E0D6">
+            <sc-for list="{{ people }}" as="p" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:{{ p.fg }}">{{ p.name }}</span>
+                <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">{{ p.state }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isFinal }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+          <span style="align-self:flex-start;padding:6px 12px;background:#F3EEE7;color:#6B6259;border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif">Đã chốt lúc 17:42 · Mẹ chốt</span>
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Tối nay nhà mình ăn</span>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <span style="font:700 28px/34px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">Cá basa kho tiêu</span>
+            <span style="font:700 28px/34px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">Canh chua cá lóc</span>
+            <span style="font:700 28px/34px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">Rau lang luộc</span>
+          </div>
+          <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;padding-top:16px;border-top:1px solid #E7E0D6;text-wrap:pretty">Bố không ăn được cá basa — Mẹ đã biết và vẫn chốt.</span>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;padding-left:4px">Nhóm của bạn</span>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ links }}" as="l" hint-placeholder-count="3">
+            <button type="button" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:16px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:12px;cursor:pointer;text-align:left" style-hover="border-color:#D2C7B8" style-active="background:#F3EEE7">
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#1C1917">{{ l.label }}</span>
+              <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:{{ l.metaFg }};font-variant-numeric:tabular-nums">{{ l.meta }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:24px 16px 32px;display:flex;flex-direction:column;gap:12px">
+      <button type="button" style="width:100%;min-height:56px;background:#B4531F;color:#FFFFFF;border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;box-shadow:0 1px 2px rgba(28,25,23,.06);cursor:pointer;transition:transform .1s ease" style-hover="background:#9A4419" style-active="background:#8C3E17;transform:scale(.98)">{{ cta }}</button>
+      <button type="button" style="align-self:center;min-height:44px;padding:12px 16px;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">{{ ctaAlt }}</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:980}}">
+class Component extends DCLogic {
+  state = { view: "empty" };
+  renderVals() {
+    const v = this.state.view;
+    const defs = [["empty", "Rỗng — chưa có món"], ["ready", "Có món, chưa có phiên"], ["active", "Phiên đang chạy"], ["final", "Đã chốt"]];
+    const dishCount = v === "empty" ? "Chưa có món nào" : "32 món";
+    const rules = v === "empty" ? "Chưa đặt" : "2 quy định";
+    return {
+      views: defs.map(([id, label]) => ({
+        label, go: () => this.setState({ view: id }),
+        bg: v === id ? "#1C1917" : "#FBF8F4",
+        fg: v === id ? "#FFFFFF" : "#6B6259",
+        bd: v === id ? "#1C1917" : "#D2C7B8"
+      })),
+      isEmpty: v === "empty", isReady: v === "ready", isActive: v === "active", isFinal: v === "final",
+      links: [
+        { label: "Danh mục món", meta: dishCount, metaFg: v === "empty" ? "#B4531F" : "#6B6259" },
+        { label: "Quy định bữa ăn", meta: rules, metaFg: "#6B6259" },
+        { label: "Thành viên", meta: "4 người", metaFg: "#6B6259" }
+      ],
+      people: [
+        { name: "Bạn", state: "Chưa xong", fg: "#1C1917" },
+        { name: "Mẹ", state: "Xong · 6 món", fg: "#6B6259" },
+        { name: "Bố", state: "Xong · 3 món", fg: "#6B6259" },
+        { name: "Em Trâm", state: "Chưa mở", fg: "#6B6259" }
+      ],
+      cta: v === "empty" ? "Thêm món đầu tiên" : v === "ready" ? "Mở phiên cho tối nay" : v === "active" ? "Vào lượt của bạn" : "Xem bữa hôm nay",
+      ctaAlt: v === "empty" ? "Nhà tôi đã có nhóm khác" : v === "ready" ? "Xem lịch sử ăn" : v === "active" ? "Xem tổng hợp cả nhà" : "Sửa món đã chốt"
+    };
+  }
+}
+</script>
+</body>
+</html>

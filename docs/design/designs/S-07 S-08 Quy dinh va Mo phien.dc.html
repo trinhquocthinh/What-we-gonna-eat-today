@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#EDE8E1;font-family:"Be Vietnam Pro",Inter,system-ui,sans-serif;color:#1C1917;-webkit-font-smoothing:antialiased}
+a{color:#B4531F;text-decoration:none}
+a:hover{color:#9A4419}
+button:focus-visible{outline:2px solid #B4531F;outline-offset:2px}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px 16px 48px">
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:560px">
+    <sc-for list="{{ views }}" as="v" hint-placeholder-count="3">
+      <button type="button" onClick="{{ v.go }}" style="min-height:36px;padding:8px 14px;background:{{ v.bg }};color:{{ v.fg }};border:1px solid {{ v.bd }};border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif;cursor:pointer">{{ v.label }}</button>
+    </sc-for>
+  </div>
+  <span style="font:400 12px/18px 'Be Vietnam Pro',sans-serif;color:rgba(28,25,23,.5);text-align:center;max-width:440px;text-wrap:pretty">Hàng nút trên là công cụ xem trạng thái. S-07 thêm được quy định thật; S-08 thử tick “Chú Tư” để thấy lỗi thành viên đã rời nhóm.</span>
+
+  <div style="position:relative;width:390px;height:844px;background:#FBF8F4;border:1px solid #D2C7B8;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10)">
+
+    <div style="padding:24px 16px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">{{ subhead }}</span>
+        <h1 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">{{ heading }}</h1>
+      </div>
+      <button type="button" style="min-height:44px;padding:12px;margin-right:-12px;background:transparent;border:none;border-radius:12px;font:600 15px/20px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer" style-hover="background:#F3EEE7">{{ backLabel }}</button>
+    </div>
+
+    <div style="flex:1;overflow:auto;padding:4px 16px 8px;display:flex;flex-direction:column;gap:24px;min-height:0">
+
+      <sc-if value="{{ isRules }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ rulesEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px">
+            <h2 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Nhóm chưa đặt quy định nào.</h2>
+            <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Bữa ăn sẽ được chốt mà không cần kiểm tra gì. Nếu nhà bạn luôn cần một món canh, đặt quy định để app nhắc lúc chốt.</p>
+          </div>
+        </sc-if>
+
+        <sc-for list="{{ ruleGroups }}" as="g" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;padding-left:4px">{{ g.label }}</span>
+            <sc-for list="{{ g.items }}" as="r" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:16px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:12px">
+                <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">{{ r.text }}</span>
+                <button type="button" onClick="{{ r.remove }}" aria-label="{{ r.aria }}" style="flex:none;min-height:44px;padding:12px;margin-right:-8px;background:transparent;border:none;border-radius:12px;font:600 15px/20px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer" style-hover="background:#F3EEE7;color:#1C1917">Gỡ</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+
+        <sc-if value="{{ hasRules }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px;background:#F3EEE7;border-radius:12px;display:flex;flex-direction:column;gap:4px">
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Lúc chốt bữa</span>
+            <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">Thiếu quy định bắt buộc thì không chốt được. Thiếu quy định nên có thì chỉ cảnh báo, bạn vẫn chốt được.</span>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ isSession }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;padding-left:4px">Tối nay ai ăn ở nhà</span>
+          <sc-for list="{{ people }}" as="p" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button type="button" onClick="{{ p.toggle }}" aria-label="{{ p.aria }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:16px;background:{{ p.bg }};border:1px solid {{ p.bd }};border-radius:12px;cursor:pointer;text-align:left">
+                <span style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#1C1917">{{ p.name }}</span>
+                  <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">{{ p.note }}</span>
+                </span>
+                <span style="flex:none;font:600 13px/18px 'Be Vietnam Pro',sans-serif;color:{{ p.pickFg }}">{{ p.pick }}</span>
+              </button>
+              <sc-if value="{{ p.error }}" hint-placeholder-val="{{ false }}">
+                <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#A3261C;padding-left:4px;text-wrap:pretty">{{ p.error }}</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;padding-left:4px">Phiên này dùng</span>
+          <div style="padding:16px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:12px;display:flex;flex-direction:column;gap:8px">
+            <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif">Quy định hiện tại của nhóm</span>
+            <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Phải có 1 món mặn · phải có 1 món canh · nên có 1 món phụ. Quy định được chụp lại khi phiên bắt đầu, sửa sau cũng không đổi phiên này.</span>
+            <button type="button" style="align-self:flex-start;min-height:44px;padding:12px 0;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#B4531F;cursor:pointer">Nới quy định cho tối nay</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="padding:16px 16px 32px;display:flex;flex-direction:column;gap:12px;border-top:1px solid #E7E0D6;background:#FBF8F4">
+      <sc-if value="{{ blockText }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:12px;background:#FBE9E7;border-radius:12px">
+          <span style="width:3px;align-self:stretch;background:#A3261C;border-radius:999px"></span>
+          <span style="font:500 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">{{ blockText }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:12px;background:#E9F0E7;border-radius:12px">
+          <span style="width:3px;align-self:stretch;background:#3F6B3F;border-radius:999px"></span>
+          <span style="font:500 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">{{ toast }}</span>
+        </div>
+      </sc-if>
+      <button type="button" onClick="{{ onCta }}" style="width:100%;min-height:56px;background:{{ ctaBg }};color:{{ ctaFg }};border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;box-shadow:0 1px 2px rgba(28,25,23,.06);cursor:pointer;transition:transform .1s ease" style-active="transform:scale(.98)">{{ ctaText }}</button>
+      <span style="align-self:center;font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-align:center;text-wrap:pretty">{{ ctaHint }}</span>
+    </div>
+
+    <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(28,25,23,.28)"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#FFFFFF;border-radius:20px 20px 0 0;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10);padding:24px 16px 32px;display:flex;flex-direction:column;gap:16px;max-height:88%;overflow:auto">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <h2 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Thêm quy định</h2>
+          <button type="button" onClick="{{ closeSheet }}" style="min-height:44px;padding:12px;margin:-12px -12px 0 0;background:transparent;border:none;border-radius:12px;font:600 15px/20px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer" style-hover="background:#F3EEE7">Đóng</button>
+        </div>
+
+        <div style="padding:16px;background:#F3EEE7;border-radius:12px">
+          <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">{{ preview }}</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Mức</span>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="2">
+              <button type="button" onClick="{{ k.pick }}" style="flex:1;min-height:48px;padding:12px;background:{{ k.bg }};color:{{ k.fg }};border:1px solid {{ k.bd }};border-radius:8px;font:600 15px/20px 'Be Vietnam Pro',sans-serif;cursor:pointer">{{ k.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Nhãn</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ tagChips }}" as="t" hint-placeholder-count="5">
+              <button type="button" onClick="{{ t.pick }}" style="min-height:44px;padding:12px 16px;background:{{ t.bg }};color:{{ t.fg }};border:1px solid {{ t.bd }};border-radius:8px;font:500 15px/20px 'Be Vietnam Pro',sans-serif;cursor:pointer">{{ t.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Số lượng tối thiểu</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <button type="button" onClick="{{ dec }}" aria-label="Giảm số lượng" style="width:44px;height:44px;background:#FFFFFF;border:1px solid {{ decBd }};border-radius:8px;font:600 17px/20px 'Be Vietnam Pro',sans-serif;color:{{ decFg }};cursor:pointer">−</button>
+            <span style="min-width:24px;text-align:center;font:600 22px/28px 'Be Vietnam Pro',sans-serif;font-variant-numeric:tabular-nums">{{ count }}</span>
+            <button type="button" onClick="{{ inc }}" aria-label="Tăng số lượng" style="width:44px;height:44px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:8px;font:600 17px/20px 'Be Vietnam Pro',sans-serif;color:#1C1917;cursor:pointer">+</button>
+          </div>
+        </div>
+        <sc-if value="{{ sheetError }}" hint-placeholder-val="{{ false }}">
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#A3261C;text-wrap:pretty">{{ sheetError }}</span>
+        </sc-if>
+
+        <button type="button" onClick="{{ saveRule }}" style="width:100%;min-height:56px;background:{{ saveBg }};color:{{ saveFg }};border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;cursor:pointer;transition:transform .1s ease" style-active="transform:scale(.98)">Thêm quy định</button>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:980}}">
+class Component extends DCLogic {
+  state = {
+    view: "rules",
+    rules: [{ kind: "req", tag: "Món mặn", n: 1 }, { kind: "req", tag: "Canh", n: 1 }, { kind: "pref", tag: "Món phụ", n: 1 }],
+    sheet: false, kind: "req", tag: "", n: 1, tried: false, toast: "",
+    picked: ["Bạn", "Mẹ", "Bố"], startTried: false
+  };
+  tags = ["Cơm", "Món mặn", "Món phụ", "Canh", "Tráng miệng"];
+  people = [
+    { name: "Bạn", note: "Người mở phiên · chốt bữa" },
+    { name: "Mẹ", note: "Trong nhóm" },
+    { name: "Bố", note: "Trong nhóm" },
+    { name: "Em Trâm", note: "Trong nhóm" },
+    { name: "Chú Tư", note: "Đã rời nhóm hôm qua", gone: true }
+  ];
+  sentence(r) {
+    return (r.kind === "req" ? "Phải có ít nhất " : "Nên có ít nhất ") + r.n + " món " + r.tag.replace(/^Món /, "").toLowerCase();
+  }
+  renderVals() {
+    const s = this.state;
+    const rules = s.view === "rulesEmpty" ? [] : s.rules;
+    const isRules = s.view === "rules" || s.view === "rulesEmpty";
+    const dupe = s.tag && rules.some(r => r.kind === s.kind && r.tag === s.tag);
+    const cross = s.tag && rules.some(r => r.kind !== s.kind && r.tag === s.tag);
+    const pickedGone = this.people.filter(p => p.gone && s.picked.indexOf(p.name) >= 0);
+    const defs = [["rules", "S-07 Quy định"], ["rulesEmpty", "S-07 rỗng"], ["session", "S-08 Mở phiên"]];
+    const groups = [
+      { label: "Bắt buộc — thiếu thì không chốt được", items: rules.filter(r => r.kind === "req") },
+      { label: "Nên có — chỉ cảnh báo", items: rules.filter(r => r.kind === "pref") }
+    ].filter(g => g.items.length).map(g => ({
+      label: g.label,
+      items: g.items.map(r => ({
+        text: this.sentence(r),
+        aria: "Gỡ quy định " + this.sentence(r),
+        remove: () => this.setState(st => ({ rules: st.rules.filter(x => x !== r), toast: "" }))
+      }))
+    }));
+    return {
+      views: defs.map(([id, label]) => ({
+        label, go: () => this.setState({ view: id, sheet: false, tried: false, toast: "", startTried: false, picked: ["Bạn", "Mẹ", "Bố"] }),
+        bg: s.view === id ? "#1C1917" : "#FBF8F4",
+        fg: s.view === id ? "#FFFFFF" : "#6B6259",
+        bd: s.view === id ? "#1C1917" : "#D2C7B8"
+      })),
+      isRules, isSession: s.view === "session",
+      heading: isRules ? "Quy định bữa ăn" : "Mở phiên tối nay",
+      subhead: isRules ? "Nhà Bảy Hiền" : "Thứ Ba · 16 tháng 8",
+      backLabel: isRules ? "Xong" : "Huỷ",
+      rulesEmpty: isRules && rules.length === 0,
+      hasRules: isRules && rules.length > 0,
+      ruleGroups: isRules ? groups : [],
+      people: s.view === "session" ? this.people.map(p => {
+        const on = s.picked.indexOf(p.name) >= 0;
+        return {
+          name: p.name, note: p.note,
+          aria: (on ? "Bỏ " : "Thêm ") + p.name + " khỏi phiên tối nay",
+          toggle: () => this.setState(st => ({
+            picked: on ? st.picked.filter(n => n !== p.name) : st.picked.concat(p.name), toast: ""
+          })),
+          bg: on ? "#FBEDE4" : "#FFFFFF",
+          bd: on ? "#B4531F" : "#E7E0D6",
+          pick: on ? "Có ăn" : "Chọn",
+          pickFg: on ? "#B4531F" : "#6B6259",
+          error: s.startTried && p.gone && on ? p.name + " đã rời nhóm, không thể tham gia phiên." : ""
+        };
+      }) : [],
+      blockText: s.view === "session" && s.startTried && pickedGone.length
+        ? "Bỏ " + pickedGone.map(p => p.name).join(", ") + " ra trước khi bắt đầu."
+        : (s.view === "session" && s.startTried && s.picked.length < 1 ? "Chọn ít nhất một người." : ""),
+      toast: s.toast,
+      ctaText: isRules ? "Thêm quy định" : "Bắt đầu phiên với " + s.picked.length + " người",
+      ctaBg: isRules ? "#B4531F" : (s.picked.length ? "#B4531F" : "#F3EEE7"),
+      ctaFg: isRules ? "#FFFFFF" : (s.picked.length ? "#FFFFFF" : "#9C9187"),
+      ctaHint: isRules ? "Quy định chỉ kiểm tra lúc chốt bữa, không chặn ai vuốt" : "Ai cũng sửa lượt của mình được cho tới khi bạn chốt",
+      onCta: () => {
+        if (isRules) return this.setState({ sheet: true, kind: "req", tag: "", n: 1, tried: false, toast: "" });
+        if (pickedGone.length || !s.picked.length) return this.setState({ startTried: true, toast: "" });
+        this.setState({ startTried: false, toast: "Phiên đã mở. Cả nhà nhận được lượt vuốt của mình." });
+      },
+      sheetOpen: s.sheet,
+      closeSheet: () => this.setState({ sheet: false, tried: false }),
+      preview: this.sentence({ kind: s.kind, tag: s.tag || "…", n: s.n }),
+      kinds: [["req", "Bắt buộc"], ["pref", "Nên có"]].map(([id, label]) => ({
+        label, pick: () => this.setState({ kind: id, tried: false }),
+        bg: s.kind === id ? "#B4531F" : "#FFFFFF",
+        fg: s.kind === id ? "#FFFFFF" : "#1C1917",
+        bd: s.kind === id ? "#B4531F" : "#E7E0D6"
+      })),
+      tagChips: this.tags.map(t => ({
+        label: t, pick: () => this.setState({ tag: t, tried: false }),
+        bg: s.tag === t ? "#B4531F" : "#FFFFFF",
+        fg: s.tag === t ? "#FFFFFF" : "#1C1917",
+        bd: s.tag === t ? "#B4531F" : "#E7E0D6"
+      })),
+      count: s.n,
+      inc: () => this.setState(st => ({ n: st.n + 1, tried: false })),
+      dec: () => this.setState(st => ({ n: Math.max(1, st.n - 1), tried: false })),
+      decBd: s.n > 1 ? "#E7E0D6" : "#F3EEE7",
+      decFg: s.n > 1 ? "#1C1917" : "#9C9187",
+      sheetError: !s.tried ? "" : (!s.tag ? "Chọn một nhãn." : dupe ? "Nhóm đã có quy định cho nhãn này ở cùng mức." : cross ? "Nhãn này đang ở mức khác. Gỡ quy định cũ trước." : ""),
+      saveBg: s.tag && !dupe && !cross ? "#B4531F" : "#F3EEE7",
+      saveFg: s.tag && !dupe && !cross ? "#FFFFFF" : "#9C9187",
+      saveRule: () => {
+        if (!s.tag || dupe || cross) return this.setState({ tried: true });
+        const r = { kind: s.kind, tag: s.tag, n: s.n };
+        this.setState(st => ({
+          rules: st.rules.concat(r), sheet: false, tag: "", n: 1, tried: false,
+          view: "rules", toast: "Đã thêm: " + this.sentence(r)
+        }));
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

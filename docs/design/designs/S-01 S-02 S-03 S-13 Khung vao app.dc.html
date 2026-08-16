@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#EDE8E1;font-family:"Be Vietnam Pro",Inter,system-ui,sans-serif;color:#1C1917;-webkit-font-smoothing:antialiased}
+a{color:#B4531F;text-decoration:none}
+a:hover{color:#9A4419}
+button:focus-visible,input:focus-visible{outline:2px solid #B4531F;outline-offset:2px}
+input::placeholder{color:#9C9187}
+@keyframes sk{0%,100%{opacity:.55}50%{opacity:1}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px 16px 48px">
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:600px">
+    <sc-for list="{{ views }}" as="v" hint-placeholder-count="7">
+      <button type="button" onClick="{{ v.go }}" style="min-height:36px;padding:8px 14px;background:{{ v.bg }};color:{{ v.fg }};border:1px solid {{ v.bd }};border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif;cursor:pointer">{{ v.label }}</button>
+    </sc-for>
+  </div>
+  <span style="font:400 12px/18px 'Be Vietnam Pro',sans-serif;color:rgba(28,25,23,.5);text-align:center;max-width:440px;text-wrap:pretty">Bốn màn hình khung: đăng nhập, danh sách nhóm, tạo nhóm, mời thành viên. Hàng nút trên là công cụ xem trạng thái.</span>
+
+  <div style="width:390px;height:844px;background:#FBF8F4;border:1px solid #D2C7B8;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10)">
+
+    <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:32px 24px 0;gap:16px">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#B4531F">Bữa cơm nhà</span>
+        <h1 style="margin:0;font:700 34px/42px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">Hôm nay nhà mình ăn gì</h1>
+        <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Cả nhà vuốt qua vài món trong 30 giây. Người nấu chốt. Xong.</p>
+      </div>
+      <div style="padding:32px 24px 32px;display:flex;flex-direction:column;gap:12px">
+        <sc-if value="{{ loginError }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:flex-start;gap:8px;padding:12px;background:#FBE9E7;border-radius:12px">
+            <span style="width:3px;align-self:stretch;background:#A3261C;border-radius:999px"></span>
+            <span style="font:500 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">Không đăng nhập được. Thử lại giúp mình.</span>
+          </div>
+        </sc-if>
+        <button type="button" onClick="{{ onLogin }}" style="width:100%;min-height:56px;background:{{ loginBg }};color:{{ loginFg }};border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;box-shadow:0 1px 2px rgba(28,25,23,.06);cursor:pointer;transition:transform .1s ease" style-active="transform:scale(.98)">{{ loginLabel }}</button>
+        <span style="align-self:center;font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-align:center;text-wrap:pretty">Chỉ dùng để nhận diện bạn trong nhóm gia đình</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isGroups }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:24px 16px 12px;display:flex;flex-direction:column;gap:4px">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Thứ Ba · 16 tháng 8</span>
+        <h1 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Nhóm của bạn</h1>
+      </div>
+      <div style="flex:1;overflow:auto;padding:12px 16px 8px;display:flex;flex-direction:column;gap:8px;min-height:0">
+
+        <sc-if value="{{ groupsLoading }}" hint-placeholder-val="{{ false }}">
+          <span style="height:96px;border-radius:12px;background:#F3EEE7;animation:sk 1.4s ease-in-out infinite"></span>
+          <span style="height:96px;border-radius:12px;background:#F3EEE7;animation:sk 1.4s ease-in-out .15s infinite"></span>
+        </sc-if>
+
+        <sc-if value="{{ groupsEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px">
+            <h2 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Bạn chưa có nhóm nào.</h2>
+            <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Tạo một nhóm cho nhà mình, rồi mời từng người bằng link.</p>
+          </div>
+        </sc-if>
+
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+          <button type="button" style="display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:16px;background:#FFFFFF;border:1px solid {{ g.bd }};border-radius:12px;cursor:pointer;text-align:left" style-hover="border-color:#D2C7B8" style-active="background:#F3EEE7">
+            <div style="display:flex;align-items:center;gap:8px">
+              <sc-if value="{{ g.live }}" hint-placeholder-val="{{ false }}">
+                <span style="width:8px;height:8px;flex:none;border-radius:999px;background:#B4531F"></span>
+              </sc-if>
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif">{{ g.name }}</span>
+            </div>
+            <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">{{ g.status }}</span>
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">{{ g.meta }}</span>
+          </button>
+        </sc-for>
+
+        <sc-if value="{{ groupsError }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px;background:#FBE9E7;border-radius:12px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <span style="width:3px;align-self:stretch;background:#A3261C;border-radius:999px"></span>
+              <span style="font:500 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917">Không tải được danh sách nhóm.</span>
+            </div>
+            <button type="button" onClick="{{ retry }}" style="align-self:flex-start;min-height:48px;padding:12px 24px;background:#FFFFFF;color:#1C1917;border:1px solid #D2C7B8;border-radius:12px;font:600 15px/22px 'Be Vietnam Pro',sans-serif;cursor:pointer" style-active="background:#F3EEE7">Thử lại</button>
+          </div>
+        </sc-if>
+      </div>
+      <div style="padding:16px 16px 32px;display:flex;flex-direction:column;gap:12px;border-top:1px solid #E7E0D6">
+        <button type="button" onClick="{{ goCreate }}" style="width:100%;min-height:56px;background:#B4531F;color:#FFFFFF;border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;box-shadow:0 1px 2px rgba(28,25,23,.06);cursor:pointer;transition:transform .1s ease" style-active="background:#8C3E17;transform:scale(.98)">Tạo nhóm</button>
+        <button type="button" style="align-self:center;min-height:44px;padding:12px 16px;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">Tôi có link mời</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCreate }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:24px 16px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+        <h1 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Tạo nhóm</h1>
+        <button type="button" onClick="{{ goGroups }}" style="min-height:44px;padding:12px;margin-right:-12px;background:transparent;border:none;border-radius:12px;font:600 15px/20px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer" style-hover="background:#F3EEE7">Huỷ</button>
+      </div>
+      <div style="flex:1;padding:12px 16px 0;display:flex;flex-direction:column;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Tên nhóm</label>
+          <input type="text" value="{{ groupName }}" onInput="{{ onName }}" placeholder="Ví dụ: Nhà Bảy Hiền" style="width:100%;min-height:48px;padding:12px 16px;background:#FFFFFF;border:1px solid {{ nameBd }};border-radius:8px;font:400 17px/24px 'Be Vietnam Pro',sans-serif;color:#1C1917" />
+          <sc-if value="{{ nameError }}" hint-placeholder-val="{{ false }}">
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#A3261C">{{ nameError }}</span>
+          </sc-if>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Múi giờ</label>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:16px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:12px">
+            <span style="display:flex;flex-direction:column;gap:2px">
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif">Việt Nam · GMT+7</span>
+              <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Theo điện thoại của bạn</span>
+            </span>
+            <button type="button" style="flex:none;min-height:44px;padding:12px;margin-right:-8px;background:transparent;border:none;border-radius:12px;font:600 15px/20px 'Be Vietnam Pro',sans-serif;color:#B4531F;cursor:pointer">Đổi</button>
+          </div>
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Múi giờ quyết định phiên chọn món đóng lúc nào cuối ngày.</span>
+        </div>
+      </div>
+      <div style="padding:16px 16px 32px;display:flex;flex-direction:column;gap:12px">
+        <button type="button" onClick="{{ onCreate }}" style="width:100%;min-height:56px;background:{{ createBg }};color:{{ createFg }};border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;box-shadow:0 1px 2px rgba(28,25,23,.06);cursor:pointer;transition:transform .1s ease" style-active="transform:scale(.98)">{{ createLabel }}</button>
+        <span style="align-self:center;font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Bạn sẽ là người quản lý nhóm này</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isInvite }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:24px 16px 12px;display:flex;flex-direction:column;gap:4px">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Nhà Bảy Hiền · 3 người</span>
+        <h1 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Mời thành viên</h1>
+      </div>
+      <div style="flex:1;padding:12px 16px 0;display:flex;flex-direction:column;gap:16px">
+        <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Mỗi link dùng được một lần, cho một người. Gửi qua tin nhắn gia đình là xong.</p>
+
+        <sc-if value="{{ linkReady }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:12px;display:flex;flex-direction:column;gap:12px">
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">Hết hạn 23:59 ngày 18/8</span>
+            <span style="font:400 15px/22px ui-monospace,Menlo,monospace;color:#1C1917;word-break:break-all">an.la/moi/7hien-k4m2</span>
+            <button type="button" onClick="{{ copy }}" style="min-height:48px;padding:12px 24px;background:#FFFFFF;color:#1C1917;border:1px solid #D2C7B8;border-radius:12px;font:600 15px/22px 'Be Vietnam Pro',sans-serif;cursor:pointer" style-active="background:#F3EEE7">Sao chép link</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ linkExpired }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px;background:#F3EEE7;border-radius:12px;display:flex;flex-direction:column;gap:8px">
+            <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif">Link đã hết hạn</span>
+            <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">Tạo link mới rồi gửi lại. Link cũ không dùng được nữa.</span>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;padding-left:4px">Đang trong nhóm</span>
+          <sc-for list="{{ members }}" as="m" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:16px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:12px">
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif">{{ m.name }}</span>
+              <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">{{ m.role }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="padding:16px 16px 32px;display:flex;flex-direction:column;gap:12px;border-top:1px solid #E7E0D6">
+        <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:flex-start;gap:8px;padding:12px;background:#E9F0E7;border-radius:12px">
+            <span style="width:3px;align-self:stretch;background:#3F6B3F;border-radius:999px"></span>
+            <span style="font:500 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917">{{ toast }}</span>
+          </div>
+        </sc-if>
+        <button type="button" onClick="{{ makeLink }}" style="width:100%;min-height:56px;background:#B4531F;color:#FFFFFF;border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;box-shadow:0 1px 2px rgba(28,25,23,.06);cursor:pointer;transition:transform .1s ease" style-active="background:#8C3E17;transform:scale(.98)">{{ inviteCta }}</button>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:980}}">
+class Component extends DCLogic {
+  state = { view: "login", busy: false, name: "", tried: false, link: "none", toast: "" };
+  renderVals() {
+    const s = this.state;
+    const defs = [
+      ["login", "S-01 Đăng nhập"], ["loginError", "S-01 lỗi"],
+      ["groupsEmpty", "S-02 rỗng"], ["groupsLoading", "S-02 đang tải"],
+      ["groups", "S-02 có nhóm"], ["groupsError", "S-02 lỗi"],
+      ["create", "S-03 Tạo nhóm"], ["invite", "S-13 Mời"]
+    ];
+    const v = s.view;
+    const isGroups = v === "groups" || v === "groupsEmpty" || v === "groupsLoading" || v === "groupsError";
+    return {
+      views: defs.map(([id, label]) => ({
+        label, go: () => this.setState({ view: id, busy: false, tried: false, name: "", link: id === "invite" ? "none" : s.link, toast: "" }),
+        bg: v === id ? "#1C1917" : "#FBF8F4",
+        fg: v === id ? "#FFFFFF" : "#6B6259",
+        bd: v === id ? "#1C1917" : "#D2C7B8"
+      })),
+      isLogin: v === "login" || v === "loginError",
+      loginError: v === "loginError",
+      loginLabel: s.busy ? "Đang mở Google…" : "Tiếp tục với Google",
+      loginBg: s.busy ? "#F3EEE7" : "#B4531F",
+      loginFg: s.busy ? "#6B6259" : "#FFFFFF",
+      onLogin: () => {
+        this.setState({ busy: true });
+        clearTimeout(this._t);
+        this._t = setTimeout(() => this.setState({ busy: false, view: "groupsEmpty" }), 900);
+      },
+      isGroups,
+      groupsLoading: v === "groupsLoading",
+      groupsEmpty: v === "groupsEmpty",
+      groupsError: v === "groupsError",
+      groups: v === "groups" ? [
+        { name: "Nhà Bảy Hiền", status: "Phiên tối nay đang mở · 2 trong 4 người xong", meta: "32 món · 4 người", live: true, bd: "#B4531F" },
+        { name: "Nhà ngoại Cần Thơ", status: "Chưa mở phiên hôm nay", meta: "18 món · 5 người", live: false, bd: "#E7E0D6" }
+      ] : [],
+      retry: () => this.setState({ view: "groups" }),
+      goCreate: () => this.setState({ view: "create", name: "", tried: false }),
+      goGroups: () => this.setState({ view: "groupsEmpty" }),
+      isCreate: v === "create",
+      groupName: s.name,
+      onName: e => this.setState({ name: e.target.value, tried: false }),
+      nameBd: s.tried && !s.name.trim() ? "#A3261C" : "#E7E0D6",
+      nameError: s.tried && !s.name.trim() ? "Đặt tên để cả nhà nhận ra nhóm." : "",
+      createLabel: s.busy ? "Đang tạo…" : "Tạo nhóm",
+      createBg: s.name.trim() && !s.busy ? "#B4531F" : "#F3EEE7",
+      createFg: s.name.trim() && !s.busy ? "#FFFFFF" : "#9C9187",
+      onCreate: () => {
+        if (!s.name.trim()) return this.setState({ tried: true });
+        this.setState({ busy: true });
+        clearTimeout(this._t);
+        this._t = setTimeout(() => this.setState({ busy: false, view: "invite", link: "none" }), 700);
+      },
+      isInvite: v === "invite",
+      linkReady: s.link === "ready",
+      linkExpired: s.link === "expired",
+      inviteCta: s.link === "ready" ? "Tạo link cho người tiếp theo" : "Tạo link mời",
+      makeLink: () => this.setState({ link: "ready", toast: "" }),
+      copy: () => this.setState({ toast: "Đã sao chép link mời." }),
+      toast: s.toast,
+      members: [
+        { name: "Bạn", role: "Quản lý nhóm" },
+        { name: "Mẹ", role: "Thành viên" },
+        { name: "Bố", role: "Thành viên" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

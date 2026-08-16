@@ -14,11 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    env:
-      # `yarn verify` không chạm database, nhưng drizzle.config.ts đọc biến này
-      # lúc import. Giá trị giả là đủ và tránh phải gắn secret vào mọi PR.
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=require
-
     steps:
       - uses: actions/checkout@v5
 
