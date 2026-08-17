@@ -24,7 +24,13 @@ Repo chưa tồn tại tại thời điểm viết. Các mục đánh dấu 🔒
 
 Phiên bản Node được ghim ở hai chỗ và phải khớp nhau: `.nvmrc` và trường `engines` trong `package.json`. Nếu lệch, máy bạn chạy được mà CI thì không, và mất một buổi tối để tìm ra.
 
-🔒 Phiên bản Next.js, Drizzle, Auth.js, Vitest: ghim chính xác ở P0 rồi chép vào bảng này. Không ghi "mới nhất" — sáu tháng sau "mới nhất" là một thứ khác.
+| Next.js | 16.3.1 |
+| React | 19.2.8 |
+| TypeScript | 6.0.3 |
+| Drizzle ORM / Kit | 0.45.2 / 0.31.10 |
+| Auth.js | `next-auth@5.0.0-beta.32` (kéo theo `@auth/core@0.41.3`) |
+| Tailwind CSS | 4.3.3 |
+| Vitest | 4.1.10 |
 
 ---
 
@@ -68,7 +74,7 @@ Nếu bước 5 báo lỗi kết nối, gần như chắc chắn `DATABASE_URL` 
 |---|---|---|---|
 | `DATABASE_URL` | Có | Neon Console → Project → Connection string, chọn đúng branch | `postgresql://user:***@ep-xxx.ap-southeast-1.aws.neon.tech/wwget?sslmode=require` |
 | `AUTH_SECRET` | Có | Tự sinh: `openssl rand -base64 32` | chuỗi base64 32 byte |
-| `AUTH_URL` | Có | URL gốc của môi trường | `http://localhost:3000` |
+| `AUTH_URL` | Chỉ local | URL gốc của môi trường. **Để trống trên Vercel** — biến này ghi đè origin của mọi request, đặt giá trị production vào scope Preview sẽ làm callback trên preview trỏ nhầm domain. Vercel tự đặt `VERCEL=1`, next-auth đọc nó để bật `trustHost` | `http://localhost:3000` |
 | `AUTH_GOOGLE_ID` | Có | Google Cloud Console → APIs & Services → Credentials → OAuth client | `xxxxx.apps.googleusercontent.com` |
 | `AUTH_GOOGLE_SECRET` | Có | Cùng nơi trên | `GOCSPX-xxxx` |
 | `CRON_SECRET` | Không ở v1.0 | Vercel tự đặt khi có cron | — |

@@ -19,8 +19,8 @@ Mọi subtask được thiết kế để **xong trong một buổi ngồi** —
 # 1. Bảng tiến độ
 
 | Epic | Nội dung | Subtask | Giờ | Trạng thái |
-|---|---|---|---|---|
-| E0 | Scaffold | 7 | 10 | ☐ |
+| --- | --- | --- | --- | --- |
+| E0 | Scaffold | 7 | 10 | ☒ |
 | E1 | Walking skeleton | 12 | 24 | ☐ |
 | E2 | Group và Dish | 7 | 16 | ☐ |
 | E3 | Phiên và người tham gia | 6 | 14 | ☐ |
@@ -37,7 +37,7 @@ Cột trạng thái dùng để tick. Nếu sau ba tuần chưa có ô nào đư
 Phải xong trước mọi thứ khác. Không có ngoại lệ.
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E0-T1 | Khởi tạo repo, yarn Berry, Next.js, TS strict | Tech §1 | 2 | — | `yarn dev` chạy, `tsc --noEmit` xanh, `.nvmrc` ghim Node 24 | `package.json`, `tsconfig.json`, `.nvmrc` |
 | E0-T2 | Dựng khung thư mục và ESLint chặn luật tầng | Tech §2.1, §2.2 | 2 | E0-T1 | Import từ `domain/` sang `application/` bị ESLint báo lỗi — thử bằng một file cố tình sai rồi xoá | `eslint.config.js`, `src/features/*/` |
 | E0-T3 | Husky, lint-staged, Prettier, commitlint | Tech §8.1 | 1.5 | E0-T1 | Commit sai Conventional Commits bị chặn | `.husky/`, `commitlint.config.js` |
@@ -65,7 +65,7 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 ## S2 — Group tối thiểu
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E1-T2 | Schema `groups`, `group_members`, use case tạo Group | SPEC-002, TC-008→010 | 2 | E1-T1 | Tạo Group được, người tạo là Admin; TC-008→010 pass | `features/group/**` |
 | E1-T3 | Authorization guard | SPEC-019, TC-006, TC-007 | 1 | E1-T2 | Gọi thao tác Group khi không phải Member trả `ERR_NOT_GROUP_MEMBER` | `features/group/application/assert-group-access.ts` |
 | E1-T4 | Decision Date theo timezone Group | SPEC-018, TC-004, TC-005 | 1 | E1-T2 | Hàm thuần, nhận `now` làm tham số, không mock `Date`; TC-004, TC-005 pass | `features/session/domain/decision-date.ts` |
@@ -79,21 +79,21 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 ## S4 — Session tối thiểu
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E1-T6 | Schema `selection_sessions`, `participants`, partial unique index | SPEC-007, BR-025 | 2 | E1-T4 | Migration tạo được index một phần; kiểm bằng `\d+` trong psql | `features/session/infrastructure/schema.ts` |
 | E1-T7 | Tạo và Start Session, bắt lỗi unique violation | SPEC-007, TC-026→029, TC-107 | 2 | E1-T6 | Hai Start đồng thời: đúng một thành công — **TC-107 phải chạy hai transaction song song thật** | `features/session/application/**` |
 
 ## S5 — Deck và swipe thô
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E1-T8 | Deck liệt kê không ranking, phân trang | SPEC-010 rút gọn, SPEC-011 | 2 | E1-T5, E1-T7 | Mở phiên thấy danh sách món, cuộn hết được | `features/selection/**` |
 | E1-T9 | Route Handler ghi Interaction, optimistic UI | SPEC-012, TC-048→053 | 3 | E1-T8 | Vuốt 10 món liên tiếp không xếp hàng; TC-048→053 pass | `app/api/sessions/[id]/interactions/route.ts` |
 
 ## S6 — Chốt bữa thô
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E1-T10 | Chọn món và finalize, chưa có rule | SPEC-015, SPEC-016 rút gọn | 2 | E1-T9 | Session chuyển `FINALIZED`, không reopen được | `features/meal/**` |
 | E1-T11 | Sinh Default Eating History trong cùng transaction | SPEC-017, TC-076→078, TC-109 | 2 | E1-T10 | TC-109 pass: `INSERT` thất bại giữa chừng thì Session **không** `FINALIZED` | `features/history/**` |
 
@@ -113,7 +113,7 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 # 4. E2 — Group và Dish hoàn chỉnh
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E2-T1 | Tạo link mời, lưu hash, hạn 7 ngày | SPEC-003, TC-011, TC-012 | 2 | E1-T3 | DB chỉ chứa hash, không chứa token thô | `features/group/**` |
 | E2-T2 | Tham gia bằng link, transaction, các trường hợp âm | SPEC-004, TC-013→016, TC-112 | 2 | E2-T1 | TC-015 pass: Member cũ dùng token thì token **vẫn dùng được** cho người khác | `features/group/application/join-by-invite.ts` |
 | E2-T3 | Chuẩn hoá tên món bỏ dấu, hàm thuần | SPEC-005, TC-098 | 2 | — | `Ca kho` và `Cá kho` cùng `normalized_name`; dữ liệu test dùng tiếng Việt có dấu thật | `features/dish/domain/normalize-name.ts` |
@@ -129,7 +129,7 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 # 5. E3 — Phiên và người tham gia
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E3-T1 | Revalidate 5 bước lúc Start | SPEC-008, TC-030→035 | 3 | E1-T7 | Dừng ở lỗi đầu tiên, trả đúng mã lỗi tương ứng từng bước | `features/session/application/start-session.ts` |
 | E3-T2 | Hiện Participant không hợp lệ ngay tại hàng | S-08, TC-031 | 1 | E3-T1 | Thấy tên người cụ thể, không phải thông báo chung | `features/session/presentation/**` |
 | E3-T3 | Thêm Participant khi Draft | SPEC-009, TC-036, TC-037 | 1.5 | E3-T1 | Participant mới có 0 Interaction | `features/session/application/add-participant.ts` |
@@ -144,7 +144,7 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 Giai đoạn quyết định sản phẩm có khác một danh sách hay không.
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E4-T1 | `computeRecencyPenalty`, hàm thuần | SPEC-020, TC-079→084 | 3 | E1-T11 | Không mock gì, nhận `referenceDate` làm tham số; TC-084 pass: hai record cùng ngày collapse thành một | `features/history/domain/recency.ts` |
 | E4-T2 | `computePersonalScore` và `buildDeck` với tie-break | SPEC-010, TC-040→044 | 3 | E4-T1 | `RankingConfig` nằm ở **một** module hằng số duy nhất | `features/selection/domain/ranking.ts` |
 | E4-T3 | Lưu `session_decks`, thứ tự bất biến trong phiên | SPEC-010, TC-041 | 2 | E4-T2 | Mở lại deck lần hai thứ tự giống hệt | `features/selection/infrastructure/**` |
@@ -162,7 +162,7 @@ Giai đoạn quyết định sản phẩm có khác một danh sách hay không.
 # 7. E5 — Rule và chốt bữa
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E5-T1 | Schema `group_rules` và CRUD | SPEC-021, TC-085, TC-088 | 2 | E2-T5 | Lưu danh sách rỗng thì Group không còn rule nào | `features/rule/**` |
 | E5-T2 | Invariant của rule ép ở tầng DB | SPEC-021, TC-086, TC-087, TC-089 | 2 | E5-T1 | `unique(group_id, rule_type, system_tag)` và `check(minimum_count >= 1)` là ràng buộc thật trong migration | `features/rule/infrastructure/schema.ts` |
 | E5-T3 | `evaluateRequired`, independent tag counting | SPEC-016, TC-072, TC-073, TC-110 | 3 | E5-T1 | **Viết TC-073 trước khi viết hàm.** Một Dish mang cả `MAIN` và `SOUP` thoả cả hai rule | `features/rule/domain/evaluate.ts` |
@@ -178,7 +178,7 @@ Giai đoạn quyết định sản phẩm có khác một danh sách hay không.
 # 8. E6 — Hoàn thiện
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E6-T1 | Toàn bộ trạng thái rỗng | Design §3 | 4 | E5-T9 | Mỗi trạng thái rỗng nêu **việc cần làm tiếp**, không chỉ nói trống | mọi `presentation/` |
 | E6-T2 | Bảng dịch mã lỗi và lỗi tại chỗ | SDD §2.5, Design §4 | 2 | E6-T1 | Một bảng tra duy nhất; không hộp thoại cho lỗi kiểm tra dữ liệu | `shared/errors/messages.ts` |
 | E6-T3 | Đo NFR-01 đến NFR-05 bằng số thật | Tech §9, MS-01→05 | 3 | E6-T2 | Có con số cho từng NFR, không phải cảm nhận | — |
@@ -214,7 +214,7 @@ E0-T1 → E0-T2 → E0-T6 → E0-T7        7 giờ
 Tôi chưa biết quỹ giờ thực tế mỗi tuần của bạn. Ba kịch bản:
 
 | Quỹ giờ/tuần | Thời gian tới M2 | Tới M4 | Tới M6 (xong v1.0) |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 6 giờ | 6 tuần | 17 tuần | **26 tuần ≈ 6 tháng** |
 | 10 giờ | 4 tuần | 10 tuần | **16 tuần ≈ 4 tháng** |
 | 15 giờ | 2,5 tuần | 7 tuần | **11 tuần ≈ 2,5 tháng** |
@@ -236,7 +236,7 @@ Cho tôi biết quỹ giờ thật và tôi sẽ chốt lại lịch cùng danh 
 # 11. Bảng rủi ro
 
 | Rủi ro | Dấu hiệu sớm | Phản ứng |
-|---|---|---|
+| --- | --- | --- |
 | Cold start Neon vượt NFR-01 | E1-T12 đo được > 2 giây | Render shell tĩnh trước, stream dữ liệu sau. Nếu vẫn vượt, nới NFR-01 lên 4 giây thay vì đổi database — đổi database ở giai đoạn này tốn hơn nhiều so với lợi ích |
 | Ước lượng sai toàn cục | E0 vượt 15 giờ, hoặc E1 vượt 35 giờ | Cắt theo §10 ngay, không đợi tới E4 |
 | Kiến trúc rò rỉ qua ranh giới tầng | Muốn viết `import` từ `domain/` sang `infrastructure/` | ESLint đã chặn ở E0-T2. Nếu thấy mình muốn tắt luật, đó là dấu hiệu đặt sai tầng chứ không phải luật sai |
@@ -269,7 +269,7 @@ Phần này **không chia subtask**. Lý do: subtask cho việc còn cách 4–6
 Mục tiêu: sản phẩm đủ đúng để dữ liệu tin được. v1.0 chạy được nhưng ghi lịch sử ăn cả những món người ta không ăn nổi.
 
 | Epic | Nội dung | Tính năng | Giờ |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | E7 | Ràng buộc và sở thích cá nhân | F15 `Cannot Eat`, F16 Like/Dislike | 18 |
 | E8 | Deck nâng cao | F18 explore lane 20%, F19 deck ổn định khi tính lại | 13 |
 | E9 | Rule mở rộng và cảnh báo | F22 Preferred Rule, F23 Target Dish Count, F24 lưu vết cảnh báo | 16 |
@@ -285,7 +285,7 @@ Mục tiêu: sản phẩm đủ đúng để dữ liệu tin được. v1.0 ch�
 Mục tiêu: sản phẩm học được từ hành vi và linh hoạt theo hoàn cảnh.
 
 | Epic | Nội dung | Tính năng | Giờ |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | E11 | Chef | F33 Chef Role và Chef Mode, F34 khả năng nấu, F42 gán/gỡ Chef Role | 23 |
 | E12 | Học sở thích | F30 Implicit Preference, F31 Blacklist, F32 Whitelist, F39 reset | 21 |
 | E13 | Linh hoạt và bổ trợ | F35 override Session Rule, F36 nguồn mua, F37 Descriptive Tag, F38 phản hồi trực tiếp lúc chốt, F40 sửa Final Meal, F41 huỷ phiên | 31 |
@@ -298,7 +298,7 @@ Mục tiêu: sản phẩm học được từ hành vi và linh hoạt theo hoà
 ## 13.3 Tổng ba chặng
 
 | Chặng | Giờ có dự phòng | Cộng dồn |
-|---|---|---|
+| --- | --- | --- |
 | v1.0 | 157 | 157 |
 | v1.1 | 70 | 227 |
 | v1.2 | 75 | 302 |
@@ -314,7 +314,7 @@ Nói thẳng: đừng lập kế hoạch cho cả ba chặng. Lập kế hoạch
 Không nằm trong bất kỳ chặng nào ở trên.
 
 | Tính năng | Vì sao |
-|---|---|
+| --- | --- |
 | F43 Một User thuộc nhiều Group | Hoãn theo quyết định D-04. Schema đã giữ `group_id` ở mọi bảng nên mở lại không cần migration |
 | F44 Giao diện System Admin | Dưới 10 người dùng, thao tác ngoại lệ làm trực tiếp trên DB |
 | F45 Logical Merge món trùng | Ảnh hưởng đồng thời pool, phiên đang chạy, tương tác, lịch sử. Không xứng với lợi ích ở quy mô này |
@@ -335,6 +335,6 @@ Ba thứ đáng nhắc lại vì rất hay bị đề xuất thêm vào:
 # 15. Change History
 
 | Version | Date | Section | Change | Reason / Decision |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 1.0 | 2026-08-14 | Header | Duyệt và phát hành trong baseline R1 | Review toàn bộ bộ tài liệu |
 | 0.1 | 2026-08-14 | Toàn bộ | Bản draft đầu tiên: 7 epic, 56 subtask, đường găng 51 giờ, ba kịch bản lịch | Phase 9 |

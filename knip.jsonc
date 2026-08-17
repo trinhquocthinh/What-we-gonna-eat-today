@@ -13,7 +13,7 @@
     "src/shared/db/client.ts!",
 
     // Chỉ dùng lúc phát triển nên không có `!`.
-    "drizzle.config.ts"
+    "drizzle.config.ts",
   ],
 
   "ignore": [
@@ -26,15 +26,28 @@
     // trông như mồ côi. Nó được nạp qua `setupFiles` trong vitest.config.mts.
     "src/tests/**",
 
+    // Cùng lý do với `src/tests/**`: `--production` không tính test là nơi sử
+    // dụng, nên factory dữ liệu test luôn trông như mồ côi.
+    "src/shared/testing/**",
+
     // GỠ Ở E1-T4. Hàm này mới chỉ có test gọi tới, mà `--production` không tính
     // test là nơi sử dụng. Khi create-session dùng nó thật thì xoá dòng này —
     // nếu quên, knip sẽ không còn canh được file domain nào chết thật.
-    "src/features/session/domain/decision-date.ts"
+    "src/features/session/domain/decision-date.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu
   // DATABASE_URL. Hệ quả: `yarn knip` chết ở máy chưa tạo .env.local, tức
   // pre-push chặn commit vì một lý do chẳng liên quan gì tới chất lượng mã.
   // Ở đây không cần plugin: schema đã khai báo thẳng trong "entry".
-  "drizzle": false
+  "drizzle": false,
+
+  "ignoreDependencies": [
+    // Chỉ dùng qua `declare module '@auth/core/types'` / `'@auth/core/jwt'` ở
+    // `auth.ts` — knip không tính module augmentation là usage. Ghim trực tiếp
+    // (thay vì để transitive) vì augmentation phụ thuộc đúng bản `next-auth`
+    // kéo về; nâng cấp `next-auth` mà quên đồng bộ số này thì augmentation im
+    // lặng ngừng merge.
+    "@auth/core",
+  ],
 }

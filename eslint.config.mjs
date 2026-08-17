@@ -86,6 +86,7 @@ export default tseslint.config(
       'report/**',
       'next-env.d.ts',
       'src/shared/db/migrations/**',
+      'docs/**',
     ],
   },
 

@@ -1,11 +1,11 @@
 # Decision Log — What We Gonna Eat Today
 
-## Version 1.2
+## Version 1.3
 
 **Status:** Active  
 **Created:** 2026-07-23  
-**Last Updated:** 2026-08-14  
-**Supersedes:** Version 1.1
+**Last Updated:** 2026-08-17  
+**Supersedes:** Version 1.2
 
 Decision Log ghi lại các quyết định có ảnh hưởng đáng kể đến domain model, business rules hoặc scope. Current source of truth vẫn là Problem Definition và Business Rules phiên bản mới nhất; Decision Log giải thích **vì sao** các rule hiện tại tồn tại.
 
@@ -474,6 +474,52 @@ Các trọng số trong config là điểm khởi đầu có chủ đích, khôn
 
 ---
 
+# DEC-013 — Auth.js Beta Dependency
+
+**Date:** 2026-08-17
+**Status:** Accepted
+
+## Decision
+
+`next-auth@5.0.0-beta.32` (pulling `@auth/core@0.41.3`) is pinned as an exact dependency for E1-T1, without an adapter.
+
+## Rationale
+
+It is the only `next-auth` line with peer support for Next.js 16 and React 19. No stable release supports Next 16 at time of writing.
+
+## Review Trigger
+
+Revisit this pin once `next-auth` publishes a stable v5 release, or when upgrading Next.js/React surfaces a peer dependency conflict.
+
+## Affected Documents
+
+- Setup & Ops Guide v0.1 §1
+
+---
+
+# DEC-014 — `provisionUser` Failure Surfaces as Exception at the Auth.js Boundary
+
+**Date:** 2026-08-17
+**Status:** Accepted
+
+## Decision
+
+`features/auth/infrastructure/auth.ts` throws inside `callbacks.jwt` when `provisionUser` returns a `Failure`, instead of returning `null`.
+
+## Rationale
+
+Auth.js treats a `null` return from `callbacks.jwt` as "clear the cookie, then still redirect to `callbackUrl`" — the user loops back into the login screen with no visible error. Throwing is the only way to surface `pages.error`. This is the one place in the codebase where a `Result` is converted to an exception, and it is deliberately scoped to the outer framework boundary, not a layer boundary: `application/` still returns `Result` everywhere else.
+
+## Consequence
+
+Anyone "cleaning up" this throw to match the `Result` convention elsewhere reintroduces the silent redirect loop. Do not change it without also changing the `pages.error` handling in `app/page.tsx`.
+
+## Affected Documents
+
+- SDD v0.2 §2.5 (error code table — no code exists for this case, and none should be added here)
+
+---
+
 # Decision Index
 
 | ID | Decision | Status | Primary Impact |
@@ -490,6 +536,8 @@ Các trọng số trong config là điểm khởi đầu có chủ đích, khôn
 | DEC-010 | Group Rule and Session Rule Model | Accepted | Rule structure, snapshot, override |
 | DEC-011 | Final Meal Rule Evaluation and Warning Semantics | Accepted | Validation, warning, ranking boundary |
 | DEC-012 | Ranking Model, Cooldown and Exploration Strategy | Accepted | Personal Ranking, Session Ranking, Eating History aggregation |
+| DEC-013 | Auth.js Beta Dependency | Accepted | `next-auth` version pin |
+| DEC-014 | `provisionUser` Failure Surfaces as Exception at the Auth.js Boundary | Accepted | Auth.js callback error handling |
 
 
 ---
@@ -498,6 +546,7 @@ Các trọng số trong config là điểm khởi đầu có chủ đích, khôn
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 2026-08-17 | Added DEC-013 for the `next-auth` beta pin and DEC-014 for the `provisionUser` throw-at-boundary behavior in E1-T1 |
 | 1.2 | 2026-08-14 | Added DEC-012 for ranking model, implicit preference smoothing, 7-day cooldown, 20% exploration and evidence-only Session Ranking |
 | 1.1 | 2026-07-29 | Added DEC-010 for Group Rule / Session Rule structure, snapshot and override semantics |
 | 1.1 | 2026-07-29 | Added DEC-011 for finalize validation, warning audit and ranking boundary |
