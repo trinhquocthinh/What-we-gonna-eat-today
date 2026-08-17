@@ -1,11 +1,11 @@
 # Decision Log — What We Gonna Eat Today
 
-## Version 1.3
+## Version 1.4
 
 **Status:** Active  
 **Created:** 2026-07-23  
 **Last Updated:** 2026-08-17  
-**Supersedes:** Version 1.2
+**Supersedes:** Version 1.3
 
 Decision Log ghi lại các quyết định có ảnh hưởng đáng kể đến domain model, business rules hoặc scope. Current source of truth vẫn là Problem Definition và Business Rules phiên bản mới nhất; Decision Log giải thích **vì sao** các rule hiện tại tồn tại.
 
@@ -520,6 +520,75 @@ Anyone "cleaning up" this throw to match the `Result` convention elsewhere reint
 
 ---
 
+# DEC-015 — neon-http `db.batch()` Is a Real Transaction; `db.transaction()` Is Not
+
+**Date:** 2026-08-17
+**Status:** Accepted
+
+## Decision
+
+`GroupRepository.createWithAdmin` inserts `groups` and `group_members` via `db.batch([...])`. Verified in `node_modules/drizzle-orm/neon-http/session.js`: `batch()` calls `client.transaction(builtQueries)` (Neon sends a `Neon-Batch-Isolation-Level` header), while `db.transaction()` throws `"No transactions support in neon-http driver"`. `batch()` is non-interactive — no reading an id back mid-batch — so `groupId` is generated explicitly with `uuidv7()` in infrastructure rather than left to the schema's `$defaultFn`.
+
+## Rationale
+
+This satisfies SDD §2.4 ("a failed write leaves no partial change") for E1-T2 without adding a new driver. `batch()`'s type is a tuple `Readonly<[U, ...U[]]>`, so the array must be a literal, not built via `.map()` or stored in a `const queries: X[]`.
+
+## Consequence
+
+E1-T7 and E1-T11 need read-then-write inside the same transaction — `batch()` cannot do that. Those slices must add the `neon-serverless` (WebSocket) driver instead of trying to force it through `batch()`.
+
+## Affected Documents
+
+- Tech Spec v0.2 §2 (data access), SDD v0.2 §2.4
+
+---
+
+# DEC-016 — Canonical IANA Time Zone Stored, Not User Input
+
+**Date:** 2026-08-17
+**Status:** Accepted
+
+## Decision
+
+`readGroupDraft` (SPEC-002) canonicalizes the timezone with `Intl.DateTimeFormat(...).resolvedOptions().timeZone` before it reaches `GroupRepository.createWithAdmin`. `groups.timezone` always holds the canonical form (e.g. `Asia/Saigon`), never the raw browser-reported string.
+
+## Rationale
+
+Verified on ICU 77 (Node 22) and ICU 78 (Node 24): `Intl.supportedValuesOf('timeZone')` has 418 entries and does **not** include `Asia/Ho_Chi_Minh`, only its canonical alias `Asia/Saigon`. Firefox reports `Asia/Ho_Chi_Minh`; Chrome/V8 reports `Asia/Saigon`. Storing the raw value means a Firefox-created Group and a Chrome-created Group can hold two different strings for the same real timezone, and any code that matches against the `supportedValuesOf()` list (e.g. the time zone picker) would silently fail to highlight the Firefox one.
+
+## Consequence
+
+`isValidTimeZone` (`shared/time/time-zone.ts`) must not be implemented as `supportedValuesOf().includes(tz)` — that rejects `Asia/Ho_Chi_Minh` outright, which is also the exact value TC-004/TC-005 exercise. It must use a try/catch around `Intl.DateTimeFormat`, plus an explicit reject of offset-like strings (`'+07:00'`), which `Intl` otherwise accepts despite not being an IANA identifier.
+
+## Affected Documents
+
+- SDD v0.2 SPEC-002, SPEC-018
+
+---
+
+# DEC-017 — `DISPLAY_TIME_ZONE_FALLBACK` Is Display-Only, Never a Group Default
+
+**Date:** 2026-08-17
+**Status:** Accepted
+
+## Decision
+
+`shared/time/time-zone.ts` exports `DISPLAY_TIME_ZONE_FALLBACK = 'Asia/Ho_Chi_Minh'`, used only to render the date caption on `/groups` (a screen with no Group context yet). It must never be used as the timezone written for a new Group, nor passed into `resolveDecisionDate` for any Session-related calculation.
+
+## Rationale
+
+SPEC-018 states there is no hidden default timezone — creating a Group must always set one explicitly. Reusing the display fallback as a silent default would violate that and make every Group's Decision Date depend on an assumption nobody chose.
+
+## Consequence
+
+Any new call site that needs a Group's actual timezone must read it from `groups.timezone`, never from `DISPLAY_TIME_ZONE_FALLBACK`. Reviewers should treat a new import of this constant outside a Group-less display context as a bug.
+
+## Affected Documents
+
+- SDD v0.2 SPEC-018
+
+---
+
 # Decision Index
 
 | ID | Decision | Status | Primary Impact |
@@ -538,6 +607,9 @@ Anyone "cleaning up" this throw to match the `Result` convention elsewhere reint
 | DEC-012 | Ranking Model, Cooldown and Exploration Strategy | Accepted | Personal Ranking, Session Ranking, Eating History aggregation |
 | DEC-013 | Auth.js Beta Dependency | Accepted | `next-auth` version pin |
 | DEC-014 | `provisionUser` Failure Surfaces as Exception at the Auth.js Boundary | Accepted | Auth.js callback error handling |
+| DEC-015 | neon-http `db.batch()` Is a Real Transaction; `db.transaction()` Is Not | Accepted | `GroupRepository` write path, future driver choice |
+| DEC-016 | Canonical IANA Time Zone Stored, Not User Input | Accepted | Group timezone storage, time zone picker matching |
+| DEC-017 | `DISPLAY_TIME_ZONE_FALLBACK` Is Display-Only, Never a Group Default | Accepted | `/groups` date caption vs. Group/Session timezone |
 
 
 ---
@@ -546,6 +618,7 @@ Anyone "cleaning up" this throw to match the `Result` convention elsewhere reint
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 2026-08-17 | Added DEC-015 through DEC-017 for E1-T2/E1-T3/E1-T4: neon-http batch transaction semantics, canonical timezone storage, and display-only fallback timezone |
 | 1.3 | 2026-08-17 | Added DEC-013 for the `next-auth` beta pin and DEC-014 for the `provisionUser` throw-at-boundary behavior in E1-T1 |
 | 1.2 | 2026-08-14 | Added DEC-012 for ranking model, implicit preference smoothing, 7-day cooldown, 20% exploration and evidence-only Session Ranking |
 | 1.1 | 2026-07-29 | Added DEC-010 for Group Rule / Session Rule structure, snapshot and override semantics |

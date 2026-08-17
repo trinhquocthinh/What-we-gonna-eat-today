@@ -1,3 +1,4 @@
+import { isValidTimeZone } from '@/shared/time/time-zone'
 /**
  * SPEC-018 — Decision Date resolution. Nguồn: BR-020, BR-025.
  *
@@ -25,17 +26,17 @@ export function resolveDecisionDate(now: Date, timeZone: string): DecisionDate {
     throw new RangeError('resolveDecisionDate: `now` không phải thời điểm hợp lệ')
   }
 
-  let parts: Intl.DateTimeFormatPart[]
-  try {
-    parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).formatToParts(now)
-  } catch {
+  // Dùng chung với SPEC-002 để Group không lưu được timezone mà hàm này từ chối.
+  if (!isValidTimeZone(timeZone)) {
     throw new RangeError(`resolveDecisionDate: timezone không hợp lệ: "${timeZone}"`)
   }
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now)
 
   const get = (type: Intl.DateTimeFormatPartTypes): string => {
     const part = parts.find((p) => p.type === type)

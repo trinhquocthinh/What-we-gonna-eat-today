@@ -64,6 +64,21 @@
   --shadow-lift: 0 2px 4px rgba(28, 25, 23, 0.08), 0 12px 28px rgba(28, 25, 23, 0.1);
 
   --container-app: 35rem; /* 560px — nội dung căn giữa ở ≥768px */
+
+  --color-scrim: rgba(28, 25, 23, 0.28); /* nền mờ sau sheet */
+
+  /* Design Handoff: khối --surface-sunken, opacity .55↔1, chu kỳ 1.4s. Không vòng quay. */
+  --animate-skeleton: skeleton 1.4s ease-in-out infinite;
+
+  @keyframes skeleton {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
 }
 
 /* `inline` là bắt buộc khi trỏ tới biến do next/font sinh: giá trị được nội suy

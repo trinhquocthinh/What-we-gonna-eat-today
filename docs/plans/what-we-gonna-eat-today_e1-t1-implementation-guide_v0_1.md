@@ -2,7 +2,7 @@
 
 ## Version 0.1
 
-**Status:** Ready to code
+**Status:** Completed
 **Created:** 2026-08-16
 **Upstream:** Master Plan v1.0 §3 (E1-T1), SDD v0.2 SPEC-001, Tech Spec v0.2 §2/§5, Test Cases v0.1 TC-001→003, Design Handoff `docs/designs/README.md` S-01
 **Scope:** đúng một subtask — `E1-T1 | Auth.js Google, bảng users | 3 giờ | features/auth/**`
@@ -15,12 +15,12 @@
 
 Lấy từ Master Plan §3 và Tech Spec §8.3:
 
-- [ ] Đăng nhập được trên preview Vercel, mở bằng điện thoại thật
-- [ ] TC-001, TC-002, TC-003 pass ở tầng A (application unit, mock port)
-- [ ] `yarn verify` xanh (typecheck → lint → format → dup → knip → test)
-- [ ] `yarn arch:probe` xanh
-- [ ] `yarn build` xanh
-- [ ] PR có link tới SPEC-001
+- [x] Đăng nhập được trên preview Vercel, mở bằng điện thoại thật
+- [x] TC-001, TC-002, TC-003 pass ở tầng A (application unit, mock port)
+- [x] `yarn verify` xanh (typecheck → lint → format → dup → knip → test)
+- [x] `yarn arch:probe` xanh
+- [x] `yarn build` xanh
+- [x] PR có link tới SPEC-001
 
 Bảng `users` **đã tồn tại** (`src/shared/db/schema.ts` + `0000_hard_speedball.sql`). **Không có migration mới ở subtask này.**
 
@@ -29,7 +29,7 @@ Bảng `users` **đã tồn tại** (`src/shared/db/schema.ts` + `0000_hard_spee
 # 1. Quyết định đã chốt
 
 | Việc | Chốt | Vì sao |
-|---|---|---|
+| --- | --- | --- |
 | Thư viện auth | `next-auth@5.0.0-beta.32`, ghim tuyệt đối, **không dùng adapter** | Tech Spec §1 chốt Auth.js. Adapter của Auth.js đòi schema riêng (`users/accounts/sessions/verificationTokens`), trong khi schema dự án là `provider + provider_subject` (SPEC-001) |
 | Session | JWT cookie, `maxAge` 30 ngày | Tech Spec §5 |
 | Styling | Tailwind v4 (`tailwindcss` + `@tailwindcss/postcss` `4.3.3`) | Design Handoff ràng buộc số 1 |
@@ -1347,7 +1347,7 @@ export default async function GroupsPage() {
 # 8. Cấu hình phải sửa
 
 | File | Sửa gì |
-|---|---|
+| --- | --- |
 | `package.json` | deps += `"next-auth": "5.0.0-beta.32"`; devDeps += `"tailwindcss": "4.3.3"`, `"@tailwindcss/postcss": "4.3.3"`. **Bỏ `^` nếu yarn tự thêm.** |
 | `postcss.config.mjs` | tạo mới (§7.1) |
 | `knip.jsonc` | `ignore` += `"src/shared/testing/**"` |
@@ -1393,7 +1393,7 @@ AUTH_URL="http://localhost:3000"
 ## 8.3 Setup & Ops Guide §1 — điền bảng 🔒
 
 | Thành phần | Phiên bản ghim |
-|---|---|
+| --- | --- |
 | Next.js | 16.3.1 |
 | React | 19.2.8 |
 | TypeScript | 6.0.3 |
@@ -1413,7 +1413,7 @@ Nội dung cần ghi: (a) phụ thuộc `next-auth` bản **beta** vì đó là 
 Nhánh `feat/auth-google-signin`. Conventional Commits, scope `auth` / `shared` / `ui` / `db`. PR link SPEC-001.
 
 | # | Việc | Test viết trước |
-|---|---|---|
+| --- | --- | --- |
 | 0 | `yarn verify` xanh → refactor `client.ts` (§3) → `yarn verify` lại | — (refactor thuần, `tsc` là lưới) |
 | 1 | `shared/result.ts`, `shared/errors.ts` | `errors.test.ts` (§6.2) |
 | 2 | `domain/provider-identity.ts` | **`provider-identity.test.ts` (§6.4) — chạy phải ĐỎ trước** |
@@ -1438,11 +1438,13 @@ Sau bước 3: `yarn test:coverage` — `provision-user.ts` phải ≥80% dòng 
 2. **Credentials → Create credentials → OAuth client ID → Web application**.
 3. **Authorized JavaScript origins**: `http://localhost:3000`, URL preview cố định, domain production.
 4. **Authorized redirect URIs** — đúng ba dòng (Setup & Ops Guide §3):
+
    ```
    http://localhost:3000/api/auth/callback/google
    https://<preview-url-cố-định>/api/auth/callback/google
    https://<domain-production>/api/auth/callback/google
    ```
+
 5. Bật **preview URL cố định** của Vercel — nếu không, mỗi PR đổi URL và đăng nhập trên preview hỏng (sự cố đã biết, Setup Guide §7).
 6. Client ID → `AUTH_GOOGLE_ID`, Client secret → `AUTH_GOOGLE_SECRET`.
 
@@ -1486,7 +1488,7 @@ yarn verify && yarn arch:probe && yarn build
 # 11. Rủi ro
 
 | Rủi ro | Dấu hiệu | Làm gì |
-|---|---|---|
+| --- | --- | --- |
 | **`client.ts` throw lúc import → `yarn build` đỏ trong CI.** Rủi ro số một, dễ bỏ sót nhất vì `verify` vẫn xanh | CI xanh ở `verify`, đỏ ở `Build` với `Thiếu DATABASE_URL` | Đã xử lý ở §3. Nếu không muốn refactor: thêm `env: DATABASE_URL: postgresql://x:x@x/x` vào bước Build của workflow |
 | Module augmentation của next-auth không merge | `tsc`: `Property 'userId' does not exist on type 'Session'` | Hai lối thoát ở cuối §6.10 |
 | `exactOptionalPropertyTypes` xung đột type next-auth | `Type 'undefined' is not assignable` | Không gán `undefined` tường minh ở đâu cả; nếu `NextAuthConfig` vẫn kẹt thì dùng `satisfies NextAuthConfig` thay vì annotate |

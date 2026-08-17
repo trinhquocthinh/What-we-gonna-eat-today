@@ -32,6 +32,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   session: { strategy: 'jwt', maxAge: THIRTY_DAYS_IN_SECONDS },
 
+  // Cho phép chạy trên domain động của Vercel Preview
+  trustHost: true,
+
   // S-01 vừa là trang đăng nhập vừa là nơi hiện lỗi xác thực.
   pages: { signIn: '/', error: '/' },
 

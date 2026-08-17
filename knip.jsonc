@@ -11,6 +11,7 @@
     // đọc để sinh migration, `client.ts` là điểm vào duy nhất tới database.
     "src/shared/db/schema.ts!",
     "src/shared/db/client.ts!",
+    "src/features/auth/presentation/containers/auth-actions.ts!",
 
     // Chỉ dùng lúc phát triển nên không có `!`.
     "drizzle.config.ts",
@@ -29,11 +30,6 @@
     // Cùng lý do với `src/tests/**`: `--production` không tính test là nơi sử
     // dụng, nên factory dữ liệu test luôn trông như mồ côi.
     "src/shared/testing/**",
-
-    // GỠ Ở E1-T4. Hàm này mới chỉ có test gọi tới, mà `--production` không tính
-    // test là nơi sử dụng. Khi create-session dùng nó thật thì xoá dòng này —
-    // nếu quên, knip sẽ không còn canh được file domain nào chết thật.
-    "src/features/session/domain/decision-date.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu
