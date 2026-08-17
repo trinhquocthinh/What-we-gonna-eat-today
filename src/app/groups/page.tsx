@@ -1,32 +1,34 @@
 import { redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/features/auth/infrastructure/session'
-import { signOutFromApp } from '@/features/auth/presentation/containers/auth-actions'
-import { Button } from '@/shared/ui/button'
+import { listGroups } from '@/features/group/application/list-groups'
+import { drizzleGroupRepository } from '@/features/group/infrastructure/drizzle-group-repository'
+import { GroupListScreen } from '@/features/group/presentation/components/group-list-screen'
+import { resolveDecisionDate } from '@/features/session/domain/decision-date'
+import { DISPLAY_TIME_ZONE_FALLBACK } from '@/shared/time/time-zone'
+import { formatVietnameseDate } from '@/shared/time/format-vietnamese-date'
 
-// TẠM. E1-T2 thay ruột bằng S-02 Danh sách nhóm. Ở đây chỉ đủ để chứng minh
-// cookie phiên chạy thật trên preview — điều kiện "xong" của E1-T1.
 export default async function GroupsPage() {
   const user = await getCurrentUser()
   if (user === null) {
     redirect('/')
   }
 
-  return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-app flex-col justify-between px-6 pb-8 pt-8">
-      <div className="flex flex-col gap-2">
-        <span className="text-caption font-medium uppercase tracking-eyebrow text-accent">
-          Đã đăng nhập
-        </span>
-        <h1 className="text-title font-semibold text-ink">{user.displayName}</h1>
-        <p className="text-body font-normal text-ink-muted">{user.email}</p>
-      </div>
+  const groups = await listGroups({ groups: drizzleGroupRepository }, user.id)
 
-      <form action={signOutFromApp}>
-        <Button variant="secondary" type="submit">
-          Đăng xuất
-        </Button>
-      </form>
-    </main>
+  // Trang này không có Group context nên dùng fallback CHỈ để hiển thị.
+  const today = resolveDecisionDate(new Date(), DISPLAY_TIME_ZONE_FALLBACK)
+
+  return (
+    <GroupListScreen
+      dateCaption={formatVietnameseDate(today)}
+      groups={groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        // E1-T7 thay bằng trạng thái phiên thật. Không bịa số liệu ở đây.
+        status: 'Chưa mở phiên hôm nay',
+        meta: `${group.memberCount} người`,
+      }))}
+    />
   )
 }

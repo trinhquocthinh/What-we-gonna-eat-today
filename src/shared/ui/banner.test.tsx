@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { Banner } from './banner'
+import { Banner } from '@/shared/ui/banner'
 
 describe('Banner', () => {
   it('tone danger thì có role alert và hiện đúng câu', () => {

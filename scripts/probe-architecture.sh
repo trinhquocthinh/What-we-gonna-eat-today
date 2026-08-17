@@ -24,6 +24,12 @@ PROBES=(
 cleanup() { rm -f "${PROBES[@]}"; }
 trap cleanup EXIT
 
+mkdir -p \
+  src/features/selection/application \
+  src/features/history/domain \
+  src/features/selection/domain \
+  src/features/selection/presentation/components
+
 cat > src/features/selection/application/_probe-port.ts <<'EOF'
 export type ProbePort = { readonly ok: boolean }
 EOF
@@ -62,7 +68,7 @@ import { probeValue } from '../../history/domain/_probe-target'
 export const ok = probeValue
 EOF
 
-yarn eslint "${PROBES[@]}" --format json > .probe-result.json 2>/dev/null || true
+npx eslint "${PROBES[@]}" --format json > .probe-result.json 2>/dev/null || true
 trap 'cleanup; rm -f .probe-result.json' EXIT
 
 node --input-type=module <<'NODE'

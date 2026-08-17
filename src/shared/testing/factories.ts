@@ -19,3 +19,29 @@ export function makeUser(overrides: Partial<TestUser> = {}): TestUser {
     ...overrides,
   }
 }
+
+export type TestGroup = {
+  id: string
+  name: string
+  timezone: string
+  creatorUserId: string
+}
+
+export function makeGroup(overrides: Partial<TestGroup> = {}): TestGroup {
+  return {
+    id: '01920000-0000-7000-8000-0000000000a1',
+    name: 'Nhà Bảy Hiền',
+    timezone: 'Asia/Ho_Chi_Minh',
+    creatorUserId: '01920000-0000-7000-8000-000000000001',
+    ...overrides,
+  }
+}
+
+export type TestMembership = {
+  isAdmin: boolean
+  removedAt: Date | null
+}
+
+export function makeMembership(overrides: Partial<TestMembership> = {}): TestMembership {
+  return { isAdmin: false, removedAt: null, ...overrides }
+}
