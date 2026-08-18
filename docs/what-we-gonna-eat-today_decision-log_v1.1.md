@@ -589,6 +589,125 @@ Any new call site that needs a Group's actual timezone must read it from `groups
 
 ---
 
+# DEC-018 — Database Enums Defined with `pgEnum`
+
+**Date:** 2026-08-18  
+**Status:** Accepted
+
+## Decision
+
+`group_dishes.state` (and subsequent DB enums) uses `pgEnum('group_dish_state', ['ACTIVE', 'INACTIVE'])` rather than `text().$type<GroupDishState>()`.
+
+## Rationale
+
+1. Postgres rejects invalid enum values directly at the DB boundary, avoiding subtle bugs where lower-cased or typos (e.g. `'active'`) get skipped in `WHERE state = 'ACTIVE'`.
+2. Drizzle automatically infers the TS literal union `'ACTIVE' | 'INACTIVE'`.
+3. Verified in drizzle-kit: adding values to the array produces `ALTER TYPE ... ADD VALUE` in migrations automatically without manual SQL scripts.
+4. Domain types maintain clean decoupling (`domain/group-dish.ts` defines a pure union type; drizzle repository acts as compile-time assertion boundary).
+
+## Affected Documents
+
+- SDD v0.2 §2.1, §2.2; Tech Spec v0.2 §3.1, §3.3
+
+---
+
+# DEC-019 — Dish Name Normalization: Level 1 in E1, Diacritics Removal Deferred to E2-T3 with Backfill
+
+**Date:** 2026-08-18  
+**Status:** Accepted
+
+## Decision
+
+`normalizeDishName` in E1 performs Level 1 normalization: NFC canonical composition, whitespace collapsing/trimming, and lowercase. Vietnamese diacritics removal (Level 2) is deferred to E2-T3 and will be added directly into `src/features/dish/domain/normalize-name.ts` along with a required migration backfill script.
+
+## Rationale
+
+Creating `normalize-name.ts` with Level 1 normalization in E1 prevents code duplication and keeps a single source of truth for dish name matching. Deferring Level 2 keeps E1 walking skeleton minimal while explicitly establishing that E2-T3 must backfill `global_dishes.normalized_name`.
+
+## Affected Documents
+
+- SDD v0.2 SPEC-005, Master Plan v1.0 §3/§4
+
+---
+
+# DEC-020 — Route Revalidation and Client Router Refresh in Server Actions
+
+**Date:** 2026-08-18  
+**Status:** Accepted
+
+## Decision
+
+In `addDishAction`, `revalidatePath('/groups/${groupId}')` is called with the literal path (omitting type parameter) to invalidate the stale parent group overview page cache, and `refresh()` from `next/cache` is called to refresh the client router for the current page where the user stays.
+
+## Rationale
+
+`refresh()` is the designated Next.js 16 Server Action API for "read-your-own-writes" when remaining on the active page without invalidating unrelated data caches. `revalidatePath` with dynamic route segments requires a literal path to prevent blowing away the cache for all groups.
+
+## Affected Documents
+
+- Tech Spec v0.2 §2.1, Next.js 16 conventions
+
+---
+
+# DEC-021 — Error Boundary Components Use `retry` Prop in Next.js 16
+
+**Date:** 2026-08-18  
+**Status:** Accepted
+
+## Decision
+
+Error boundary components (`app/**/error.tsx`) accept `{ retry: () => void }` instead of `reset`.
+
+## Rationale
+
+In Next.js 16 (`03-file-conventions/error.md`), `reset()` merely clears the React error boundary state and re-renders the old data, whereas `retry()` refetches data from the server and re-renders, matching the design intent of the "Thử lại" (Retry) action.
+
+## Affected Documents
+
+- Tech Spec v0.2 §2.1, S-02/S-05 error designs
+
+---
+
+# DEC-022 — State Adjustment During Render for Server Action State Transitions
+
+**Date:** 2026-08-18  
+**Status:** Accepted
+
+## Decision
+
+Client components handling Server Action state transitions (`DishCatalogScreen`) use React's official "adjust state during render" pattern (`if (state !== prevActionState) { setPrevActionState(state); if (state.addedDishName !== null) setSheetOpen(false); }`) instead of `useEffect([state])`.
+
+## Rationale
+
+1. Completely avoids React Compiler ESLint warning `react-hooks/set-state-in-effect` (cascading renders).
+2. Avoids the stale state / duplicate string comparison trap noted in guide §14 (where adding two dishes with identical names consecutively would fail to trigger effects that compare primitive string values).
+3. Executes synchronously before browser paint without an extra delayed render pass.
+
+## Affected Documents
+
+- Presentation layer components (`DishCatalogScreen`, S-05)
+
+---
+
+# DEC-023 — Animated Sheet Exit via `useSheetClose` Context
+
+**Date:** 2026-08-18  
+**Status:** Accepted
+
+## Decision
+
+`Sheet` exposes `useSheetClose()` via React Context to allow child components (e.g. "Đóng" button in `AddDishSheet`) as well as scrim clicks and `Escape` key events to trigger the `sheet-slide-down` and `scrim-fade-out` CSS animations before `onClose()` is invoked to unmount the sheet.
+
+## Rationale
+
+Calling `onClose()` directly from child buttons immediately unmounts the sheet from the DOM without playing exit animations. Managing the closing state (`isClosing`) internally and firing `onClose()` on `animationend` provides a polished, smooth slide-down exit while preserving a clean declarative API for callers.
+
+## Affected Documents
+
+- Shared UI (`Sheet`), Presentation components (`AddDishSheet`, S-06)
+
+---
+
 # Decision Index
 
 | ID | Decision | Status | Primary Impact |
@@ -610,6 +729,12 @@ Any new call site that needs a Group's actual timezone must read it from `groups
 | DEC-015 | neon-http `db.batch()` Is a Real Transaction; `db.transaction()` Is Not | Accepted | `GroupRepository` write path, future driver choice |
 | DEC-016 | Canonical IANA Time Zone Stored, Not User Input | Accepted | Group timezone storage, time zone picker matching |
 | DEC-017 | `DISPLAY_TIME_ZONE_FALLBACK` Is Display-Only, Never a Group Default | Accepted | `/groups` date caption vs. Group/Session timezone |
+| DEC-018 | Database Enums Defined with `pgEnum` | Accepted | Schema enum definitions, DB rejection of invalid values |
+| DEC-019 | Dish Name Normalization: Level 1 in E1, Diacritics Removal in E2-T3 with Backfill | Accepted | `normalize-name.ts`, backfill obligation |
+| DEC-020 | Route Revalidation and Client Router Refresh in Server Actions | Accepted | `refresh()`, literal `revalidatePath` |
+| DEC-021 | Error Boundary Components Use `retry` Prop in Next.js 16 | Accepted | `error.tsx` retry semantics |
+| DEC-022 | State Adjustment During Render for Server Action State Transitions | Accepted | `DishCatalogScreen`, no cascading `useEffect` |
+| DEC-023 | Animated Sheet Exit via `useSheetClose` Context | Accepted | `Sheet`, `AddDishSheet`, slide-down transition |
 
 
 ---
@@ -618,9 +743,13 @@ Any new call site that needs a Group's actual timezone must read it from `groups
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 2026-08-18 | Added DEC-022 (adjust state during render for Server Actions) and DEC-023 (animated sheet exit via useSheetClose) |
+| 1.5 | 2026-08-18 | Added DEC-018 through DEC-021 for E1-T5 (S3 Dish thô): pgEnum DB enums, Level 1 normalize-name, refresh()/revalidatePath in Server Actions, and error.tsx retry prop |
 | 1.4 | 2026-08-17 | Added DEC-015 through DEC-017 for E1-T2/E1-T3/E1-T4: neon-http batch transaction semantics, canonical timezone storage, and display-only fallback timezone |
 | 1.3 | 2026-08-17 | Added DEC-013 for the `next-auth` beta pin and DEC-014 for the `provisionUser` throw-at-boundary behavior in E1-T1 |
 | 1.2 | 2026-08-14 | Added DEC-012 for ranking model, implicit preference smoothing, 7-day cooldown, 20% exploration and evidence-only Session Ranking |
 | 1.1 | 2026-07-29 | Added DEC-010 for Group Rule / Session Rule structure, snapshot and override semantics |
 | 1.1 | 2026-07-29 | Added DEC-011 for finalize validation, warning audit and ranking boundary |
 | 1.0 | 2026-07-23 | Initial decision log with DEC-001 through DEC-009 |
+
+

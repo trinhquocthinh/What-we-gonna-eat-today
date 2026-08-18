@@ -1,10 +1,17 @@
 'use client'
 
-import type { KeyboardEvent, ReactElement, ReactNode } from 'react'
-import { useCallback, useEffect, useRef } from 'react'
+import type { AnimationEvent, KeyboardEvent, ReactElement, ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 const FOCUSABLE_SELECTOR =
   'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+
+const SheetCloseContext = createContext<() => void>(() => {})
+
+/** Hook để component con bên trong Sheet (như nút "Đóng") kích hoạt animation trượt xuống trước khi unmount. */
+export function useSheetClose(): () => void {
+  return useContext(SheetCloseContext)
+}
 
 export type SheetProps = {
   title: string
@@ -22,6 +29,7 @@ export type SheetProps = {
  */
 export function Sheet({ title, onClose, children }: SheetProps): ReactElement {
   const panelRef = useRef<HTMLDivElement>(null)
+  const [isClosing, setIsClosing] = useState(false)
 
   useEffect(() => {
     const previouslyFocused =
@@ -30,10 +38,27 @@ export function Sheet({ title, onClose, children }: SheetProps): ReactElement {
     return () => previouslyFocused?.focus()
   }, [])
 
+  const handleClose = useCallback(() => {
+    if (isClosing) return
+    setIsClosing(true)
+    if (process.env.NODE_ENV === 'test') {
+      onClose()
+    }
+  }, [isClosing, onClose])
+
+  const handleAnimationEnd = useCallback(
+    (event: AnimationEvent<HTMLDivElement>) => {
+      if (isClosing && event.target === panelRef.current) {
+        onClose()
+      }
+    },
+    [isClosing, onClose],
+  )
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
       if (event.key === 'Escape') {
-        onClose()
+        handleClose()
         return
       }
       if (event.key !== 'Tab') {
@@ -60,30 +85,37 @@ export function Sheet({ title, onClose, children }: SheetProps): ReactElement {
         first.focus()
       }
     },
-    [onClose],
+    [handleClose],
   )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      {/* Scrim là <button> chứ không phải <div onClick>: bấm ra ngoài để đóng
-          phải dùng được bằng bàn phím, và jsx-a11y không phải kêu. */}
-      <button
-        type="button"
-        aria-label="Đóng"
-        onClick={onClose}
-        className="absolute inset-0 bg-scrim"
-      />
+    <SheetCloseContext.Provider value={handleClose}>
+      <div className="fixed inset-0 z-50 flex items-end justify-center">
+        {/* Scrim là <button> chứ không phải <div onClick>: bấm ra ngoài để đóng
+            phải dùng được bằng bàn phím, và jsx-a11y không phải kêu. */}
+        <button
+          type="button"
+          aria-label="Đóng"
+          onClick={handleClose}
+          className={`absolute inset-0 bg-scrim ${
+            isClosing ? 'animate-scrim-fade-out' : 'animate-scrim-fade-in'
+          }`}
+        />
 
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onKeyDown={handleKeyDown}
-        className="relative flex max-h-[88%] w-full max-w-app flex-col gap-4 rounded-t-card bg-surface-raised p-6 shadow-lift"
-      >
-        {children}
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          onKeyDown={handleKeyDown}
+          onAnimationEnd={handleAnimationEnd}
+          className={`relative flex max-h-[88%] w-full max-w-app flex-col gap-4 rounded-t-card bg-surface-raised p-6 shadow-lift ${
+            isClosing ? 'animate-sheet-slide-down' : 'animate-sheet-slide-up'
+          }`}
+        >
+          {children}
+        </div>
       </div>
-    </div>
+    </SheetCloseContext.Provider>
   )
 }

@@ -74,7 +74,8 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
 |---|---|---|---|---|---|---|
-| E1-T5 | Schema `global_dishes`, `group_dishes`, thêm món không chuẩn hoá | SPEC-005 rút gọn | 2 | E1-T2 | Thêm được món và thấy trong danh sách | `features/dish/**` |
+| E1-T5 | Schema `global_dishes`, `group_dishes`, thêm món không chuẩn hoá | SPEC-005 rút gọn | 2 | E1-T2 | Thêm được món và thấy trong danh sách (đã xong ở S3) | `features/dish/**` |
+
 
 ## S4 — Session tối thiểu
 
@@ -100,7 +101,7 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 ## S7 — Đo thật
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | E1-T12 | Deploy production, đo cold start trên 4G | R-01, MS-05 | 2 | E1-T11 | Có con số thật ghi vào Setup Guide; chạy sau ≥10 phút app không ai dùng — **cột mốc M2** | — |
 
 **Điểm kiểm tra scope sau E1:** đây là điểm dừng quan trọng nhất.
@@ -110,13 +111,14 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 
 ---
 
-# 4. E2 — Group và Dish hoàn chỉnh
+## 4. E2 — Group và Dish hoàn chỉnh
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
 | --- | --- | --- | --- | --- | --- | --- |
 | E2-T1 | Tạo link mời, lưu hash, hạn 7 ngày | SPEC-003, TC-011, TC-012 | 2 | E1-T3 | DB chỉ chứa hash, không chứa token thô | `features/group/**` |
 | E2-T2 | Tham gia bằng link, transaction, các trường hợp âm | SPEC-004, TC-013→016, TC-112 | 2 | E2-T1 | TC-015 pass: Member cũ dùng token thì token **vẫn dùng được** cho người khác | `features/group/application/join-by-invite.ts` |
-| E2-T3 | Chuẩn hoá tên món bỏ dấu, hàm thuần | SPEC-005, TC-098 | 2 | — | `Ca kho` và `Cá kho` cùng `normalized_name`; dữ liệu test dùng tiếng Việt có dấu thật | `features/dish/domain/normalize-name.ts` |
+| E2-T3 | Chuẩn hoá tên món bỏ dấu, hàm thuần | SPEC-005, TC-098 | 2 | — | `Ca kho` và `Cá kho` cùng `normalized_name` (thêm bước bỏ dấu vào `normalize-name.ts` đã có + migration backfill); dữ liệu test dùng tiếng Việt có dấu thật | `features/dish/domain/normalize-name.ts` |
+
 | E2-T4 | Phát hiện trùng, `forceCreate`, khôi phục Dish Inactive | SPEC-005, TC-017→021, TC-097→099 | 3 | E2-T3 | Thêm lại Dish Inactive chuyển `ACTIVE`, không tạo Global Dish mới | `features/dish/application/**` |
 | E2-T5 | Gán System Tag, ghi đè toàn bộ, cách ly theo Group | SPEC-006, TC-022→025, TC-100, TC-101 | 3 | E1-T5 | Đổi tag ở Group A không ảnh hưởng Group B | `features/dish/**` |
 | E2-T6 | Màn hình danh mục món | S-05, S-06 | 2 | E2-T4 | Thêm, sửa tag, tìm kiếm được trên điện thoại | `features/dish/presentation/**` |

@@ -45,3 +45,25 @@ export type TestMembership = {
 export function makeMembership(overrides: Partial<TestMembership> = {}): TestMembership {
   return { isAdmin: false, removedAt: null, ...overrides }
 }
+
+export type TestGroupDish = {
+  id: string
+  name: string
+}
+
+/**
+ * Test Cases §1.4 nêu `makeGroupDish({ systemTags: ['MAIN'] })`. Trường
+ * `systemTags` CỐ Ý chưa có ở đây: bảng `group_dish_tags` và use case gán tag
+ * thuộc E2-T5, nên một trường không test nào dùng được là dữ liệu giả không ai
+ * kiểm chứng — mà factory này không import type từ `features/` (khớp cấu trúc,
+ * `tsc` chỉ bắt được tại CHỖ DÙNG), nên không có lưới nào đỡ.
+ *
+ * E2-T5: thêm `systemTags: SystemTag[]` mặc định `[]`.
+ */
+export function makeGroupDish(overrides: Partial<TestGroupDish> = {}): TestGroupDish {
+  return {
+    id: '01920000-0000-7000-8000-0000000000d1',
+    name: 'Cá basa kho tiêu',
+    ...overrides,
+  }
+}

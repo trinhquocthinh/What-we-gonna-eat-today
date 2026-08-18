@@ -69,6 +69,10 @@
 
   /* Design Handoff: khối --surface-sunken, opacity .55↔1, chu kỳ 1.4s. Không vòng quay. */
   --animate-skeleton: skeleton 1.4s ease-in-out infinite;
+  --animate-sheet-slide-up: sheet-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-sheet-slide-down: sheet-slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-scrim-fade-in: scrim-fade-in 0.2s ease-out;
+  --animate-scrim-fade-out: scrim-fade-out 0.2s ease-out forwards;
 
   @keyframes skeleton {
     0%,
@@ -77,6 +81,42 @@
     }
     50% {
       opacity: 1;
+    }
+  }
+
+  @keyframes sheet-slide-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes sheet-slide-down {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes scrim-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scrim-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
     }
   }
 }

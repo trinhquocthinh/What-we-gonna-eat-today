@@ -15,6 +15,13 @@
       "when": 1786954564404,
       "tag": "0001_group_and_members",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787025680713,
+      "tag": "0002_global_and_group_dishes",
+      "breakpoints": true
     }
   ]
 }
