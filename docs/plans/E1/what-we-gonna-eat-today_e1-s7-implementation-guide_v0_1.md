@@ -52,7 +52,7 @@ Vercel đã nối với GitHub repo và tự deploy khi merge vào `main` từ *
 ## 3.1 Biến môi trường (Vercel Dashboard → Project → Settings → Environment Variables, scope **Production**)
 
 | Biến | Giá trị | Ghi chú |
-|---|---|---|
+| --- | --- | --- |
 | `DATABASE_URL` | Connection string Neon branch **`main`** | Khác branch `dev`/`test`/preview — đây là dữ liệu thật |
 | `AUTH_SECRET` | `openssl rand -base64 32` — **giá trị RIÊNG**, không dùng lại của local | Setup Guide §3: *"Production và local KHÔNG dùng chung giá trị."* |
 | `AUTH_URL` | **ĐỂ TRỐNG** | Đã verify ở guide S1 (`reqWithEnvURL`): biến này ghi đè origin của MỌI request. Đặt giá trị vào sẽ làm sai origin trên chính production. `VERCEL=1` (Vercel tự đặt) đã đủ để `next-auth` bật `trustHost` |
@@ -61,9 +61,11 @@ Vercel đã nối với GitHub repo và tự deploy khi merge vào `main` từ *
 ## 3.2 Google Cloud Console — thêm redirect URI production
 
 APIs & Services → Credentials → OAuth Client đã tạo ở S1 → Authorized redirect URIs → thêm:
+
 ```
 https://<domain-production>/api/auth/callback/google
 ```
+
 (Đường dẫn `/api/auth/callback/google` đã verify từ mã nguồn `@auth/core` ở guide S1 — không phải đoán.) Nếu domain production chưa có (chỉ dùng domain Vercel mặc định `*.vercel.app`), dùng chính domain đó.
 
 **Nếu app còn ở Google OAuth consent screen dạng "Testing"** (S1 đã đặt): mọi người dùng thật (không chỉ Test Users) sẽ bị Google chặn đăng nhập. Với quy mô một gia đình dưới 10 người, thêm từng email vào danh sách Test Users là đủ — không cần nộp app để Google verify (đó là quy trình cho ứng dụng công khai).
@@ -75,9 +77,11 @@ https://<domain-production>/api/auth/callback/google
 1. Merge PR chứa E1-T1 → E1-T11 vào `main` (nếu chưa merge) — hoặc nếu đã merge từng phần qua các slice, xác nhận `main` hiện tại có đủ toàn bộ.
 2. Vercel tự build + chạy migration trong bước build (Tech Spec §6.2: *"Migration chạy trong bước build của Vercel. Không có migration tự động khi runtime khởi động."*). Theo dõi Vercel Dashboard → Deployments cho tới khi build xanh.
 3. Xác nhận migration đã áp đúng lên branch `main`:
+
    ```bash
    DATABASE_URL="<connection string branch main>" yarn db:studio
    ```
+
    Thấy đủ bảng: `users`, `groups`, `group_members`, `selection_sessions`, `participants`, `global_dishes`, `group_dishes`, `interactions`, `interaction_events`, `final_meals`, `final_meal_items`, `eating_history`. Nếu thiếu bảng nào, dừng lại — đừng chạy MS-01/MS-05 trên schema thiếu.
 
 **Nếu build thất bại**: xem Setup & Ops Guide §8 "Sự cố thường gặp" — dòng *"Build thất bại ở bước migration | Migration xung đột với schema hiện có | Kiểm tra thứ tự file migration"*. Đây đúng là chỗ rủi ro "đụng số thứ tự migration" mà S3/S4/S5/S6 đều đã cảnh báo nếu code không theo đúng thứ tự.
@@ -101,6 +105,7 @@ Cả hai chạy **trên điện thoại thật, mạng di động — không wif
 7. **Đạt**: thấy `selection_sessions.state = 'FINALIZED'` và `eating_history` có dòng của chính mình (qua `yarn db:studio`, vì S6 không có UI để tự xem).
 
 **Ghi chú quan trọng**: S4 (tạo/Start Session) và S6 (lưu nháp/Finalize) **chưa có route UI** theo đúng thiết kế walking-skeleton của chúng (Master Plan cột "File" của E1-T6/T7/T10/T11 không có `app/`). Nếu tới lúc chạy MS-01 mà chưa có cách nào gọi các use case này từ giao diện, hai lựa chọn:
+
 - (a) Viết tạm một route/script gọi thẳng use case (không cần đẹp, xoá sau khi đo xong) — đúng tinh thần walking skeleton "chạy thật, không cần đẹp".
 - (b) Gọi trực tiếp qua một Node REPL/script tạm import `createSession`/`startSession`/`saveFinalMealDraft`/`finalizeSession` với `getDb()` đã trỏ production.
 
@@ -150,6 +155,7 @@ Guide S5 (deck page) **không tạo `loading.tsx`** cho route này — khác `ap
 Sau khi thêm, deploy lại, đo lại 3 lần (§5.2).
 
 **Bước 2 — nếu vẫn vượt 2.5 giây sau khi đã thử bước 1**: nới ngưỡng NFR-01 lên **4 giây**. Đây là quyết định **đã được duyệt trước** trong Master Plan — không phải một lựa chọn mới cần bàn lại, và **không đổi database** (Master Plan nói rõ đổi database "tốn hơn nhiều so với lợi ích" ở giai đoạn này). Cập nhật:
+
 - `docs/what-we-gonna-eat-today_prd_v0_1.md` — sửa dòng NFR-01 từ "≤ 2.5s" thành "≤ 4s", thêm ghi chú ngày đổi + lý do (trỏ về DEC mới, xem dưới).
 - Thêm một mục vào Decision Log (DEC-021, theo khuôn các entry trước) ghi lại: số đo thật, việc đã thử shell-tĩnh-trước, và quyết định nới ngưỡng.
 
@@ -209,6 +215,7 @@ PRD v0.4 §5 NFR-01 updated from "≤ 2.5s" to "≤ 4s". Future re-measurement (
 ```markdown
 | E1-T12 | Deploy production, đo cold start trên 4G | R-01, MS-05 | 2 | E1-T11 | ... | — | ☒ |
 ```
+
 Và thêm một dòng ghi ngày đạt milestone **M2** (theo đúng khuôn các milestone trước — kiểm cách E0-T7/M1 đã được đánh dấu trong file để ghi nhất quán).
 
 ---
@@ -216,7 +223,7 @@ Và thêm một dòng ghi ngày đạt milestone **M2** (theo đúng khuôn các
 # 8. Rủi ro
 
 | Rủi ro | Dấu hiệu | Phương án |
-|---|---|---|
+| --- | --- | --- |
 | Đo MS-05 nhưng thực ra Neon chưa kịp ngủ (đo sớm hơn 10 phút thật) | Số đo thấp bất thường, không khớp cảm nhận thực tế lúc dùng app buổi sáng | Đảm bảo THẬT SỰ không ai chạm app — kể cả preview deploy khác, kể cả chính bạn bấm thử trước đó. Dùng đồng hồ đếm ngược, đừng ước lượng |
 | Google OAuth chặn người dùng thật vì app còn "Testing" | Người nhà đăng nhập bị báo lỗi quyền truy cập | Thêm email từng người vào Test Users (§3.2) trước khi họ thử |
 | `AUTH_URL` bị đặt nhầm giá trị trên Vercel Production | Đăng nhập redirect sai domain | Xoá biến đó khỏi scope Production nếu có, chỉ giữ ở `.env.local` |

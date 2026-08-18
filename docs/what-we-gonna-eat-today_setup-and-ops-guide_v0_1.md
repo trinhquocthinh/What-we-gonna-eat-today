@@ -286,6 +286,16 @@ Vercel Dashboard → Deployments → chọn bản trước đó → Promote to P
 
 Việc này quay lui **mã nguồn**, không quay lui **database**. Nếu bản vừa deploy có migration phá vỡ tương thích, quay lui mã nguồn sẽ khiến ứng dụng cũ gặp schema mới. Xem §6.
 
+## 5.4 Đo cold start thật (M2)
+
+Đo theo MS-05 (Test Cases Specification §4), điện thoại thật, mạng di động, sau ≥10 phút không ai dùng app.
+
+| Ngày đo | Thiết bị | Mạng | Lần 1 | Lần 2 | Lần 3 | Kết luận |
+|---|---|---|---|---|---|---|
+| 🔒 <YYYY-MM-DD> | 🔒 <model điện thoại> | 🔒 <nhà mạng, 4G/5G> | 🔒 <giây> | 🔒 <giây> | 🔒 <giây> | 🔒 Đạt NFR-01 (≤2.5s) / Đạt sau khi nới lên 4s / Chưa đạt |
+
+Nếu đã thêm `loading.tsx` để qua ngưỡng (§6.2 Implementation Guide S7), ghi rõ **số đo TRƯỚC và SAU** khi thêm, không chỉ số cuối cùng — số liệu trước/sau là bằng chứng cho quyết định trong Decision Log.
+
 ---
 
 # 6. Migration và quay lui
@@ -430,3 +440,4 @@ Kiểm tra mỗi quý. Số liệu xác minh ngày 2026-08-14; hạn mức free 
 | 0.1 | 2026-08-14 | Toàn bộ | Bản draft đầu tiên; phiên bản Node và hạn mức free tier xác minh 2026-08-14 | Phase 8.3 |
 | 0.1 | 2026-08-18 | §3, §3.1 mới | Thêm hướng dẫn chuyển sang Authentik; đánh dấu `AUTH_GOOGLE_*` là tạm | App là một service trong Family Hub, danh tính dùng chung đến từ Authentik. Chốt hai quyết định: subject mode UUID bất biến, và Authentik lo xác thực còn app lo phân quyền |
 | 0.1 | 2026-08-18 | §3.2 mới | Thêm hướng dẫn tạo Neon branch `test` + GitHub secret `DATABASE_URL_TEST` cho integration test | E1-S4 thêm integration test chạy trên database thật để kiểm tra race conditions (TC-107) và ràng buộc toàn vẹn |
+| 0.1 | 2026-08-18 | §5.4 mới | Thêm bảng ghi nhận số đo cold start thật (M2) theo MS-05 | E1-S7 runbook thao tác đo cold start trên production |
