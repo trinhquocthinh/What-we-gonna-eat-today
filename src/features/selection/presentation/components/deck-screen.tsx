@@ -1,0 +1,221 @@
+'use client'
+
+import type { ReactElement } from 'react'
+import { useState } from 'react'
+
+import { Button } from '@/shared/ui/button'
+
+import type { DishCard } from '../../domain/dish-card'
+import type { SwipeDirection } from '../../domain/swipe-gesture'
+import { DishSwipeCard } from './dish-swipe-card'
+import type { SendInteractionStatus } from './send-interaction'
+import { sendInteractionWithRetry } from './send-interaction'
+
+export type DeckScreenProps = {
+  sessionId: string
+  dateCaption: string
+  dishes: DishCard[]
+}
+
+type ViewState = 'deck' | 'done'
+
+const GENERIC_EXPLANATION = 'Món này đang có trong danh mục của nhóm.'
+const NEVER_EATEN_LABEL = 'Chưa từng ăn' // eating_history chưa tồn tại (E1-T11)
+
+/**
+ * S-09 Deck vuốt ⭐ màn hình chính.
+ *
+ * E1-T8 dựng TOÀN BỘ UI này với dữ liệu deck thật, hành động chỉ đổi state
+ * cục bộ. E1-T9 thêm `sendInteractionWithRetry` vào `commit()` — cùng một
+ * UI, không viết lại (Implementation Guide §2.1).
+ *
+ * CỐ Ý CHƯA CÓ ở S5 (F15/F18, v1.1): nút "Tôi không ăn được món này", đổi màu
+ * reason chip theo explore lane.
+ */
+export function DeckScreen({ sessionId, dateCaption, dishes }: DeckScreenProps): ReactElement {
+  const [cursor, setCursor] = useState(0)
+  const [marks, setMarks] = useState<Array<'yes' | 'no'>>([])
+  const [view, setView] = useState<ViewState>('deck')
+  const [sendStatus, setSendStatus] = useState<SendInteractionStatus>('idle')
+  const [failedCount, setFailedCount] = useState(0)
+
+  const current = dishes[cursor]
+  const isEmpty = view === 'deck' && current === undefined
+  const isDeck = view === 'deck' && current !== undefined
+  const isDone = view === 'done'
+
+  const yesCount = marks.filter((m) => m === 'yes').length
+  const noCount = marks.filter((m) => m === 'no').length
+  const total = dishes.length
+  const progress = `${Math.min(cursor + 1, total)} / ${total}`
+  const progressPercent = total === 0 ? 0 : Math.round((Math.min(cursor, total) / total) * 100)
+
+  function handleCommit(direction: SwipeDirection, dishId: string) {
+    if (direction === 0) return
+    setMarks((m) => [...m, direction === 1 ? 'yes' : 'no'])
+    setCursor((c) => c + 1)
+
+    const action = direction === 1 ? 'SWIPE_RIGHT' : 'SWIPE_LEFT'
+    // Fire-and-forget có chủ ý: UI đã tiến rồi (optimistic), không await ở đây
+    // — nhiều lượt vuốt liên tiếp gửi song song, đúng lý do chọn Route Handler
+    // thay Server Action (Tech Spec §4.1).
+    void sendInteractionWithRetry(sessionId, { dishId, action }, (status) => {
+      setSendStatus(status)
+      if (status === 'failed') setFailedCount((n) => n + 1)
+    })
+  }
+
+  function handleUndo() {
+    if (cursor === 0) return
+    const previousDish = dishes[cursor - 1]
+    setCursor((c) => c - 1)
+    setMarks((m) => m.slice(0, -1))
+    if (previousDish !== undefined) {
+      void sendInteractionWithRetry(
+        sessionId,
+        { dishId: previousDish.dishId, action: 'UNDO' },
+        setSendStatus,
+      )
+    }
+  }
+
+  const upcoming = dishes.slice(cursor + 1, cursor + 3).map((d) => d.name)
+
+  return (
+    <main className="mx-auto flex min-h-dvh w-full max-w-app flex-col">
+      {sendStatus === 'idle' ? null : (
+        <div className="flex items-center gap-2 border-b border-border bg-warning-soft px-4 py-2">
+          <span aria-hidden className="h-4 w-hairline rounded-full bg-warning" />
+          <span className="text-caption font-medium text-ink">
+            {sendStatus === 'retrying'
+              ? 'Đang thử gửi lại · bạn vuốt tiếp được'
+              : `Không gửi được ${failedCount} lượt vuốt. Vuốt tiếp vẫn được.`}
+          </span>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 px-4 pb-3 pt-4">
+        <div className="flex min-h-6 items-center justify-between gap-3">
+          <span className="text-caption font-medium text-ink-muted">Bữa tối · {dateCaption}</span>
+          <span className="tabular text-caption font-semibold text-ink-muted">{progress}</span>
+        </div>
+        <div className="h-1 overflow-hidden rounded-full bg-surface-sunken">
+          <div
+            className="h-full rounded-full bg-accent transition-[width] duration-200 ease-out"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="relative min-h-0 flex-1 px-4 pt-2">
+        {isDeck && current !== undefined ? (
+          <>
+            <div className="absolute inset-x-10 top-0 h-35 rounded-card border border-border" />
+            <div className="absolute inset-x-7.5 top-1.25 h-35 rounded-card border border-border" />
+            <DishSwipeCard
+              dish={current}
+              lastEatenLabel={NEVER_EATEN_LABEL}
+              explanation={GENERIC_EXPLANATION}
+              upcomingNames={upcoming}
+              onCommit={handleCommit}
+            />
+          </>
+        ) : null}
+
+        {isEmpty ? (
+          <div className="flex h-full flex-col justify-center gap-3 px-2">
+            <h2 className="text-title font-semibold text-ink">Bạn đã xem hết {cursor} món.</h2>
+            <p className="text-pretty text-body-lg font-normal text-ink-muted">
+              Đã đề xuất {yesCount} món. Xong lượt của mình chứ?
+            </p>
+          </div>
+        ) : null}
+
+        {isDone ? (
+          <div className="flex h-full flex-col justify-center gap-4 px-2">
+            <h2 className="text-title font-semibold text-ink">Xong lượt của bạn.</h2>
+            <p className="text-pretty text-body-lg font-normal text-ink-muted">
+              Bạn đã đề xuất {yesCount} món và bỏ qua {noCount} món.
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-3 px-4 pb-8 pt-6">
+        {isDeck ? (
+          <>
+            <div className="flex gap-3">
+              {/* `flex-1` bù lại `w-full` mà size="lg" đặt trên chính button —
+                  không có nó hai nút sẽ co về kích thước chữ thay vì chia đôi
+                  hàng, đúng thiết kế "flex:1 mỗi nút". */}
+              <Button
+                type="button"
+                variant="no"
+                className="flex-1"
+                aria-label={
+                  current === undefined ? undefined : `Không muốn ăn ${current.name} hôm nay`
+                }
+                onClick={() => current !== undefined && handleCommit(-1, current.dishId)}
+              >
+                Không hôm nay
+              </Button>
+              <Button
+                type="button"
+                variant="yes"
+                className="flex-1"
+                aria-label={current === undefined ? undefined : `Đề xuất ${current.name}`}
+                onClick={() => current !== undefined && handleCommit(1, current.dishId)}
+              >
+                Đề xuất
+              </Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant="quiet"
+                size="sm"
+                disabled={cursor === 0}
+                onClick={handleUndo}
+              >
+                Hoàn tác
+              </Button>
+            </div>
+            <Button type="button" variant="quiet" size="sm" onClick={() => setView('done')}>
+              Tôi chọn xong
+            </Button>
+          </>
+        ) : null}
+
+        {isEmpty ? (
+          <>
+            <Button type="button" onClick={() => setView('done')}>
+              Tôi chọn xong
+            </Button>
+            <Button
+              type="button"
+              variant="quiet"
+              size="sm"
+              onClick={() => {
+                setCursor(0)
+                setMarks([])
+              }}
+            >
+              Xem lại từ đầu
+            </Button>
+          </>
+        ) : null}
+
+        {isDone ? (
+          <>
+            <Button type="button" variant="secondary" onClick={() => setView('deck')}>
+              Mở lại lượt chọn
+            </Button>
+            <span className="self-center text-caption font-medium text-ink-muted">
+              Sửa được cho tới khi Mẹ chốt bữa
+            </span>
+          </>
+        ) : null}
+      </div>
+    </main>
+  )
+}

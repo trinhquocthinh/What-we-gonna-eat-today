@@ -14,17 +14,17 @@
 # 0. Phạm vi và điều kiện xong
 
 | ID | Việc | Giờ | Xong nghĩa là |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | E1-T8 | Deck liệt kê không ranking, phân trang | 2 | Mở phiên thấy danh sách món, cuộn hết được |
 | E1-T9 | Route Handler ghi Interaction, optimistic UI | 3 | Vuốt 10 món liên tiếp không xếp hàng; TC-048→053 pass |
 
-- [ ] Mở `/sessions/<id>` thấy màn hình S-09 đầy đủ — chồng thẻ, tên món, tag (rỗng), footer, "Trong chồng"
-- [ ] Vuốt/bấm nút hai chiều hoạt động, thẻ bay đúng hướng, Hoàn tác lùi được, hết deck chuyển "Bạn đã xem hết N món.", bấm "Tôi chọn xong" chuyển "Xong lượt của bạn."
-- [ ] Mỗi lần vuốt gọi thật `POST /api/sessions/:id/interactions`, `yarn db:studio` thấy đúng dòng `interactions` (upsert) và `interaction_events` (append)
-- [ ] Ngắt mạng (DevTools → Network → Offline) khi đang vuốt → dải "Đang thử gửi lại · bạn vuốt tiếp được" hiện, thao tác vuốt **không bị chặn**
-- [ ] TC-045, TC-046, TC-047, TC-048, TC-049, TC-050, TC-051, TC-052 pass (tầng A); TC-053 pass (tầng I, `yarn test:integration`)
-- [ ] `yarn verify` · `yarn arch:probe` · `yarn build` xanh
-- [ ] PR link SPEC-010 (rút gọn), SPEC-011, SPEC-012, BR-040, BR-041, BR-042
+- [x] Mở `/sessions/<id>` thấy màn hình S-09 đầy đủ — chồng thẻ, tên món, tag (rỗng), footer, "Trong chồng"
+- [x] Vuốt/bấm nút hai chiều hoạt động, thẻ bay đúng hướng, Hoàn tác lùi được, hết deck chuyển "Bạn đã xem hết N món.", bấm "Tôi chọn xong" chuyển "Xong lượt của bạn."
+- [X] Mỗi lần vuốt gọi thật `POST /api/sessions/:id/interactions`, `yarn db:studio` thấy đúng dòng `interactions` (upsert) và `interaction_events` (append)
+- [X] Ngắt mạng (DevTools → Network → Offline) khi đang vuốt → dải "Đang thử gửi lại · bạn vuốt tiếp được" hiện, thao tác vuốt **không bị chặn**
+- [x] TC-045, TC-046, TC-047, TC-048, TC-049, TC-050, TC-051, TC-052 pass (tầng A); TC-053 pass (tầng I, `yarn test:integration`)
+- [x] `yarn verify` · `yarn arch:probe` · `yarn build` xanh
+- [x] PR link SPEC-010 (rút gọn), SPEC-011, SPEC-012, BR-040, BR-041, BR-042
 
 ---
 
@@ -36,9 +36,11 @@
 $ grep -rln "setPointerCapture" node_modules/jsdom/
 (không có kết quả nào)
 ```
+
 `PointerEvent` (constructor) có trong jsdom, nhưng `Element.prototype.setPointerCapture`/`releasePointerCapture`/`hasPointerCapture` **không được hiện thực** — cùng loại lỗ hổng jsdom mà S2 đã gặp với `dialog.showModal()`. Gọi thẳng `e.currentTarget.setPointerCapture(...)` trong test sẽ ném `TypeError`.
 
 → Hai hệ quả bắt buộc trong thiết kế (§3.6):
+
 - Gọi bằng optional chaining: `e.currentTarget.setPointerCapture?.(e.pointerId)` — đây còn là **thực hành tốt cho trình duyệt thật** (một số trình duyệt cũ/thiết bị không hỗ trợ), không chỉ để né jsdom.
 - Tách toàn bộ **toán học của cử chỉ** (ngưỡng commit, góc xoay, hướng kéo) thành hàm thuần không đụng DOM — test được đầy đủ mà không cần giả lập pointer event nào.
 
@@ -52,9 +54,11 @@ Và có helper `RouteContext<'/users/[id]'>` (dòng 107-115) — **không dùng*
 ## 1.3 `drizzle-orm` có `onConflictDoUpdate` — dùng cho upsert `interactions`
 
 `node_modules/drizzle-orm/pg-core/query-builders/insert.d.ts:171`:
+
 ```ts
 onConflictDoUpdate(config: PgInsertOnConflictDoUpdateConfig<this>): ...
 ```
+
 Cú pháp: `.insert(t).values(...).onConflictDoUpdate({ target: [...cols], set: {...} })`.
 
 ## 1.4 `session_decks` KHÔNG tạo ở S5
@@ -64,17 +68,20 @@ Tech Spec §3.1 có bảng `session_decks(session_id, user_id, ordered_dish_ids 
 ## 1.5 Định dạng ngày ngắn cho header S-09 — khác `formatVietnameseDate` đã có
 
 Header S-09 dùng **"Thứ Ba 16/8"** (weekday + space + ngày/tháng số), khác hẳn `formatVietnameseDate` của S2 vốn cho ra **"Thứ Ba · 18 tháng 8"** (dùng ở S-02/S-04). Đã verify bằng `Intl` thật:
+
 ```js
 new Intl.DateTimeFormat('vi-VN', { timeZone: 'UTC', weekday: 'long' }).format(d)   // 'Thứ Ba'
 new Intl.DateTimeFormat('vi-VN', { timeZone: 'UTC', day: 'numeric' }).format(d)    // '18'
 new Intl.DateTimeFormat('vi-VN', { timeZone: 'UTC', month: 'numeric' }).format(d)  // '8'
 // ghép: 'Thứ Ba 18/8'
 ```
+
 → Thêm hàm mới `formatVietnameseDateShort` vào `src/shared/time/format-vietnamese-date.ts` (§7), **không sửa** `formatVietnameseDate` hiện có.
 
 ## 1.6 `SessionRepository` (S4) thiếu một method mà S5 cần — đã patch trực tiếp vào guide S4
 
 Trang deck cần đọc lại một Session đã tồn tại (lấy `groupId` để gọi `assertGroupAccess`, lấy `decisionDate` để hiện header) — S4 không có method này vì S4 không có route nào cần đọc lại Session. Đã **sửa `docs/plans/what-we-gonna-eat-today_e1-s4-implementation-guide_v0_1.md`** (không phải đợi review riêng — S4 chưa landed nên sửa trực tiếp không có rủi ro drift):
+
 - `SessionSummary.state` mở rộng từ `'DRAFT' | 'ACTIVE'` thành `SessionState` (đủ 4 giá trị) — vì `findById` có thể trả Session ở bất kỳ state nào.
 - Thêm `findById(sessionId): Promise<SessionSummary | null>` vào interface `SessionRepository` và vào `drizzleSessionRepository`.
 
@@ -107,6 +114,7 @@ Tech Spec §3.3: *"Deck của một Group ~30–100 Dish. Không phân trang ở
 ## 2.5 Hai giai đoạn cho `listEligibleDishCards` — trước và sau khi có bảng `interactions`
 
 `DishCard.effectiveInteraction` (SPEC-011) cần đọc từ bảng `interactions` — bảng đó **chưa tồn tại lúc code E1-T8** (nó được tạo ở E1-T9, §6.2). Vì vậy infra của `selection` có đúng MỘT method, `listEligibleDishCards`, nhưng **thân hàm viết hai lần theo hai giai đoạn**:
+
 - **Lúc code E1-T8**: JOIN `group_dishes` + `global_dishes`, hardcode `effectiveInteraction: null` (không có bảng nào để đọc từ).
 - **Lúc code E1-T9**: sửa lại CHÍNH hàm đó, thêm `LEFT JOIN interactions ON ... AND interactions.participant_id = $participantId`, đọc `interactions.type` thật.
 
@@ -126,9 +134,9 @@ Route Handler là chỗ ĐẦU TIÊN của dự án cần chuyển `ErrorCode` (
 
 Guide S1 ghi bẫy 1-8, S2 ghi 9-14, S3 ghi 15-18. **Không lặp lại.** Ba bẫy mới:
 
-19. **Route Handler `context.params` cũng là Promise, có `RouteContext` helper — không dùng** (§1.2).
-20. **`Response.json()` là cách trả JSON chuẩn** thay vì `NextResponse.json()` khi không cần các tiện ích riêng của `NextResponse` (set cookie, rewrite...) — Route Handler của S5 chỉ trả JSON thuần nên dùng `Response.json()` (Web API chuẩn, không phải API riêng của Next) cho nhẹ, đúng ví dụ đầu tiên trong chính docs Next 16 (`route.md:9-11`).
-21. **`request.json()` có thể throw nếu body không phải JSON hợp lệ** — bọc trong try/catch, trả `ERR_VALIDATION` (400) thay vì để lỗi 500 không rõ ràng.
+ 1. **Route Handler `context.params` cũng là Promise, có `RouteContext` helper — không dùng** (§1.2).
+ 2. **`Response.json()` là cách trả JSON chuẩn** thay vì `NextResponse.json()` khi không cần các tiện ích riêng của `NextResponse` (set cookie, rewrite...) — Route Handler của S5 chỉ trả JSON thuần nên dùng `Response.json()` (Web API chuẩn, không phải API riêng của Next) cho nhẹ, đúng ví dụ đầu tiên trong chính docs Next 16 (`route.md:9-11`).
+ 3. **`request.json()` có thể throw nếu body không phải JSON hợp lệ** — bọc trong try/catch, trả `ERR_VALIDATION` (400) thay vì để lỗi 500 không rõ ràng.
 
 ---
 
@@ -524,6 +532,7 @@ export function httpStatusForErrorCode(code: ErrorCode): number {
 `Record<ErrorCode, number>` bắt buộc liệt kê **đủ mọi thành viên** của union — nếu SDD §2.5 thêm mã lỗi mới mà quên thêm vào đây, `tsc` báo lỗi ngay, không rơi vào runtime.
 
 `http-error.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest'
 
@@ -1310,6 +1319,7 @@ type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'quietAccent' | 'yes' |
 ```
 
 Thêm vào `VARIANT_CLASSES` (giữ nguyên bốn dòng cũ của S2):
+
 ```ts
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   // …primary, secondary, quiet, quietAccent như S2…
@@ -2051,7 +2061,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
 # 14. Cấu hình phải sửa
 
 | File | Sửa gì |
-|---|---|
+| --- | --- |
 | `docs/plans/..._e1-s4-implementation-guide_v0_1.md` | **Đã patch** (§1.6): `SessionSummary.state` rộng thành `SessionState`, thêm `findById` vào port + infra |
 | `src/shared/ui/button.tsx` | +variant `yes`, +variant `no` (§12.0) — hai nút lớn của S-09, dùng lại được ở S-10 |
 | `src/shared/db/schema.ts` | +`interactionType`, +`interactionAction` (pgEnum), +`interactions`, +`interactionEvents` |
@@ -2071,7 +2081,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
 Nhánh `feat/deck-swipe-minimum`. Conventional Commits, scope `selection` / `db` / `app` / `ui`.
 
 | # | Việc | Test viết TRƯỚC | Tick |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 0 | Patch S4 guide (`findById`) nếu chưa làm; `yarn verify` xanh trên baseline S1-S4 | — | |
 | 1 | `domain/deck-page.ts` | **ĐỎ trước — TC-045/046/047 (phần thuần)** | |
 | 2 | `domain/interaction.ts` (chỉ type) | — | |
@@ -2134,7 +2144,7 @@ Env Preview trỏ Neon branch của PR; migration chạy trong build. Chạy l�
 # 17. Rủi ro
 
 | Rủi ro | Dấu hiệu | Phương án |
-|---|---|---|
+| --- | --- | --- |
 | jsdom thiếu `setPointerCapture` làm test cử chỉ thật crash | `TypeError: setPointerCapture is not a function` | Đã tránh bằng optional chaining (§12.1) + tách toán học ra `swipe-gesture.ts` test riêng (§5.3, §1.1) |
 | `db.batch()` cần tuple ≥1 phần tử | `tsc`: "not assignable to tuple" | Literal array 2 phần tử ở cả hai nhánh UNDO/upsert (§10.1) |
 | Quên sửa `listEligibleDishCards` ở giai đoạn E1-T9 (vẫn hardcode `null`) | `effectiveInteraction` luôn `null` dù đã có interaction thật | Bước 11 trong TDD order nhắc rõ; kiểm bằng `db:studio` đối chiếu UI |

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatVietnameseDate } from './format-vietnamese-date'
+import { formatVietnameseDate, formatVietnameseDateShort } from './format-vietnamese-date'
 
 describe('formatVietnameseDate', () => {
   it('dựng đúng chuỗi header của thiết kế', () => {
@@ -17,5 +17,11 @@ describe('formatVietnameseDate', () => {
 
   it('ném lỗi với chuỗi không phải ngày', () => {
     expect(() => formatVietnameseDate('hôm nay')).toThrow(RangeError)
+  })
+})
+
+describe('formatVietnameseDateShort', () => {
+  it('dựng đúng chuỗi header S-09', () => {
+    expect(formatVietnameseDateShort('2026-08-18')).toBe('Thứ Ba 18/8')
   })
 })

@@ -22,6 +22,7 @@
 
     // Tài liệu và mã đi kèm tài liệu, không thuộc source của app.
     "docs/**",
+    "scripts/**",
 
     // `--production` loại test ra khỏi phạm vi, nên file setup của Vitest luôn
     // trông như mồ côi. Nó được nạp qua `setupFiles` trong vitest.config.mts.

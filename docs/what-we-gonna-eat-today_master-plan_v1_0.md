@@ -88,8 +88,8 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
 | --- | --- | --- | --- | --- | --- | --- |
-| E1-T8 | Deck liệt kê không ranking, phân trang | SPEC-010 rút gọn, SPEC-011 | 2 | E1-T5, E1-T7 | Mở phiên thấy danh sách món, cuộn hết được | `features/selection/**` |
-| E1-T9 | Route Handler ghi Interaction, optimistic UI | SPEC-012, TC-048→053 | 3 | E1-T8 | Vuốt 10 món liên tiếp không xếp hàng; TC-048→053 pass | `app/api/sessions/[id]/interactions/route.ts` |
+| E1-T8 | Deck liệt kê không ranking, phân trang | SPEC-010 rút gọn, SPEC-011 | 2 | E1-T5, E1-T7 | Mở phiên thấy danh sách món, cuộn hết được (đã xong ở S5) | `features/selection/**` |
+| E1-T9 | Route Handler ghi Interaction, optimistic UI | SPEC-012, TC-048→053 | 3 | E1-T8 | Vuốt 10 món liên tiếp không xếp hàng; TC-048→053 pass (đã xong ở S5) | `app/api/sessions/[id]/interactions/route.ts` |
 
 ## S6 — Chốt bữa thô
 

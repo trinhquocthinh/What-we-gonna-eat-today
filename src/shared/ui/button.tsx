@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactElement } from 'react'
 
-type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'quietAccent'
+type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'quietAccent' | 'yes' | 'no'
 type ButtonSize = 'lg' | 'md' | 'sm'
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -28,6 +28,8 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
     'border border-border bg-surface-raised text-ink hover:border-border-strong hover:bg-surface active:bg-surface-sunken',
   quiet: 'bg-transparent text-ink-muted hover:bg-surface-sunken active:bg-border',
   quietAccent: 'bg-transparent text-accent hover:bg-surface-sunken active:bg-border',
+  yes: 'bg-yes text-on-accent shadow-button hover:bg-yes-hover active:bg-yes',
+  no: 'border border-border-strong bg-surface-raised text-no hover:border-no hover:text-ink active:bg-no-soft',
 }
 
 // Design Criteria: "Nút không được đổi kích thước khi chuyển sang trạng thái

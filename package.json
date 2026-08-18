@@ -25,6 +25,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "seed:dishes": "tsx scripts/scrape-and-seed-dishes.ts",
+    "session:start": "tsx scripts/create-test-session.ts",
     "prepare": "husky"
   },
   "dependenciesMeta": {
@@ -72,6 +74,7 @@
     "lint-staged": "17.3.0",
     "prettier": "3.9.6",
     "tailwindcss": "4.3.3",
+    "tsx": "4.23.12",
     "typescript": "6.0.3",
     "typescript-eslint": "8.67.0",
     "vite": "8.2.1",

@@ -237,3 +237,77 @@ export const participants = pgTable(
 
 export type SelectionSession = typeof selectionSessions.$inferSelect
 export type Participant = typeof participants.$inferSelect
+
+/**
+ * SDD §2.2. Không có giá trị `NONE` — "None" = không tồn tại row (xem
+ * `features/selection/domain/interaction.ts`).
+ */
+export const interactionType = pgEnum('interaction_type', ['SWIPE_RIGHT', 'SWIPE_LEFT'])
+
+/**
+ * Tên TỰ ĐẶT cho `interaction_events.action` — SDD không đặt tên riêng cho
+ * enum này. Ba giá trị vì UNDO là một sự kiện audit dù nó xoá row khỏi
+ * `interactions`.
+ */
+export const interactionAction = pgEnum('interaction_action', ['SWIPE_RIGHT', 'SWIPE_LEFT', 'UNDO'])
+
+/**
+ * Tech Spec §3.1, §3.2. Bảng EFFECTIVE STATE — luôn upsert, không append.
+ * Session Ranking (E4+) CHỈ đọc bảng này, không đọc `interaction_events`
+ * (Tech Spec §3.2: gộp làm một thì "mọi truy vấn ranking phải tự tìm bản ghi
+ * mới nhất theo timestamp — đắt và dễ sai").
+ */
+export const interactions = pgTable(
+  'interactions',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => selectionSessions.id),
+    participantId: uuid('participant_id')
+      .notNull()
+      .references(() => participants.id),
+    groupDishId: uuid('group_dish_id')
+      .notNull()
+      .references(() => groupDishes.id),
+    type: interactionType('type').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('interactions_session_participant_dish_unique').on(
+      table.sessionId,
+      table.participantId,
+      table.groupDishId,
+    ),
+    // Đường nóng Tech Spec §3.3: SPEC-014 Session Ranking (E4+).
+    index('interactions_session_id_idx').on(table.sessionId),
+  ],
+)
+
+/**
+ * Tech Spec §3.1, §3.2. Bảng APPEND-ONLY AUDIT — mọi request SPEC-012 (dù có
+ * đổi effective state hay không) đều thêm một dòng. KHÔNG dùng cho ranking.
+ */
+/* jscpd:ignore-start */
+export const interactionEvents = pgTable('interaction_events', {
+  id: uuid('id')
+    .primaryKey()
+    .$defaultFn(() => uuidv7()),
+  sessionId: uuid('session_id')
+    .notNull()
+    .references(() => selectionSessions.id),
+  participantId: uuid('participant_id')
+    .notNull()
+    .references(() => participants.id),
+  groupDishId: uuid('group_dish_id')
+    .notNull()
+    .references(() => groupDishes.id),
+  action: interactionAction('action').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+/* jscpd:ignore-end */
+
+export type Interaction = typeof interactions.$inferSelect
+export type InteractionEvent = typeof interactionEvents.$inferSelect

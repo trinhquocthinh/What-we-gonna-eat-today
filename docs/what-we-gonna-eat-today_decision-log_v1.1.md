@@ -736,6 +736,30 @@ The `neon-serverless` (WebSocket) driver is deferred to **E3-T1**, where snapsho
 
 ---
 
+# DEC-025 — `interaction_events` Logs Every SPEC-012 Request, Including Idempotent Repeats
+
+**Date:** 2026-08-18  
+**Status:** Accepted
+
+## Decision
+
+Mỗi request SPEC-012 hợp lệ (không bị chặn bởi validation) luôn ghi thêm đúng một dòng vào `interaction_events`, kể cả khi `action` gửi lên trùng với effective interaction hiện tại (ví dụ gửi `SWIPE_RIGHT` hai lần liên tiếp cho cùng một Dish). `interactions` (effective state) vẫn chỉ có đúng một dòng nhờ `onConflictDoUpdate` theo unique index `(session_id, participant_id, group_dish_id)`.
+
+## Rationale
+
+SPEC-012 viết "Mọi thay đổi đều ghi thêm một dòng vào `interaction_events`" nhưng không định nghĩa "thay đổi" là theo request hay theo delta của effective state. Đọc "thay đổi" là "mọi lượt request" phù hợp hơn với vai trò của bảng: `interaction_events` là audit log append-only (Tech Spec §3.1, §3.2), ghi lại hành vi thật của User kể cả khi lặp lại — không phải một delta log chỉ ghi khi state đổi. TC-053 chỉ khẳng định effective interaction không đổi khi gửi lặp, không khẳng định số dòng event, nên cách đọc này không vi phạm test case nào đã có.
+
+## Consequence
+
+`drizzle-selection-repository.ts#applyInteraction` luôn insert vào `interactionEvents` trong cùng `db.batch()` với upsert/delete `interactions`, không có nhánh so sánh giá trị cũ trước khi ghi event.
+
+## Affected Documents
+
+- Tech Spec v0.2 §3.1, §3.2
+- SDD v0.2 SPEC-012
+
+---
+
 # Decision Index
 
 | ID | Decision | Status | Primary Impact |
@@ -764,6 +788,7 @@ The `neon-serverless` (WebSocket) driver is deferred to **E3-T1**, where snapsho
 | DEC-022 | State Adjustment During Render for Server Action State Transitions | Accepted | `DishCatalogScreen`, no cascading `useEffect` |
 | DEC-023 | Animated Sheet Exit via `useSheetClose` Context | Accepted | `Sheet`, `AddDishSheet`, slide-down transition |
 | DEC-024 | E1-T7's Minimal `startSession` Does Not Need the WebSocket Driver | Accepted | `startSession` implementation, partial unique index race handling |
+| DEC-025 | `interaction_events` Logs Every SPEC-012 Request, Including Idempotent Repeats | Accepted | `applyInteraction` audit logging semantics |
 
 ---
 
@@ -771,6 +796,7 @@ The `neon-serverless` (WebSocket) driver is deferred to **E3-T1**, where snapsho
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8 | 2026-08-18 | Added DEC-025 for E1-T9 (S5 Deck và swipe thô): interaction_events logs every request, including idempotent repeats |
 | 1.7 | 2026-08-18 | Added DEC-024 for E1-T7 (S4 Minimal Session): correcting DEC-015 regarding WebSocket driver deferral to E3-T1 |
 | 1.6 | 2026-08-18 | Added DEC-022 (adjust state during render for Server Actions) and DEC-023 (animated sheet exit via useSheetClose) |
 | 1.5 | 2026-08-18 | Added DEC-018 through DEC-021 for E1-T5 (S3 Dish thô): pgEnum DB enums, Level 1 normalize-name, refresh()/revalidatePath in Server Actions, and error.tsx retry prop |
