@@ -2,7 +2,7 @@
 
 ## Version 0.1
 
-**Status:** Ready to code
+**Status:** Completed
 **Created:** 2026-08-17
 **Upstream:** Master Plan v1.0 §3 (E1-T10, E1-T11), SDD v0.2 SPEC-015, SPEC-016 (rút gọn), SPEC-017, Tech Spec v0.2 §3.1/§3.2, Business Rules BR-050→BR-053, BR-056, Test Cases v0.1 TC-063→071, TC-076→078, TC-109
 **Tiền đề:** S1–S5 đều phải landed đúng như năm guide trong `docs/plans/`.

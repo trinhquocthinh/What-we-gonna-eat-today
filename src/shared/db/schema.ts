@@ -5,6 +5,7 @@ import {
   index,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -311,3 +312,85 @@ export const interactionEvents = pgTable('interaction_events', {
 
 export type Interaction = typeof interactions.$inferSelect
 export type InteractionEvent = typeof interactionEvents.$inferSelect
+
+/**
+ * Tech Spec §3.1, §3.2. ĐÂY LÀ BẢNG NHÁP — SPEC-015 ghi đè lên chính bảng
+ * này trong lúc Session `ACTIVE`. "Authoritative Final Meal" (BR-050, BR-052)
+ * hoàn toàn suy ra từ `selection_sessions.state = 'FINALIZED'`, KHÔNG có cột
+ * trạng thái riêng ở đây — Tech Spec §3.2 đã cố ý bỏ `group_id`/`decision_date`
+ * khỏi bảng này vì cả hai suy ra được qua `session_id`.
+ */
+export const finalMeals = pgTable(
+  'final_meals',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => selectionSessions.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('final_meals_session_id_unique').on(table.sessionId)],
+)
+
+/**
+ * KHÔNG có cột `id` — khoá chính là cặp cột, đúng nguyên văn Tech Spec §3.1.
+ * Khác mọi bảng khác trong dự án tới giờ.
+ */
+export const finalMealItems = pgTable(
+  'final_meal_items',
+  {
+    finalMealId: uuid('final_meal_id')
+      .notNull()
+      .references(() => finalMeals.id),
+    groupDishId: uuid('group_dish_id')
+      .notNull()
+      .references(() => groupDishes.id),
+  },
+  (table) => [primaryKey({ columns: [table.finalMealId, table.groupDishId] })],
+)
+
+/**
+ * Tech Spec §3.2: trỏ `global_dish_id`, KHÔNG phải `group_dish_id` — Eating
+ * History thuộc về User chứ không thuộc Group (BR-056), để F43 multi-group
+ * sau này collapse được cùng một User ăn cùng Dish ở hai Group thành một
+ * eating event.
+ */
+export const eatingHistory = pgTable(
+  'eating_history',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    globalDishId: uuid('global_dish_id')
+      .notNull()
+      .references(() => globalDishes.id),
+    eatingDate: date('eating_date').notNull(),
+    sourceFinalMealId: uuid('source_final_meal_id')
+      .notNull()
+      .references(() => finalMeals.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('eating_history_user_dish_date_source_unique').on(
+      table.userId,
+      table.globalDishId,
+      table.eatingDate,
+      table.sourceFinalMealId,
+    ),
+    // Đường nóng Tech Spec §3.3: SPEC-020 tính recency penalty (E4+).
+    index('eating_history_user_dish_date_idx').on(
+      table.userId,
+      table.globalDishId,
+      table.eatingDate.desc(),
+    ),
+  ],
+)
+
+export type FinalMeal = typeof finalMeals.$inferSelect
+export type FinalMealItem = typeof finalMealItems.$inferSelect
+export type EatingHistory = typeof eatingHistory.$inferSelect

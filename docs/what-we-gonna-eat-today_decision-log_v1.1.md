@@ -760,6 +760,30 @@ SPEC-012 viết "Mọi thay đổi đều ghi thêm một dòng vào `interactio
 
 ---
 
+# DEC-026 — E1-T11 Does Not Need the WebSocket Driver Either
+
+**Date:** 2026-08-18  
+**Status:** Accepted
+
+## Decision
+
+DEC-015's original consequence section claimed both E1-T7 and E1-T11 need read-then-write inside the same transaction, requiring the `neon-serverless` driver. DEC-024 corrected the E1-T7 half. This entry corrects the E1-T11 half: `finalizeSession` reads everything it needs — active participants, `group_dish_id → global_dish_id` mapping, and a freshly-generated `finalMealId`/row ids — *before* entering the atomic write phase. The atomic phase itself (`commitFinalize` in `features/meal/infrastructure/drizzle-meal-repository.ts`) is exactly two statement types: `UPDATE selection_sessions` and one multi-row `INSERT` into `eating_history`, both known in full before `db.batch()` is called. No read-after-write dependency exists inside the transaction.
+
+## Rationale
+
+`db.batch()` (`neon-http`'s wrapper around `@neondatabase/serverless`'s `sql.transaction()`) accepts an `isolationLevel` option — a genuine Postgres transaction concept, not a batching convenience. TC-109 is designed precisely to prove atomicity empirically: it forces a foreign-key violation on the `eating_history` insert (a failure mode `onConflictDoNothing` does not suppress) and asserts the session's state update rolled back too. If TC-109 passes, `db.batch()` is sufficient; the WebSocket driver adds a second connection-management concern (long-lived sockets in a serverless environment) that isn't justified without evidence it's needed.
+
+## Consequence
+
+Neither E1-T7 nor E1-T11 needs `neon-serverless`. The driver remains deferred to **E3-T1** (Group Rule → Session Rule snapshot), which is a genuine read-then-write: the current Group Rules must be read and immediately written as Session Rules inside the same transaction as the Session state change. If TC-109 is ever observed failing in CI or production, that is the trigger to revisit this decision — not a preemptive addition.
+
+## Affected Documents
+
+- Decision Log DEC-015 (amended by DEC-024 and this entry, not superseded), DEC-024
+- Tech Spec v0.2 §3.2, §4.1
+
+---
+
 # Decision Index
 
 | ID | Decision | Status | Primary Impact |
@@ -789,6 +813,7 @@ SPEC-012 viết "Mọi thay đổi đều ghi thêm một dòng vào `interactio
 | DEC-023 | Animated Sheet Exit via `useSheetClose` Context | Accepted | `Sheet`, `AddDishSheet`, slide-down transition |
 | DEC-024 | E1-T7's Minimal `startSession` Does Not Need the WebSocket Driver | Accepted | `startSession` implementation, partial unique index race handling |
 | DEC-025 | `interaction_events` Logs Every SPEC-012 Request, Including Idempotent Repeats | Accepted | `applyInteraction` audit logging semantics |
+| DEC-026 | E1-T11 Does Not Need the WebSocket Driver Either | Accepted | `finalizeSession` and atomic `commitFinalize` batch transaction |
 
 ---
 
@@ -796,6 +821,7 @@ SPEC-012 viết "Mọi thay đổi đều ghi thêm một dòng vào `interactio
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9 | 2026-08-18 | Added DEC-026 for E1-T10/E1-T11 (S6 Chốt bữa thô): finalizeSession does not need WebSocket driver, batch write is atomic |
 | 1.8 | 2026-08-18 | Added DEC-025 for E1-T9 (S5 Deck và swipe thô): interaction_events logs every request, including idempotent repeats |
 | 1.7 | 2026-08-18 | Added DEC-024 for E1-T7 (S4 Minimal Session): correcting DEC-015 regarding WebSocket driver deferral to E3-T1 |
 | 1.6 | 2026-08-18 | Added DEC-022 (adjust state during render for Server Actions) and DEC-023 (animated sheet exit via useSheetClose) |
@@ -806,5 +832,6 @@ SPEC-012 viết "Mọi thay đổi đều ghi thêm một dòng vào `interactio
 | 1.1 | 2026-07-29 | Added DEC-010 for Group Rule / Session Rule structure, snapshot and override semantics |
 | 1.1 | 2026-07-29 | Added DEC-011 for finalize validation, warning audit and ranking boundary |
 | 1.0 | 2026-07-23 | Initial decision log with DEC-001 through DEC-009 |
+
 
 

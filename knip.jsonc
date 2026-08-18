@@ -37,6 +37,11 @@
     "src/features/session/application/**",
     "src/features/session/domain/session.ts",
     "src/features/session/infrastructure/**",
+
+    // GỠ Ở E5-T7/T8/T9: Meal và History use cases, domain và repository ở S6 chưa có route trong app/.
+    // E5 (màn hình chốt bữa S-10) sẽ import và sử dụng chúng.
+    "src/features/meal/**",
+    "src/features/history/**",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

@@ -2,7 +2,7 @@
 
 ## Version 0.1
 
-**Status:** Ready to code
+**Status:** Completed
 **Created:** 2026-08-17
 **Upstream:** Master Plan v1.0 §3 (E1-T8, E1-T9), SDD v0.2 SPEC-010 (rút gọn), SPEC-011, SPEC-012, Tech Spec v0.2 §3.1–3.3/§4.1/§4.2, Business Rules BR-040→BR-042, Test Cases v0.1 TC-045→TC-053, Design Handoff S-09 (`docs/designs/README.md:189-243`, `docs/designs/designs/S-09 Deck vuot prototype.dc.html`)
 **Tiền đề:** S1 (auth), S2 (group), S3 (dish), S4 (session) đều phải landed đúng như bốn guide trong `docs/plans/`. **Đây là slice ĐẦU TIÊN phụ thuộc cả bốn** — Master Plan: `E1-T8` phụ thuộc `E1-T5` (dish) và `E1-T7` (session).

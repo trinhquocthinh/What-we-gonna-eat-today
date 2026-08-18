@@ -1,0 +1,273 @@
+import { eq } from 'drizzle-orm'
+import { afterEach, describe, expect, it } from 'vitest'
+
+import { getDb } from '@/shared/db/client'
+import {
+  eatingHistory,
+  finalMealItems,
+  finalMeals,
+  globalDishes,
+  groupDishes,
+  groupMembers,
+  groups,
+  participants,
+  selectionSessions,
+  users,
+} from '@/shared/db/schema'
+
+import { finalizeSession } from '../application/finalize-session'
+import { saveFinalMealDraft } from '../application/save-final-meal-draft'
+import { drizzleMealRepository } from './drizzle-meal-repository'
+
+/** Seed: 1 Group, 2 User (Creator + 1 Participant khác), 1 Session ACTIVE, 2 Dish Active. */
+async function seedActiveSessionWithTwoDishes() {
+  const db = getDb()
+  const creatorId = crypto.randomUUID()
+  const otherUserId = crypto.randomUUID()
+  const groupId = crypto.randomUUID()
+  const sessionId = crypto.randomUUID()
+  const dish1 = { globalId: crypto.randomUUID(), groupDishId: crypto.randomUUID() }
+  const dish2 = { globalId: crypto.randomUUID(), groupDishId: crypto.randomUUID() }
+
+  await db.insert(users).values([
+    {
+      id: creatorId,
+      provider: 'test',
+      providerSubject: `c-${creatorId}`,
+      email: `${creatorId}@test`,
+      displayName: 'Creator',
+    },
+    {
+      id: otherUserId,
+      provider: 'test',
+      providerSubject: `o-${otherUserId}`,
+      email: `${otherUserId}@test`,
+      displayName: 'Other',
+    },
+  ])
+  await db.insert(groups).values({ id: groupId, name: 'Integration Group', timezone: 'UTC' })
+  await db.insert(groupMembers).values([
+    { groupId, userId: creatorId, isAdmin: true },
+    { groupId, userId: otherUserId, isAdmin: false },
+  ])
+  await db.insert(selectionSessions).values({
+    id: sessionId,
+    groupId,
+    decisionDate: '2026-08-14',
+    creatorUserId: creatorId,
+    state: 'ACTIVE',
+  })
+  await db.insert(participants).values([
+    { sessionId, userId: creatorId, state: 'ACTIVE' },
+    { sessionId, userId: otherUserId, state: 'ACTIVE' },
+  ])
+  await db.insert(globalDishes).values([
+    {
+      id: dish1.globalId,
+      name: 'Món 1',
+      normalizedName: 'món 1',
+      createdByUserId: creatorId,
+      createdFromGroupId: groupId,
+    },
+    {
+      id: dish2.globalId,
+      name: 'Món 2',
+      normalizedName: 'món 2',
+      createdByUserId: creatorId,
+      createdFromGroupId: groupId,
+    },
+  ])
+  await db.insert(groupDishes).values([
+    { id: dish1.groupDishId, groupId, globalDishId: dish1.globalId, state: 'ACTIVE' },
+    { id: dish2.groupDishId, groupId, globalDishId: dish2.globalId, state: 'ACTIVE' },
+  ])
+
+  return { creatorId, otherUserId, groupId, sessionId, dish1, dish2 }
+}
+
+type Seed = Awaited<ReturnType<typeof seedActiveSessionWithTwoDishes>>
+
+async function cleanup(seed: Seed) {
+  const db = getDb()
+  await db
+    .delete(eatingHistory)
+    .where(eq(eatingHistory.sourceFinalMealId, seed.sessionId))
+    .catch(() => {})
+  const meal = await db
+    .select({ id: finalMeals.id })
+    .from(finalMeals)
+    .where(eq(finalMeals.sessionId, seed.sessionId))
+  for (const row of meal) {
+    await db.delete(eatingHistory).where(eq(eatingHistory.sourceFinalMealId, row.id))
+    await db.delete(finalMealItems).where(eq(finalMealItems.finalMealId, row.id))
+  }
+  await db.delete(finalMeals).where(eq(finalMeals.sessionId, seed.sessionId))
+  await db.delete(participants).where(eq(participants.sessionId, seed.sessionId))
+  await db.delete(selectionSessions).where(eq(selectionSessions.id, seed.sessionId))
+  await db.delete(groupDishes).where(eq(groupDishes.groupId, seed.groupId))
+  await db.delete(globalDishes).where(eq(globalDishes.createdFromGroupId, seed.groupId))
+  await db.delete(groupMembers).where(eq(groupMembers.groupId, seed.groupId))
+  await db.delete(groups).where(eq(groups.id, seed.groupId))
+  await db.delete(users).where(eq(users.id, seed.creatorId))
+  await db.delete(users).where(eq(users.id, seed.otherUserId))
+}
+
+const cleanupQueue: Array<() => Promise<void>> = []
+
+afterEach(async () => {
+  while (cleanupQueue.length > 0) {
+    const fn = cleanupQueue.pop()
+    if (fn !== undefined) await fn()
+  }
+})
+
+describe('SPEC-015/016 — draft và finalize (integration)', () => {
+  it('TC-065: Dish vừa bị gỡ khỏi pool thì lưu nháp có Dish đó bị ERR_DISH_NOT_IN_POOL', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+    await getDb()
+      .update(groupDishes)
+      .set({ state: 'INACTIVE' })
+      .where(eq(groupDishes.id, seed.dish1.groupDishId))
+
+    const result = await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId, dishIds: [seed.dish1.groupDishId] },
+    )
+
+    expect(result.ok === false && result.error.code).toBe('ERR_DISH_NOT_IN_POOL')
+  })
+
+  it('TC-067 + TC-071: nháp hợp lệ, Finalize thành công thì Session FINALIZED và Eating History tồn tại', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+
+    const draft = await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      {
+        sessionId: seed.sessionId,
+        userId: seed.creatorId,
+        dishIds: [seed.dish1.groupDishId, seed.dish2.groupDishId],
+      },
+    )
+    expect(draft.ok).toBe(true)
+
+    const finalize = await finalizeSession(
+      { meal: drizzleMealRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId },
+    )
+    expect(finalize.ok).toBe(true)
+
+    const session = await getDb()
+      .select({ state: selectionSessions.state })
+      .from(selectionSessions)
+      .where(eq(selectionSessions.id, seed.sessionId))
+    expect(session[0]?.state).toBe('FINALIZED')
+
+    // 2 Dish × 2 Participant = 4 dòng.
+    const historyRows = await getDb()
+      .select()
+      .from(eatingHistory)
+      .where(eq(eatingHistory.sourceFinalMealId, finalize.ok ? finalize.value.finalMealId : ''))
+    expect(historyRows).toHaveLength(4)
+  })
+
+  it('TC-069: Dish bị gỡ SAU khi lưu nháp thì Finalize trả ERR_DISH_NOT_IN_POOL, Session vẫn ACTIVE', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+
+    await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId, dishIds: [seed.dish1.groupDishId] },
+    )
+    await getDb()
+      .update(groupDishes)
+      .set({ state: 'INACTIVE' })
+      .where(eq(groupDishes.id, seed.dish1.groupDishId))
+
+    const finalize = await finalizeSession(
+      { meal: drizzleMealRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId },
+    )
+
+    expect(finalize.ok === false && finalize.error.code).toBe('ERR_DISH_NOT_IN_POOL')
+    const session = await getDb()
+      .select({ state: selectionSessions.state })
+      .from(selectionSessions)
+      .where(eq(selectionSessions.id, seed.sessionId))
+    expect(session[0]?.state).toBe('ACTIVE')
+  })
+
+  it('TC-077: commitFinalize gọi hai lần với cùng dữ liệu thì vẫn đúng số dòng, không nhân đôi', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+
+    const draft = await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId, dishIds: [seed.dish1.groupDishId] },
+    )
+    if (!draft.ok) throw new Error('setup thất bại')
+
+    const rows = [
+      {
+        userId: seed.creatorId,
+        globalDishId: seed.dish1.globalId,
+        eatingDate: '2026-08-14',
+        sourceFinalMealId: draft.value.finalMealId,
+      },
+      {
+        userId: seed.otherUserId,
+        globalDishId: seed.dish1.globalId,
+        eatingDate: '2026-08-14',
+        sourceFinalMealId: draft.value.finalMealId,
+      },
+    ]
+
+    await drizzleMealRepository.commitFinalize({
+      sessionId: seed.sessionId,
+      eatingHistoryRows: rows,
+    })
+    await drizzleMealRepository.commitFinalize({
+      sessionId: seed.sessionId,
+      eatingHistoryRows: rows,
+    })
+
+    const historyRows = await getDb()
+      .select()
+      .from(eatingHistory)
+      .where(eq(eatingHistory.sourceFinalMealId, draft.value.finalMealId))
+    expect(historyRows).toHaveLength(2)
+  })
+})
+
+describe('TC-109 — rollback thật khi một dòng eating_history lỗi', () => {
+  it('TC-109: INSERT eating_history vi phạm khoá ngoại thì Session KHÔNG chuyển FINALIZED', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+
+    const NONEXISTENT_GLOBAL_DISH_ID = crypto.randomUUID() // không tồn tại trong global_dishes
+
+    await expect(
+      drizzleMealRepository.commitFinalize({
+        sessionId: seed.sessionId,
+        eatingHistoryRows: [
+          {
+            userId: seed.creatorId,
+            globalDishId: NONEXISTENT_GLOBAL_DISH_ID, // vi phạm FK — KHÔNG bị onConflictDoNothing nuốt
+            eatingDate: '2026-08-14',
+            sourceFinalMealId: crypto.randomUUID(),
+          },
+        ],
+      }),
+    ).rejects.toThrow()
+
+    // Bằng chứng rollback: session PHẢI vẫn ACTIVE — nếu db.batch() không
+    // atomic thật, UPDATE (câu đầu trong batch) đã commit trước khi INSERT
+    // (câu sau) thất bại, và assertion dưới đây sẽ ĐỎ.
+    const session = await getDb()
+      .select({ state: selectionSessions.state })
+      .from(selectionSessions)
+      .where(eq(selectionSessions.id, seed.sessionId))
+    expect(session[0]?.state).toBe('ACTIVE')
+  })
+})

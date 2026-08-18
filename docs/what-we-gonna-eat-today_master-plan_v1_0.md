@@ -95,8 +95,8 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
 | --- | --- | --- | --- | --- | --- | --- |
-| E1-T10 | Chọn món và finalize, chưa có rule | SPEC-015, SPEC-016 rút gọn | 2 | E1-T9 | Session chuyển `FINALIZED`, không reopen được | `features/meal/**` |
-| E1-T11 | Sinh Default Eating History trong cùng transaction | SPEC-017, TC-076→078, TC-109 | 2 | E1-T10 | TC-109 pass: `INSERT` thất bại giữa chừng thì Session **không** `FINALIZED` | `features/history/**` |
+| E1-T10 | Chọn món và finalize, chưa có rule | SPEC-015, SPEC-016 rút gọn | 2 | E1-T9 | Session chuyển `FINALIZED`, không reopen được (đã xong ở S6) | `features/meal/**` |
+| E1-T11 | Sinh Default Eating History trong cùng transaction | SPEC-017, TC-076→078, TC-109 | 2 | E1-T10 | TC-109 pass: `INSERT` thất bại giữa chừng thì Session **không** `FINALIZED` (đã xong ở S6) | `features/history/**` |
 
 ## S7 — Đo thật
 
