@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm'
 import {
   boolean,
+  date,
   index,
   pgEnum,
   pgTable,
@@ -156,3 +158,82 @@ export const groupDishes = pgTable(
 
 export type GlobalDish = typeof globalDishes.$inferSelect
 export type GroupDish = typeof groupDishes.$inferSelect
+
+/**
+ * SDD §2.2. `INVALID` nằm trong enum để máy trạng thái đầy đủ nhưng không tới
+ * được ở v1.0 (F26/F41 là v1.2) — Tech Spec §3.2 đã ghi lý do không có cột
+ * `invalid_reason`. `FINALIZED` chưa dùng tới ở S4 (E1-T10).
+ */
+export const sessionState = pgEnum('session_state', ['DRAFT', 'ACTIVE', 'FINALIZED', 'INVALID'])
+
+/** SDD §2.2. Ở S4 chỉ `ACTIVE` khả thi — `COMPLETED` là SPEC-013 (E4),
+ *  `REMOVED` là F25 (ngoài v1.0, SPEC-009 nói rõ). */
+export const participantState = pgEnum('participant_state', ['ACTIVE', 'COMPLETED', 'REMOVED'])
+
+/**
+ * Tech Spec §3.1, §3.2, §3.3. Hai index KHÁC NHAU trên cùng cặp cột — mỗi cái
+ * một việc:
+ *
+ * - `selection_sessions_group_date_idx` (thường): phục vụ existence-check của
+ *   SPEC-007 — cần đọc MỌI state, kể cả DRAFT/INVALID (TC-028: session INVALID
+ *   không chặn tạo Session mới).
+ * - `selection_sessions_active_per_group_date` (partial unique): ép BR-025 ở
+ *   tầng DB — chỉ tính ACTIVE/FINALIZED. Đây là index mà E1-T7's `startSession`
+ *   dựa vào để bắt hai Start đồng thời (TC-107). Kiểm tra bằng SELECT rồi ghi ở
+ *   application có race condition ngay cả với hai người dùng (Tech Spec §3.2);
+ *   partial unique index là lý do chính chọn Postgres.
+ */
+export const selectionSessions = pgTable(
+  'selection_sessions',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    // FK tới `groups`/`users` là chuyện toàn vẹn dữ liệu trong MỘT file
+    // `shared/db/schema.ts` — tách biệt hoàn toàn khỏi luật "feature không
+    // import feature" của ESLint (luật đó chỉ áp cho `src/features/**`, không
+    // áp cho `shared/`). Hai bảng này cùng một schema Postgres nên tham chiếu
+    // thẳng `groups.id`/`users.id` là đúng, không phải ngoại lệ.
+    groupId: uuid('group_id')
+      .notNull()
+      .references(() => groups.id),
+    // `date` thuần (không timezone) — SDD §2.1: "Trường ngày lịch: `_date`,
+    // date thuần". Giá trị đã quy đổi theo timezone của Group từ trước
+    // (SPEC-018), không phải cột này tự quy đổi.
+    decisionDate: date('decision_date').notNull(),
+    creatorUserId: uuid('creator_user_id')
+      .notNull()
+      .references(() => users.id),
+    state: sessionState('state').notNull().default('DRAFT'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    finalizedAt: timestamp('finalized_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('selection_sessions_group_date_idx').on(table.groupId, table.decisionDate),
+    uniqueIndex('selection_sessions_active_per_group_date')
+      .on(table.groupId, table.decisionDate)
+      .where(sql`${table.state} in ('ACTIVE', 'FINALIZED')`),
+  ],
+)
+
+export const participants = pgTable(
+  'participants',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => selectionSessions.id),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    state: participantState('state').notNull().default('ACTIVE'),
+    joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('participants_session_user_unique').on(table.sessionId, table.userId)],
+)
+
+export type SelectionSession = typeof selectionSessions.$inferSelect
+export type Participant = typeof participants.$inferSelect

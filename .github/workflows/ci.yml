@@ -13,6 +13,8 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
 
     steps:
       - uses: actions/checkout@v5
@@ -36,6 +38,15 @@ jobs:
       # phạm cố ý chứ không tin vào việc `yarn lint` xanh.
       - name: Kiểm luật kiến trúc
         run: yarn arch:probe
+
+      # DATABASE_URL_TEST chỉ có ở repo chính — PR từ fork không nhận được
+      # secret (đúng cơ chế bảo mật của GitHub Actions cho repo public), nên
+      # bước này TỰ BỎ QUA thay vì đỏ CI của người khác.
+      - name: Test tích hợp (cần DATABASE_URL_TEST)
+        if: ${{ env.DATABASE_URL_TEST != '' }}
+        run: yarn test:integration
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL_TEST }}
 
       - name: Build
         run: yarn build

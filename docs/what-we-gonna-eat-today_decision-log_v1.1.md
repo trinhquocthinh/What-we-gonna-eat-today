@@ -708,6 +708,34 @@ Calling `onClose()` directly from child buttons immediately unmounts the sheet f
 
 ---
 
+# DEC-024 — E1-T7's Minimal `startSession` Does Not Need the WebSocket Driver
+
+**Date:** 2026-08-18  
+**Status:** Accepted
+
+## Decision
+
+DEC-015's consequence section claimed E1-T7 needs read-then-write inside a transaction, requiring the `neon-serverless` driver. This is corrected: E1-T7 implements only SPEC-007 (create) plus a minimal `startSession` — a single `UPDATE selection_sessions SET state='ACTIVE', started_at=now() WHERE id=$1 AND state='DRAFT'`. Postgres wraps a single statement in an implicit transaction; the partial unique index `selection_sessions_active_per_group_date` catches the BR-025 race at commit time.
+
+*Implementation Note on Error Catching:* Drizzle ORM wraps query errors inside `Error("Failed query: ...", { cause })`, and the Neon HTTP driver surfaces driver errors as `NeonDbError` rather than `DatabaseError`. Hence, `infrastructure/drizzle-session-repository.ts` catches this via `isSessionUniquenessViolation` which inspects `target.code === '23505'` and `target.constraint === 'selection_sessions_active_per_group_date'` on the error/cause rather than a fragile `instanceof DatabaseError`.
+
+`createSession`'s two inserts (session + participant) remain atomic via `db.batch()`, same pattern as `GroupRepository.createWithAdmin`.
+
+## Rationale
+
+Master Plan assigns E1-T7 only `SPEC-007, TC-026→029, TC-107` — not SPEC-008. Full SPEC-008 (5-step revalidation, Group Rule → Session Rule snapshot in one transaction) is E3-T1's scope. Conflating the two led DEC-015 to over-provision infrastructure for a slice that doesn't need it.
+
+## Consequence
+
+The `neon-serverless` (WebSocket) driver is deferred to **E3-T1**, where snapshotting Group Rule into Session Rule is a genuine read-then-write inside one transaction. `client.ts`'s comment is retargeted to E3-T1 explicitly.
+
+## Affected Documents
+
+- Decision Log DEC-015 (amended by this entry, not superseded)
+- Tech Spec v0.2 §3.2, §4.1
+
+---
+
 # Decision Index
 
 | ID | Decision | Status | Primary Impact |
@@ -735,7 +763,7 @@ Calling `onClose()` directly from child buttons immediately unmounts the sheet f
 | DEC-021 | Error Boundary Components Use `retry` Prop in Next.js 16 | Accepted | `error.tsx` retry semantics |
 | DEC-022 | State Adjustment During Render for Server Action State Transitions | Accepted | `DishCatalogScreen`, no cascading `useEffect` |
 | DEC-023 | Animated Sheet Exit via `useSheetClose` Context | Accepted | `Sheet`, `AddDishSheet`, slide-down transition |
-
+| DEC-024 | E1-T7's Minimal `startSession` Does Not Need the WebSocket Driver | Accepted | `startSession` implementation, partial unique index race handling |
 
 ---
 
@@ -743,6 +771,7 @@ Calling `onClose()` directly from child buttons immediately unmounts the sheet f
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-08-18 | Added DEC-024 for E1-T7 (S4 Minimal Session): correcting DEC-015 regarding WebSocket driver deferral to E3-T1 |
 | 1.6 | 2026-08-18 | Added DEC-022 (adjust state during render for Server Actions) and DEC-023 (animated sheet exit via useSheetClose) |
 | 1.5 | 2026-08-18 | Added DEC-018 through DEC-021 for E1-T5 (S3 Dish thô): pgEnum DB enums, Level 1 normalize-name, refresh()/revalidatePath in Server Actions, and error.tsx retry prop |
 | 1.4 | 2026-08-17 | Added DEC-015 through DEC-017 for E1-T2/E1-T3/E1-T4: neon-http batch transaction semantics, canonical timezone storage, and display-only fallback timezone |

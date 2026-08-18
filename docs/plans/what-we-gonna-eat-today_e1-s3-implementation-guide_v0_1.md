@@ -2,7 +2,7 @@
 
 ## Version 0.1
 
-**Status:** Ready to code
+**Status:** Completed
 **Created:** 2026-08-17
 **Upstream:** Master Plan v1.0 §3 (E1-T5), SDD v0.2 SPEC-005 (rút gọn), Tech Spec v0.2 §2/§3.1/§3.3/§4.2/§5, Business Rules BR-001/BR-005, Design Handoff `docs/designs/README.md` S-04/S-05/S-06
 **Tiền đề:** guide S1 (`..._e1-t1-...`) và guide S2 (`..._e1-s2-...`) đã thi công xong
@@ -18,12 +18,12 @@
 |---|---|---|---|
 | E1-T5 | Schema `global_dishes`, `group_dishes`, thêm món không chuẩn hoá | 2 | Thêm được món và thấy trong danh sách |
 
-- [ ] Thêm món thật trên `/groups/<uuid>/dishes`, món hiện ngay trong danh sách
-- [ ] `yarn db:studio` cho thấy `global_dishes.created_by_user_id` + `created_from_group_id` + `created_at` (BR-001) và `group_dishes.state = 'ACTIVE'` (BR-005)
-- [ ] Thêm lại đúng tên đó → lỗi `Món này đã có trong danh mục rồi.` ngay dưới ô tên, **không** ghi thêm dòng nào vào DB
-- [ ] Người ngoài nhóm mở `/groups/<uuid>/dishes` → 404 (SPEC-019, Tech Spec §5)
-- [ ] `yarn verify` · `yarn arch:probe` · `yarn build` xanh
-- [ ] PR link SPEC-005, BR-001, BR-005
+- [x] Thêm món thật trên `/groups/<uuid>/dishes`, món hiện ngay trong danh sách
+- [x] `yarn db:studio` cho thấy `global_dishes.created_by_user_id` + `created_from_group_id` + `created_at` (BR-001) và `group_dishes.state = 'ACTIVE'` (BR-005)
+- [x] Thêm lại đúng tên đó → lỗi `Món này đã có trong danh mục rồi.` ngay dưới ô tên, **không** ghi thêm dòng nào vào DB
+- [x] Người ngoài nhóm mở `/groups/<uuid>/dishes` → 404 (SPEC-019, Tech Spec §5)
+- [x] `yarn verify` · `yarn arch:probe` · `yarn build` xanh
+- [x] PR link SPEC-005, BR-001, BR-005
 
 **Không có TC nào của Test Cases v0.1 gán cho E1-T5.** TC-017→021 thuộc E2-T4, TC-098 thuộc E2-T3. Quy ước đặt tên `it()` cho slice này ở §13.
 
@@ -32,7 +32,7 @@ Màn hình dựng ở slice này: **S-05 Danh mục món** (danh sách phẳng) 
 ## 0.1 Phần của SPEC-005 CỐ Ý bỏ
 
 | Bỏ ở S3 | Về đâu |
-|---|---|
+| --- | --- |
 | Bỏ dấu tiếng Việt trong `normalized_name` | E2-T3 |
 | Phát hiện trùng phạm vi toàn cục + `existingCandidates` + `forceCreate` | E2-T4 |
 | Khôi phục Group Dish `INACTIVE` về `ACTIVE` | E2-T4 |
@@ -84,7 +84,7 @@ S2 dùng `revalidatePath('/groups')` rồi `redirect` — đúng cho luồng "gh
 
 > *"If `path` contains a dynamic segment, for example `/product/[slug]`, this parameter is required. If `path` is a literal path like `/product/1`, omit `type`."*
 
-→ Viết `revalidatePath(\`/groups/${groupId}\`)` (đường dẫn **literal**, đã thay `groupId` thật, **không** truyền `'page'`). Viết `revalidatePath('/groups/[groupId]', 'page')` sẽ xoá cache trang nhóm của **mọi** nhóm — đắt và sai phạm vi.
+→ Viết `revalidatePath(\`/groups/${groupId}\`)` (đường dẫn **literal**, đã thay `groupId` thật, **không** truyền `'page'`). Viết`revalidatePath('/groups/[groupId]', 'page')` sẽ xoá cache trang nhóm của **mọi** nhóm — đắt và sai phạm vi.
 
 Docs cũng cảnh báo `revalidatePath` trong Server Function hiện *"causes all previously visited pages to refresh when navigated to again"*. Đó là lý do §11.3 dùng nó **một lần duy nhất, cho đúng một đường dẫn**.
 
@@ -160,7 +160,7 @@ on(...columns: [Partial<ExtraConfigColumn> | SQL, ...Partial<ExtraConfigColumn |
 Chọn **`pgEnum`**:
 
 | | `pgEnum` | `text().$type<>()` |
-|---|---|---|
+| --- | --- | --- |
 | DB từ chối giá trị rác | ✅ | ❌ — một `'active'` viết thường lọt vào là mọi `WHERE state = 'ACTIVE'` im lặng bỏ sót |
 | Kiểu TS | drizzle tự suy `'ACTIVE' \| 'INACTIVE'` từ mảng | phải viết `$type<GroupDishState>()`, tức khai hai lần |
 | Thêm giá trị sau này | `ALTER TYPE … ADD VALUE`, drizzle-kit tự sinh (§1.6) | không cần migration |
@@ -262,10 +262,10 @@ CTA đáy giữ nguyên hai phần tử như thiết kế: primary "Thêm món �
 
 Guide S1 ghi 8 bẫy, guide S2 ghi bẫy 9–14. **Không lặp lại.** Bốn bẫy mới S3 chạm tới:
 
-15. **`error.tsx` dùng `retry`, không phải `reset`** — §1.1. `reset()` render lại dữ liệu cũ, `retry()` mới là "Thử lại" theo nghĩa thiết kế. Sửa luôn `app/groups/error.tsx` của S2.
-16. **`refresh()` là API mới của `next/cache`, chỉ gọi được trong Server Action** — §1.2. Đây là công cụ đúng cho "ghi xong, ở lại trang vừa ghi". Gọi ở Route Handler sẽ throw.
-17. **`revalidatePath` với đường dẫn chứa `[segment]` bắt buộc tham số `type`** — §1.3. Luôn truyền đường dẫn literal đã nội suy `groupId`, và **không** truyền `'page'`.
-18. **Route lồng: `params` của `/groups/[groupId]/dishes` vẫn chỉ có `{ groupId }`** — `03-file-conventions/page.md` nói `params` gom tham số động *"from the root segment down to that page"*; `dishes` là segment tĩnh nên không thêm khoá nào. Vẫn khai thủ công `{ params: Promise<{ groupId: string }> }`, vẫn **không** dùng helper `PageProps<'/groups/[groupId]/dishes'>` (bẫy 3 và 9).
+ 1. **`error.tsx` dùng `retry`, không phải `reset`** — §1.1. `reset()` render lại dữ liệu cũ, `retry()` mới là "Thử lại" theo nghĩa thiết kế. Sửa luôn `app/groups/error.tsx` của S2.
+ 2. **`refresh()` là API mới của `next/cache`, chỉ gọi được trong Server Action** — §1.2. Đây là công cụ đúng cho "ghi xong, ở lại trang vừa ghi". Gọi ở Route Handler sẽ throw.
+ 3. **`revalidatePath` với đường dẫn chứa `[segment]` bắt buộc tham số `type`** — §1.3. Luôn truyền đường dẫn literal đã nội suy `groupId`, và **không** truyền `'page'`.
+ 4. **Route lồng: `params` của `/groups/[groupId]/dishes` vẫn chỉ có `{ groupId }`** — `03-file-conventions/page.md` nói `params` gom tham số động *"from the root segment down to that page"*; `dishes` là segment tĩnh nên không thêm khoá nào. Vẫn khai thủ công `{ params: Promise<{ groupId: string }> }`, vẫn **không** dùng helper `PageProps<'/groups/[groupId]/dishes'>` (bẫy 3 và 9).
 
 ---
 
@@ -821,6 +821,7 @@ yarn db:migrate
 Sinh `src/shared/db/migrations/0002_global_and_group_dishes.sql` + `meta/0002_snapshot.json` + cập nhật `_journal.json`. **Không sửa tay.**
 
 Mở file `.sql` đọc lại và **khẳng định bằng mắt** ba điều:
+
 1. `CREATE TYPE "public"."group_dish_state" AS ENUM('ACTIVE', 'INACTIVE');` đứng **trước** `CREATE TABLE "group_dishes"`.
 2. `global_dishes` có đủ `created_by_user_id`, `created_from_group_id`, `created_at` ở dạng `NOT NULL`.
 3. Có `group_dishes_group_state_idx` trên `("group_id","state")`.
@@ -923,7 +924,7 @@ Không unit test (Tech Spec §8.2). Chứng minh ở smoke test §14.2.
 # 8. Copy tiếng Việt
 
 | Chỗ | Chuỗi |
-|---|---|
+| --- | --- |
 | Tiêu đề S-05 | `Danh mục món` |
 | Caption trên tiêu đề | tên nhóm |
 | Số đếm | `{n} món` · rỗng thì chuỗi trống |
@@ -946,6 +947,7 @@ Không unit test (Tech Spec §8.2). Chứng minh ở smoke test §14.2.
 **Vì sao `Món này đã có trong danh mục rồi.`** — prototype không có câu này vì nó chạy luồng phát hiện trùng khác (E2-T4/T7). Giọng hiện có: `Đặt tên để cả nhà nhận ra nhóm.` · `Nhập tên món trước đã.` · `Không đăng nhập được. Thử lại giúp mình.` — câu ngắn, nói tình trạng chứ không kết tội, có dấu chấm.
 
 Đã cân nhắc và loại:
+
 - `Nhà bạn đã có món này.` — hay, nhưng E2-T7 dùng `Nhà bạn đã có món gần giống` cho khối **khác hẳn**; hai câu mở đầu giống nhau cho hai luồng khác nhau là bẫy đọc.
 - `Món này đã có rồi.` — cụt, và không nói "ở đâu".
 - `Món này đã có trong nhóm.` — "nhóm" ở sản phẩm này nghĩa là Group; câu dễ đọc thành "nhóm nhãn".
@@ -1208,12 +1210,14 @@ export function AddDishSheet({
 ## 9.4 Test component
 
 `dish-catalog-screen.test.tsx`:
+
 - rỗng → có `Chưa có món nào.`, có câu mô tả, ba ví dụ, nút `Thêm món đầu tiên`, **không** có caption `Khoảng 15–20 món…`, số đếm là chuỗi trống
 - có 2 món → tên món hiện, nút `Thêm món`, caption `Khoảng 15–20 món là đủ để bắt đầu`, số đếm `2 món`, không còn empty state
 - bấm CTA → sheet mở (`getByRole('dialog')`), toast không hiện
 - action trả `{ nameError: null, addedDishName: 'Cá basa kho tiêu' }` → sheet đóng và toast `Đã thêm Cá basa kho tiêu vào danh mục.` hiện
 
 `add-dish-sheet.test.tsx`:
+
 - nút `Thêm vào danh mục` **enabled** khi tên trống
 - `nameError="Nhập tên món trước đã."` → hiện dưới input và nối bằng `aria-describedby` (đã có sẵn từ `TextField`)
 - `nameError="Món này đã có trong danh mục rồi."` → hiện đúng chỗ đó, không phải banner ở đầu màn
@@ -1482,7 +1486,7 @@ export default function DishesError({ retry }: { error: Error; retry: () => void
 # 11. Cấu hình phải sửa
 
 | File | Sửa gì |
-|---|---|
+| --- | --- |
 | `src/shared/db/schema.ts` | +`groupDishState` (pgEnum), +`globalDishes`, +`groupDishes`; import thêm `pgEnum` |
 | migrations | `yarn db:generate --name=global_and_group_dishes` → `0002_*.sql` + `meta/0002_snapshot.json` + `_journal.json`. **Không sửa tay** |
 | `src/shared/testing/factories.ts` | +`makeGroupDish` (**không** `systemTags`, **không** `makeGlobalDish` — §6.4) |
@@ -1492,7 +1496,7 @@ export default function DishesError({ retry }: { error: Error; retry: () => void
 **Không sửa** — kiểm chứng từng cái:
 
 | File | Vì sao không |
-|---|---|
+| --- | --- |
 | `knip.jsonc` | Mọi file mới đều có importer production qua `app/`. Dòng ignore `decision-date.ts` đã bị S2 gỡ. `groupDishState` là export của file entry (`schema.ts!`) nên knip không xét. |
 | `vitest.config.mts` | `coverage.include` đã phủ `src/features/*/domain/**` và `application/**`. S3 không thêm gì vào `shared/` cần ngưỡng. |
 | `.jscpd.json` | Nếu đỏ thì sửa mã (đã có sẵn `requireGroupContext`), **không** hạ `threshold` hay nâng `minTokens`. |
@@ -1508,7 +1512,7 @@ export default function DishesError({ retry }: { error: Error; retry: () => void
 Nhánh `feat/dish-minimum`. Conventional Commits, scope `dish` / `db` / `app` / `ui` / `docs`.
 
 | # | Việc | Test viết TRƯỚC | Tick |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 0 | `yarn verify && yarn arch:probe && yarn build` xanh trên baseline S2 | — | |
 | 1 | `dish/domain/normalize-name.ts` | **`normalize-name.test.ts` ĐỎ trước** (§5.1) | |
 | 2 | `dish/domain/dish-draft.ts` + `group-dish.ts` | **`dish-draft.test.ts` ĐỎ trước** (§5.2) | |
@@ -1550,7 +1554,7 @@ yarn dev
 2. Bấm CTA → `/groups/<uuid>/dishes` = S-05 **rỗng**: caption tên nhóm, `<h1>` "Danh mục món", số đếm **trống**, thẻ trắng bo 20 với `Chưa có món nào.` + ba ví dụ `--ink-faint`, đáy chỉ có nút `Thêm món đầu tiên` (**không** có caption "Khoảng 15–20 món…"). Đối chiếu từng con số với prototype dòng 33–100.
 3. Bấm `Thêm món đầu tiên` → sheet trượt từ đáy, focus rơi vào phần tử đầu, `Esc` đóng được, bấm scrim đóng được. Nút `Thêm vào danh mục` nền `--surface-sunken`, chữ `--ink-faint`, **vẫn bấm được**.
 4. Bấm khi ô tên trống → `Nhập tên món trước đã.` hiện dưới input, viền input `--danger`, **sheet vẫn mở**.
-5. Gõ `  Cá basa   kho tiêu ` → bấm → sheet đóng, danh sách có đúng một hàng **`Cá basa kho tiêu`** (khoảng trắng đã gộp), số đếm `1 món`, caption `Khoảng 15–20 món là đủ để bắt đầu` xuất hiện, toast `Đã thêm Cá basa kho tiêu vào danh mục.` nền `--yes-soft` với thanh dọc 3px `--yes`, nhãn nút chuyển `Thêm món`.
+5. Gõ ` Cá basa   kho tiêu ` → bấm → sheet đóng, danh sách có đúng một hàng **`Cá basa kho tiêu`** (khoảng trắng đã gộp), số đếm `1 món`, caption `Khoảng 15–20 món là đủ để bắt đầu` xuất hiện, toast `Đã thêm Cá basa kho tiêu vào danh mục.` nền `--yes-soft` với thanh dọc 3px `--yes`, nhãn nút chuyển `Thêm món`.
 6. Mở sheet lại → **toast biến mất**, ô tên trống.
 7. Gõ `canh   CHUA cá lóc` rồi `Canh chua cá lóc` — món thứ hai bị chặn: `Món này đã có trong danh mục rồi.` dưới input. `yarn db:studio` xác nhận `global_dishes` vẫn đúng 2 dòng.
 8. **`yarn db:studio` — bằng chứng BR-001 + BR-005 ở tầng thật:**
@@ -1571,7 +1575,7 @@ Env scope Preview trỏ Neon branch của PR; migration chạy trong bước bui
 # 14. Rủi ro
 
 | Rủi ro | Dấu hiệu | Làm gì |
-|---|---|---|
+| --- | --- | --- |
 | drizzle-kit đặt `CREATE TYPE` **sau** `CREATE TABLE` | `yarn db:migrate` đỏ `type "group_dish_state" does not exist` | Đọc `0002_*.sql` **trước khi** migrate (§7.2 điểm 1). Nếu sai thứ tự: đổi cột sang `text('state').$type<GroupDishState>().notNull().default('ACTIVE')`, ghi lý do vào decision log, và mở issue cho E2 thêm `CHECK` |
 | `db.batch` cần tuple ≥1 phần tử | `tsc`: "not assignable to tuple" | Truyền literal array 2 phần tử, không `.map()`, không gán qua biến `X[]` (§1.5) |
 | Quên sinh `globalDishId` tường minh | `group_dishes.global_dish_id` là `undefined` / FK vi phạm | Batch non-interactive — cả hai `uuidv7()` gọi ở infrastructure, không dựa vào `$defaultFn` |

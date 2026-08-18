@@ -30,6 +30,12 @@
     // Cùng lý do với `src/tests/**`: `--production` không tính test là nơi sử
     // dụng, nên factory dữ liệu test luôn trông như mồ côi.
     "src/shared/testing/**",
+
+    // GỠ Ở E1-T8 (S5): Session use cases và repository ở S4 chưa có route trong app/.
+    // S5 (trang deck) sẽ import và sử dụng chúng.
+    "src/features/session/application/**",
+    "src/features/session/domain/session.ts",
+    "src/features/session/infrastructure/**",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

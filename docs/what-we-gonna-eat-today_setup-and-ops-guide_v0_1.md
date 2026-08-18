@@ -203,6 +203,48 @@ Bước 3 và 5 là hai bước dễ bỏ qua nhất và cũng là hai bước �
 
 ---
 
+# 3.2 Thiết lập môi trường Integration Test (Neon branch `test` + GitHub Secret)
+
+Từ E1-S4 trở đi, dự án có các integration test (`yarn test:integration`, cấu hình trong `vitest.integration.config.mts`) chạy trực tiếp trên cơ sở dữ liệu PostgreSQL thật để kiểm tra race conditions (TC-107) và các ràng buộc toàn vẹn dữ liệu.
+
+Branch database `test` phải được **tách riêng biệt** khỏi branch `dev`/`main` vì integration test xoá dữ liệu giữa các lần chạy (Test Cases §1.3).
+
+## 3.2.1 Tạo branch `test` trên Neon Console
+1. Đăng nhập **Neon Console** → Chọn Project → Chọn mục **Branches**.
+2. Nhấn **Create branch**, tách từ `main`, đặt tên branch là **`test`**.
+3. Chọn branch `test` vừa tạo và sao chép connection string (đảm bảo có `?sslmode=require`).
+
+## 3.2.2 Cấu hình ở môi trường Local
+1. Chép file mẫu:
+   ```bash
+   cp .env.test.example .env.test.local
+   ```
+2. Mở file `.env.test.local` và điền connection string của branch `test`:
+   ```bash
+   DATABASE_URL="postgresql://user:password@ep-xxx.ap-southeast-1.aws.neon.tech/wwget?sslmode=require"
+   ```
+3. Áp dụng schema migration lên branch `test`:
+   ```bash
+   DATABASE_URL="$(grep DATABASE_URL .env.test.local | cut -d= -f2- | tr -d '"')" yarn db:migrate
+   ```
+4. Chạy thử nghiệm integration test local:
+   ```bash
+   yarn test:integration
+   ```
+
+## 3.2.3 Cấu hình Secret trên GitHub Actions
+Để CI trên GitHub tự động chạy bước "Test tích hợp" khi có push/PR trong repo chính:
+1. Mở GitHub repository → **Settings** → **Secrets and variables** → **Actions**.
+2. Nhấn **New repository secret**.
+3. Điền:
+   - **Name:** `DATABASE_URL_TEST`
+   - **Secret:** connection string của Neon branch `test` (cùng giá trị như ở local).
+4. Nhấn **Add secret**.
+
+> **Ghi chú bảo mật CI:** PR từ fork bên ngoài sẽ không đọc được secret này (cơ chế bảo mật mặc định của GitHub Actions); CI workflow đã được cấu hình để tự động bỏ qua bước này (`if: ${{ env.DATABASE_URL_TEST != '' }}`) thay vì báo lỗi đỏ.
+
+---
+
 # 4. Lệnh thường dùng
 
 | Lệnh | Việc |
@@ -387,3 +429,4 @@ Kiểm tra mỗi quý. Số liệu xác minh ngày 2026-08-14; hạn mức free 
 |---|---|---|---|---|
 | 0.1 | 2026-08-14 | Toàn bộ | Bản draft đầu tiên; phiên bản Node và hạn mức free tier xác minh 2026-08-14 | Phase 8.3 |
 | 0.1 | 2026-08-18 | §3, §3.1 mới | Thêm hướng dẫn chuyển sang Authentik; đánh dấu `AUTH_GOOGLE_*` là tạm | App là một service trong Family Hub, danh tính dùng chung đến từ Authentik. Chốt hai quyết định: subject mode UUID bất biến, và Authentik lo xác thực còn app lo phân quyền |
+| 0.1 | 2026-08-18 | §3.2 mới | Thêm hướng dẫn tạo Neon branch `test` + GitHub secret `DATABASE_URL_TEST` cho integration test | E1-S4 thêm integration test chạy trên database thật để kiểm tra race conditions (TC-107) và ràng buộc toàn vẹn |

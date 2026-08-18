@@ -17,6 +17,7 @@
     "format:write": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.mts",
     "test:coverage": "vitest run --coverage",
     "dup": "jscpd src",
     "knip": "knip --production",

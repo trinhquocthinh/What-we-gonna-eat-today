@@ -9,6 +9,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/tests/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // Integration test cần DATABASE_URL_TEST thật — không để `yarn test` (unit)
+    // vô tình nhặt phải rồi đỏ trên máy chưa cấu hình `.env.test.local`.
+    // Xem `vitest.integration.config.mts` cho `yarn test:integration`.
+    exclude: ['**/*.integration.test.ts', '**/node_modules/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

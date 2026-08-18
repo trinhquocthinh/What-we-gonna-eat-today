@@ -81,8 +81,8 @@ Cố ý bỏ qua ở epic này: link mời, chuẩn hoá tên món, System Tag, 
 
 | ID | Tiêu đề | Nguồn | Giờ | Phụ thuộc | Xong nghĩa là | File |
 | --- | --- | --- | --- | --- | --- | --- |
-| E1-T6 | Schema `selection_sessions`, `participants`, partial unique index | SPEC-007, BR-025 | 2 | E1-T4 | Migration tạo được index một phần; kiểm bằng `\d+` trong psql | `features/session/infrastructure/schema.ts` |
-| E1-T7 | Tạo và Start Session, bắt lỗi unique violation | SPEC-007, TC-026→029, TC-107 | 2 | E1-T6 | Hai Start đồng thời: đúng một thành công — **TC-107 phải chạy hai transaction song song thật** | `features/session/application/**` |
+| E1-T6 | Schema `selection_sessions`, `participants`, partial unique index | SPEC-007, BR-025 | 2 | E1-T4 | Migration tạo được index một phần; kiểm bằng `\d+` trong psql (đã xong ở S4) | `shared/db/schema.ts` |
+| E1-T7 | Tạo và Start Session, bắt lỗi unique violation | SPEC-007, TC-026→029, TC-107 | 2 | E1-T6 | Hai Start đồng thời: đúng một thành công — **TC-107 phải chạy hai transaction song song thật** (đã xong ở S4) | `features/session/**` |
 
 ## S5 — Deck và swipe thô
 

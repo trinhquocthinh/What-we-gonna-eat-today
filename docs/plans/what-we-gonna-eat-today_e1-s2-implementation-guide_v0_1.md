@@ -2,7 +2,7 @@
 
 ## Version 0.1
 
-**Status:** Ready to code
+**Status:** Completed
 **Created:** 2026-08-17
 **Upstream:** Master Plan v1.0 §3 (E1-T2, E1-T3, E1-T4), SDD v0.2 SPEC-002 / SPEC-018 / SPEC-019, Tech Spec v0.2 §2/§3/§4.2/§5, Test Cases v0.1 TC-004→TC-010, Design Handoff `docs/designs/README.md` S-02/S-03/S-04
 **Tiền đề:** `docs/what-we-gonna-eat-today_e1-t1-implementation-guide_v0_1.md` đã thi công xong
@@ -14,16 +14,16 @@
 # 0. Phạm vi và điều kiện xong
 
 | ID | Việc | Giờ | Xong nghĩa là |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | E1-T2 | Schema `groups`, `group_members`, use case tạo Group | 2 | Tạo Group được, người tạo là Admin; TC-008→010 pass |
 | E1-T3 | Authorization guard | 1 | Gọi thao tác Group khi không phải Member trả `ERR_NOT_GROUP_MEMBER`; TC-006, TC-007 pass |
 | E1-T4 | Decision Date theo timezone Group | 1 | Hàm thuần, nhận `now` làm tham số, không mock `Date`; TC-004, TC-005 pass |
 
-- [ ] TC-004→TC-010 pass
-- [ ] Tạo được nhóm thật; `yarn db:studio` cho thấy `group_members.is_admin = true`
-- [ ] `yarn verify` · `yarn arch:probe` · `yarn build` xanh
-- [ ] Dòng ignore `decision-date.ts` trong `knip.jsonc` **đã gỡ** (§2.4)
-- [ ] PR link SPEC-002, SPEC-018, SPEC-019
+- [x] TC-004→TC-010 pass
+- [x] Tạo được nhóm thật; `yarn db:studio` cho thấy `group_members.is_admin = true`
+- [x] `yarn verify` · `yarn arch:probe` · `yarn build` xanh
+- [x] Dòng ignore `decision-date.ts` trong `knip.jsonc` **đã gỡ** (§2.4)
+- [x] PR link SPEC-002, SPEC-018, SPEC-019
 
 Màn hình dựng ở slice này: **S-02 Danh sách nhóm**, **S-03 Tạo nhóm**, và **vỏ rỗng của S-04 Trang nhóm**.
 
@@ -52,6 +52,7 @@ async transaction(_transaction, _config = {}) {
 → `createGroup` chèn `groups` + `group_members` **nguyên tử được ngay hôm nay**, thoả SDD §2.4 (*"Thao tác ghi thất bại không để lại thay đổi từng phần"*). **Không cần thêm driver WebSocket ở S2.**
 
 Hai ràng buộc đi kèm:
+
 - Batch là **non-interactive** — không đọc được id ở giữa. Vì vậy **`groups.id` phải sinh tường minh bằng `uuidv7()` trong infrastructure**, không dựa vào `$defaultFn` của schema.
 - Kiểu là `batch<U extends BatchItem<'pg'>, T extends Readonly<[U, ...U[]]>>(batch: T)` — tuple ít nhất một phần tử. Truyền **literal array**, đừng build bằng `.map()` hay gán vào `const queries: X[]`.
 
@@ -166,12 +167,12 @@ Cả bốn đều dẫn tới màn hình chưa tồn tại (E1-T5, E1-T6, E2). D
 
 Ngoài 8 điểm đã ghi ở guide S1 (`middleware`→`proxy`, Request API async, cấm helper `PageProps`/`RouteContext`, Turbopack mặc định, `unauthorized()` cần `authInterrupts`, `redirect()` throw nên phải ngoài try/catch, `typedRoutes` chỉ type `Link href`, Server Action gọi được bằng POST trực tiếp):
 
-9. **`params` của route động là `Promise`**, phải `await`. Và vẫn **không** dùng helper `PageProps<'/groups/[groupId]'>` — nó do `next typegen` sinh vào `.next/types`, mà CI chạy `yarn typecheck` **trước** `yarn build`. Khai thủ công `{ params: Promise<{ groupId: string }> }`.
-10. Repo **không bật `cacheComponents`** → nằm ở caching model cũ: page dùng `auth()`/`cookies()` là dynamic, không bị Full Route Cache. Rủi ro còn lại chỉ là **client Router Cache** → gọi `revalidatePath('/groups')` trong action **trước** `redirect`.
-11. **`forbidden()` cần `experimental.authInterrupts`** — guide này **không** bật. Dùng `notFound()` cho "không phải member": vừa khỏi sửa config, vừa đúng NFR-04 (không lộ nhóm có tồn tại hay không).
-12. `redirect(url, type)` trả `never`. Trong **Server Action** mặc định là `push`, nơi khác là `replace`.
-13. Server Function closure variables được Next mã hoá trước khi gửi xuống client — nhưng vẫn theo docs: **action tự đọc session**, không nhận `userId` từ ngoài.
-14. **Vitest không test được async Server Component** — `node_modules/next/dist/docs/01-app/02-guides/testing/vitest.md` nói thẳng. Khớp Tech Spec §8.2: không viết test cho `page.tsx`.
+1. **`params` của route động là `Promise`**, phải `await`. Và vẫn **không** dùng helper `PageProps<'/groups/[groupId]'>` — nó do `next typegen` sinh vào `.next/types`, mà CI chạy `yarn typecheck` **trước** `yarn build`. Khai thủ công `{ params: Promise<{ groupId: string }> }`.
+2. Repo **không bật `cacheComponents`** → nằm ở caching model cũ: page dùng `auth()`/`cookies()` là dynamic, không bị Full Route Cache. Rủi ro còn lại chỉ là **client Router Cache** → gọi `revalidatePath('/groups')` trong action **trước** `redirect`.
+3. **`forbidden()` cần `experimental.authInterrupts`** — guide này **không** bật. Dùng `notFound()` cho "không phải member": vừa khỏi sửa config, vừa đúng NFR-04 (không lộ nhóm có tồn tại hay không).
+4. `redirect(url, type)` trả `never`. Trong **Server Action** mặc định là `push`, nơi khác là `replace`.
+5. Server Function closure variables được Next mã hoá trước khi gửi xuống client — nhưng vẫn theo docs: **action tự đọc session**, không nhận `userId` từ ngoài.
+6. **Vitest không test được async Server Component** — `node_modules/next/dist/docs/01-app/02-guides/testing/vitest.md` nói thẳng. Khớp Tech Spec §8.2: không viết test cho `page.tsx`.
 
 ---
 
@@ -2329,7 +2330,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
 # 12. Cấu hình phải sửa
 
 | File | Sửa gì |
-|---|---|
+| --- | --- |
 | `src/app/globals.css` | thêm `--color-scrim` và `--animate-skeleton` + `@keyframes skeleton` (§5.1) |
 | `src/shared/db/schema.ts` | thêm `groups`, `groupMembers`; import thêm `boolean`, `index` |
 | migrations | `yarn db:generate --name=group_and_members` — không sửa tay |
@@ -2348,7 +2349,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
 Nhánh `feat/group-minimum`. Conventional Commits, scope `group` / `shared` / `ui` / `db` / `app`.
 
 | # | Việc | Test viết TRƯỚC | Tick |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 0 | `yarn verify && yarn arch:probe && yarn build` xanh trên baseline S1 | — | |
 | 1 | `shared/time/time-zone.ts` | **`time-zone.test.ts` ĐỎ trước** (§5.2) | |
 | 2 | Refactor `decision-date.ts` dùng `isValidTimeZone` | **7 test cũ vẫn xanh, KHÔNG sửa file test** | |
@@ -2413,7 +2414,7 @@ Env scope Preview: `DATABASE_URL` trỏ Neon branch của PR. Migration chạy t
 # 15. Rủi ro
 
 | Rủi ro | Dấu hiệu | Làm gì |
-|---|---|---|
+| --- | --- | --- |
 | Ai đó "tối ưu" `isValidTimeZone` thành `supportedValuesOf().includes()` | Tạo nhóm với `Asia/Ho_Chi_Minh` bị từ chối | Test ở §5.2 khẳng định thẳng điều này, kèm comment giải thích tại chỗ |
 | `Intl.supportedValuesOf` thiếu ở trình duyệt cũ (**chưa verify trên mobile**) | Sheet trống | Đã có guard `typeof … === 'function'` + `FALLBACK_TIME_ZONES` |
 | 418 timezone làm nặng payload (~7.7 KB JSON) | RSC payload phình | Gọi ở **client**, lazy trong `useMemo` khi sheet mở. Payload thêm: 0 byte |

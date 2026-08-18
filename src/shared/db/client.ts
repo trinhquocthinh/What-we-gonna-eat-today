@@ -7,10 +7,11 @@ import * as schema from './schema'
  * Driver HTTP của Neon, không giữ kết nối lâu — hợp với môi trường serverless
  * của Vercel, nơi mỗi invocation có thể là một process khác.
  *
- * Đánh đổi: driver HTTP không chạy được transaction nhiều câu lệnh. Từ E1-T7 trở
- * đi có vài chỗ bắt buộc transaction thật (Start Session, finalize + sinh Eating
- * History — TC-107, TC-109). Khi tới đó sẽ cần thêm driver WebSocket
- * (`neon-serverless`) song song, chứ không thay thế cái này.
+ * Đánh đổi: driver HTTP không chạy được interactive transaction nhiều câu lệnh. Từ E3-T1 trở
+ * đi có vài chỗ bắt buộc interactive transaction (SPEC-008 revalidate + snapshot Group Rule sang
+ * Session Rule — TC-030). Khi tới đó sẽ cần thêm driver WebSocket (`neon-serverless`) song song,
+ * chứ không thay thế cái này. (Xem DEC-024: E1-T7 dùng atomic single UPDATE và db.batch() nên vẫn
+ * dùng driver HTTP an toàn).
  *
  * Kết nối được dựng LƯỜI và nhớ lại. Đừng đổi về `export const db = …`: module
  * này nằm trên đường import của Route Handler auth, mà `next build` nạp module

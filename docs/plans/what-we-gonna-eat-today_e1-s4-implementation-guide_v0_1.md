@@ -2,7 +2,7 @@
 
 ## Version 0.1
 
-**Status:** Ready to code
+**Status:** Completed
 **Created:** 2026-08-17
 **Upstream:** Master Plan v1.0 §3 (E1-T6, E1-T7), SDD v0.2 SPEC-007 (SPEC-008 rút gọn), Tech Spec v0.2 §3.1–3.3/§8, Business Rules BR-020→BR-025, Test Cases v0.1 TC-026→TC-029, TC-107
 **Tiền đề:** S1 (auth) và S2 (group) đã landed. S3 (dish) **chưa landed** — không sao, S4 không phụ thuộc S3.
@@ -14,15 +14,15 @@
 # 0. Phạm vi và điều kiện xong
 
 | ID | Việc | Giờ | Xong nghĩa là |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | E1-T6 | Schema `selection_sessions`, `participants`, partial unique index | 2 | Migration tạo được index một phần; kiểm bằng `\d+` trong psql |
 | E1-T7 | Tạo và Start Session, bắt lỗi unique violation | 2 | Hai Start đồng thời: đúng một thành công — **TC-107 phải chạy hai transaction song song thật** |
 
-- [ ] TC-026, TC-027, TC-028, TC-029, TC-107 pass
-- [ ] `psql "$DATABASE_URL" -c '\d+ selection_sessions'` cho thấy cả hai index, một cái có dòng `Predicate:`
-- [ ] `yarn test:integration` chạy được 5 lần liên tiếp, TC-107 xanh cả 5 lần
-- [ ] `yarn verify` · `yarn arch:probe` · `yarn build` xanh (không cần `DATABASE_URL_TEST`)
-- [ ] PR link SPEC-007, BR-020, BR-025
+- [x] TC-026, TC-027, TC-028, TC-029, TC-107 pass
+- [x] `psql "$DATABASE_URL" -c '\d+ selection_sessions'` cho thấy cả hai index, một cái có dòng `Predicate:`
+- [x] `yarn test:integration` chạy được 5 lần liên tiếp, TC-107 xanh cả 5 lần
+- [x] `yarn verify` · `yarn arch:probe` · `yarn build` xanh (không cần `DATABASE_URL_TEST`)
+- [x] PR link SPEC-007, BR-020, BR-025
 
 **Slice này KHÔNG có UI, KHÔNG đụng `app/`.** Master Plan chỉ liệt kê `features/session/**` cho cả hai subtask. Việc nối Server Action tạo/bắt đầu phiên vào `app/` thuộc **E1-T8** (deck) hoặc **E3**. Ở S4, `createSession`/`startSession` chỉ được gọi từ test — không có route nào gọi chúng, và **không có `assertGroupAccess` nào chạy** (guard đó lắp ở `app/` khi có Server Action thật, đúng comment sẵn trong `eslint.config.mjs`). Đừng hoang mang vì thiếu authorization check ở slice này — nó không thuộc phạm vi.
 
@@ -52,6 +52,7 @@ S4 thêm **DEC-018** đính chính DEC-015 (§11.6) — **không xoá DEC-015**,
 ## 2.1 `@neondatabase/serverless` export `DatabaseError` với `.code` và `.constraint`
 
 `node_modules/@neondatabase/serverless/index.d.ts:313`:
+
 ```ts
 export declare class DatabaseError extends Error {
   code: string | undefined         // mã lỗi Postgres — '23505' = unique_violation
@@ -60,6 +61,7 @@ export declare class DatabaseError extends Error {
   // ...
 }
 ```
+
 Và `DatabaseError` **được export** ở `index.mjs` (không phải type nội bộ). `node_modules/drizzle-orm/neon-http/session.js` **không bọc try/catch** quanh câu query — lỗi từ `clientQuery` (hàm `neon()`) nổi nguyên vẹn lên infrastructure, giữ nguyên là instance `DatabaseError`. Đây là cơ sở để viết:
 
 ```ts
@@ -78,6 +80,7 @@ try {
 ## 2.2 `drizzle-orm/pg-core` hỗ trợ partial index qua `.where(condition: SQL)`
 
 `node_modules/drizzle-orm/pg-core/indexes.d.ts`:
+
 ```ts
 export declare class IndexBuilder {
   concurrently(): this
@@ -87,12 +90,15 @@ export declare class IndexBuilder {
 export declare function index(name?: string): IndexBuilderOn
 export declare function uniqueIndex(name?: string): IndexBuilderOn
 ```
+
 Viết được:
+
 ```ts
 uniqueIndex('selection_sessions_active_per_group_date')
   .on(table.groupId, table.decisionDate)
   .where(sql`${table.state} in ('ACTIVE', 'FINALIZED')`)
 ```
+
 **Còn là giả định**: tôi không có DB thật ở phiên đọc-only. **Bắt buộc đọc file `.sql` do `yarn db:generate` sinh ra** (§6.2) trước khi migrate, xác nhận có đúng mệnh đề `WHERE`.
 
 ## 2.3 `vitest.config.mts` hiện không nạp env nào, CI không có biến môi trường nào
@@ -114,12 +120,14 @@ Giống S3: chưa có consumer cắt ngang nào cần fake port cực ngắn ở
 ## 3.3 `startDraft` trả kết quả phân biệt, không rò rỉ `DatabaseError` ra `application/`
 
 SDD §2.3: *"infrastructure → application: entity domain, không rò rỉ kiểu ORM."* `infrastructure/drizzle-session-repository.ts` bắt `DatabaseError`, dịch thành một trong ba giá trị domain-shaped:
+
 ```ts
 type StartDraftOutcome =
   | { readonly outcome: 'STARTED'; readonly session: SessionSummary }
   | { readonly outcome: 'NOT_DRAFT' }
   | { readonly outcome: 'ALREADY_EXISTS_TODAY' }
 ```
+
 `application/start-session.ts` map `outcome` sang `Result<SessionSummary, Failure>` với `ERR_SESSION_NOT_DRAFT` / `ERR_SESSION_EXISTS_TODAY`. Không dùng `throw`/`catch` xuyên qua ranh giới application — application không biết `DatabaseError` tồn tại.
 
 ---
@@ -252,6 +260,7 @@ export default defineConfig({
 ```json
 "test:integration": "vitest run --config vitest.integration.config.mts",
 ```
+
 Đặt ngay dưới dòng `"test:watch"`. Không sửa `"test"` (vẫn `vitest run`, giờ tự động loại integration nhờ `exclude` ở config).
 
 ---
@@ -358,11 +367,13 @@ yarn db:generate --name=selection_sessions_and_participants
 **Số thứ tự tự sinh — không hardcode trong bất kỳ tài liệu nào.** S3 (dish) chưa landed nhưng guide của nó giả định số `0002`. Nếu S4 chạy migration TRƯỚC S3, S4 chiếm `0002` và S3 thành `0003` — điều đó đúng, không phải lỗi. Sinh migration ở **commit riêng, cuối cùng**, ngay trước khi mở PR.
 
 Đọc `.sql` sinh ra, xác nhận **ba điều bằng mắt**:
+
 1. `CREATE TYPE "public"."session_state" AS ENUM(...)` và `CREATE TYPE "public"."participant_state" AS ENUM(...)` đứng trước `CREATE TABLE`.
 2. `CREATE INDEX "selection_sessions_group_date_idx" ON "selection_sessions" ("group_id","decision_date");` — **không có** `WHERE`.
 3. `CREATE UNIQUE INDEX "selection_sessions_active_per_group_date" ON "selection_sessions" ("group_id","decision_date") WHERE state in ('ACTIVE', 'FINALIZED');` — **có** `WHERE`. Nếu thiếu mệnh đề này, `.where()` của drizzle không hoạt động như tài liệu này giả định — dừng lại, đừng migrate, xem §12 rủi ro hàng đầu.
 
 Migrate **cả hai branch** — `dev` (đã trỏ sẵn qua `.env.local`) và `test` (`.env.test.local`, xem §5.1):
+
 ```bash
 yarn db:migrate                                    # branch dev, đọc .env.local
 DATABASE_URL="$(grep DATABASE_URL .env.test.local | cut -d= -f2- | tr -d '"')" yarn db:migrate   # branch test
@@ -1091,17 +1102,16 @@ describe('BR-025 — race condition khi Start (TC-107)', () => {
       # DATABASE_URL_TEST chỉ có ở repo chính — PR từ fork không nhận được
       # secret (đúng cơ chế bảo mật của GitHub Actions cho repo public), nên
       # bước này TỰ BỎ QUA thay vì đỏ CI của người khác.
+      # Lưu ý: secrets không được truy cập trực tiếp trong if, cần truyền qua job-level env.
       - name: Test tích hợp (cần DATABASE_URL_TEST)
-        if: ${{ secrets.DATABASE_URL_TEST != '' }}
+        if: ${{ env.DATABASE_URL_TEST != '' }}
         run: yarn test:integration
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+          DATABASE_URL: ${{ env.DATABASE_URL_TEST }}
 
       - name: Build
         run: yarn build
 ```
-
-**Còn là giả định — verify khi đẩy PR đầu tiên**: cú pháp `if: ${{ secrets.X != '' }}` truy cập trực tiếp secret trong điều kiện `if:`. Tôi tin cú pháp này hợp lệ cho workflow chạy trong cùng repo (không phải fork), nhưng chưa chạy thật để xác nhận. Nếu GitHub Actions từ chối cú pháp này, phương án thay thế: đưa secret vào `env:` ở job level trước, rồi `if: ${{ env.HAS_TEST_DB == 'true' }}` với một bước tính `env.HAS_TEST_DB` từ `env.DATABASE_URL != ''`.
 
 ## 10.2 Việc bạn phải tự làm — Neon Console + GitHub
 
@@ -1116,7 +1126,7 @@ describe('BR-025 — race condition khi Start (TC-107)', () => {
 # 11. Cấu hình phải sửa
 
 | File | Sửa gì |
-|---|---|
+| --- | --- |
 | `src/shared/db/schema.ts` | +`sessionState`, +`participantState` (pgEnum), +`selectionSessions` (2 index), +`participants` |
 | migrations | `yarn db:generate --name=selection_sessions_and_participants` — số tự sinh, không hardcode |
 | `src/shared/testing/factories.ts` | +`makeSession`, +`makeParticipant` |
@@ -1167,7 +1177,7 @@ The `neon-serverless` (WebSocket) driver is deferred to **E3-T1**, where snapsho
 Nhánh `feat/session-minimum`. Conventional Commits, scope `session` / `db` / `test` / `ci` / `docs`.
 
 | # | Việc | Test viết TRƯỚC | Tick |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 0 | Tạo Neon branch `test` thủ công (§10.2) → `.env.test.local` | — | |
 | 1 | Hạ tầng vitest: `vitest.config.mts` (exclude), `vitest.integration.config.mts`, `setup-integration.ts`, script `test:integration` | verify bằng một file `.integration.test.ts` rỗng đọc được `DATABASE_URL` | |
 | 2 | `domain/session.ts` | không test (chỉ type) | |
@@ -1200,11 +1210,14 @@ yarn test:integration                           # cần .env.test.local
 ```bash
 psql "$DATABASE_URL" -c '\d+ selection_sessions'
 ```
+
 Kỳ vọng thấy trong phần Indexes:
+
 ```
 "selection_sessions_group_date_idx" btree (group_id, decision_date)
 "selection_sessions_active_per_group_date" UNIQUE, btree (group_id, decision_date) WHERE state = ANY (ARRAY['ACTIVE'::session_state, 'FINALIZED'::session_state])
 ```
+
 (Postgres có thể viết lại `IN (...)` thành `= ANY(ARRAY[...])` khi hiển thị — đó là cùng một điều kiện, không phải lỗi.)
 
 ## 13.3 Độ tin cậy TC-107
@@ -1212,11 +1225,13 @@ Kỳ vọng thấy trong phần Indexes:
 ```bash
 for i in 1 2 3 4 5; do yarn test:integration || echo "LẦN $i ĐỎ"; done
 ```
+
 Không dòng "LẦN N ĐỎ" nào xuất hiện. Nếu có, xem §14 rủi ro "TC-107 flaky".
 
 ## 13.4 CI
 
 Mở PR nháp, xác nhận:
+
 - `yarn verify`/`yarn arch:probe`/`yarn build` xanh không cần secret.
 - Bước "Test tích hợp" chạy và xanh nếu secret `DATABASE_URL_TEST` đã cấu hình ở repo chính.
 - (Nếu test được trên fork hoặc giả lập thiếu secret) bước đó bị skip, không đỏ toàn bộ pipeline.
@@ -1226,7 +1241,7 @@ Mở PR nháp, xác nhận:
 # 14. Rủi ro
 
 | Rủi ro | Dấu hiệu | Phương án |
-|---|---|---|
+| --- | --- | --- |
 | `yarn db:generate` không sinh đúng `WHERE` cho partial index | `.sql` thiếu mệnh đề `WHERE` ở `selection_sessions_active_per_group_date` | Đọc `.sql` trước khi migrate (§6.2). Nếu hỏng: viết SQL tay chèn vào file migration đã sinh, ghi vào decision log lý do phải sửa tay |
 | TC-107 flaky vì độ trễ hai request HTTP không đối xứng | một nhánh luôn thắng ở mọi vòng lặp | Đã dùng `Promise.allSettled` + lặp 5 vòng trong test (§9.2). Nếu vẫn lệch hệ thống: đổi thứ tự gọi giữa các vòng (`round % 2 === 0 ? [a,b] : [b,a]`), hoặc chèn `await new Promise(r => setTimeout(r, Math.random() * 10))` trước mỗi lệnh gọi để phá vỡ độ trễ hệ thống |
 | `DatabaseError` không phải instance đúng khi đi qua `drizzle-orm` (bị wrap lại) | `catch` ở `startDraft` không bắt được, lỗi ném thẳng ra ngoài, test đỏ với stack trace lạ | Đã verify `neon-http/session.js` không catch (§2.1) — nhưng verify lại bằng chạy test thật; nếu nghi ngờ, tạm thêm `console.log(error.constructor.name, (error as { code?: string }).code)` trong `catch` để soi |

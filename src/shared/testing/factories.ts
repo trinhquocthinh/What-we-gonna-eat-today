@@ -67,3 +67,37 @@ export function makeGroupDish(overrides: Partial<TestGroupDish> = {}): TestGroup
     ...overrides,
   }
 }
+
+export type TestSession = {
+  id: string
+  groupId: string
+  decisionDate: string
+  state: 'DRAFT' | 'ACTIVE'
+}
+
+export function makeSession(overrides: Partial<TestSession> = {}): TestSession {
+  return {
+    id: '01920000-0000-7000-8000-0000000000b1',
+    groupId: '01920000-0000-7000-8000-0000000000a1',
+    decisionDate: '2026-08-17',
+    state: 'DRAFT',
+    ...overrides,
+  }
+}
+
+export type TestParticipant = {
+  id: string
+  sessionId: string
+  userId: string
+  state: 'ACTIVE'
+}
+
+export function makeParticipant(overrides: Partial<TestParticipant> = {}): TestParticipant {
+  return {
+    id: '01920000-0000-7000-8000-0000000000c1',
+    sessionId: '01920000-0000-7000-8000-0000000000b1',
+    userId: '01920000-0000-7000-8000-000000000001',
+    state: 'ACTIVE',
+    ...overrides,
+  }
+}
