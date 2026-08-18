@@ -75,9 +75,11 @@ Nếu bước 5 báo lỗi kết nối, gần như chắc chắn `DATABASE_URL` 
 | `DATABASE_URL` | Có | Neon Console → Project → Connection string, chọn đúng branch | `postgresql://user:***@ep-xxx.ap-southeast-1.aws.neon.tech/wwget?sslmode=require` |
 | `AUTH_SECRET` | Có | Tự sinh: `openssl rand -base64 32` | chuỗi base64 32 byte |
 | `AUTH_URL` | Chỉ local | URL gốc của môi trường. **Để trống trên Vercel** — biến này ghi đè origin của mọi request, đặt giá trị production vào scope Preview sẽ làm callback trên preview trỏ nhầm domain. Vercel tự đặt `VERCEL=1`, next-auth đọc nó để bật `trustHost` | `http://localhost:3000` |
-| `AUTH_GOOGLE_ID` | Có | Google Cloud Console → APIs & Services → Credentials → OAuth client | `xxxxx.apps.googleusercontent.com` |
-| `AUTH_GOOGLE_SECRET` | Có | Cùng nơi trên | `GOCSPX-xxxx` |
+| `AUTH_GOOGLE_ID` | Có (tạm) | Google Cloud Console → APIs & Services → Credentials → OAuth client | `xxxxx.apps.googleusercontent.com` |
+| `AUTH_GOOGLE_SECRET` | Có (tạm) | Cùng nơi trên | `GOCSPX-xxxx` |
 | `CRON_SECRET` | Không ở v1.0 | Vercel tự đặt khi có cron | — |
+
+Hai biến `AUTH_GOOGLE_*` đánh dấu **(tạm)**: nhà cung cấp danh tính đích của dự án là Authentik của Family Hub, Google chỉ giữ chỗ tới khi Authentik dựng xong. Xem §3.1.
 
 Mỗi môi trường một bộ giá trị riêng. `AUTH_SECRET` của production **không** được dùng lại ở local.
 
@@ -90,6 +92,114 @@ https://<domain-production>/api/auth/callback/google
 ```
 
 Preview deploy của Vercel đổi URL theo mỗi nhánh. Cách xử lý là bật tính năng preview URL cố định của Vercel rồi khai báo đúng một URL đó, thay vì thêm URL mới cho từng PR.
+
+---
+
+# 3.1 Chuyển sang Authentik (Family Hub)
+
+App này là **một service trong Family Hub** — mục tiêu là người trong nhà tạo tài khoản đúng một lần rồi dùng được mọi service. Authentik là nhà cung cấp danh tính của hub đó. Mục này là toàn bộ những gì cần làm khi Authentik đã sẵn sàng.
+
+Google hiện tại chỉ là chỗ đứng tạm để app đăng nhập được trong lúc chờ. Giao diện đã trung tính hoá sẵn (nút chỉ ghi "Đăng nhập", không nhắc tên nhà cung cấp), nên khi chuyển sẽ **không phải sửa gì ở phần nhìn thấy được**.
+
+## 3.1.1 Hai quyết định đã chốt — đọc trước khi cấu hình
+
+**Quyết định 1: Subject mode chọn UUID, và không bao giờ đổi.**
+
+`sub` mà Authentik trả về được ghi thẳng vào cột `users.provider_subject`, và cặp `(provider, provider_subject)` là khoá định danh của người dùng (SPEC-001). Authentik cho phép sinh `sub` từ hashed ID, ID, UUID, username, email hoặc UPN. **Đổi lựa chọn này sau khi đã có người đăng nhập sẽ làm mọi người trong nhà mất tài khoản ở mọi service của hub cùng lúc** — không phải chỉ app này. Chọn **UUID**, ghi lại, coi như bất biến.
+
+Không chọn email hay username: cả hai đều đổi được, và SPEC-001 tồn tại chính vì lý do đó.
+
+**Quyết định 2: Authentik trả lời "anh là ai", app trả lời "anh thuộc nhà nào".**
+
+Authentik có group riêng và bắn được vào token, nhưng `group_members` của app **không** lấy từ đó. `group_members.user_id` trỏ vào `users.id` — UUID nội bộ của app, không phải `sub` của Authentik. Lý do: thành viên nhóm và cờ `is_admin` là khái niệm riêng của app, đổi chúng không nên phải mở Authentik lên; và mỗi service trong hub cần giữ được dữ liệu riêng trong khi dùng chung một danh tính.
+
+Nói gọn: Authentik lo **xác thực**, app lo **phân quyền**. Đừng trộn.
+
+## 3.1.2 Dựng Authentik để thử ở local
+
+Chạy được trọn luồng thật với `localhost:3000` trước khi dựng bản public — đủ để bắt cả ba cái bẫy ở §3.1.4.
+
+```bash
+mkdir -p ~/authentik && cd ~/authentik
+curl -O https://goauthentik.io/docker-compose.yml
+echo "PG_PASS=$(openssl rand -base64 36 | tr -d '\n')" >> .env
+echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> .env
+docker compose up -d
+```
+
+Mở `http://localhost:9000/if/flow/initial-setup/` để đặt mật khẩu cho tài khoản `akadmin`. Lấy compose file trực tiếp từ goauthentik.io thay vì chép vào tài liệu này là cố ý — bộ service của Authentik (server, worker, postgresql, redis) đổi theo phiên bản, chép cứng vào đây là bảo đảm sẽ lỗi thời.
+
+## 3.1.3 Tạo Application và OAuth2 Provider
+
+Trong Authentik Admin Interface:
+
+1. **Applications → Providers → Create → OAuth2/OpenID Provider**
+   - Client type: **Confidential**
+   - Redirect URIs: `http://localhost:3000/api/auth/callback/authentik` (thêm URL production và preview khi tới lúc)
+   - Signing Key: chọn certificate có sẵn
+   - Advanced protocol settings → **Subject mode: Based on the User's UUID** ← Quyết định 1
+   - Advanced protocol settings → Scopes: bảo đảm có đủ **`openid`, `email`, `profile`** ← xem bẫy số 2
+2. **Applications → Applications → Create**, gán provider vừa tạo. **Slug** đặt gì cũng được nhưng phải nhớ — nó nằm trong issuer URL.
+3. Copy **Client ID** và **Client Secret** từ trang provider.
+
+Nhãn trong giao diện Authentik có xê dịch giữa các phiên bản. Nếu không thấy đúng chữ như trên, tìm theo ý nghĩa chứ đừng bỏ qua — đặc biệt là Subject mode.
+
+## 3.1.4 Ba cái bẫy
+
+**Bẫy 1 — issuer phải kèm slug và không có `/` ở cuối.** Đây là lỗi cấu hình phổ biến nhất của provider này.
+
+```
+https://<domain-authentik>/application/o/<slug>
+```
+
+Kiểm chứng trước khi đụng code: `curl https://<domain>/application/o/<slug>/.well-known/openid-configuration` phải trả về JSON. Nếu trả 404 thì slug sai.
+
+**Bẫy 2 — thiếu property mapping thì hỏng ở chỗ khó đoán.** Auth.js xin scope `openid profile email`. Nếu provider không được gán đủ, token về mà thiếu claim `email` hoặc `name` → `readProviderProfile` trả `null` → `provisionUser` trả `ERR_VALIDATION` → callback `jwt` **throw**. Triệu chứng người dùng thấy: bị đá về `/?error=…` với dải báo đỏ, không có manh mối nào. Kiểm ngay ở lần đăng nhập đầu tiên.
+
+**Bẫy 3 — Authentik phải công khai truy cập được từ máy chủ Vercel, không chỉ từ trình duyệt.** Auth.js chạy **phía server** để lấy discovery document và đổi authorization code lấy token. Authentik nằm trong LAN, sau CGNAT hoặc IP động là không chạy được với app deploy trên Vercel. Cloudflare Tunnel giải quyết gọn và không tốn phí. Riêng thử ở local (`localhost:3000` gọi `localhost:9000`) thì không dính bẫy này.
+
+## 3.1.5 Biến môi trường
+
+Bỏ `AUTH_GOOGLE_ID` và `AUTH_GOOGLE_SECRET`, thêm:
+
+| Tên | Bắt buộc | Lấy ở đâu | Ví dụ định dạng |
+|---|---|---|---|
+| `AUTH_AUTHENTIK_ID` | Có | Authentik → Providers → provider vừa tạo → Client ID | chuỗi hex dài |
+| `AUTH_AUTHENTIK_SECRET` | Có | Cùng nơi trên → Client Secret | chuỗi hex dài |
+| `AUTH_AUTHENTIK_ISSUER` | Có | Ghép từ domain và slug, xem bẫy 1 | `https://auth.example.com/application/o/wwget` |
+
+Ba tên biến này là quy ước `AUTH_<PROVIDER>_*` mà `@auth/core` tự đọc — không phải đặt tuỳ ý, và không cần truyền config thủ công trong code.
+
+## 3.1.6 Đổi code — hai dòng
+
+| File | Đổi |
+|---|---|
+| `src/features/auth/infrastructure/auth.ts` | `import Authentik from 'next-auth/providers/authentik'` và `providers: [Authentik]` |
+| `src/features/auth/presentation/containers/auth-actions.ts` | `signIn('authentik', { redirectTo: '/groups' })` |
+
+Hết. **Không có migration schema.** Tầng `domain/` và `application/` không đổi một dòng — chúng chưa bao giờ biết nhà cung cấp là ai, `provider` chỉ là một chuỗi. Test của hai tầng đó pass không cần sửa. Giao diện cũng không đổi vì copy đã trung tính từ trước.
+
+## 3.1.7 Xoá dữ liệu Google cũ
+
+Các hàng `users` cũ mang `provider = 'google'`; sau khi chuyển thì không ai đăng nhập vào chúng được nữa, và người dùng sẽ được cấp hàng mới với `provider = 'authentik'`. Quyết định đã chốt là **xoá sạch làm lại**, vì dữ liệu hiện có chỉ là dữ liệu thử của E1.
+
+```sql
+-- Đúng thứ tự này: group_members tham chiếu cả hai bảng kia.
+TRUNCATE group_members, groups, users RESTART IDENTITY;
+```
+
+**Xoay `AUTH_SECRET` ngay sau khi truncate.** Cookie JWT hiện có vẫn mang `userId` của hàng vừa xoá; không xoay thì `getCurrentUser` trả về một User trỏ vào hàng không tồn tại, và lỗi sẽ nổ ở tận màn hình nhóm chứ không phải ở màn đăng nhập. Xoay khiến mọi người phải đăng nhập lại — đằng nào cũng phải, vì họ đang chuyển sang tài khoản hub.
+
+## 3.1.8 Nghiệm thu
+
+1. `curl <issuer>/.well-known/openid-configuration` trả JSON.
+2. Đăng nhập lần đầu tạo được hàng `users` mới với `provider = 'authentik'`.
+3. Kiểm trong database: `provider_subject` là UUID, **không** phải email hay username → xác nhận Quyết định 1 đã áp đúng.
+4. `display_name` và `email` có giá trị thật, không phải email bị dùng làm tên thay → xác nhận property mapping đủ.
+5. Đăng xuất rồi đăng nhập lại **không** tạo hàng `users` thứ hai → xác nhận `sub` ổn định.
+6. Người thứ hai trong nhà đăng nhập ra hàng riêng, vào đúng nhóm.
+
+Bước 3 và 5 là hai bước dễ bỏ qua nhất và cũng là hai bước đắt nhất nếu sai — phát hiện muộn thì đã có dữ liệu thật gắn vào định danh sai.
 
 ---
 
@@ -276,3 +386,4 @@ Kiểm tra mỗi quý. Số liệu xác minh ngày 2026-08-14; hạn mức free 
 | Version | Date | Section | Change | Reason / Decision |
 |---|---|---|---|---|
 | 0.1 | 2026-08-14 | Toàn bộ | Bản draft đầu tiên; phiên bản Node và hạn mức free tier xác minh 2026-08-14 | Phase 8.3 |
+| 0.1 | 2026-08-18 | §3, §3.1 mới | Thêm hướng dẫn chuyển sang Authentik; đánh dấu `AUTH_GOOGLE_*` là tạm | App là một service trong Family Hub, danh tính dùng chung đến từ Authentik. Chốt hai quyết định: subject mode UUID bất biến, và Authentik lo xác thực còn app lo phân quyền |

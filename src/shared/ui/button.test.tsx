@@ -5,20 +5,20 @@ import { Button } from '@/shared/ui/button'
 
 describe('Button', () => {
   it('hiện nhãn được truyền vào', () => {
-    render(<Button>Tiếp tục với Google</Button>)
-    expect(screen.getByRole('button', { name: 'Tiếp tục với Google' })).toBeInTheDocument()
+    render(<Button>Đăng nhập</Button>)
+    expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeInTheDocument()
   })
 
   it('pending thì khoá nút và báo aria-busy', () => {
-    render(<Button pending>Đang mở Google…</Button>)
-    const button = screen.getByRole('button', { name: 'Đang mở Google…' })
+    render(<Button pending>Đang mở trang đăng nhập…</Button>)
+    const button = screen.getByRole('button', { name: 'Đang mở trang đăng nhập…' })
 
     expect(button).toBeDisabled()
     expect(button).toHaveAttribute('aria-busy', 'true')
   })
 
   it('không pending thì không khoá', () => {
-    render(<Button>Tiếp tục với Google</Button>)
+    render(<Button>Đăng nhập</Button>)
     expect(screen.getByRole('button')).toBeEnabled()
   })
 

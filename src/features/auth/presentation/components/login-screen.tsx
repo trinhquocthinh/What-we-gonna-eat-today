@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 
 import { Banner } from '@/shared/ui/banner'
 
-import { GoogleSubmitButton } from './google-submit-button'
+import { SsoSubmitButton } from './sso-submit-button'
 
 export type LoginScreenProps = {
   hasError: boolean
@@ -35,7 +35,7 @@ export function LoginScreen({ hasError, signInAction }: LoginScreenProps): React
         {hasError ? <Banner tone="danger">Không đăng nhập được. Thử lại giúp mình.</Banner> : null}
 
         <form action={signInAction}>
-          <GoogleSubmitButton />
+          <SsoSubmitButton />
         </form>
 
         <span className="self-center text-pretty text-center text-caption font-medium text-ink-muted">

@@ -10,7 +10,7 @@ describe('SPEC-001 — Đăng nhập (S-01)', () => {
     render(<LoginScreen hasError={false} signInAction={noop} />)
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Hôm nay nhà mình ăn gì')
-    expect(screen.getByRole('button', { name: 'Tiếp tục với Google' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeInTheDocument()
     expect(screen.getByText('Chỉ dùng để nhận diện bạn trong nhóm gia đình')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
@@ -19,6 +19,6 @@ describe('SPEC-001 — Đăng nhập (S-01)', () => {
     render(<LoginScreen hasError signInAction={noop} />)
 
     expect(screen.getByRole('alert')).toHaveTextContent('Không đăng nhập được. Thử lại giúp mình.')
-    expect(screen.getByRole('button', { name: 'Tiếp tục với Google' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeInTheDocument()
   })
 })

@@ -5,11 +5,18 @@ import { provisionUser } from '../application/provision-user'
 import { drizzleUserRepository } from './drizzle-user-repository'
 
 /**
- * Tech Spec §5 — Auth.js, chỉ Google, session là cookie JWT hạn 30 ngày.
+ * Tech Spec §5 — Auth.js, một nhà cung cấp duy nhất, session là cookie JWT hạn
+ * 30 ngày.
  *
  * Không dùng adapter database: schema `users` của dự án lấy khoá định danh là
  * `provider + provider_subject` (SPEC-001), không khớp bộ bảng mà adapter của
  * Auth.js yêu cầu. Việc tìm-hoặc-tạo User nằm ở `application/provisionUser`.
+ *
+ * Hiện là Google. Đích đến là Authentik của Family Hub — app này là một service
+ * trong hub, và danh tính dùng chung đến từ đó. Việc chuyển chỉ đụng dòng
+ * `providers` bên dưới và `signIn(...)` trong presentation/containers/
+ * auth-actions.ts; tầng domain và application không biết nhà cung cấp là ai nên
+ * không phải sửa gì. Các bước dựng Authentik nằm ở Setup & Ops Guide §3.1.
  */
 declare module '@auth/core/types' {
   interface Session {
