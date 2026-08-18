@@ -1,15 +1,13 @@
-# Implementation Guide — E1 Slice S7 / Đo thật
+# 📊 Implementation Guide — E1 Slice S7: Đo lường Cold Start Production (M2)
 
-## Version 0.1
-
-**Status:** Ready to run
-**Created:** 2026-08-18
-**Upstream:** Master Plan v1.0 §3 (E1-T12), §11 (điểm kiểm tra scope), Tech Spec v0.2 §1.1/§9 (R-01), PRD v0.4 §5 (NFR-01), Test Cases v0.1 §4 (MS-01, MS-05), Setup & Ops Guide v0.1
-**Tiền đề:** E1-T1 → E1-T11 đã landed đúng như sáu guide trong `docs/plans/`.
-
-> Tài liệu này **không phải hướng dẫn code**. Sáu guide trước (S1-S6) là TDD — viết test trước, code sau. Guide này là một **runbook thao tác**: deploy production thật, đo trên điện thoại thật, ghi số thật vào tài liệu. Không có `features/**` nào ở slice này — Master Plan ghi cột "File" là `—`.
+> **Document Metadata**
 >
-> Deploy production và merge vào `main` là hành động khó đảo ngược, ảnh hưởng hệ thống chung — đây là việc **bạn tự làm theo checklist dưới đây**, không phải việc tôi làm thay.
+> - **Version:** `0.1` | **Status:** `Ready to run`
+> - **Created:** `2026-08-18` | **Last Updated:** `2026-08-18`
+> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T12`) • [PRD](what-we-gonna-eat-today_prd_v0_1.md) (`NFR-01`) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`MS-01, MS-05`) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md)
+> - **Tiền đề:** `E1-T1` đến `E1-T11` đã hoàn thành (S1→S6).
+>
+> 📌 *Runbook hướng dẫn thao tác nghiệm thu Cột mốc M2: Triển khai Production, đo lường độ trễ Cold Start thực tế trên thiết bị di động 4G/5G.*
 
 ---
 
@@ -229,3 +227,11 @@ Và thêm một dòng ghi ngày đạt milestone **M2** (theo đúng khuôn các
 | `AUTH_URL` bị đặt nhầm giá trị trên Vercel Production | Đăng nhập redirect sai domain | Xoá biến đó khỏi scope Production nếu có, chỉ giữ ở `.env.local` |
 | Build xanh nhưng migration không thật sự áp (chạy nhầm branch) | `db:studio` trỏ `main` thiếu bảng dù Vercel báo thành công | Luôn xác nhận bằng bước 4.3 trước khi tin build xanh là đủ |
 | Số đo dao động quá lớn giữa 3 lần (ví dụ 1.2s / 1.4s / 4.8s) | Có thể một lần đo dính mạng di động yếu, không phải cold start | Đo thêm 2 lần nữa nếu độ lệch bất thường, ghi chú điều kiện mạng lúc đo cho từng lần |
+
+---
+
+# 9. Lịch sử thay đổi (Change History)
+
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-18 | Toàn bộ | Khởi tạo Runbook đo lường Cold Start Production M2 (E1-T12) | Cột mốc M2 |

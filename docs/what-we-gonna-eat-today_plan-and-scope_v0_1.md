@@ -1,233 +1,154 @@
-# Plan & Scope — What We Gonna Eat Today
+# 🎯 Plan & Scope — What We Gonna Eat Today
 
-## Version 0.1
-
-**Status:** Draft — Awaiting review
-**Created:** 2026-08-14
-**Upstream:** Tech Spec & Architecture v0.1, SDD v0.2, PRD v0.4
-**Downstream:** Master Plan, Setup & Ops Guide
-
-Kế hoạch mức cao cho **v1.0 — 17 tính năng**. Chia subtask chi tiết thuộc Master Plan (phase 9).
-
----
-
-# 1. Nguyên tắc sắp thứ tự
-
-Thứ tự các giai đoạn không theo epic mà theo **rủi ro và phụ thuộc kỹ thuật**:
-
-1. Thứ gì sai thì phải làm lại nhiều nhất → làm trước. Cụ thể là ranh giới tầng, Decision Date theo timezone, và Session uniqueness ở tầng DB.
-2. Thứ gì chỉ đo được sau khi deploy thật → đo sớm. Cụ thể là cold start của Neon (R-01), thứ đang ăn gần hết ngân sách 2.5 giây của NFR-01.
-3. Walking skeleton chạy suốt trước khi bất kỳ tính năng nào được làm sâu. Một luồng mỏng từ UI tới DB có giá trị hơn ba tính năng hoàn chỉnh không nối được với nhau.
-4. Rule engine làm sau deck, vì nó chỉ chặn ở bước finalize và không ai bị kẹt nếu chưa có.
+> **Document Metadata**
+>
+> - **Version:** `0.1` | **Status:** `Approved`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
+> - **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [PRD](what-we-gonna-eat-today_prd_v0_1.md)
+> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md)
+>
+> 📌 *Kế hoạch phân bổ giai đoạn và định vị ranh giới phạm vi thực thi cho 17 tính năng phiên bản v1.0.*
 
 ---
 
-# 2. Giai đoạn
+## 📑 Mục lục (Table of Contents)
 
-## P0 — Scaffold
-
-**Mục tiêu:** repo chạy được, mọi cổng chất lượng xanh, deploy được lên Vercel.
-
-| Việc | Giờ |
-|---|---|
-| Repo, yarn Berry qua corepack, Next.js App Router, TypeScript strict | 2 |
-| Cấu trúc thư mục theo feature, ESLint `import/no-restricted-paths` chặn luật tầng | 2 |
-| husky, lint-staged, prettier, commitlint, jscpd, knip, gộp thành `yarn verify` | 2 |
-| Vitest + Testing Library, một test mẫu ở `domain/` | 1 |
-| Neon project, Drizzle, migration đầu tiên, ba branch DB | 2 |
-| GitHub Actions chạy `yarn verify`, Vercel nối repo, deploy trang trắng | 1 |
-
-**Cơ sở:** 10 giờ. Copy cấu hình từ starter kit, không sinh lại từ đầu.
-
-Luật tầng phải được máy chặn **ngay ở P0**. Thêm sau khi đã có 20 file là lúc đã có vi phạm phải gỡ.
+1. [Nguyên tắc sắp xếp thứ tự thực thi](#1-nguyên-tắc-sắp-xếp-thứ-tự-thực-thi)
+2. [Các giai đoạn phát triển (Phases P0–P6)](#2-các-giai-đoạn-phát-triển-phases-p0p6)
+3. [Tổng hợp ước lượng thời gian](#3-tổng-hợp-ước-lượng-thời-gian)
+4. [Hệ thống cột mốc quan sát được (Milestones M1–M6)](#4-hệ-thống-cột-mốc-quan-sát-được-milestones-m1m6)
+5. [Quy chuẩn hoàn thành (Definition of Done)](#5-quy-chuẩn-hoàn-thành-definition-of-done)
+6. [Các điểm dừng kiểm soát rủi ro (Checkpoints)](#6-các-điểm-dừng-kiểm-soát-rủi-ro-checkpoints)
+7. [Thứ tự cắt giảm tính năng khi trễ hạn (De-scoping Hierarchy)](#7-thứ-tự-cắt-giảm-tính-năng-khi-trễ-hạn-de-scoping-hierarchy)
+8. [Lịch sử thay đổi (Change History)](#8-lịch-sử-thay-đổi-change-history)
 
 ---
 
-## P1 — Walking skeleton
+# 1. Nguyên tắc sắp xếp thứ tự thực thi
 
-**Mục tiêu:** một luồng mỏng nhất chạy suốt từ đăng nhập tới Eating History. Cố ý bỏ qua mọi validation không bắt buộc.
+Thứ tự các giai đoạn không đi theo tính năng bề nổi mà dựa trên **mức độ rủi ro và quan hệ phụ thuộc kỹ thuật**:
 
-Bao gồm: SPEC-001, SPEC-002, SPEC-018, SPEC-019, và phiên bản rút gọn của SPEC-005, SPEC-007, SPEC-008, SPEC-010, SPEC-011, SPEC-012, SPEC-015, SPEC-016, SPEC-017.
-
-| Việc | Giờ |
-|---|---|
-| Auth.js Google, `users`, SPEC-001 | 3 |
-| SPEC-002 tạo Group, SPEC-019 guard, SPEC-018 Decision Date theo timezone | 4 |
-| Thêm Dish thô, chưa chuẩn hoá tên, chưa dedupe | 2 |
-| Tạo và Start Session, kèm partial unique index và xử lý unique violation (R-03) | 4 |
-| Deck không ranking, chỉ liệt kê; swipe qua Route Handler, optimistic UI | 5 |
-| Chọn Final Meal và finalize, chưa có rule; sinh Eating History | 4 |
-| Deploy production, đo cold start thật trên 4G (R-01) | 2 |
-
-**Cơ sở:** 24 giờ.
-
-Rút gọn có chủ ý ở P1: chưa có link mời, chưa chuẩn hoá tên Dish, chưa có System Tag, chưa revalidate lúc Start, chưa có cooldown, chưa có rule.
+1. **Rủi ro kiến trúc cao nhất làm trước:** Ranh giới tầng (Clean Architecture), quy đổi Decision Date theo múi giờ, và ràng buộc duy nhất của Session ở tầng Database.
+2. **Đo lường hạ tầng thực tế sớm:** Kiểm chứng cold start của Neon Postgres ([R-01](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)) ngay khi có Walking Skeleton để bảo vệ chỉ số [NFR-01](what-we-gonna-eat-today_prd_v0_1.md).
+3. **Walking Skeleton thông suốt toàn luồng:** Một luồng mỏng chạy thông suốt từ UI đến DB có giá trị thực tế cao hơn nhiều tính năng rời rạc.
+4. **Rule Engine xây dựng sau Deck:** Quy tắc mâm cơm chỉ kiểm tra ở bước cuối (Finalize) nên được làm sau khi trải nghiệm vuốt thẻ đã ổn định.
 
 ---
 
-## P2 — Group và Dish hoàn chỉnh
+# 2. Các giai đoạn phát triển (Phases P0–P6)
 
-**Mục tiêu:** nhiều người vào được nhóm, danh mục món dùng được thật.
+### P0 — Scaffold & Hạ tầng kỹ thuật
 
-Bao gồm: SPEC-003, SPEC-004, SPEC-005 đầy đủ, SPEC-006.
+- **Mục tiêu:** Khởi tạo repository chuẩn hóa, toàn bộ cổng chất lượng xanh, deploy trang trắng lên Vercel.
+- **Hạng mục:** Next.js App Router, TypeScript strict, ESLint chặn luật tầng, Husky, Prettier, commitlint, jscpd, knip, Vitest, Neon project & migration đầu tiên.
+- **Ước lượng:** 10 giờ cơ sở (sao chép cấu hình chuẩn, không tự tạo từ đầu).
 
-| Việc | Giờ |
-|---|---|
-| SPEC-003, SPEC-004 link mời dùng một lần, hash token, hết hạn 7 ngày | 4 |
-| SPEC-005 chuẩn hoá tên bỏ dấu, phát hiện trùng, `forceCreate`, khôi phục Dish Inactive | 5 |
-| SPEC-006 gán System Tag, ghi đè toàn bộ, cách ly theo Group | 3 |
-| Màn hình quản lý danh mục món trên mobile | 4 |
+### P1 — Walking Skeleton (End-to-End thô)
 
-**Cơ sở:** 16 giờ.
+- **Mục tiêu:** Một luồng mỏng nhất chạy suốt từ Đăng nhập $\to$ Tạo nhóm $\to$ Mở phiên $\to$ Vuốt thẻ $\to$ Chốt bữa $\to$ Sinh lịch sử ăn.
+- **Hạng mục:** Auth.js Google, Use case Group tối thiểu, Decision Date, Session tối thiểu (partial index), Deck thô, Finalize thô, Đo cold start thực tế trên 4G.
+- **Ước lượng:** 24 giờ cơ sở.
 
----
+### P2 — Group và Danh mục món hoàn chỉnh
 
-## P3 — Phiên và người tham gia
+- **Mục tiêu:** Nhiều thành viên vào nhóm qua link mời; danh mục món hoạt động hoàn chỉnh với chuẩn hóa tên tiếng Việt.
+- **Hạng mục:** Link mời 7 ngày (SHA-256 hash), chuẩn hóa tên món bỏ dấu, phát hiện trùng lặp (`forceCreate`), gán System Tag theo nhóm, UI quản lý món.
+- **Ước lượng:** 16 giờ cơ sở.
 
-**Mục tiêu:** phiên nhiều người chạy đúng, kể cả khi dữ liệu đổi giữa chừng.
+### P3 — Phiên và Người tham gia
 
-Bao gồm: SPEC-007, SPEC-008 đầy đủ, SPEC-009, SPEC-013.
+- **Mục tiêu:** Phiên nhiều người chạy ổn định, tự động revalidate khi có thay đổi dữ liệu giữa chừng.
+- **Hạng mục:** Revalidate 5 bước khi Start phiên, thêm Participant khi Draft/Active, quản lý trạng thái Completed, UI điều phối phiên cho Creator.
+- **Ước lượng:** 14 giờ cơ sở.
 
-| Việc | Giờ |
-|---|---|
-| SPEC-008 revalidate 5 bước lúc Start, thông báo Participant không hợp lệ | 4 |
-| SPEC-009 thêm Participant khi Draft và khi Active | 3 |
-| SPEC-013 Completed và mở lại, hiển thị ai xong ai chưa | 3 |
-| Màn hình phiên cho Creator | 4 |
+### P4 — Deck vuốt và Thuật toán Ranking
 
-**Cơ sở:** 14 giờ.
+- **Mục tiêu:** Thứ tự món ăn mang tính cá nhân hoá và thông minh (phân biệt app với một danh sách giấy thông thường).
+- **Hạng mục:** `computeRecencyPenalty` (hàm thuần), thuật toán `buildDeck` kèm tie-break, lưu trữ `session_decks`, Route Handler xử lý vuốt siêu tốc $< 100\text{ms}$, UI vuốt 1 tay.
+- **Ước lượng:** 21 giờ cơ sở.
 
----
+### P5 — Rule Engine và Chốt bữa
 
-## P4 — Deck và ranking
+- **Mục tiêu:** Creator có bức tranh toàn cảnh để chốt thực đơn; hệ thống tự động kiểm tra quy chuẩn mâm cơm.
+- **Hạng mục:** Cấu hình Group Rules, Snapshot Session Rules trong transaction Start, `evaluateRequired` với Independent Tag Counting, Session Ranking tổng hợp, UI chốt bữa.
+- **Ước lượng:** 21 giờ cơ sở.
 
-**Mục tiêu:** thứ tự món có nghĩa. Đây là giai đoạn quyết định sản phẩm có khác một danh sách hay không.
+### P6 — Hoàn thiện & Đánh giá NFRs
 
-Bao gồm: SPEC-020, SPEC-010 đầy đủ, SPEC-011, SPEC-012 đầy đủ.
-
-| Việc | Giờ |
-|---|---|
-| SPEC-020 `computeRecencyPenalty`, hàm thuần, test không mock | 3 |
-| SPEC-010 dựng deck có score và tie-break, lưu `session_decks` | 5 |
-| SPEC-011 phân trang, lọc lại theo `group_dishes.state` lúc đọc (R-02) | 3 |
-| SPEC-012 upsert theo timestamp, chống ghi đè sai thứ tự (R-04), retry khi mất mạng | 4 |
-| Giao diện swipe một tay, đạt NFR-02 và NFR-03 | 6 |
-
-**Cơ sở:** 21 giờ.
-
-`RankingConfig` phải là module hằng số duy nhất ngay từ giai đoạn này, kể cả khi mới có một số hạng. Đây là điều kiện để F16 và F18 sau này chỉ là thêm số hạng.
+- **Mục tiêu:** Sản phẩm hoàn chỉnh, thân thiện, sử dụng trực quan không cần hướng dẫn.
+- **Hạng mục:** Toàn bộ trạng thái rỗng (Empty States), bảng dịch mã lỗi tiếng Việt, đo kiểm 5 chỉ số NFRs, rà soát Test Coverage $\ge 80\%$.
+- **Ước lượng:** 15 giờ cơ sở.
 
 ---
 
-## P5 — Rule và chốt bữa
+# 3. Tổng hợp ước lượng thời gian
 
-**Mục tiêu:** finalize có ý nghĩa, Creator có đủ thông tin để chốt.
+| Giai đoạn | Nội dung chính | Giờ cơ sở | Giờ gồm 30% dự phòng |
+| :--- | :--- | :---: | :---: |
+| **P0** | Scaffold & Quality Gates | 10h | 13h |
+| **P1** | Walking Skeleton | 24h | 31h |
+| **P2** | Group & Dish hoàn chỉnh | 16h | 21h |
+| **P3** | Phiên & Người tham gia | 14h | 18h |
+| **P4** | Deck & Thuật toán Ranking | 21h | 27h |
+| **P5** | Rule Engine & Chốt bữa | 21h | 27h |
+| **P6** | Hoàn thiện & Đánh giá | 15h | 20h |
+| | **TỔNG CỘNG** | **121h** | **157h** |
 
-Bao gồm: SPEC-021, SPEC-022, SPEC-014, SPEC-015 đầy đủ, SPEC-016 đầy đủ, SPEC-017 đầy đủ.
-
-| Việc | Giờ |
-|---|---|
-| SPEC-021 cấu hình Group Rule, các invariant của BR-012 | 4 |
-| SPEC-022 snapshot Session Rule trong transaction Start | 2 |
-| SPEC-016 đánh giá Required Rule, independent tag counting | 4 |
-| SPEC-014 Session Ranking, chuẩn hoá theo số Participant, mục "chưa ai chọn" | 5 |
-| Màn hình chốt bữa: chọn món, thấy bằng chứng, thấy rule chưa đạt | 6 |
-
-**Cơ sở:** 21 giờ.
-
-Independent tag counting là chỗ dễ hiện thực nhầm thành slot allocation. Viết test cho trường hợp một Dish mang cả `MAIN` và `SOUP` thoả cả hai rule **trước** khi viết hàm.
+> [!NOTE]
+> Với quỹ thời gian 6–8 giờ/tuần, dự án kéo dài khoảng **5–6 tháng**. Với quỹ thời gian 15 giờ/tuần, dự án hoàn thành trong khoảng **2.5 tháng**.
 
 ---
 
-## P6 — Hoàn thiện
+# 4. Hệ thống cột mốc quan sát được (Milestones M1–M6)
 
-**Mục tiêu:** dùng được thật mà không cần giải thích.
-
-| Việc | Giờ |
-|---|---|
-| Trạng thái rỗng, trạng thái lỗi, bảng dịch mã lỗi sang tiếng Việt | 4 |
-| Kiểm tra NFR-01 tới NFR-05 bằng số đo thật, xử lý R-01 nếu vượt ngưỡng | 5 |
-| Onboarding tối thiểu: nhóm mới cần nhập món trước khi mở phiên | 3 |
-| Rà lại coverage `domain/` và `application/` đạt 80% | 3 |
-
-**Cơ sở:** 15 giờ.
+| Cột mốc | Giai đoạn | Điều kiện đạt mốc quan sát được |
+| :---: | :---: | :--- |
+| **M1** | Sau P0 | `yarn verify` xanh trên CI và Preview deployment mở được trên điện thoại thật |
+| **M2** | Sau P1 | Tự tạo nhóm, thêm 5 món, mở phiên, vuốt thẻ, chốt bữa và thấy lịch sử hoàn toàn trên điện thoại |
+| **M3** | Sau P2, P3 | Người thân vào nhóm qua Link mời và cùng tham gia vuốt chọn món trong một phiên |
+| **M4** | Sau P4 | Hai người trong cùng phiên thấy thứ tự thẻ khác nhau; món vừa ăn hôm qua bị đẩy lùi xuống dưới |
+| **M5** | Sau P5 | Nhóm đặt quy định "Phải có canh", hệ thống chặn chốt bữa khi thiếu và Creator hiểu rõ lý do |
+| **M6** | Sau P6 | Cả nhà sử dụng thật 7 ngày liên tiếp mà không cần can thiệp thủ công vào cơ sở dữ liệu |
 
 ---
 
-# 3. Tổng ước lượng
+# 5. Quy chuẩn hoàn thành (Definition of Done)
 
-| Giai đoạn | Cơ sở | Có dự phòng 30% |
-|---|---|---|
-| P0 Scaffold | 10 | 13 |
-| P1 Walking skeleton | 24 | 31 |
-| P2 Group và Dish | 16 | 21 |
-| P3 Phiên và người tham gia | 14 | 18 |
-| P4 Deck và ranking | 21 | 27 |
-| P5 Rule và chốt bữa | 21 | 27 |
-| P6 Hoàn thiện | 15 | 20 |
-| **Tổng** | **121** | **157** |
-
-Ước lượng theo giờ chứ không theo ngày, vì quỹ giờ của dự án cá nhân là rời rạc. Với 6–8 giờ mỗi tuần, 157 giờ tương ứng khoảng 5–6 tháng. Với 15 giờ mỗi tuần thì khoảng 2,5 tháng.
-
-Con số này đáng nhìn thẳng: **v1.0 không phải một dự án cuối tuần.** Nếu quỹ thời gian thực tế nhỏ hơn nhiều, tốt hơn là cắt scope ngay bây giờ chứ không phải bỏ dở ở P4.
+- [x] Unit test được viết và pass đầy đủ (Hàm thuần trong `domain/` tuyệt đối không mock).
+- [x] Mỗi kịch bản trong SDD tương ứng ít nhất một test case tự động.
+- [x] Lệnh `yarn verify` chạy xanh hoàn toàn (tsc, eslint, prettier, jscpd, knip, vitest).
+- [x] Ranh giới tầng kiến trúc không bị vi phạm (được kiểm chứng bởi ESLint và `yarn arch:probe`).
+- [x] Preview deployment trên Vercel hoạt động trơn tru.
 
 ---
 
-# 4. Cột mốc
+# 6. Các điểm dừng kiểm soát rủi ro (Checkpoints)
 
-Mỗi cột mốc có định nghĩa "xong" quan sát được, không phải "code đã viết xong".
-
-| Mốc | Sau | Xong nghĩa là |
-|---|---|---|
-| M1 | P0 | `yarn verify` xanh trên CI và preview deploy mở được trên điện thoại thật |
-| M2 | P1 | Bạn tự tạo nhóm, thêm 5 món, mở phiên, vuốt, chốt bữa và thấy lịch sử — toàn bộ trên điện thoại, không dùng máy tính |
-| M3 | P2, P3 | Một người nhà vào nhóm bằng link mời và cùng vuốt trong một phiên với bạn |
-| M4 | P4 | Hai người trong cùng phiên thấy thứ tự khác nhau, và món ăn hôm qua bị đẩy xuống dưới |
-| M5 | P5 | Nhóm đặt quy định "phải có canh", finalize bị chặn khi thiếu, và Creator hiểu vì sao |
-| M6 | P6 | Cả nhà dùng thật 7 ngày liên tiếp mà bạn không phải can thiệp vào DB lần nào |
-
-M6 là cột mốc duy nhất chứng minh sản phẩm chạy được. Năm mốc trước chỉ chứng minh phần mềm chạy được.
+> [!CAUTION]
+> **3 Ngưỡng bắt buộc phải dừng lại tái cân đối:**
+>
+> 1. **Vượt 35 giờ mà chưa đạt M2:** Dấu hiệu ước lượng sai lệch toàn cục $\to$ Dừng lại và cắt giảm scope ngay.
+> 2. **Cold start sau P1 vượt quá 2 giây:** Tối ưu frontend không thể cứu được $\to$ Quyết định nới ngưỡng NFR-01 hoặc đổi phương án database.
+> 3. **Vượt 90 giờ mà chưa đạt M4:** Thuật toán gợi ý cá nhân hoá bị tắc nghẽn $\to$ Xem xét lại thứ tự triển khai.
 
 ---
 
-# 5. Definition of Done
+# 7. Thứ tự cắt giảm tính năng khi trễ hạn (De-scoping Hierarchy)
 
-Áp dụng cho mọi PR:
+Khi tiến độ bị chậm, thực hiện cắt giảm theo thứ tự từ ít đau đớn nhất:
 
-- Test đã viết và pass. Hàm thuần trong `domain/` không được mock gì.
-- Mỗi `Kịch bản` trong SDD tương ứng ít nhất một test case.
-- `yarn verify` xanh: tsc, eslint, prettier, jscpd, knip, vitest.
-- Preview deploy mở được.
-- Mô tả PR link tới ít nhất một SPEC-ID.
-- Không có luật tầng nào bị vi phạm — ESLint chặn, không dựa vào review.
+1. **`F20, F21` Rule Engine:** Đưa v1.0 về 14 tính năng ban đầu (Tiết kiệm $\approx 10\text{h}$).
+2. **`F04` System Tag:** Cắt cùng lúc với Rule Engine (Tiết kiệm $\approx 3\text{h}$).
+3. **`F06` Thêm Participant giữa phiên:** Mặc định tất cả Member đều tham gia (Tiết kiệm $\approx 3\text{h}$).
+4. **`F10` Trạng thái Completed:** Creator tự quan sát bảng tổng hợp để quyết định thời điểm chốt (Tiết kiệm $\approx 3\text{h}$).
 
----
-
-# 6. Điểm dừng
-
-Ba ngưỡng buộc dừng lại xem xét scope thay vì cắm đầu làm tiếp:
-
-1. **Quá 35 giờ mà chưa đạt M2.** Walking skeleton là phần dễ ước lượng nhất; vượt 35 giờ nghĩa là ước lượng phần còn lại cũng sai. Dừng và cắt.
-2. **Cold start đo được vượt 2 giây sau P1.** NFR-01 không đạt được bằng cách tối ưu frontend. Phải quyết định lại: chấp nhận ngưỡng cao hơn, hay đổi phương án database.
-3. **Quá 90 giờ mà chưa đạt M4.** Deck có ranking là thứ phân biệt sản phẩm này với một tờ giấy ghi món. Nếu chưa tới đó sau 90 giờ, thứ tự các giai đoạn đã sai.
+> [!IMPORTANT]
+> **Tuyệt đối KHÔNG cắt giảm `F17 Cooldown`:** Đây là tín hiệu thông minh duy nhất của phiên bản v1.0 để phân biệt sản phẩm với một danh sách món ăn ngẫu nhiên.
 
 ---
 
-# 7. Cắt gì nếu chậm
+# 8. Lịch sử thay đổi (Change History)
 
-Thứ tự cắt, từ ít đau nhất tới đau nhất:
-
-1. **F20, F21 rule engine.** Bỏ chúng đưa v1.0 về 14 tính năng như phương án ban đầu. Tiết kiệm khoảng 10 giờ. Cái giá là finalize không chặn gì và F13 thành khung rỗng.
-2. **F04 System Tag.** Chỉ có nghĩa khi có rule. Cắt cùng lúc với mục 1, tiết kiệm thêm 3 giờ.
-3. **F06 thêm Participant giữa phiên.** Mặc định mọi Group Member đều là Participant. Tiết kiệm 3 giờ, mất chút linh hoạt.
-4. **F10 Completed.** Creator tự nhìn Session Ranking để biết đủ thông tin chưa. Tiết kiệm 3 giờ.
-
-Không được cắt: F17 cooldown. Nó là tín hiệu ranking duy nhất ở v1.0; bỏ nó thì deck trở lại thành danh sách gần như ngẫu nhiên và M4 không tồn tại.
-
----
-
-# 8. Change History
-
-| Version | Date | Section | Change | Reason / Decision |
-|---|---|---|---|---|
-| 0.1 | 2026-08-14 | Toàn bộ | Bản draft đầu tiên: 7 giai đoạn, 157 giờ có dự phòng, 6 cột mốc | Phase 6.4 |
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: 7 giai đoạn, 157 giờ dự phòng, 6 cột mốc | Khởi tạo baseline kế hoạch |

@@ -1,20 +1,20 @@
-# Implementation Guide — E1 Slice S6 / Chốt bữa thô
+# 🍱 Implementation Guide — E1 Slice S6: Chốt thực đơn thô & Lịch sử ăn uống
 
-## Version 0.1
-
-**Status:** Completed
-**Created:** 2026-08-17
-**Upstream:** Master Plan v1.0 §3 (E1-T10, E1-T11), SDD v0.2 SPEC-015, SPEC-016 (rút gọn), SPEC-017, Tech Spec v0.2 §3.1/§3.2, Business Rules BR-050→BR-053, BR-056, Test Cases v0.1 TC-063→071, TC-076→078, TC-109
-**Tiền đề:** S1–S5 đều phải landed đúng như năm guide trong `docs/plans/`.
-
-> Tài liệu này là hướng dẫn thi công, không phải đặc tả. Khi nó lệch với SDD / Tech Spec / Business Rules thì **các tài liệu kia đúng**.
+> **Document Metadata**
+>
+> - **Version:** `0.1` | **Status:** `Completed`
+> - **Created:** `2026-08-17` | **Last Updated:** `2026-08-18`
+> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T10, E1-T11`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-015, 016, 017`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-063→071, TC-076→078, TC-109`)
+> - **Tiền đề:** `E1-S1` đến `E1-S5` đã hoàn thành.
+>
+> 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S6: Lưu thực đơn nháp, thực thi Finalize nguyên tử qua `db.batch()` và sinh Default Eating History.*
 
 ---
 
 # 0. Phạm vi và điều kiện xong
 
 | ID | Việc | Giờ | Xong nghĩa là |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | E1-T10 | Chọn món và finalize, chưa có rule | 2 | Session chuyển `FINALIZED`, không reopen được |
 | E1-T11 | Sinh Default Eating History trong cùng transaction | 2 | TC-109 pass: `INSERT` thất bại giữa chừng thì Session **không** `FINALIZED` |
 
@@ -220,6 +220,7 @@ yarn db:generate --name=final_meal_and_eating_history
 ```
 
 Số thứ tự tự sinh — không hardcode (phụ thuộc thứ tự code thật với S3/S4/S5). Đọc `.sql` sinh ra, xác nhận:
+
 1. `final_meal_items` sinh ra `PRIMARY KEY ("final_meal_id","group_dish_id")` — **không có cột `id`**.
 2. `eating_history_user_dish_date_idx` có `DESC` trên `eating_date`.
 3. Bốn `REFERENCES` đúng bảng (`selection_sessions`, `final_meals` ×2, `group_dishes`, `global_dishes`, `users`).
@@ -1211,7 +1212,7 @@ describe('TC-109 — rollback thật khi một dòng eating_history lỗi', () =
 # 9. Cấu hình phải sửa
 
 | File | Sửa gì |
-|---|---|
+| --- | --- |
 | `src/shared/db/schema.ts` | +`finalMeals`, +`finalMealItems` (khoá chính ghép, không có `id`), +`eatingHistory`; import thêm `primaryKey` |
 | migrations | `yarn db:generate --name=final_meal_and_eating_history` — số tự sinh, không hardcode |
 | `docs/..._decision-log_v1.1.md` | +**DEC-020** (§13) |
@@ -1226,7 +1227,7 @@ describe('TC-109 — rollback thật khi một dòng eating_history lỗi', () =
 Nhánh `feat/finalize-meal-minimum`. Conventional Commits, scope `meal` / `history` / `db`.
 
 | # | Việc | Test viết TRƯỚC | Tick |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 0 | `yarn verify` xanh trên baseline S1-S5 | — | |
 | 1 | `domain/meal-draft.ts` | **ĐỎ trước — TC-063/064** | |
 | 2 | `history/domain/default-eating-history.ts` | **ĐỎ trước — TC-076/078** | |
@@ -1266,6 +1267,7 @@ yarn test:integration
 ```bash
 for i in 1 2 3 4 5; do yarn test:integration || echo "LẦN $i ĐỎ"; done
 ```
+
 Không dòng nào xuất hiện. Nếu TC-109 đỏ ngay từ lần đầu (không phải flaky, mà `session.state` bị 'FINALIZED' sau khi lẽ ra phải rollback), xem §12 "Rủi ro" — đây là bằng chứng thật rằng giả định ở §1.1 sai, và phương án dự phòng phải chạy.
 
 ---
@@ -1273,7 +1275,7 @@ Không dòng nào xuất hiện. Nếu TC-109 đỏ ngay từ lần đầu (khô
 # 12. Rủi ro
 
 | Rủi ro | Dấu hiệu | Phương án |
-|---|---|---|
+| --- | --- | --- |
 | **`db.batch()` không thật sự rollback khi một câu lỗi** (giả định §1.1 sai) | TC-109 đỏ: `session.state === 'FINALIZED'` dù INSERT đã lỗi | Đây là rủi ro nghiêm trọng nhất của slice. Phương án dự phòng: thêm driver `neon-serverless` (WebSocket) chỉ cho riêng `commitFinalize`, dùng `client.query('BEGIN')` / `COMMIT` / `ROLLBACK` tường minh qua `Client` (không phải `neon()` HTTP). Ghi lại phát hiện này đè lên DEC-020 nếu xảy ra — đừng âm thầm sửa mà không cập nhật quyết định đã ghi |
 | `commitFinalize` với 0 dòng `eating_history` (Session không có Participant nào ACTIVE/COMPLETED) | `db.batch` ném lỗi vì tuple rỗng | Đã xử lý — nhánh `if (eatingHistoryRows.length === 0)` chạy UPDATE đơn lẻ, không qua `batch` (§8.1) |
 | `onConflictDoNothing` target sai thứ tự cột | TC-077 vẫn tạo dòng trùng (không đúng object literal match) | `target` phải liệt kê ĐÚNG BỐN cột của `eating_history_user_dish_date_source_unique`, đúng thứ tự khai trong migration không quan trọng (Postgres so theo tập hợp), nhưng phải đủ cả bốn |
@@ -1310,3 +1312,11 @@ Neither E1-T7 nor E1-T11 needs `neon-serverless`. The driver remains deferred to
 - Decision Log DEC-015 (amended by DEC-018 and this entry, not superseded), DEC-018
 - Tech Spec v0.2 §3.2, §4.1
 ```
+
+---
+
+# 18. Lịch sử thay đổi (Change History)
+
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-17 | Toàn bộ | Khởi tạo Implementation Guide cho E1-S6 (E1-T10, E1-T11) | Kế hoạch Epic E1 |

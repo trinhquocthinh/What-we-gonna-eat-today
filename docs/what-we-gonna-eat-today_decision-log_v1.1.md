@@ -1,837 +1,374 @@
-# Decision Log — What We Gonna Eat Today
+# 📜 Decision Log (ADRs) — What We Gonna Eat Today
 
-## Version 1.4
+> **Document Metadata**
+>
+> - **Version:** `1.9` | **Status:** `Active`
+> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-18`
+> - **Supersedes:** `v1.3` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
+> - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
+>
+> 📌 *Decision Log ghi lại 26 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
 
-**Status:** Active  
-**Created:** 2026-07-23  
-**Last Updated:** 2026-08-17  
-**Supersedes:** Version 1.3
+---
 
-Decision Log ghi lại các quyết định có ảnh hưởng đáng kể đến domain model, business rules hoặc scope. Current source of truth vẫn là Problem Definition và Business Rules phiên bản mới nhất; Decision Log giải thích **vì sao** các rule hiện tại tồn tại.
+## 📑 Danh mục quyết định kiến trúc (Decision Index)
+
+| Mã | Tên quyết định | Ngày chốt | Trạng thái | Phạm vi ảnh hưởng chính |
+| :---: | :--- | :---: | :---: | :--- |
+| [`DEC-001`](#dec-001--selection-session-lifecycle) | Vòng đời phiên chọn món (Selection Session Lifecycle) | 2026-07-23 | `Accepted` | Trạng thái phiên, tính duy nhất trong ngày |
+| [`DEC-002`](#dec-002--participant-lifecycle-and-re-entry) | Vòng đời thành viên & Tái tham gia phiên | 2026-07-23 | `Accepted` | Trạng thái Participant, hiệu lực Swipe |
+| [`DEC-003`](#dec-003--group-membership-changes-during-active-session) | Thay đổi thành viên khi phiên đang Active | 2026-07-23 | `Accepted` | Ràng buộc bất biến Creator & Chef |
+| [`DEC-004`](#dec-004--persistent-chef-role-and-cooking-capability) | Vai trò Đầu bếp (Chef Role) & Khả năng nấu | 2026-07-23 | `Accepted` | Nhóm vai trò, Chef Mode |
+| [`DEC-005`](#dec-005--session-interaction-and-persistent-dish-action-semantics) | Phân định Tương tác phiên & Hành động bền vững | 2026-07-23 | `Accepted` | Xếp hạng, hành vi lọc Cannot Eat |
+| [`DEC-006`](#dec-006--eating-history-source-records-and-personal-correction-authority) | Bản ghi lịch sử ăn & Quyền chỉnh sửa cá nhân | 2026-07-23 | `Accepted` | Mô hình lịch sử, nguồn dữ liệu gợi ý |
+| [`DEC-007`](#dec-007--final-meal-correction-authority) | Quyền chỉnh sửa thực đơn đã chốt trong ngày | 2026-07-23 | `Accepted` | Điều chỉnh thực đơn & Audit log |
+| [`DEC-008`](#dec-008--global-dish-creation-provenance-and-logical-merge-strategy) | Nguồn gốc tạo món & Chiến lược Logical Merge | 2026-07-23 | `Accepted` | Định danh món ăn, phạm vi MVP |
+| [`DEC-009`](#dec-009--group-dish-removal-and-re-add-behavior) | Gỡ và thêm lại món trong danh mục nhóm | 2026-07-23 | `Accepted` | Vòng đời trạng thái món ăn trong nhóm |
+| [`DEC-010`](#dec-010--group-rule-and-session-rule-model) | Mô hình Group Rules & Snapshot Session Rules | 2026-07-29 | `Accepted` | Cấu trúc quy định mâm cơm, override |
+| [`DEC-011`](#dec-011--final-meal-rule-evaluation-and-warning-semantics) | Đánh giá quy định khi chốt & Ngữ nghĩa cảnh báo | 2026-07-29 | `Accepted` | Quy trình Finalize, ranh giới ranking |
+| [`DEC-012`](#dec-012--ranking-model-cooldown-and-exploration-strategy) | Thuật toán Ranking, Cooldown 7 ngày & Explore 20% | 2026-08-14 | `Accepted` | Điểm cá nhân, bảng điểm đồng thuận |
+| [`DEC-013`](#dec-013--authjs-beta-dependency) | Cố định phiên bản Beta của Auth.js (NextAuth v5) | 2026-08-17 | `Accepted` | Pin dependency tương thích Next 16 / React 19 |
+| [`DEC-014`](#dec-014--provisionuser-failure-surfaces-as-exception-at-the-authjs-boundary) | Xử lý lỗi `provisionUser` dạng ngoại lệ tại Auth boundary | 2026-08-17 | `Accepted` | Bắt lỗi callback Auth.js, chống loop login |
+| [`DEC-015`](#dec-015--neon-http-dbbatch-is-a-real-transaction-dbtransaction-is-not) | Giao dịch nguyên tử qua `neon-http` `db.batch()` | 2026-08-17 | `Accepted` | Luồng ghi dữ liệu Group, chiến lược driver |
+| [`DEC-016`](#dec-016--canonical-iana-time-zone-stored-not-user-input) | Lưu trữ chuẩn múi giờ IANA Canonical | 2026-08-17 | `Accepted` | Đồng bộ múi giờ nhóm Chrome vs Firefox |
+| [`DEC-017`](#dec-017--display_time_zone_fallback-is-display-only-never-a-group-default) | `DISPLAY_TIME_ZONE_FALLBACK` chỉ dùng hiển thị | 2026-08-17 | `Accepted` | Nhãn ngày trang `/groups`, cấm làm default ngầm |
+| [`DEC-018`](#dec-018--database-enums-defined-with-pgenum) | Khai báo Enum CSDL bằng `pgEnum` của Drizzle | 2026-08-18 | `Accepted` | Ràng buộc DB enum, tự động sinh migration |
+| [`DEC-019`](#dec-019--dish-name-normalization-level-1-in-e1-diacritics-removal-in-e2-t3-with-backfill) | Chuẩn hóa tên món: Level 1 ở E1, bỏ dấu ở E2-T3 | 2026-08-18 | `Accepted` | Hàm `normalizeDishName` & kế hoạch backfill |
+| [`DEC-020`](#dec-020--route-revalidation-and-client-router-refresh-in-server-actions) | Revalidate Route và Refresh Router trong Server Actions | 2026-08-18 | `Accepted` | Gọi `refresh()` và `revalidatePath` đúng chuẩn |
+| [`DEC-021`](#dec-021--error-boundary-components-use-retry-prop-in-nextjs-16) | Error Boundary dùng prop `retry` trong Next.js 16 | 2026-08-18 | `Accepted` | Cơ chế thử lại trang `error.tsx` |
+| [`DEC-022`](#dec-022--state-adjustment-during-render-for-server-action-state-transitions) | Đồng bộ State khi Render (tránh Effect thừa) | 2026-08-18 | `Accepted` | Clean code React Compiler, chống lỗi cascade |
+| [`DEC-023`](#dec-023--animated-sheet-exit-via-usesheetclose-context) | Hiệu ứng đóng Bottom Sheet mượt mà qua Context | 2026-08-18 | `Accepted` | Trải nghiệm UI Sheet trượt xuống tự nhiên |
+| [`DEC-024`](#dec-024--e1-t7s-minimal-startsession-does-not-need-the-websocket-driver) | `startSession` tối thiểu ở E1-T7 không cần WebSocket | 2026-08-18 | `Accepted` | Tối ưu hóa driver, bắt mã lỗi race condition |
+| [`DEC-025`](#dec-025--interaction_events-logs-every-spec-012-request-including-idempotent-repeats) | Ghi nhật ký mọi request tương tác vào `interaction_events` | 2026-08-18 | `Accepted` | Audit log append-only đầy đủ |
+| [`DEC-026`](#dec-026--e1-t11-does-not-need-the-websocket-driver-either) | `finalizeSession` ở E1-T11 dùng `db.batch()` an toàn | 2026-08-18 | `Accepted` | Giao dịch nguyên tử không cần kết nối WebSocket |
 
 ---
 
 # DEC-001 — Selection Session Lifecycle
 
-**Date:** 2026-07-23  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-23` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Selection Session có lifecycle:
+Vòng đời phiên chọn món tuân theo máy trạng thái:
 
 ```text
-Draft
-  ↓ Start
-Active
-  ├──→ Finalized
-  └──→ Invalid
+Draft ──► Active ──┬──► Finalized (Chốt thực đơn)
+                   └──► Invalid (Hết hạn / Hủy)
 ```
 
-`Cancelled` và `Timeout` được xem là invalid reasons, không phải state riêng trong MVP.
+- `Cancelled` và `Timeout` là các lý do dẫn tới `Invalid`, không phải trạng thái độc lập ở MVP.
+- Chỉ các phiên `ACTIVE` hoặc `FINALIZED` mới chiếm dụng khóa duy nhất trong ngày của Group.
+- Các phiên `DRAFT` hoặc `INVALID` không chặn việc tạo phiên mới trong cùng ngày.
+- Phiên đã `FINALIZED` không thể reopen; mọi thay đổi sau đó thực hiện qua tính năng Final Meal Correction.
 
-Chỉ Active hoặc Finalized Session được tính vào valid decision-flow uniqueness cho `Group + Decision Date`.
+### Cơ sở (Rationale)
 
-Draft và Invalid Session không block việc tạo valid Session mới cùng ngày.
-
-Finalized Session không reopen; mọi thay đổi sau đó đi qua Final Meal Correction.
-
-## Rationale
-
-- Cần Draft để Creator cấu hình Participant, Chef và Session Rule trước khi bắt đầu.
-- Cancel và Timeout có cùng downstream behavior: không học preference, không tạo Eating History.
-- Invalid Session không nên khóa Group cả ngày.
-
-## Affected Documents
-
-- Problem Definition v1.3
-- Business Rules v1.3
+Cần trạng thái `DRAFT` để Creator thiết lập danh sách người ăn trước khi bắt đầu; phiên lỗi/hết hạn không được phép khóa cứng nhóm suốt cả ngày.
 
 ---
 
 # DEC-002 — Participant Lifecycle and Re-entry
 
-**Date:** 2026-07-23  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-23` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Participant có progress lifecycle:
+Tiến trình của thành viên trong phiên:
 
 ```text
-Active Participation ↔ Completed
-          ↓
-       Removed
+Active Participation ◄──► Completed (Đã chọn xong)
+          │
+          └──► Removed (Bị gỡ khỏi phiên)
 ```
 
-- Completed không khóa Interaction.
-- Participant có thể reopen trước khi Session Finalized.
-- Creator có thể remove Participant đã Completed.
-- Participant chưa Completed vẫn có thể nhận Default Eating History nếu còn trong Session khi finalize.
-- Nếu Participant bị remove rồi add lại, đó là fresh participation.
-- Interaction cũ được giữ cho audit nhưng không restore hiệu lực.
-
-## Rationale
-
-Giữ UX linh hoạt nhưng tránh logic restore phức tạp khi Participant re-enter.
+- Trạng thái `COMPLETED` không khóa tương tác; thành viên vẫn có thể mở lại để vuốt tiếp khi phiên chưa đóng.
+- Thành viên chưa bấm Completed vẫn nhận Default Eating History nếu có tên trong phiên lúc finalize.
+- Nếu bị gỡ rồi thêm lại, thành viên bắt đầu lượt mới với 0 tương tác (tương tác cũ chỉ lưu audit).
 
 ---
 
 # DEC-003 — Group Membership Changes During Active Session
 
-**Date:** 2026-07-23  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-23` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-- Nếu Group Member là Participant của Active Session và bị remove khỏi Group, User bị remove khỏi Participant list của các Active Session liên quan.
-- Creator của Active Session không thể bị remove khỏi Group cho đến khi Session kết thúc.
-- Nếu User là Chef của Active Session, User không thể bị remove khỏi Group cho đến khi Session kết thúc.
-
-## Rationale
-
-Bảo vệ các invariant `Creator must be Group Member` và `Chef must be Group Member` mà không cần ownership transfer hoặc dynamic Chef replacement trong MVP.
+- Thành viên bị xóa khỏi Group sẽ tự động bị loại khỏi danh sách Participant của các phiên đang `ACTIVE`.
+- **Creator** và **Chef** của phiên đang `ACTIVE` **không thể bị xóa khỏi Group** cho đến khi phiên kết thúc.
 
 ---
 
 # DEC-004 — Persistent Chef Role and Cooking Capability
 
-**Date:** 2026-07-23  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-23` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Group membership model:
-
-```text
-Member
-Member + Chef
-Member + Group Admin
-Member + Chef + Group Admin
-```
-
-- Member là base membership.
-- Chef và Group Admin là role/capability bổ sung.
-- Group Admin gán/gỡ Chef Role.
-- Không thể gỡ Chef Role nếu User đang là Chef của Active Session.
-- Khi Start Session phải revalidate Chef vẫn thuộc Group và còn Chef Role.
-- Cooking Capability thuộc User, không thuộc Group.
-- Chỉ User Chef tự chỉnh Cooking Capability trong normal flow.
-- Missing Cooking Capability = `Unknown`, không phải `Cannot Cook`.
-
-## Rationale
-
-Chef là đặc tính tương đối ổn định trong Group, trong khi khả năng nấu thuộc về cá nhân và có thể dùng xuyên Group.
+- `Member` là vai trò cơ bản; `Chef` và `Group Admin` là các vai trò/khả năng bổ sung.
+- Khả năng nấu nướng (`Cooking Capability`) thuộc về hồ sơ cá nhân của User, không thuộc riêng một Group.
+- Chưa có dữ liệu khả năng nấu $\to$ Coi là `Unknown` (trung tính, không bị phạt điểm).
 
 ---
 
 # DEC-005 — Session Interaction and Persistent Dish Action Semantics
 
-**Date:** 2026-07-23  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-23` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Đối với `Session + Participant + Dish`:
+Tách biệt rõ hai loại trạng thái:
 
-```text
-None ↔ Swipe Right ↔ Swipe Left
-```
+1. **Session Interaction:** `None ↔ Swipe Right ↔ Swipe Left` (Tương tác nhanh trong phiên, bản mới nhất ghi đè bản cũ).
+2. **Persistent Dish Action:** Cài đặt sở thích bền vững (`Cannot Eat`, `Blacklist`, `Whitelist`).
 
-Effective Session Interaction mới nhất thắng.
-
-User có thể Undo về `None`.
-
-Persistent Dish Action và Session Interaction là hai loại state khác nhau.
-
-- Mark `Cannot Eat` sau Swipe: effective Swipe bị clear / invalidate.
-- Add `Blacklist` sau Swipe: existing effective Swipe vẫn giữ nguyên; Dish chỉ bị loại khỏi future Personal Candidate discovery của User.
-- Whitelist và Explicit Preference có thể trigger Personal Ranking recalculation nhưng không clear Session Interaction.
-
-## Rationale
-
-`Cannot Eat` là hard constraint nên conflict trực tiếp với Swipe. Blacklist chỉ kiểm soát recommendation discovery và không có nghĩa User rút đề xuất hiện tại.
+- Đánh dấu `Cannot Eat` sau khi đã Swipe $\to$ Tự động hủy và clear tương tác Swipe của món đó.
+- Thêm `Blacklist` sau khi đã Swipe $\to$ Giữ nguyên Swipe hiện tại, chỉ loại món khỏi gợi ý tương lai.
 
 ---
 
 # DEC-006 — Eating History Source Records and Personal Correction Authority
 
-**Date:** 2026-07-23  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-23` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Eating History giữ source reference đến Final Meal đã tạo default record.
-
-Một User có thể có nhiều source record cho cùng Dish và cùng ngày nếu tham gia nhiều Group / Final Meal.
-
-Personal Correction có thể Add hoặc Remove Dish trong Eating History context tương ứng.
-
-Authority:
+Phân cấp quyền hạn dữ liệu lịch sử ăn uống:
 
 ```text
-Authoritative Final Meal
+Authoritative Final Meal (Thực đơn nhóm chốt)
         ↓
-Default Eating History
+Default Eating History (Lịch sử tự động sinh)
         ↓
-User Personal Correction
+User Personal Correction (Cá nhân tự điều chỉnh nếu không ăn món nào)
         ↓
-Effective Eating History
+Effective Eating History (Nguồn sự thật nuôi thuật toán Cooldown)
 ```
 
-Final Meal Correction chỉ cập nhật phần default-derived history mà User chưa sửa.
-
-Personal Correction là source of truth cho phần User đã chỉnh.
-
-Không yêu cầu correction reason trong MVP.
-
-User có thể chỉnh historical Eating History không giới hạn thời gian trong MVP.
-
-## Rationale
-
-Tôn trọng thực tế một User có thể tham gia nhiều Group trong ngày và bảo vệ dữ liệu cá nhân đã được User xác nhận/correct khỏi bị Group-level correction overwrite.
+Điều chỉnh cá nhân của User có quyền hạn tối cao đối với dữ liệu lịch sử ăn của chính họ.
 
 ---
 
 # DEC-007 — Final Meal Correction Authority
 
-**Date:** 2026-07-23  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-23` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-- Creator chỉ sửa Final Meal của Decision Date hiện tại trong normal product flow.
-- System Admin có thể sửa historical Final Meal để xử lý human error hoặc data issue.
-- Historical System Admin correction phải giữ audit trail tối thiểu: before, after, changed by, changed at.
-- Correction reason chưa bắt buộc trong MVP.
-
-## Rationale
-
-Giới hạn normal flow để giảm retroactive complexity nhưng vẫn giữ đường xử lý sự cố dữ liệu thực tế.
+Creator chỉ được phép chỉnh sửa thực đơn chốt trong **ngày hiện tại**. Việc điều chỉnh ngày cũ chỉ dành cho System Admin khi xử lý sự cố dữ liệu.
 
 ---
 
 # DEC-008 — Global Dish Creation Provenance and Logical Merge Strategy
 
-**Date:** 2026-07-23  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-23` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Global Dish mới phải lưu:
-
-- `created_by_user`
-- `created_from_group`
-- `created_at`
-
-User không trực tiếp chỉnh Global Dish Identity; thay đổi global identity thuộc System Admin flow.
-
-Merge strategy:
-
-- MVP không triển khai Full Merge.
-- MVP vẫn hỗ trợ duplicate detection khi tạo Dish.
-- Hướng hậu MVP là Logical Merge / Canonical Identity.
-- Historical records giữ original `dish_id`; không hard rewrite toàn bộ references.
-- Khi cần, application resolve original identity về canonical identity.
-- Nếu nhiều Interaction resolve về cùng canonical Dish trong cùng Session, Interaction mới nhất được ưu tiên làm effective signal.
-- Chỉ System Admin có quyền merge.
-
-## Rationale
-
-Hard merge ảnh hưởng đồng thời Group Dish Pool, Active Session, Interaction, Final Meal, Eating History và Preference, tạo complexity không cần thiết cho MVP.
-
-Logical Merge giữ auditability và giảm migration risk.
+- Mọi món mới tạo phải lưu nguồn gốc: `created_by_user`, `created_from_group`, `created_at`.
+- MVP không triển khai Full Merge tự động; định hướng hậu MVP là **Logical Merge (Canonical Identity)** để bảo toàn lịch sử.
 
 ---
 
 # DEC-009 — Group Dish Removal and Re-add Behavior
 
-**Date:** 2026-07-23  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-23` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Group Dish relationship sử dụng trạng thái logic `Active / Inactive`.
-
-Khi remove:
-
-- Historical references được giữ.
-- Dish bị loại khỏi Candidate và Active Session Ranking.
-- Existing Interaction được giữ audit nhưng mất hiệu lực.
-
-Khi add lại:
-
-- Group-specific metadata có thể được restore.
-- Interaction cũ trong Active Session không tự động restore hiệu lực.
-- User phải tương tác lại nếu muốn tạo effective Interaction mới.
-
-## Rationale
-
-Cho phép undo Group Dish removal mà không mất metadata, đồng thời tránh logic khôi phục Interaction phức tạp.
+Quan hệ món ăn trong nhóm dùng trạng thái `ACTIVE / INACTIVE`. Khi gỡ món, lịch sử cũ vẫn được bảo toàn; khi thêm lại, trạng thái chuyển về `ACTIVE` mà không tạo mới bản ghi Global Dish.
 
 ---
 
 # DEC-010 — Group Rule and Session Rule Model
 
-**Date:** 2026-07-29  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-29` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-MVP sử dụng một Group Rule set cho mỗi Group, nhưng data model phải giữ khả năng mở rộng thành nhiều preset / rule set về sau.
-
-Group Rule hiện gồm:
-
-- Target Dish Count — một preferred integer target.
-- Required System Tag rules.
-- Preferred System Tag rules.
-
-Tag Rule structure dùng chung:
-
-```text
-System Tag
-+ minimum_count >= 1
-+ rule_type = Required | Preferred
-+ overridable
-```
-
-Constraints:
-
-- Không duplicate cùng `rule_type + System Tag`.
-- Một System Tag không được đồng thời là Required và Preferred trong cùng effective rule set.
-- Dish có nhiều System Tag được count độc lập cho từng Tag; một Dish có thể đồng thời satisfy nhiều requirement.
-
-Permission và lifecycle:
-
-- Chỉ Group Admin chỉnh Group Rule.
-- Khi tạo Session, Group Rule được snapshot thành Session Rule.
-- Chỉ Creator được chỉnh Session Rule và chỉ trong Draft.
-- Session Rule bị khóa khi Session Active.
-- Rule có `overridable = true` có thể được Creator modify hoặc disable trong Draft.
-- Override replace inherited rule tương ứng; không cộng dồn.
-- Override có thể làm rule mạnh hơn hoặc nhẹ hơn.
-- Creator có thể thêm Session-only Required hoặc Preferred Rule trong Draft.
-- MVP chưa cần permission riêng để hạn chế loại Session-only rule Creator được thêm.
-- Session Rule không cần version number riêng trong MVP; chỉ effective state cuối trước Active cần được giữ.
-
-## Rationale
-
-Giữ Group Rule đủ đơn giản cho MVP nhưng cho phép Session linh hoạt theo context thực tế. Snapshot và Draft-only editing giúp Session có rule state ổn định, tránh dynamic behavior sau khi Participant đã bắt đầu tương tác.
-
-## MVP Impact
-
-- Group Rule configuration.
-- Session creation and Draft editing.
-- Final Meal validation structure.
-- Data model cho rule inheritance / override.
-
-## Future Implications
-
-Data model không nên giả định Group chỉ có một rule set vĩnh viễn; có thể mở rộng thành named preset / rule profile sau MVP.
+- Nhóm thiết lập các quy tắc mâm cơm (`Required` / `Preferred` theo System Tag).
+- Khi bắt đầu phiên (`Start Session`), Group Rules được **snapshot** sang `Session Rules`.
+- Món ăn mang nhiều Tag được đếm độc lập cho từng Tag (Independent Tag Counting).
 
 ---
 
 # DEC-011 — Final Meal Rule Evaluation and Warning Semantics
 
-**Date:** 2026-07-29  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-07-29` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Trong MVP, Meal Composition Rule không được dùng để điều chỉnh Recommendation Ranking.
+Quy định mâm cơm không tham gia vào thuật toán tính điểm Ranking. Khi finalize:
 
-- Required Rule không trực tiếp filter Personal Candidate.
-- Required Rule không boost Session Ranking để hoàn thành composition.
-- Preferred Rule không ảnh hưởng Personal Ranking hoặc Session Ranking.
-- Target Dish Count không ảnh hưởng Personal Ranking hoặc Session Ranking.
-
-Rule evaluation tập trung vào Final Meal flow.
-
-Trong lúc Creator xây Final Meal, hệ thống có thể hiển thị live composition feedback, nhưng đây không phải authoritative validation.
-
-Khi Creator bấm Finalize, hệ thống luôn revalidate từ đầu bằng:
-
-- Current Group Dish Pool.
-- Current Group-specific System Tag của Dish.
-- Locked effective Session Rule.
-
-System Tag không snapshot cùng Session trong MVP.
-
-Finalize behavior:
-
-- Bất kỳ Required Rule fail → reject finalize; Session vẫn Active.
-- Preferred Rule fail → warning, Creator vẫn có thể finalize.
-- Target Dish Count không đạt → warning, Creator vẫn có thể finalize.
-- Không cần state `ValidationFailed`.
-
-Warning mà Creator override khi finalize phải được lưu cùng Final Meal để audit, tối thiểu gồm warning type, rule/context reference và actual condition/value.
-
-## Rationale
-
-Tách ranking khỏi composition validation giữ MVP dễ giải thích: ranking phản ánh user evidence, còn rule engine bảo vệ Final Meal constraints. Revalidation tại finalize tránh dựa vào cached state đã lỗi thời khi Group Dish Pool hoặc System Tag thay đổi.
-
-## MVP Impact
-
-- Finalize validation workflow.
-- Finalize warning confirmation.
-- Warning audit data.
-- Ranking specification: chưa dùng composition rule làm ranking signal.
-
-## Future Implications
-
-Sau MVP có thể nghiên cứu dùng Required/Preferred Rule để guide ranking hoặc meal candidate generation mà không thay đổi semantics của validation hiện tại.
+- Thiếu `Required Rule` $\to$ Chặn chốt thực đơn, phiên giữ nguyên `ACTIVE`.
+- Thiếu `Preferred Rule` hoặc `Target Count` $\to$ Cảnh báo mềm, Creator có quyền xác nhận tiếp tục (Override).
 
 ---
 
 # DEC-012 — Ranking Model, Cooldown and Exploration Strategy
 
-**Date:** 2026-08-14  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-14` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-### Personal Ranking
-
-Personal Ranking dùng **linear weighted score, deterministic và explainable**. Không dùng ML, embedding hoặc online learning trong MVP.
-
-```text
-score = w_explicit × E
-      + w_implicit × I
-      + w_chef     × C
-      + w_source   × S
-      − w_recency  × R
-```
-
-Hard constraint (`Cannot Eat`, Blacklist, Inactive Group Dish) được xử lý bằng filter trước khi tính score, không bằng trọng số âm.
-
-### Implicit Preference
-
-- Exponential time decay, half-life 60 ngày.
-- Smoothing prior `k = 3` để một lần swipe đơn lẻ không khoá cứng ranking.
-- Chỉ học từ Session ở trạng thái `Finalized`.
-- Interaction của Session đang `Active` không được dùng để tính lại ranking trong chính Session đó.
-- Chỉ tính interaction có timestamp mới hơn `implicit_reset_at(user, dish)`.
-
-### Eating History và Cooldown
-
-- `COOLDOWN_WINDOW_DAYS = 7`, linear decay từ `1.0` xuống `0`.
-- Cooldown chỉ áp dụng ở **cấp Dish**. Tag-level cooldown thuộc Out of Scope.
-- Nhiều Eating History source record cho cùng `User + Dish + Date` được **collapse thành một eating event** cho mục đích ranking. Ăn cùng một Dish ở nhiều Group trong cùng ngày không tạo penalty gấp đôi.
-- Whitelist đưa recency penalty về `0`.
-
-### Exploration
-
-Personal Candidate deck ghép theo block 5 vị trí: **4 exploit + 1 explore**, tương ứng 20% slot khám phá.
-
-Explore Pool gồm Dish chưa từng ăn hoặc đã hơn 30 ngày chưa ăn, và không bị Explicit `Dislike`.
-
-### Recalculation trong Active Session
-
-- Phần deck đã xem (`index < cursor`) được đóng băng.
-- Chỉ phần chưa xem được tính lại và sắp xếp lại.
-- Dish vừa bị hard filter được remove khỏi phần chưa xem ngay.
-
-### Session Ranking
-
-Session Ranking là **evidence-only**:
-
-```text
-session_score = (a×P − b×N − c×X − d×H) / T
-```
-
-- Chuẩn hoá theo số Participant hiện tại để điểm không nhảy khi Creator thêm/bớt người.
-- Creator **không** có trọng số riêng.
-- Chef context và conflict với Session Rule là display-only, không cộng vào điểm.
-- Dish chưa có interaction không được cho điểm; hiển thị ở section riêng để Creator vẫn có thể chọn.
-
-## Rationale
-
-Ở quy mô dưới 10 user và khoảng một Session mỗi ngày, mỗi User chỉ tích luỹ khoảng 30 interaction mỗi tháng. Dữ liệu này quá mỏng cho bất kỳ mô hình học nào; smoothing prior và time decay là biện pháp chống nhiễu tối thiểu và đủ.
-
-Explore lane tồn tại vì hai mục tiêu trong Problem Definition §3 kéo ngược nhau: "giúp User khám phá nhiều Dish hơn" và "đưa Dish phù hợp lên trước để kết thúc sớm". Một hàm score thuần exploit sẽ đẩy đúng nhóm món quen lên đầu và tái tạo chính vấn đề mô tả ở §2. Tỉ lệ khám phá vì vậy phải là cấu trúc tường minh, không phải hệ quả phụ của trọng số.
-
-Đóng băng phần deck đã xem giữ trải nghiệm swipe ổn định: thứ tự không được đổi dưới tay User trong lúc họ đang duyệt.
-
-Chuẩn hoá Session Ranking theo `T` là bắt buộc vì Creator được phép thêm hoặc remove Participant giữa Session, khiến điểm thô mất khả năng so sánh.
-
-## MVP Impact
-
-- Personal Candidate generation và paging.
-- Deck recalculation policy.
-- Eating History aggregation.
-- Session Ranking computation và hiển thị.
-- Ranking config constants.
-
-## Future Implications
-
-Các trọng số trong config là điểm khởi đầu có chủ đích, không phải kết quả tuning; nên xem lại sau khoảng 4 tuần dữ liệu thật. Tag-level hoặc ingredient-level cooldown, Dish compatibility và meal candidate generation vẫn nằm ngoài phạm vi.
-
-## Affected Documents
-
-- Ranking Specification v0.1
-- Business Rules v1.5
-- Problem Definition v1.4
+- Thuật toán gợi ý cá nhân dùng mô hình tuyến tính xác định (Linear Weighted Score), có thể giải thích được lý do.
+- Cửa sổ Cooldown 7 ngày theo hàm phân rã tuyến tính ở cấp độ món ăn.
+- Tỉ lệ khám phá cố định 20% (ghép 4 thẻ Exploit + 1 thẻ Explore).
+- Session Ranking thuần túy dựa trên bằng chứng tương tác thực tế trong phiên.
 
 ---
 
 # DEC-013 — Auth.js Beta Dependency
 
-**Date:** 2026-08-17
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-17` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-`next-auth@5.0.0-beta.32` (pulling `@auth/core@0.41.3`) is pinned as an exact dependency for E1-T1, without an adapter.
-
-## Rationale
-
-It is the only `next-auth` line with peer support for Next.js 16 and React 19. No stable release supports Next 16 at time of writing.
-
-## Review Trigger
-
-Revisit this pin once `next-auth` publishes a stable v5 release, or when upgrading Next.js/React surfaces a peer dependency conflict.
-
-## Affected Documents
-
-- Setup & Ops Guide v0.1 §1
+Ghim chính xác phiên bản `next-auth@5.0.0-beta.32` (`@auth/core@0.41.3`) để đảm bảo tính tương thích tuyệt đối với **Next.js 16** và **React 19**.
 
 ---
 
 # DEC-014 — `provisionUser` Failure Surfaces as Exception at the Auth.js Boundary
 
-**Date:** 2026-08-17
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-17` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-`features/auth/infrastructure/auth.ts` throws inside `callbacks.jwt` when `provisionUser` returns a `Failure`, instead of returning `null`.
-
-## Rationale
-
-Auth.js treats a `null` return from `callbacks.jwt` as "clear the cookie, then still redirect to `callbackUrl`" — the user loops back into the login screen with no visible error. Throwing is the only way to surface `pages.error`. This is the one place in the codebase where a `Result` is converted to an exception, and it is deliberately scoped to the outer framework boundary, not a layer boundary: `application/` still returns `Result` everywhere else.
-
-## Consequence
-
-Anyone "cleaning up" this throw to match the `Result` convention elsewhere reintroduces the silent redirect loop. Do not change it without also changing the `pages.error` handling in `app/page.tsx`.
-
-## Affected Documents
-
-- SDD v0.2 §2.5 (error code table — no code exists for this case, and none should be added here)
+Chủ động ném exception tại `callbacks.jwt` khi `provisionUser` thất bại để Auth.js chuyển hướng sang trang lỗi `pages.error`, tránh lỗi vòng lặp chuyển hướng vô tận (silent redirect loop).
 
 ---
 
 # DEC-015 — neon-http `db.batch()` Is a Real Transaction; `db.transaction()` Is Not
 
-**Date:** 2026-08-17
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-17` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-`GroupRepository.createWithAdmin` inserts `groups` and `group_members` via `db.batch([...])`. Verified in `node_modules/drizzle-orm/neon-http/session.js`: `batch()` calls `client.transaction(builtQueries)` (Neon sends a `Neon-Batch-Isolation-Level` header), while `db.transaction()` throws `"No transactions support in neon-http driver"`. `batch()` is non-interactive — no reading an id back mid-batch — so `groupId` is generated explicitly with `uuidv7()` in infrastructure rather than left to the schema's `$defaultFn`.
-
-## Rationale
-
-This satisfies SDD §2.4 ("a failed write leaves no partial change") for E1-T2 without adding a new driver. `batch()`'s type is a tuple `Readonly<[U, ...U[]]>`, so the array must be a literal, not built via `.map()` or stored in a `const queries: X[]`.
-
-## Consequence
-
-E1-T7 and E1-T11 need read-then-write inside the same transaction — `batch()` cannot do that. Those slices must add the `neon-serverless` (WebSocket) driver instead of trying to force it through `batch()`.
-
-## Affected Documents
-
-- Tech Spec v0.2 §2 (data access), SDD v0.2 §2.4
+Sử dụng `db.batch([...])` của driver `neon-http` cho các luồng ghi nguyên tử nhiều bảng không phụ thuộc kết quả đọc giữa chừng.
 
 ---
 
 # DEC-016 — Canonical IANA Time Zone Stored, Not User Input
 
-**Date:** 2026-08-17
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-17` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-`readGroupDraft` (SPEC-002) canonicalizes the timezone with `Intl.DateTimeFormat(...).resolvedOptions().timeZone` before it reaches `GroupRepository.createWithAdmin`. `groups.timezone` always holds the canonical form (e.g. `Asia/Saigon`), never the raw browser-reported string.
-
-## Rationale
-
-Verified on ICU 77 (Node 22) and ICU 78 (Node 24): `Intl.supportedValuesOf('timeZone')` has 418 entries and does **not** include `Asia/Ho_Chi_Minh`, only its canonical alias `Asia/Saigon`. Firefox reports `Asia/Ho_Chi_Minh`; Chrome/V8 reports `Asia/Saigon`. Storing the raw value means a Firefox-created Group and a Chrome-created Group can hold two different strings for the same real timezone, and any code that matches against the `supportedValuesOf()` list (e.g. the time zone picker) would silently fail to highlight the Firefox one.
-
-## Consequence
-
-`isValidTimeZone` (`shared/time/time-zone.ts`) must not be implemented as `supportedValuesOf().includes(tz)` — that rejects `Asia/Ho_Chi_Minh` outright, which is also the exact value TC-004/TC-005 exercise. It must use a try/catch around `Intl.DateTimeFormat`, plus an explicit reject of offset-like strings (`'+07:00'`), which `Intl` otherwise accepts despite not being an IANA identifier.
-
-## Affected Documents
-
-- SDD v0.2 SPEC-002, SPEC-018
+Chuẩn hóa múi giờ bằng `Intl.DateTimeFormat().resolvedOptions().timeZone` trước khi lưu vào `groups.timezone` để đồng bộ giữa các trình duyệt (Chrome `Asia/Saigon` vs Firefox `Asia/Ho_Chi_Minh`).
 
 ---
 
 # DEC-017 — `DISPLAY_TIME_ZONE_FALLBACK` Is Display-Only, Never a Group Default
 
-**Date:** 2026-08-17
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-17` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-`shared/time/time-zone.ts` exports `DISPLAY_TIME_ZONE_FALLBACK = 'Asia/Ho_Chi_Minh'`, used only to render the date caption on `/groups` (a screen with no Group context yet). It must never be used as the timezone written for a new Group, nor passed into `resolveDecisionDate` for any Session-related calculation.
-
-## Rationale
-
-SPEC-018 states there is no hidden default timezone — creating a Group must always set one explicitly. Reusing the display fallback as a silent default would violate that and make every Group's Decision Date depend on an assumption nobody chose.
-
-## Consequence
-
-Any new call site that needs a Group's actual timezone must read it from `groups.timezone`, never from `DISPLAY_TIME_ZONE_FALLBACK`. Reviewers should treat a new import of this constant outside a Group-less display context as a bug.
-
-## Affected Documents
-
-- SDD v0.2 SPEC-018
+Hằng số `DISPLAY_TIME_ZONE_FALLBACK = 'Asia/Ho_Chi_Minh'` chỉ dùng để hiển thị ngày ở các trang chưa có bối cảnh nhóm (như `/groups`), tuyệt đối không dùng làm giá trị mặc định ngầm khi tạo nhóm.
 
 ---
 
 # DEC-018 — Database Enums Defined with `pgEnum`
 
-**Date:** 2026-08-18  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-`group_dishes.state` (and subsequent DB enums) uses `pgEnum('group_dish_state', ['ACTIVE', 'INACTIVE'])` rather than `text().$type<GroupDishState>()`.
-
-## Rationale
-
-1. Postgres rejects invalid enum values directly at the DB boundary, avoiding subtle bugs where lower-cased or typos (e.g. `'active'`) get skipped in `WHERE state = 'ACTIVE'`.
-2. Drizzle automatically infers the TS literal union `'ACTIVE' | 'INACTIVE'`.
-3. Verified in drizzle-kit: adding values to the array produces `ALTER TYPE ... ADD VALUE` in migrations automatically without manual SQL scripts.
-4. Domain types maintain clean decoupling (`domain/group-dish.ts` defines a pure union type; drizzle repository acts as compile-time assertion boundary).
-
-## Affected Documents
-
-- SDD v0.2 §2.1, §2.2; Tech Spec v0.2 §3.1, §3.3
+Định nghĩa Enum trong Drizzle bằng `pgEnum(...)` để cơ sở dữ liệu PostgreSQL trực tiếp từ chối các giá trị không hợp lệ.
 
 ---
 
-# DEC-019 — Dish Name Normalization: Level 1 in E1, Diacritics Removal Deferred to E2-T3 with Backfill
+# DEC-019 — Dish Name Normalization: Level 1 in E1, Diacritics Removal in E2-T3 with Backfill
 
-**Date:** 2026-08-18  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-`normalizeDishName` in E1 performs Level 1 normalization: NFC canonical composition, whitespace collapsing/trimming, and lowercase. Vietnamese diacritics removal (Level 2) is deferred to E2-T3 and will be added directly into `src/features/dish/domain/normalize-name.ts` along with a required migration backfill script.
-
-## Rationale
-
-Creating `normalize-name.ts` with Level 1 normalization in E1 prevents code duplication and keeps a single source of truth for dish name matching. Deferring Level 2 keeps E1 walking skeleton minimal while explicitly establishing that E2-T3 must backfill `global_dishes.normalized_name`.
-
-## Affected Documents
-
-- SDD v0.2 SPEC-005, Master Plan v1.0 §3/§4
+Thực hiện chuẩn hóa Level 1 (NFC, cắt khoảng trắng, chữ thường) ở E1; chuyển đổi bỏ dấu tiếng Việt (Level 2) sang E2-T3 kèm migration backfill dữ liệu.
 
 ---
 
 # DEC-020 — Route Revalidation and Client Router Refresh in Server Actions
 
-**Date:** 2026-08-18  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-In `addDishAction`, `revalidatePath('/groups/${groupId}')` is called with the literal path (omitting type parameter) to invalidate the stale parent group overview page cache, and `refresh()` from `next/cache` is called to refresh the client router for the current page where the user stays.
-
-## Rationale
-
-`refresh()` is the designated Next.js 16 Server Action API for "read-your-own-writes" when remaining on the active page without invalidating unrelated data caches. `revalidatePath` with dynamic route segments requires a literal path to prevent blowing away the cache for all groups.
-
-## Affected Documents
-
-- Tech Spec v0.2 §2.1, Next.js 16 conventions
+Gọi `revalidatePath('/groups/${groupId}')` với đường dẫn cụ thể để xóa cache trang tổng quan cha, kết hợp `refresh()` từ `next/cache` để làm mới router trên trang hiện tại.
 
 ---
 
 # DEC-021 — Error Boundary Components Use `retry` Prop in Next.js 16
 
-**Date:** 2026-08-18  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Error boundary components (`app/**/error.tsx`) accept `{ retry: () => void }` instead of `reset`.
-
-## Rationale
-
-In Next.js 16 (`03-file-conventions/error.md`), `reset()` merely clears the React error boundary state and re-renders the old data, whereas `retry()` refetches data from the server and re-renders, matching the design intent of the "Thử lại" (Retry) action.
-
-## Affected Documents
-
-- Tech Spec v0.2 §2.1, S-02/S-05 error designs
+Trang `error.tsx` nhận prop `{ retry: () => void }` theo chuẩn Next.js 16 để refetch lại dữ liệu từ server khi người dùng nhấn "Thử lại".
 
 ---
 
 # DEC-022 — State Adjustment During Render for Server Action State Transitions
 
-**Date:** 2026-08-18  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Client components handling Server Action state transitions (`DishCatalogScreen`) use React's official "adjust state during render" pattern (`if (state !== prevActionState) { setPrevActionState(state); if (state.addedDishName !== null) setSheetOpen(false); }`) instead of `useEffect([state])`.
-
-## Rationale
-
-1. Completely avoids React Compiler ESLint warning `react-hooks/set-state-in-effect` (cascading renders).
-2. Avoids the stale state / duplicate string comparison trap noted in guide §14 (where adding two dishes with identical names consecutively would fail to trigger effects that compare primitive string values).
-3. Executes synchronously before browser paint without an extra delayed render pass.
-
-## Affected Documents
-
-- Presentation layer components (`DishCatalogScreen`, S-05)
+Áp dụng mẫu "adjust state during render" của React thay vì lạm dụng `useEffect` để tránh lỗi cascading render và cảnh báo của React Compiler.
 
 ---
 
 # DEC-023 — Animated Sheet Exit via `useSheetClose` Context
 
-**Date:** 2026-08-18  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-`Sheet` exposes `useSheetClose()` via React Context to allow child components (e.g. "Đóng" button in `AddDishSheet`) as well as scrim clicks and `Escape` key events to trigger the `sheet-slide-down` and `scrim-fade-out` CSS animations before `onClose()` is invoked to unmount the sheet.
-
-## Rationale
-
-Calling `onClose()` directly from child buttons immediately unmounts the sheet from the DOM without playing exit animations. Managing the closing state (`isClosing`) internally and firing `onClose()` on `animationend` provides a polished, smooth slide-down exit while preserving a clean declarative API for callers.
-
-## Affected Documents
-
-- Shared UI (`Sheet`), Presentation components (`AddDishSheet`, S-06)
+Cung cấp hook `useSheetClose()` để kích hoạt hiệu ứng animation trượt xuống mượt mà trước khi component Bottom Sheet unmount khỏi DOM.
 
 ---
 
 # DEC-024 — E1-T7's Minimal `startSession` Does Not Need the WebSocket Driver
 
-**Date:** 2026-08-18  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-DEC-015's consequence section claimed E1-T7 needs read-then-write inside a transaction, requiring the `neon-serverless` driver. This is corrected: E1-T7 implements only SPEC-007 (create) plus a minimal `startSession` — a single `UPDATE selection_sessions SET state='ACTIVE', started_at=now() WHERE id=$1 AND state='DRAFT'`. Postgres wraps a single statement in an implicit transaction; the partial unique index `selection_sessions_active_per_group_date` catches the BR-025 race at commit time.
-
-*Implementation Note on Error Catching:* Drizzle ORM wraps query errors inside `Error("Failed query: ...", { cause })`, and the Neon HTTP driver surfaces driver errors as `NeonDbError` rather than `DatabaseError`. Hence, `infrastructure/drizzle-session-repository.ts` catches this via `isSessionUniquenessViolation` which inspects `target.code === '23505'` and `target.constraint === 'selection_sessions_active_per_group_date'` on the error/cause rather than a fragile `instanceof DatabaseError`.
-
-`createSession`'s two inserts (session + participant) remain atomic via `db.batch()`, same pattern as `GroupRepository.createWithAdmin`.
-
-## Rationale
-
-Master Plan assigns E1-T7 only `SPEC-007, TC-026→029, TC-107` — not SPEC-008. Full SPEC-008 (5-step revalidation, Group Rule → Session Rule snapshot in one transaction) is E3-T1's scope. Conflating the two led DEC-015 to over-provision infrastructure for a slice that doesn't need it.
-
-## Consequence
-
-The `neon-serverless` (WebSocket) driver is deferred to **E3-T1**, where snapshotting Group Rule into Session Rule is a genuine read-then-write inside one transaction. `client.ts`'s comment is retargeted to E3-T1 explicitly.
-
-## Affected Documents
-
-- Decision Log DEC-015 (amended by this entry, not superseded)
-- Tech Spec v0.2 §3.2, §4.1
+`startSession` ở E1-T7 là một câu lệnh `UPDATE` đơn lẻ, tận dụng transaction ngầm của Postgres và Partial Unique Index để bắt lỗi race condition, chưa cần tới driver WebSocket.
 
 ---
 
 # DEC-025 — `interaction_events` Logs Every SPEC-012 Request, Including Idempotent Repeats
 
-**Date:** 2026-08-18  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-Mỗi request SPEC-012 hợp lệ (không bị chặn bởi validation) luôn ghi thêm đúng một dòng vào `interaction_events`, kể cả khi `action` gửi lên trùng với effective interaction hiện tại (ví dụ gửi `SWIPE_RIGHT` hai lần liên tiếp cho cùng một Dish). `interactions` (effective state) vẫn chỉ có đúng một dòng nhờ `onConflictDoUpdate` theo unique index `(session_id, participant_id, group_dish_id)`.
-
-## Rationale
-
-SPEC-012 viết "Mọi thay đổi đều ghi thêm một dòng vào `interaction_events`" nhưng không định nghĩa "thay đổi" là theo request hay theo delta của effective state. Đọc "thay đổi" là "mọi lượt request" phù hợp hơn với vai trò của bảng: `interaction_events` là audit log append-only (Tech Spec §3.1, §3.2), ghi lại hành vi thật của User kể cả khi lặp lại — không phải một delta log chỉ ghi khi state đổi. TC-053 chỉ khẳng định effective interaction không đổi khi gửi lặp, không khẳng định số dòng event, nên cách đọc này không vi phạm test case nào đã có.
-
-## Consequence
-
-`drizzle-selection-repository.ts#applyInteraction` luôn insert vào `interactionEvents` trong cùng `db.batch()` với upsert/delete `interactions`, không có nhánh so sánh giá trị cũ trước khi ghi event.
-
-## Affected Documents
-
-- Tech Spec v0.2 §3.1, §3.2
-- SDD v0.2 SPEC-012
+Mọi lượt request tương tác hợp lệ đều được ghi đúng 1 dòng vào `interaction_events` (Append-only Audit Log), trong khi bảng `interactions` chỉ lưu trạng thái hiệu lực cuối cùng.
 
 ---
 
 # DEC-026 — E1-T11 Does Not Need the WebSocket Driver Either
 
-**Date:** 2026-08-18  
-**Status:** Accepted
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
 
-## Decision
+### Quyết định (Decision)
 
-DEC-015's original consequence section claimed both E1-T7 and E1-T11 need read-then-write inside the same transaction, requiring the `neon-serverless` driver. DEC-024 corrected the E1-T7 half. This entry corrects the E1-T11 half: `finalizeSession` reads everything it needs — active participants, `group_dish_id → global_dish_id` mapping, and a freshly-generated `finalMealId`/row ids — *before* entering the atomic write phase. The atomic phase itself (`commitFinalize` in `features/meal/infrastructure/drizzle-meal-repository.ts`) is exactly two statement types: `UPDATE selection_sessions` and one multi-row `INSERT` into `eating_history`, both known in full before `db.batch()` is called. No read-after-write dependency exists inside the transaction.
-
-## Rationale
-
-`db.batch()` (`neon-http`'s wrapper around `@neondatabase/serverless`'s `sql.transaction()`) accepts an `isolationLevel` option — a genuine Postgres transaction concept, not a batching convenience. TC-109 is designed precisely to prove atomicity empirically: it forces a foreign-key violation on the `eating_history` insert (a failure mode `onConflictDoNothing` does not suppress) and asserts the session's state update rolled back too. If TC-109 passes, `db.batch()` is sufficient; the WebSocket driver adds a second connection-management concern (long-lived sockets in a serverless environment) that isn't justified without evidence it's needed.
-
-## Consequence
-
-Neither E1-T7 nor E1-T11 needs `neon-serverless`. The driver remains deferred to **E3-T1** (Group Rule → Session Rule snapshot), which is a genuine read-then-write: the current Group Rules must be read and immediately written as Session Rules inside the same transaction as the Session state change. If TC-109 is ever observed failing in CI or production, that is the trigger to revisit this decision — not a preemptive addition.
-
-## Affected Documents
-
-- Decision Log DEC-015 (amended by DEC-024 and this entry, not superseded), DEC-024
-- Tech Spec v0.2 §3.2, §4.1
+`finalizeSession` đọc toàn bộ dữ liệu cần thiết trước khi bước vào giai đoạn ghi `db.batch()`, đảm bảo tính nguyên tử tuyệt đối mà không cần kết nối WebSocket phức tạp.
 
 ---
 
-# Decision Index
+# 📜 Lịch sử thay đổi (Change History)
 
-| ID | Decision | Status | Primary Impact |
-|---|---|---|---|
-| DEC-001 | Selection Session Lifecycle | Accepted | Session state, uniqueness |
-| DEC-002 | Participant Lifecycle and Re-entry | Accepted | Participation, Interaction validity |
-| DEC-003 | Group Membership Changes During Active Session | Accepted | Membership invariants |
-| DEC-004 | Persistent Chef Role and Cooking Capability | Accepted | Group roles, Chef Mode |
-| DEC-005 | Interaction vs Persistent Action Semantics | Accepted | Ranking, constraint behavior |
-| DEC-006 | Eating History and Personal Correction Authority | Accepted | History model, recommendation input |
-| DEC-007 | Final Meal Correction Authority | Accepted | Correction and audit |
-| DEC-008 | Global Dish Provenance and Logical Merge | Accepted | Dish identity, MVP scope |
-| DEC-009 | Group Dish Removal and Re-add | Accepted | Group Dish lifecycle |
-| DEC-010 | Group Rule and Session Rule Model | Accepted | Rule structure, snapshot, override |
-| DEC-011 | Final Meal Rule Evaluation and Warning Semantics | Accepted | Validation, warning, ranking boundary |
-| DEC-012 | Ranking Model, Cooldown and Exploration Strategy | Accepted | Personal Ranking, Session Ranking, Eating History aggregation |
-| DEC-013 | Auth.js Beta Dependency | Accepted | `next-auth` version pin |
-| DEC-014 | `provisionUser` Failure Surfaces as Exception at the Auth.js Boundary | Accepted | Auth.js callback error handling |
-| DEC-015 | neon-http `db.batch()` Is a Real Transaction; `db.transaction()` Is Not | Accepted | `GroupRepository` write path, future driver choice |
-| DEC-016 | Canonical IANA Time Zone Stored, Not User Input | Accepted | Group timezone storage, time zone picker matching |
-| DEC-017 | `DISPLAY_TIME_ZONE_FALLBACK` Is Display-Only, Never a Group Default | Accepted | `/groups` date caption vs. Group/Session timezone |
-| DEC-018 | Database Enums Defined with `pgEnum` | Accepted | Schema enum definitions, DB rejection of invalid values |
-| DEC-019 | Dish Name Normalization: Level 1 in E1, Diacritics Removal in E2-T3 with Backfill | Accepted | `normalize-name.ts`, backfill obligation |
-| DEC-020 | Route Revalidation and Client Router Refresh in Server Actions | Accepted | `refresh()`, literal `revalidatePath` |
-| DEC-021 | Error Boundary Components Use `retry` Prop in Next.js 16 | Accepted | `error.tsx` retry semantics |
-| DEC-022 | State Adjustment During Render for Server Action State Transitions | Accepted | `DishCatalogScreen`, no cascading `useEffect` |
-| DEC-023 | Animated Sheet Exit via `useSheetClose` Context | Accepted | `Sheet`, `AddDishSheet`, slide-down transition |
-| DEC-024 | E1-T7's Minimal `startSession` Does Not Need the WebSocket Driver | Accepted | `startSession` implementation, partial unique index race handling |
-| DEC-025 | `interaction_events` Logs Every SPEC-012 Request, Including Idempotent Repeats | Accepted | `applyInteraction` audit logging semantics |
-| DEC-026 | E1-T11 Does Not Need the WebSocket Driver Either | Accepted | `finalizeSession` and atomic `commitFinalize` batch transaction |
-
----
-
-# Change History
-
-| Version | Date | Change |
-|---|---|---|
-| 1.9 | 2026-08-18 | Added DEC-026 for E1-T10/E1-T11 (S6 Chốt bữa thô): finalizeSession does not need WebSocket driver, batch write is atomic |
-| 1.8 | 2026-08-18 | Added DEC-025 for E1-T9 (S5 Deck và swipe thô): interaction_events logs every request, including idempotent repeats |
-| 1.7 | 2026-08-18 | Added DEC-024 for E1-T7 (S4 Minimal Session): correcting DEC-015 regarding WebSocket driver deferral to E3-T1 |
-| 1.6 | 2026-08-18 | Added DEC-022 (adjust state during render for Server Actions) and DEC-023 (animated sheet exit via useSheetClose) |
-| 1.5 | 2026-08-18 | Added DEC-018 through DEC-021 for E1-T5 (S3 Dish thô): pgEnum DB enums, Level 1 normalize-name, refresh()/revalidatePath in Server Actions, and error.tsx retry prop |
-| 1.4 | 2026-08-17 | Added DEC-015 through DEC-017 for E1-T2/E1-T3/E1-T4: neon-http batch transaction semantics, canonical timezone storage, and display-only fallback timezone |
-| 1.3 | 2026-08-17 | Added DEC-013 for the `next-auth` beta pin and DEC-014 for the `provisionUser` throw-at-boundary behavior in E1-T1 |
-| 1.2 | 2026-08-14 | Added DEC-012 for ranking model, implicit preference smoothing, 7-day cooldown, 20% exploration and evidence-only Session Ranking |
-| 1.1 | 2026-07-29 | Added DEC-010 for Group Rule / Session Rule structure, snapshot and override semantics |
-| 1.1 | 2026-07-29 | Added DEC-011 for finalize validation, warning audit and ranking boundary |
-| 1.0 | 2026-07-23 | Initial decision log with DEC-001 through DEC-009 |
-
-
-
+| Version | Ngày | Nội dung cập nhật |
+| :---: | :---: | :--- |
+| `1.9` | 2026-08-18 | Bổ sung `DEC-026` cho E1-T10/T11: `finalizeSession` dùng `db.batch()` nguyên tử |
+| `1.8` | 2026-08-18 | Bổ sung `DEC-025` cho E1-T9: `interaction_events` ghi nhật ký mọi request |
+| `1.7` | 2026-08-18 | Bổ sung `DEC-024` cho E1-T7: `startSession` tối thiểu không cần WebSocket |
+| `1.6` | 2026-08-18 | Bổ sung `DEC-022` (Adjust state during render) và `DEC-023` (Animated sheet exit) |
+| `1.5` | 2026-08-18 | Bổ sung `DEC-018` đến `DEC-021` cho E1-T5 (Dish thô): pgEnum, normalize-name, Server Actions revalidate, error.tsx |
+| `1.4` | 2026-08-17 | Bổ sung `DEC-015` đến `DEC-017` cho E1-T2/T3/T4: Batch transactions, IANA timezone |
+| `1.3` | 2026-08-17 | Bổ sung `DEC-013` (Auth.js beta) và `DEC-014` (`provisionUser` boundary exception) |
+| `1.2` | 2026-08-14 | Bổ sung `DEC-012` (Mô hình Ranking, Cooldown 7 ngày, Exploration 20%) |
+| `1.1` | 2026-07-29 | Bổ sung `DEC-010` (Group/Session Rules) và `DEC-011` (Final Meal validation) |
+| `1.0` | 2026-07-23 | Khởi tạo Decision Log ban đầu với `DEC-001` đến `DEC-009` |

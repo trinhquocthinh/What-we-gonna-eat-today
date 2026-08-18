@@ -1,432 +1,318 @@
-# Test Cases Specification — What We Gonna Eat Today
+# 🧪 Test Cases Specification — What We Gonna Eat Today
 
-## Version 0.1
-
-**Status:** Draft — Awaiting review
-**Created:** 2026-08-14
-**Upstream:** SDD v0.2, Tech Spec & Architecture v0.2, Business Rules v1.6
-
-Phạm vi: **v1.0 — 17 tính năng, 22 SPEC**.
-
-94 test case đầu ánh xạ **1–1** với 94 kịch bản trong SDD v0.2. 18 test case sau là biên và trường hợp âm không có trong SDD. Tổng 112 test case tự động, cộng 5 kịch bản khói thủ công.
-
-Ký hiệu tầng: `D` domain unit không mock, `A` application unit mock port, `I` integration chạm database thật.
+> **Document Metadata**
+>
+> - **Version:** `0.1` | **Status:** `Approved`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
+> - **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
+> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • Bộ mã kiểm thử tự động Vitest
+>
+> 📌 *Tài liệu đặc tả toàn diện 112 ca kiểm thử tự động (`TC-001` đến `TC-112`) và 5 kịch bản kiểm thử khói thủ công (Smoke Tests) cho 17 tính năng cốt lõi của phiên bản v1.0.*
 
 ---
 
-# 1. Quy ước
+## 📑 Mục lục (Table of Contents)
 
-## 1.1 Tổ chức file
+1. [Quy ước & Kỷ luật kiểm thử (Test Conventions)](#1-quy-ước--kỷ-luật-kiểm-thử-test-conventions)
+2. [Ma trận Test Cases ánh xạ từ SDD (TC-001 → TC-094)](#2-ma-trận-test-cases-ánh-xạ-từ-sdd-tc-001--tc-094)
+3. [Test Cases bổ sung — Biên và Trường hợp âm (TC-095 → TC-112)](#3-test-cases-bổ-sung--biên-và-trường-hợp-âm-tc-095--tc-112)
+4. [Kịch bản kiểm thử khói thủ công trên thiết bị di động (Smoke Tests)](#4-kịch-bản-kiểm-thử-khói-thủ-công-trên-thiết-bị-di-động-smoke-tests)
+5. [Bảng ma trận truy vết (Traceability Matrices)](#5-bảng-ma-trận-truy-vết-traceability-matrices)
+6. [Lịch sử thay đổi (Change History)](#6-lịch-sử-thay-đổi-change-history)
 
-File test đặt cạnh file nguồn: `ranking.ts` → `ranking.test.ts`. Xoá feature thì test biến mất cùng.
+---
 
-```
-src/features/selection/domain/ranking.ts
-src/features/selection/domain/ranking.test.ts
-src/features/selection/application/build-deck.ts
-src/features/selection/application/build-deck.test.ts
-src/features/selection/infrastructure/deck-repository.integration.test.ts
-```
+# 1. Quy ước & Kỷ luật kiểm thử (Test Conventions)
 
-Test integration đặt hậu tố `.integration.test.ts` để tách được bằng `vitest --exclude`. Chúng cần database và chậm hơn nhiều lần.
+### 🏷️ Ký hiệu phân tầng kiểm thử
 
-## 1.2 Đặt tên
+- **`D` (Domain Unit Test):** Hàm thuần túy, tuyệt đối **không mock**.
+- **`A` (Application Unit Test):** Use cases kiểm thử với Port Mocks viết tay tối giản.
+- **`I` (Integration Test):** Kiểm thử tích hợp thực tế với Neon PostgreSQL database.
 
-```ts
-describe('SPEC-020 computeRecencyPenalty', () => {
-  it('TC-079: trả 1.0 khi ăn cùng ngày', () => {})
-  it('TC-081: trả 0 khi ăn đúng 7 ngày trước', () => {})
-})
-```
-
-Mỗi `it` mở đầu bằng TC-ID. Test đỏ trên CI phải tra ngược được về tài liệu này mà không cần đọc code.
-
-## 1.3 Mock
-
-- `domain/` **không mock gì**. Nếu một hàm domain cần mock, nó đã bị đặt sai tầng.
-- `application/` mock port bằng object thuần, không dùng thư viện auto-mock. Port là interface do chính tầng này định nghĩa nên viết tay rất ngắn.
-- `infrastructure/` không mock database. Dùng Neon branch riêng cho test, xoá sạch bảng giữa các test.
-- Không mock `Date`. Mọi hàm phụ thuộc thời gian nhận `now` hoặc `referenceDate` làm tham số. Đây là lý do SPEC-018 và SPEC-020 test được dễ dàng.
-
-## 1.4 Dữ liệu mẫu
-
-Một factory duy nhất cho mỗi entity, đặt ở `src/shared/testing/factories.ts`:
-
-```ts
-makeGroup({ timezone: 'Asia/Ho_Chi_Minh' })
-makeGroupDish({ systemTags: ['MAIN'] })
-makeSession({ state: 'ACTIVE' })
+```text
+src/features/selection/
+├── domain/ranking.ts
+├── domain/ranking.test.ts                         # Unit test (D)
+├── application/build-deck.ts
+├── application/build-deck.test.ts                  # Unit test (A)
+└── infrastructure/deck-repository.integration.test.ts # Integration test (I)
 ```
 
-Factory nhận override từng phần và tự sinh phần còn lại. Không viết object đầy đủ trong từng test — khi schema đổi, sửa một chỗ.
-
-Dữ liệu mẫu dùng tên món tiếng Việt có dấu thật (`Cá basa kho tiêu`, `Canh chua cá lóc`), vì chuẩn hoá bỏ dấu ở SPEC-005 là chỗ dễ sai nhất và test với `foo`/`bar` sẽ không phát hiện được.
-
-## 1.5 Ngưỡng coverage
-
-| Tầng | Ngưỡng |
-|---|---|
-| `domain/` | 80% dòng, ép trong CI |
-| `application/` | 80% dòng, ép trong CI |
-| `infrastructure/` | Không ngưỡng |
-| `presentation/` | Không ngưỡng |
-
-Không ép coverage ở `presentation/` vì nó chỉ sinh ra test rác chạy qua component để lấy số.
-
-## 1.6 Sai lệch có chủ ý so với tỉ lệ đề xuất
-
-| Tầng | Đề xuất | Thực tế v1.0 |
-|---|---|---|
-| Unit | ~70% | 81 / 112 = 72% |
-| Integration | ~25% | 31 / 112 = 28% |
-| E2E tự động | ~5% | **0** |
-
-Tech Spec §1 quyết định không dùng Playwright ở v1.0. Phần 5% e2e được thay bằng **5 kịch bản khói thủ công** ở §4, gắn với cột mốc M2 và M6 trong Plan & Scope. Đây là sai lệch có ý thức: luồng chính sẽ được người dùng thật chạy mỗi ngày, nên phản hồi đến nhanh hơn nhiều so với chi phí bảo trì một bộ e2e giòn.
-
-Nếu v1.1 thêm `Cannot Eat` và Personal Correction — hai thứ có thể làm **hỏng dữ liệu âm thầm** thay vì gây lỗi — thì quyết định này phải được xem lại.
+> [!IMPORTANT]
+> **Kỷ luật Mock:**
+>
+> 1. `domain/` tuyệt đối **KHÔNG MOCK BẤT CỨ ĐIỀU GÌ**. Nếu hàm domain cần mock, hàm đó đã bị đặt sai tầng.
+> 2. **Không mock `Date`:** Mọi hàm phụ thuộc thời gian đều nhận `now` hoặc `referenceDate` qua tham số.
+> 3. Dữ liệu kiểm thử mẫu bắt buộc dùng tiếng Việt có dấu thật (`Cá basa kho tiêu`, `Canh chua cá lóc`) để kiểm chứng chuẩn hóa bỏ dấu.
 
 ---
 
-# 2. Test case ánh xạ từ SDD
+# 2. Ma trận Test Cases ánh xạ từ SDD (TC-001 → TC-094)
 
-## SPEC-001 — Đăng nhập · F01
+### SPEC-001 — Đăng nhập Google OAuth (`F01`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-001 | happy | A | Chưa có User nào | Callback OAuth hợp lệ | Tạo đúng một User, trả cookie phiên |
-| TC-002 | happy | A | Đã có User với `provider_subject` X | Callback lại với X | Không tạo User mới |
-| TC-003 | biên | A | Hai provider account cùng email | Cả hai đăng nhập | Tồn tại hai User riêng biệt |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-001` | Happy | `A` | Chưa có User nào | Callback OAuth Google hợp lệ | Tạo đúng 1 User, cấp cookie phiên |
+| `TC-002` | Happy | `A` | Đã có User với `provider_subject` X | Callback lại với X | Đăng nhập thành công, không tạo User mới |
+| `TC-003` | Biên | `A` | 2 tài khoản Google khác nhau trùng email | Cả hai lần lượt đăng nhập | Tồn tại 2 bản ghi User độc lập |
 
-## SPEC-018 — Decision Date resolution · BR-020
+### SPEC-018 — Quy đổi Decision Date theo Timezone (`BR-020`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-004 | biên | D | Group timezone `Asia/Ho_Chi_Minh` | Thời điểm `2026-08-14T18:30:00Z` | `decisionDate = 2026-08-15` |
-| TC-005 | biên | D | Group timezone `Asia/Ho_Chi_Minh` | Thời điểm `2026-08-14T16:00:00Z` | `decisionDate = 2026-08-14` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-004` | Biên | `D` | Group timezone `Asia/Ho_Chi_Minh` | Mốc thời gian `2026-08-14T18:30:00Z` | `decisionDate = 2026-08-15` (01:30 sáng) |
+| `TC-005` | Biên | `D` | Group timezone `Asia/Ho_Chi_Minh` | Mốc thời gian `2026-08-14T16:00:00Z` | `decisionDate = 2026-08-14` (23:00 cùng ngày) |
 
-## SPEC-019 — Authorization guard · BR-006, BR-008
+### SPEC-019 — Authorization Guard (`BR-006, BR-008`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-006 | âm | A | User không thuộc Group | Gọi thao tác Group bất kỳ | `ERR_NOT_GROUP_MEMBER`, không thay đổi dữ liệu |
-| TC-007 | âm | A | User là Member không phải Admin | Gọi thao tác cần Admin | `ERR_NOT_GROUP_ADMIN` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-006` | Âm | `A` | User không thuộc Group | Gọi thao tác Group bất kỳ | Trả `ERR_NOT_GROUP_MEMBER`, không đổi dữ liệu |
+| `TC-007` | Âm | `A` | User là Member (không phải Admin) | Gọi thao tác yêu cầu Admin | Trả `ERR_NOT_GROUP_ADMIN` |
 
-## SPEC-002 — Tạo Group · BR-006
+### SPEC-002 — Tạo Group (`BR-006`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-008 | happy | A | Đã đăng nhập | Tạo Group hợp lệ | Người tạo là Member và có `is_admin` |
-| TC-009 | âm | A | — | `timezone = "Asia/Saigon_typo"` | `ERR_VALIDATION`, không ghi DB |
-| TC-010 | âm | A | — | `name = "   "` | `ERR_VALIDATION` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-008` | Happy | `A` | Đã đăng nhập | Tạo Group với dữ liệu hợp lệ | Người tạo là Member và có quyền `is_admin` |
+| `TC-009` | Âm | `A` | — | Nhập `timezone = "Asia/Saigon_typo"` | Trả `ERR_VALIDATION`, không ghi DB |
+| `TC-010` | Âm | `A` | — | Nhập `name = "   "` (khoảng trắng rỗng) | Trả `ERR_VALIDATION` |
 
-## SPEC-003 — Tạo link mời · F02
+### SPEC-003 — Tạo Link mời (`F02`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-011 | happy | A | Người gọi là Admin | Tạo link mời | Trả token, DB lưu bản hash, không lưu token thô |
-| TC-012 | âm | A | Người gọi chỉ là Member | Tạo link mời | `ERR_NOT_GROUP_ADMIN` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-011` | Happy | `A` | Người gọi là Group Admin | Tạo link mời | Trả token, DB lưu hash SHA-256 |
+| `TC-012` | Âm | `A` | Người gọi là Member thông thường | Tạo link mời | Trả `ERR_NOT_GROUP_ADMIN` |
 
-## SPEC-004 — Tham gia bằng link mời · BR-006
+### SPEC-004 — Tham gia bằng Link mời (`BR-006`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-013 | happy | I | Token hợp lệ chưa dùng | Tham gia | Thành Member, token đánh dấu đã dùng, cùng transaction |
-| TC-014 | âm | I | Token đã dùng | Tham gia lần hai | `ERR_INVITE_ALREADY_USED` |
-| TC-015 | âm | I | User đã là Member | Dùng token | `ERR_ALREADY_GROUP_MEMBER`, token **vẫn dùng được** cho người khác |
-| TC-016 | biên | A | Token tạo 8 ngày trước | Tham gia | `ERR_INVITE_INVALID` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-013` | Happy | `I` | Token hợp lệ chưa dùng | Tham gia nhóm | Thành Member, token đổi trạng thái used trong 1 transaction |
+| `TC-014` | Âm | `I` | Token đã được sử dụng trước đó | Dùng lại token lần 2 | Trả `ERR_INVITE_ALREADY_USED` |
+| `TC-015` | Âm | `I` | User đã là Member của nhóm | Dùng link mời | Trả `ERR_ALREADY_GROUP_MEMBER`, token vẫn còn hiệu lực |
+| `TC-016` | Biên | `A` | Token tạo 8 ngày trước | Tham gia nhóm | Trả `ERR_INVITE_INVALID` (quá hạn 7 ngày) |
 
-## SPEC-005 — Thêm Dish · BR-001
+### SPEC-005 — Thêm Dish vào Group Dish Pool (`BR-001`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-017 | happy | A | Chưa có Dish nào | Thêm `"  Canh   Chua  "` | Tạo Global Dish, `normalized_name = "canh chua"` |
-| TC-018 | happy | A | Đã có Global Dish `Canh chua` | Thêm `"canh chua"`, không `forceCreate` | Trả ứng viên, không tạo Dish |
-| TC-019 | happy | A | Đã có Global Dish `Canh chua` | Thêm với `forceCreate = true` | Tạo Global Dish thứ hai kèm provenance |
-| TC-020 | happy | I | Dish đang `INACTIVE` trong Group | Thêm lại | Chuyển `ACTIVE`, không tạo Global Dish mới |
-| TC-021 | âm | A | — | `systemTags = ["BREAKFAST"]` | `ERR_INVALID_SYSTEM_TAG` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-017` | Happy | `A` | Chưa có món nào | Thêm `"  Canh   Chua  "` | Tạo Global Dish, `normalized_name = "canh chua"` |
+| `TC-018` | Happy | `A` | Đã có Global Dish `Canh chua` | Thêm `"canh chua"` không cờ force | Trả danh sách ứng viên trùng, không tạo món mới |
+| `TC-019` | Happy | `A` | Đã có Global Dish `Canh chua` | Thêm với cờ `forceCreate = true` | Tạo Global Dish thứ 2 kèm provenance đầy đủ |
+| `TC-020` | Happy | `I` | Món đang `INACTIVE` trong Group | Thêm lại món | Chuyển `ACTIVE`, không tạo thêm Global Dish |
+| `TC-021` | Âm | `A` | — | Nhập `systemTags = ["BREAKFAST"]` | Trả `ERR_INVALID_SYSTEM_TAG` |
 
-## SPEC-006 — Gán System Tag · BR-003, BR-008
+### SPEC-006 — Gán System Tag trong Group (`BR-003, BR-008`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-022 | happy | A | Dish có `[MAIN]` | Set `[MAIN, SOUP]` | Dish có đúng hai tag |
-| TC-023 | biên | A | Dish có `[MAIN]` | Set `[]` | Dish không còn tag nào |
-| TC-024 | happy | I | Cùng Dish ở hai Group | Đổi tag ở Group A | Tag ở Group B không đổi |
-| TC-025 | âm | A | Người gọi là Member | Đổi tag | `ERR_NOT_GROUP_ADMIN` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-022` | Happy | `A` | Dish có tag `[MAIN]` | Gán `[MAIN, SOUP]` | Dish cập nhật có đúng 2 tags |
+| `TC-023` | Biên | `A` | Dish có tag `[MAIN]` | Gán `[]` (rỗng) | Dish không còn tag nào |
+| `TC-024` | Happy | `I` | Cùng món thuộc 2 Group | Đổi tag ở Group A | Tag của món ở Group B giữ nguyên |
+| `TC-025` | Âm | `A` | Người gọi là Member | Đổi tag món | Trả `ERR_NOT_GROUP_ADMIN` |
 
-## SPEC-007 — Tạo Session · BR-020, BR-025
+### SPEC-007 — Tạo Session (`BR-020, BR-025`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-026 | happy | A | Chưa có Session hôm nay | Tạo | `DRAFT`, người tạo là Creator kiêm Participant |
-| TC-027 | âm | I | Đã có Session `ACTIVE` hôm nay | Tạo | `ERR_SESSION_EXISTS_TODAY` |
-| TC-028 | happy | I | Có Session `INVALID` hôm nay | Tạo | Tạo được Session mới |
-| TC-029 | âm | I | Đã có Session `FINALIZED` hôm nay | Tạo | `ERR_SESSION_EXISTS_TODAY` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-026` | Happy | `A` | Chưa có Session nào hôm nay | Tạo phiên | Phiên `DRAFT`, người tạo là Creator kiêm Participant |
+| `TC-027` | Âm | `I` | Đã có Session `ACTIVE` hôm nay | Tạo phiên mới | Trả `ERR_SESSION_EXISTS_TODAY` |
+| `TC-028` | Happy | `I` | Có Session `INVALID` hôm nay | Tạo phiên mới | Tạo thành công phiên mới |
+| `TC-029` | Âm | `I` | Đã có Session `FINALIZED` hôm nay | Tạo phiên mới | Trả `ERR_SESSION_EXISTS_TODAY` |
 
-## SPEC-008 — Bắt đầu Session · BR-021, BR-025
+### SPEC-008 — Bắt đầu Session (`BR-021, BR-025`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-030 | happy | I | Draft hợp lệ | Start | `ACTIVE`, `started_at` ghi, Session Rule đã snapshot |
-| TC-031 | âm | A | Một Participant đã rời Group | Start | `ERR_PARTICIPANT_NOT_MEMBER` kèm `userId`, giữ `DRAFT` |
-| TC-032 | âm | I | Group đã có Session khác `ACTIVE` cùng ngày | Start Draft này | `ERR_SESSION_EXISTS_TODAY` |
-| TC-033 | âm | A | Session đã `ACTIVE` | Start lần nữa | `ERR_SESSION_NOT_DRAFT` |
-| TC-034 | âm | A | Người gọi không phải Creator | Start | `ERR_NOT_SESSION_CREATOR` |
-| TC-035 | lỗi | I | Start thất bại ở bước 4 | Kiểm tra DB | Không có Session Rule nào được tạo |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-030` | Happy | `I` | Phiên Draft hợp lệ | Bấm Start | Chuyển `ACTIVE`, ghi `started_at`, snapshot Session Rules |
+| `TC-031` | Âm | `A` | 1 Participant đã rời Group | Bấm Start | Trả `ERR_PARTICIPANT_NOT_MEMBER`, giữ nguyên `DRAFT` |
+| `TC-032` | Âm | `I` | Group đã có phiên `ACTIVE` cùng ngày | Bấm Start Draft này | Trả `ERR_SESSION_EXISTS_TODAY` |
+| `TC-033` | Âm | `A` | Phiên đã ở trạng thái `ACTIVE` | Bấm Start lần nữa | Trả `ERR_SESSION_NOT_DRAFT` |
+| `TC-034` | Âm | `A` | Người gọi không phải Creator | Bấm Start | Trả `ERR_NOT_SESSION_CREATOR` |
+| `TC-035` | Lỗi | `I` | Start thất bại ở bước revalidate 4 | Kiểm tra Database | Không có Session Rule nào bị ghi rác |
 
-## SPEC-009 — Thêm Participant · BR-026
+### SPEC-009 — Thêm Participant (`BR-026`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-036 | happy | A | Session `ACTIVE`, User là Member | Thêm | Participant `ACTIVE`, 0 Interaction |
-| TC-037 | âm | A | User không thuộc Group | Thêm | `ERR_PARTICIPANT_NOT_MEMBER` |
-| TC-038 | âm | I | User đã là Participant | Thêm lại | `ERR_PARTICIPANT_EXISTS` |
-| TC-039 | âm | A | Session `FINALIZED` | Thêm | `ERR_SESSION_NOT_ACTIVE` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-036` | Happy | `A` | Session `ACTIVE`, User là Member | Thêm Participant | Tạo Participant `ACTIVE` với 0 tương tác |
+| `TC-037` | Âm | `A` | User không thuộc Group | Thêm Participant | Trả `ERR_PARTICIPANT_NOT_MEMBER` |
+| `TC-038` | Âm | `I` | User đã có tên trong phiên | Thêm lại | Trả `ERR_PARTICIPANT_EXISTS` |
+| `TC-039` | Âm | `A` | Session đã `FINALIZED` | Thêm Participant | Trả `ERR_SESSION_NOT_ACTIVE` |
 
-## SPEC-010 — Dựng deck · BR-033, BR-045
+### SPEC-010 — Dựng Candidate Deck (`BR-033, BR-045`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-040 | happy | A | Group có 30 Dish `ACTIVE` | Mở deck lần đầu | Deck chứa đúng 30 Dish |
-| TC-041 | happy | A | Đã dựng deck | Mở lần thứ hai cùng Session | Thứ tự giống hệt |
-| TC-042 | happy | D | Hai User cùng Session | So sánh deck | Thứ tự khác nhau |
-| TC-043 | happy | D | User ăn Dish A hôm qua, chưa từng ăn Dish B | Dựng deck | Dish B xếp trước Dish A |
-| TC-044 | happy | A | Hai User có Eating History khác nhau | Dựng deck | Thứ tự phản ánh history từng người |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-040` | Happy | `A` | Group có 30 món `ACTIVE` | Mở deck lần đầu | Deck chứa đúng 30 món |
+| `TC-041` | Happy | `A` | Đã dựng deck trước đó | Mở lại deck lần 2 | Thứ tự các thẻ giữ nguyên không đổi |
+| `TC-042` | Happy | `D` | 2 User khác nhau trong cùng phiên | So sánh thứ tự deck | Thứ tự khác nhau theo lịch sử ăn |
+| `TC-043` | Happy | `D` | Ăn món A hôm qua, chưa từng ăn món B | Dựng deck | Món B xếp trên món A |
+| `TC-044` | Happy | `A` | 2 User có Eating History khác nhau | Dựng deck | Thứ tự phản ánh chính xác lịch sử từng người |
 
-## SPEC-011 — Lấy trang deck · F07
+### SPEC-011 — Lấy phân trang Deck (`F07`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-045 | happy | A | Deck 30 Dish | `cursor = 0` | 20 item, `nextCursor = 20` |
-| TC-046 | biên | A | Deck 30 Dish | `cursor = 20` | 10 item, `nextCursor = null` |
-| TC-047 | âm | A | Người gọi không phải Participant | Lấy trang | `ERR_NOT_PARTICIPANT` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-045` | Happy | `A` | Deck có 30 món | Lấy với `cursor = 0` | Trả về 20 món, `nextCursor = 20` |
+| `TC-046` | Biên | `A` | Deck có 30 món | Lấy với `cursor = 20` | Trả về 10 món còn lại, `nextCursor = null` |
+| `TC-047` | Âm | `A` | Người gọi không phải Participant | Lấy trang deck | Trả `ERR_NOT_PARTICIPANT` |
 
-## SPEC-012 — Interaction và Undo · BR-040, BR-041, BR-042
+### SPEC-012 — Tương tác Swipe & Undo (`BR-040→042`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-048 | happy | A | Chưa có interaction | `SWIPE_RIGHT` | Effective `SWIPE_RIGHT`, 1 event |
-| TC-049 | happy | A | Effective `SWIPE_RIGHT` | `SWIPE_LEFT` | Effective `SWIPE_LEFT`, 2 event |
-| TC-050 | happy | A | Effective `SWIPE_LEFT` | `UNDO` | Effective `null`, 3 event |
-| TC-051 | biên | A | Chưa có interaction | `UNDO` | Effective `null`, không lỗi |
-| TC-052 | âm | A | Session `FINALIZED` | `SWIPE_RIGHT` | `ERR_SESSION_NOT_ACTIVE` |
-| TC-053 | biên | I | — | `SWIPE_RIGHT` hai lần liên tiếp | Effective vẫn `SWIPE_RIGHT`, idempotent |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-048` | Happy | `A` | Chưa có tương tác | Gửi `SWIPE_RIGHT` | Effective `SWIPE_RIGHT`, ghi 1 event |
+| `TC-049` | Happy | `A` | Đang `SWIPE_RIGHT` | Gửi `SWIPE_LEFT` | Effective đổi sang `SWIPE_LEFT`, ghi 2 events |
+| `TC-050` | Happy | `A` | Đang `SWIPE_LEFT` | Gửi `UNDO` | Effective xóa về `null`, ghi 3 events |
+| `TC-051` | Biên | `A` | Chưa có tương tác | Gửi `UNDO` | Trả `null`, không báo lỗi |
+| `TC-052` | Âm | `A` | Session đã `FINALIZED` | Gửi `SWIPE_RIGHT` | Trả `ERR_SESSION_NOT_ACTIVE` |
+| `TC-053` | Biên | `I` | — | Gửi `SWIPE_RIGHT` 2 lần liên tiếp | Effective vẫn là `SWIPE_RIGHT`, idempotent |
 
-## SPEC-013 — Completed · BR-026, BR-044
+### SPEC-013 — Completed và Mở lại (`BR-026, BR-044`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-054 | happy | A | Participant `ACTIVE` | `completed = true` | `state = COMPLETED` |
-| TC-055 | happy | A | Participant `COMPLETED` | Gửi `SWIPE_RIGHT` | Interaction ghi bình thường |
-| TC-056 | happy | A | Participant `COMPLETED` | `completed = false` | `state = ACTIVE` |
-| TC-057 | âm | A | Session `FINALIZED` | Set `completed` | `ERR_SESSION_NOT_ACTIVE` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-054` | Happy | `A` | Participant `ACTIVE` | Gửi `completed = true` | Trạng thái chuyển `COMPLETED` |
+| `TC-055` | Happy | `A` | Participant `COMPLETED` | Gửi tiếp `SWIPE_RIGHT` | Ghi nhận tương tác bình thường |
+| `TC-056` | Happy | `A` | Participant `COMPLETED` | Gửi `completed = false` | Trạng thái chuyển lại `ACTIVE` |
+| `TC-057` | Âm | `A` | Session đã `FINALIZED` | Gửi cập nhật completed | Trả `ERR_SESSION_NOT_ACTIVE` |
 
-## SPEC-014 — Session Ranking · BR-049
+### SPEC-014 — Session Ranking (`BR-049`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-058 | happy | D | `T=4`, Dish có `P=3, N=0, H=0` | Tính | `session_score = 0.75` |
-| TC-059 | happy | D | `T=4`, Dish có `P=3, N=1, H=2` | Tính | `session_score = 0.43` |
-| TC-060 | biên | D | Thêm Participant thứ 5, Dish có `P=3, N=0` | Tính lại | `session_score = 0.60` |
-| TC-061 | biên | A | Dish chưa ai tương tác | Tính | Nằm trong `untouched`, không có điểm |
-| TC-062 | âm | A | Người gọi không phải Creator | Gọi | `ERR_NOT_SESSION_CREATOR` |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-058` | Happy | `D` | $T=4$, món có $P=3, N=0, H=0$ | Tính điểm | $\text{Score} = \frac{3 \times 1.0}{4} = 0.75$ |
+| `TC-059` | Happy | `D` | $T=4$, món có $P=3, N=1, H=2$ | Tính điểm | $\text{Score} = \frac{3 - 0.7 - 0.6}{4} = 0.43$ |
+| `TC-060` | Biên | `D` | Thêm người thứ 5, món có $P=3, N=0$ | Tính lại | $\text{Score} = \frac{3}{5} = 0.60$ |
+| `TC-061` | Biên | `A` | Món chưa ai tương tác | Lấy ranking | Nằm trong mục `untouched`, không có điểm |
+| `TC-062` | Âm | `A` | Người gọi không phải Creator | Lấy ranking | Trả `ERR_NOT_SESSION_CREATOR` |
 
-## SPEC-015 — Final Meal nháp · BR-050
+### SPEC-015 — Final Meal nháp (`BR-050`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-063 | happy | A | Creator, 3 Dish hợp lệ | Lưu nháp | Nháp chứa đúng 3 Dish |
-| TC-064 | âm | A | Danh sách trùng `dishId` | Lưu | `ERR_DUPLICATE_DISH_IN_MEAL` |
-| TC-065 | âm | I | Dish vừa bị gỡ khỏi pool | Lưu nháp có Dish đó | `ERR_DISH_NOT_IN_POOL` |
-| TC-066 | happy | A | Dish không ai swipe | Lưu | Thành công |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-063` | Happy | `A` | Creator, chọn 3 món hợp lệ | Lưu nháp | Nháp lưu đúng 3 món |
+| `TC-064` | Âm | `A` | Danh sách trùng `dishId` | Lưu nháp | Trả `ERR_DUPLICATE_DISH_IN_MEAL` |
+| `TC-065` | Âm | `I` | Món vừa bị gỡ khỏi nhóm | Lưu nháp | Trả `ERR_DISH_NOT_IN_POOL` |
+| `TC-066` | Happy | `A` | Chọn món không ai vuốt | Lưu nháp | Lưu thành công |
 
-## SPEC-016 — Finalize · BR-052
+### SPEC-016 — Finalize chốt bữa (`BR-052`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-067 | happy | I | Nháp 3 Dish hợp lệ | Finalize | Final Meal tạo, Session `FINALIZED` |
-| TC-068 | âm | A | Nháp rỗng | Finalize | `ERR_EMPTY_FINAL_MEAL`, giữ `ACTIVE` |
-| TC-069 | âm | I | Dish bị gỡ sau khi lưu nháp | Finalize | `ERR_DISH_NOT_IN_POOL`, giữ `ACTIVE` |
-| TC-070 | âm | A | Session `FINALIZED` | Finalize lần nữa | `ERR_SESSION_NOT_ACTIVE` |
-| TC-071 | happy | I | Finalize thành công | Kiểm tra Eating History | Record tồn tại trong cùng transaction |
-| TC-072 | âm | D | Rule `REQUIRED SOUP >= 1`, nháp không có `SOUP` | Finalize | `ERR_REQUIRED_RULE_FAILED` kèm rule, giữ `ACTIVE` |
-| TC-073 | biên | D | Rule `MAIN >= 1` và `SOUP >= 1`, một Dish mang cả hai tag | Finalize | Thành công — independent tag counting |
-| TC-074 | happy | I | Admin đổi Group Rule sau khi Start | Finalize | Validate theo Session Rule đã snapshot |
-| TC-075 | happy | I | Admin đổi System Tag sau khi Start | Finalize | Validate theo System Tag **mới** |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-067` | Happy | `I` | Nháp 3 món hợp lệ | Bấm Finalize | Tạo Final Meal, Session sang `FINALIZED` |
+| `TC-068` | Âm | `A` | Danh sách nháp rỗng | Bấm Finalize | Trả `ERR_EMPTY_FINAL_MEAL`, giữ `ACTIVE` |
+| `TC-069` | Âm | `I` | Món bị gỡ sau khi lưu nháp | Bấm Finalize | Trả `ERR_DISH_NOT_IN_POOL`, giữ `ACTIVE` |
+| `TC-070` | Âm | `A` | Session đã `FINALIZED` | Bấm Finalize lần 2 | Trả `ERR_SESSION_NOT_ACTIVE` |
+| `TC-071` | Happy | `I` | Finalize thành công | Kiểm tra Eating History | Bản ghi lịch sử tồn tại trong cùng transaction |
+| `TC-072` | Âm | `D` | Rule `Required SOUP >= 1`, nháp thiếu | Bấm Finalize | Trả `ERR_REQUIRED_RULE_FAILED`, giữ `ACTIVE` |
+| `TC-073` | Biên | `D` | Rule `MAIN >= 1` & `SOUP >= 1`, 1 món mang cả 2 tag | Bấm Finalize | Thành công (Independent Tag Counting) |
+| `TC-074` | Happy | `I` | Admin đổi Group Rule sau Start | Bấm Finalize | Validate theo Session Rule đã snapshot |
+| `TC-075` | Happy | `I` | Admin đổi System Tag sau Start | Bấm Finalize | Validate theo System Tag **mới nhất** |
 
-## SPEC-017 — Default Eating History · BR-056
+### SPEC-017 — Default Eating History (`BR-056`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-076 | happy | A | Final Meal 3 Dish, 4 Participant | Sinh history | Đúng 12 record |
-| TC-077 | biên | I | Cùng `finalMealId` xử lý hai lần | Kiểm tra | Vẫn 12 record, idempotent |
-| TC-078 | biên | A | `decision_date = 2026-08-14` | Kiểm tra record | `eating_date = 2026-08-14` bất kể giờ UTC |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-076` | Happy | `A` | Final Meal 3 món, 4 thành viên | Sinh lịch sử | Tạo đúng 12 bản ghi Eating History |
+| `TC-077` | Biên | `I` | Xử lý cùng `finalMealId` 2 lần | Kiểm tra | Vẫn giữ 12 bản ghi, đảm bảo Idempotent |
+| `TC-078` | Biên | `A` | `decision_date = 2026-08-14` | Kiểm tra bản ghi | `eating_date = 2026-08-14` bất kể giờ UTC |
 
-## SPEC-020 — Recency penalty · BR-046
+### SPEC-020 — Tính toán Recency Penalty (`BR-046`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-079 | biên | D | Ăn hôm nay | Tính | `R = 1.0` |
-| TC-080 | happy | D | Ăn 3 ngày trước | Tính | `R ≈ 0.57` |
-| TC-081 | biên | D | Ăn đúng 7 ngày trước | Tính | `R = 0` |
-| TC-082 | biên | D | Ăn 20 ngày trước | Tính | `R = 0` |
-| TC-083 | biên | D | Chưa từng ăn | Tính | `R = 0` |
-| TC-084 | biên | D | Hai record cùng Dish cùng ngày, hai Final Meal | Tính | Kết quả như chỉ có một record |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-079` | Biên | `D` | Ăn hôm nay ($d = 0$) | Tính penalty | $R = 1.0$ |
+| `TC-080` | Happy | `D` | Ăn 3 ngày trước ($d = 3$) | Tính penalty | $R \approx 0.57$ |
+| `TC-081` | Biên | `D` | Ăn đúng 7 ngày trước ($d = 7$) | Tính penalty | $R = 0.0$ |
+| `TC-082` | Biên | `D` | Ăn 20 ngày trước ($d = 20$) | Tính penalty | $R = 0.0$ |
+| `TC-083` | Biên | `D` | Chưa từng ăn bao giờ | Tính penalty | $R = 0.0$ |
+| `TC-084` | Biên | `D` | 2 bản ghi cùng món cùng ngày | Tính penalty | Collapse thành 1 lần ăn duy nhất |
 
-## SPEC-021 — Cấu hình Group Rule · BR-010, BR-012, BR-013
+### SPEC-021 — Cấu hình Group Rule (`BR-010, 012, 013`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-085 | happy | A | Admin | Đặt `REQUIRED SOUP >= 1` | Rule set chứa đúng một rule |
-| TC-086 | âm | I | — | `minimumCount = 0` | `ERR_INVALID_MINIMUM_COUNT`, rule set cũ không đổi |
-| TC-087 | âm | I | — | Hai rule cùng `REQUIRED + MAIN` | `ERR_DUPLICATE_RULE` |
-| TC-088 | biên | A | Group đang có 2 rule | Lưu danh sách rỗng | Group không còn rule nào |
-| TC-089 | âm | A | Người gọi là Member | Lưu | `ERR_NOT_GROUP_ADMIN` |
-| TC-090 | happy | I | Một Session đang `ACTIVE` | Admin đổi Group Rule | Session Rule của Session đó không đổi |
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-085` | Happy | `A` | Group Admin | Đặt `REQUIRED SOUP >= 1` | Lưu đúng 1 rule trong Rule Set |
+| `TC-086` | Âm | `I` | — | Đặt `minimumCount = 0` | Trả `ERR_INVALID_MINIMUM_COUNT` |
+| `TC-087` | Âm | `I` | — | Đặt 2 rule cùng `REQUIRED + MAIN` | Trả `ERR_DUPLICATE_RULE` |
+| `TC-088` | Biên | `A` | Group đang có 2 rules | Lưu danh sách rỗng `[]` | Group không còn rule nào |
+| `TC-089` | Âm | `A` | Người gọi là Member | Lưu quy định | Trả `ERR_NOT_GROUP_ADMIN` |
+| `TC-090` | Happy | `I` | Phiên đang `ACTIVE` | Admin đổi Group Rule | Session Rule của phiên đang chạy không đổi |
 
-## SPEC-022 — Snapshot Session Rule · BR-015, BR-016
+### SPEC-022 — Snapshot Session Rule (`BR-015, BR-016`)
 
-| TC | Loại | Tầng | Tiền điều kiện | Bước | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-091 | happy | I | Group có 2 rule | Start Session | Session Rule chứa đúng 2 rule cùng giá trị |
-| TC-092 | biên | I | Group không có rule nào | Start Session | Session Rule rỗng, Session vẫn `ACTIVE` |
-| TC-093 | happy | I | Session đã snapshot | Admin sửa Group Rule | Session Rule không đổi |
-| TC-094 | biên | I | Session đã `ACTIVE` | Gọi snapshot lần nữa | Không tạo bản sao thứ hai |
-
----
-
-# 3. Test case bổ sung — biên và trường hợp âm
-
-Không có trong SDD. Chúng đến từ ràng buộc schema, giới hạn đầu vào và các rủi ro trong Tech Spec §9.
-
-| TC | Nguồn | Loại | Tầng | Nội dung | Kỳ vọng |
-|---|---|---|---|---|---|
-| TC-095 | SPEC-002 | biên | A | `name` dài 60 ký tự | Chấp nhận |
-| TC-096 | SPEC-002 | âm | A | `name` dài 61 ký tự | `ERR_VALIDATION` |
-| TC-097 | SPEC-005 | biên | A | Tên Dish dài 120 ký tự | Chấp nhận |
-| TC-098 | SPEC-005 | biên | A | Hai tên chỉ khác dấu: `Ca kho` và `Cá kho` | Cùng `normalized_name`, bị coi là trùng |
-| TC-099 | SPEC-005 | âm | I | Thêm Dish đã `ACTIVE` trong Group | `ERR_DISH_ALREADY_IN_POOL` |
-| TC-100 | SPEC-006 | biên | A | `systemTags` 5 giá trị khác nhau | Chấp nhận |
-| TC-101 | SPEC-006 | biên | A | `systemTags` có giá trị lặp | Khử trùng trước khi lưu |
-| TC-102 | SPEC-010 | biên | A | Group có 0 Dish `ACTIVE` | Deck rỗng, không lỗi |
-| TC-103 | SPEC-011 | âm | A | `cursor` âm | `ERR_VALIDATION` |
-| TC-104 | SPEC-011 | biên | A | `cursor` lớn hơn kích thước deck | 0 item, `nextCursor = null` |
-| TC-105 | SPEC-012 | âm | A | Swipe Dish không thuộc Group Dish Pool | `ERR_DISH_NOT_IN_POOL` |
-| TC-106 | R-04 | biên | A | Hai swipe cùng Dish, bản đến sau có timestamp cũ hơn | Server bỏ qua bản đến muộn, giữ bản mới hơn |
-| TC-107 | R-03 | lỗi | I | Hai lệnh Start đồng thời cho hai Draft cùng `group + date` | Đúng một thành công; bên kia nhận `ERR_SESSION_EXISTS_TODAY` |
-| TC-108 | R-02 | biên | I | Dish bị gỡ sau khi deck đã materialize | Không xuất hiện ở trang đọc sau đó |
-| TC-109 | SPEC-016 | lỗi | I | `INSERT eating_history` thất bại giữa transaction | Session **không** chuyển `FINALIZED`, không có Final Meal |
-| TC-110 | SPEC-016 | biên | D | Nháp 1 Dish, rule set rỗng | Finalize thành công |
-| TC-111 | SPEC-014 | biên | D | `T = 1`, Dish có `P = 1` | `session_score = 1.0`, không chia cho 0 |
-| TC-112 | SPEC-004 | biên | A | Token hết hạn đúng thời điểm `expires_at` | `ERR_INVITE_INVALID` — biên đóng |
-
-Ba test đáng chú ý nhất trong nhóm này:
-
-- **TC-107** là test duy nhất chứng minh partial unique index thực sự hoạt động. Nó phải chạy hai transaction song song thật, không phải gọi hàm hai lần tuần tự.
-- **TC-109** chứng minh transaction ở SPEC-016 bao trọn bốn lệnh ghi. Không có nó thì `INSERT` thứ ba thất bại sẽ để lại một Session `FINALIZED` không có lịch sử ăn.
-- **TC-098** là lý do dữ liệu mẫu phải dùng tiếng Việt có dấu thật.
+| TC ID | Loại ca | Tầng | Tiền điều kiện | Bước thực hiện | Kết quả kỳ vọng |
+| :---: | :---: | :---: | :--- | :--- | :--- |
+| `TC-091` | Happy | `I` | Group có 2 rules | Start Session | Session Rule snapshot đúng 2 rules |
+| `TC-092` | Biên | `I` | Group không có rule nào | Start Session | Session Rule rỗng, Session `ACTIVE` |
+| `TC-093` | Happy | `I` | Session đã snapshot | Admin sửa Group Rule | Session Rule của phiên không đổi |
+| `TC-094` | Biên | `I` | Session đã `ACTIVE` | Gọi snapshot lần 2 | Không tạo bản sao thứ hai |
 
 ---
 
-# 4. Kịch bản khói thủ công
+# 3. Test Cases bổ sung — Biên và Trường hợp âm (TC-095 → TC-112)
 
-Thay cho e2e tự động. Chạy trước mỗi lần deploy production, trên **điện thoại thật**, mạng di động không phải wifi.
+| TC ID | Nguồn | Loại ca | Tầng | Nội dung kiểm thử | Kết quả kỳ vọng |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| `TC-095` | `SPEC-002` | Biên | `A` | Tên Group dài đúng 60 ký tự | Chấp nhận hợp lệ |
+| `TC-096` | `SPEC-002` | Âm | `A` | Tên Group dài 61 ký tự | Trả `ERR_VALIDATION` |
+| `TC-097` | `SPEC-005` | Biên | `A` | Tên món dài đúng 120 ký tự | Chấp nhận hợp lệ |
+| `TC-098` | `SPEC-005` | Biên | `A` | 2 tên chỉ khác dấu: `Ca kho` và `Cá kho` | Cùng `normalized_name`, phát hiện trùng |
+| `TC-099` | `SPEC-005` | Âm | `I` | Thêm món đã `ACTIVE` trong Group | Trả `ERR_DISH_ALREADY_IN_POOL` |
+| `TC-100` | `SPEC-006` | Biên | `A` | `systemTags` có đủ 5 giá trị khác nhau | Chấp nhận hợp lệ |
+| `TC-101` | `SPEC-006` | Biên | `A` | `systemTags` có giá trị bị lặp lại | Tự động khử trùng trước khi lưu |
+| `TC-102` | `SPEC-010` | Biên | `A` | Group có 0 món `ACTIVE` | Deck rỗng, không báo lỗi hệ thống |
+| `TC-103` | `SPEC-011` | Âm | `A` | Truyền `cursor` là số âm | Trả `ERR_VALIDATION` |
+| `TC-104` | `SPEC-011` | Biên | `A` | `cursor` lớn hơn tổng số món trong deck | Trả về 0 item, `nextCursor = null` |
+| `TC-105` | `SPEC-012` | Âm | `A` | Swipe món không thuộc Group Dish Pool | Trả `ERR_DISH_NOT_IN_POOL` |
+| `TC-106` | `R-04` | Biên | `A` | 2 Swipe cùng món, bản đến sau có timestamp cũ hơn | Server bỏ qua bản đến muộn, giữ bản mới nhất |
+| `TC-107` | `R-03` | Lỗi | `I` | **2 transaction Start song song cùng group + date** | Đúng 1 thành công; bên kia nhận `ERR_SESSION_EXISTS_TODAY` |
+| `TC-108` | `R-02` | Biên | `I` | Món bị gỡ sau khi deck đã materialize | Tự động loại khỏi trang đọc kế tiếp |
+| `TC-109` | `SPEC-016` | Lỗi | `I` | **`INSERT eating_history` fail giữa transaction** | Session **KHÔNG** chuyển `FINALIZED`, rollback toàn bộ |
+| `TC-110` | `SPEC-016` | Biên | `D` | Nháp có 1 món, Rule Set rỗng | Finalize thành công |
+| `TC-111` | `SPEC-014` | Biên | `D` | $T = 1$, món có $P = 1$ | $\text{Score} = 1.0$, không bị lỗi chia cho 0 |
+| `TC-112` | `SPEC-004` | Biên | `A` | Token hết hạn đúng mốc `expires_at` | Trả `ERR_INVITE_INVALID` (biên đóng) |
 
-| ID | Gắn với | Kịch bản | Đạt nghĩa là |
-|---|---|---|---|
-| MS-01 | M2 | Tạo nhóm, thêm 5 món, mở phiên, vuốt hết, chốt bữa | Thấy Final Meal và lịch sử ăn của chính mình |
-| MS-02 | M3 | Người thứ hai vào bằng link mời, cùng vuốt trong một phiên | Creator thấy số đếm của cả hai trong Session Ranking |
-| MS-03 | M4 | Chốt bữa hôm nay, hôm sau mở phiên mới | Món hôm qua nằm dưới trong deck |
-| MS-04 | M5 | Đặt rule `phải có canh`, chốt bữa không có canh | Bị chặn, thông báo nêu rõ thiếu gì |
-| MS-05 | NFR-01 | Mở app lần đầu trong ngày sau khi Neon đã ngủ | Deck hiện trong 2.5 giây |
-
-MS-05 là kịch bản duy nhất kiểm chứng R-01. Nó phải chạy sau ít nhất 10 phút không ai dùng app, nếu không compute vẫn đang thức và số đo vô nghĩa.
-
----
-
-# 5. Traceability
-
-## 5.1 SPEC → TC
-
-Cả 22 SPEC đều có ít nhất một TC.
-
-| SPEC | TC |
-|---|---|
-| SPEC-001 | TC-001 → TC-003 |
-| SPEC-002 | TC-008 → TC-010, TC-095, TC-096 |
-| SPEC-003 | TC-011, TC-012 |
-| SPEC-004 | TC-013 → TC-016, TC-112 |
-| SPEC-005 | TC-017 → TC-021, TC-097 → TC-099 |
-| SPEC-006 | TC-022 → TC-025, TC-100, TC-101 |
-| SPEC-007 | TC-026 → TC-029 |
-| SPEC-008 | TC-030 → TC-035, TC-107 |
-| SPEC-009 | TC-036 → TC-039 |
-| SPEC-010 | TC-040 → TC-044, TC-102, TC-108 |
-| SPEC-011 | TC-045 → TC-047, TC-103, TC-104 |
-| SPEC-012 | TC-048 → TC-053, TC-105, TC-106 |
-| SPEC-013 | TC-054 → TC-057 |
-| SPEC-014 | TC-058 → TC-062, TC-111 |
-| SPEC-015 | TC-063 → TC-066 |
-| SPEC-016 | TC-067 → TC-075, TC-109, TC-110 |
-| SPEC-017 | TC-076 → TC-078 |
-| SPEC-018 | TC-004, TC-005 |
-| SPEC-019 | TC-006, TC-007 |
-| SPEC-020 | TC-079 → TC-084 |
-| SPEC-021 | TC-085 → TC-090 |
-| SPEC-022 | TC-091 → TC-094 |
-
-## 5.2 BR-ID → TC
-
-Chỉ liệt kê 29 BR-ID nằm trong phạm vi v1.0. 32 BR-ID còn lại thuộc tính năng ở v1.1 và v1.2; chúng chưa có TC vì chưa có code, và đây là khoảng trống **có chủ ý**, không phải bỏ sót.
-
-| BR-ID | Chủ đề | TC |
-|---|---|---|
-| BR-001 | Global Dish Pool | TC-017 → TC-019, TC-098, TC-099 |
-| BR-003 | System Tag | TC-021 → TC-025, TC-100, TC-101 |
-| BR-005 | Group Dish Pool | TC-020, TC-065, TC-069, TC-108 |
-| BR-006 | Group Membership Model | TC-006, TC-008, TC-013 |
-| BR-007 | Quyền Group Member | TC-012, TC-025, TC-089 |
-| BR-008 | Quyền Group Admin | TC-007, TC-011, TC-024 |
-| BR-010 | Group Rule | TC-085, TC-088 |
-| BR-012 | Tag Rule Structure | TC-086, TC-087, TC-073 |
-| BR-013 | Required Rule | TC-072, TC-073, TC-110 |
-| BR-015 | Session Rule | TC-091 → TC-093, TC-074 |
-| BR-016 | Draft Editing | TC-090, TC-094 |
-| BR-020 | Session Lifecycle | TC-004, TC-005, TC-026 |
-| BR-021 | Draft | TC-030 → TC-035 |
-| BR-022 | Active | TC-036, TC-052, TC-055 |
-| BR-023 | Finalized | TC-067, TC-070 |
-| BR-025 | Session Uniqueness | TC-027 → TC-029, TC-032, TC-107 |
-| BR-026 | Participant Lifecycle | TC-036 → TC-039, TC-054 |
-| BR-033 | Candidate Discovery | TC-040, TC-042, TC-102 |
-| BR-039 | User Interaction | TC-048 → TC-051 |
-| BR-040 | Effective Interaction | TC-048 → TC-053, TC-106 |
-| BR-041 | Swipe Right | TC-048, TC-053 |
-| BR-042 | Swipe Left | TC-049 |
-| BR-044 | Session Participation | TC-054 → TC-057 |
-| BR-045 | Personal Ranking | TC-043, TC-044 |
-| BR-046 | History Cooldown | TC-079 → TC-084 |
-| BR-049 | Session Ranking | TC-058 → TC-062, TC-111 |
-| BR-050 | Final Meal | TC-063 → TC-066 |
-| BR-052 | Finalize Validation | TC-067 → TC-075, TC-109 |
-| BR-056 | Default Eating History | TC-076 → TC-078 |
-
-Không ô nào trống. Ô trống trong bảng này là chỗ sẽ vỡ ở production.
-
-## 5.3 Rủi ro → TC
-
-| Rủi ro | TC |
-|---|---|
-| R-01 cold start | MS-05 |
-| R-02 deck lệch khi Dish bị gỡ | TC-108 |
-| R-03 race condition khi Start | TC-107 |
-| R-04 swipe ghi đè sai thứ tự | TC-106 |
-| R-05 Eating History sai do thiếu `Cannot Eat` | **Không có TC** — đây là món nợ đã biết, không phải lỗi có thể test |
+> [!CAUTION]
+> **3 Test Cases then chốt ép tính toàn vẹn hệ thống:**
+>
+> - **`TC-107`:** Chạy 2 database transaction song song thật để chứng minh Partial Unique Index chặn race condition.
+> - **`TC-109`:** Khẳng định tính nguyên tử của Finalize: Nếu ghi lịch sử thất bại, phiên không bao giờ được phép chuyển sang `FINALIZED`.
+> - **`TC-098`:** Kiểm thử chuẩn hóa tiếng Việt với dữ liệu thật.
 
 ---
 
-# 6. Change History
+# 4. Kịch bản kiểm thử khói thủ công trên thiết bị di động (Smoke Tests)
 
-| Version | Date | Section | Change | Reason / Decision |
-|---|---|---|---|---|
-| 0.1 | 2026-08-14 | Toàn bộ | Bản draft đầu tiên: 94 TC ánh xạ 1–1 từ SDD, 18 TC biên bổ sung, 5 kịch bản khói thủ công, ba bảng traceability | Phase 8.1 |
+Chạy trước mỗi lần Deploy Production trên **điện thoại thật sử dụng mạng di động 4G/5G**:
+
+| Mã | Cột mốc | Kịch bản thực hiện | Tiêu chuẩn đạt yêu cầu |
+| :---: | :---: | :--- | :--- |
+| `MS-01` | `M2` | Tạo nhóm, thêm 5 món, mở phiên, vuốt hết, chốt bữa | Thấy thực đơn Final Meal và lịch sử ăn cá nhân |
+| `MS-02` | `M3` | Người thứ 2 vào bằng link mời, cùng vuốt trong phiên | Creator thấy số đếm tương tác của cả 2 trong Session Ranking |
+| `MS-03` | `M4` | Chốt bữa hôm nay, hôm sau mở phiên mới | Món vừa ăn hôm trước bị đẩy xuống dưới trong deck |
+| `MS-04` | `M5` | Đặt rule `Phải có canh`, chốt bữa không có canh | Bị chặn, thông báo nêu rõ thiếu món Canh |
+| `MS-05` | `NFR-01` | Mở app lần đầu sau khi Neon DB đã ngủ $\ge 10\text{ phút}$ | Màn hình Deck hiển thị trong vòng $\le 2.5\text{ giây}$ |
+
+---
+
+# 5. Bảng ma trận truy vết (Traceability Matrices)
+
+### 5.1 Phủ sóng SPEC $\to$ Test Cases
+
+Toàn bộ **22 SPEC** đều có độ bao phủ kiểm thử:
+`SPEC-001` (TC-001→003) • `SPEC-002` (TC-008→010, 095, 096) • `SPEC-003` (TC-011, 012) • `SPEC-004` (TC-013→016, 112) • `SPEC-005` (TC-017→021, 097→099) • `SPEC-006` (TC-022→025, 100, 101) • `SPEC-007` (TC-026→029) • `SPEC-008` (TC-030→035, 107) • `SPEC-009` (TC-036→039) • `SPEC-010` (TC-040→044, 102, 108) • `SPEC-011` (TC-045→047, 103, 104) • `SPEC-012` (TC-048→053, 105, 106) • `SPEC-013` (TC-054→057) • `SPEC-014` (TC-058→062, 111) • `SPEC-015` (TC-063→066) • `SPEC-016` (TC-067→075, 109, 110) • `SPEC-017` (TC-076→078) • `SPEC-018` (TC-004, 005) • `SPEC-019` (TC-006, 007) • `SPEC-020` (TC-079→084) • `SPEC-021` (TC-085→090) • `SPEC-022` (TC-091→094).
+
+---
+
+# 6. Lịch sử thay đổi (Change History)
+
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: 94 TC từ SDD, 18 TC biên, 5 Smoke Tests | Khởi tạo baseline kiểm thử v1.0 |

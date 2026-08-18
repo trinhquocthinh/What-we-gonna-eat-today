@@ -1,13 +1,13 @@
-# Implementation Guide — E1 Slice S2 / Group tối thiểu
+# 👥 Implementation Guide — E1 Slice S2: Khởi tạo Nhóm & Phân quyền tối thiểu
 
-## Version 0.1
-
-**Status:** Completed
-**Created:** 2026-08-17
-**Upstream:** Master Plan v1.0 §3 (E1-T2, E1-T3, E1-T4), SDD v0.2 SPEC-002 / SPEC-018 / SPEC-019, Tech Spec v0.2 §2/§3/§4.2/§5, Test Cases v0.1 TC-004→TC-010, Design Handoff `docs/designs/README.md` S-02/S-03/S-04
-**Tiền đề:** `docs/what-we-gonna-eat-today_e1-t1-implementation-guide_v0_1.md` đã thi công xong
-
-> Tài liệu này là hướng dẫn thi công, không phải đặc tả. Khi nó lệch với SDD / Tech Spec / Design Handoff thì **các tài liệu kia đúng**.
+> **Document Metadata**
+>
+> - **Version:** `0.1` | **Status:** `Completed`
+> - **Created:** `2026-08-17` | **Last Updated:** `2026-08-18`
+> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T2, E1-T3, E1-T4`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-002, 018, 019`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-004→010`)
+> - **Tiền đề:** `E1-T1` đã thi công xong.
+>
+> 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S2: Tạo nhóm gia đình với giao dịch Batch nguyên tử, bảo vệ phân quyền Group Guard và tính toán Decision Date theo múi giờ IANA.*
 
 ---
 
@@ -2427,3 +2427,11 @@ Env scope Preview: `DATABASE_URL` trỏ Neon branch của PR. Migration chạy t
 | Migration `0001` conflict `_journal.json` | merge conflict | Sinh migration ở commit riêng, cuối cùng, ngay trước khi mở PR |
 | Node mặc định trên máy là v22 nhưng `.nvmrc` = 24 | "chạy được ở máy tôi" | `nvm use` trước mọi lệnh. (Đã kiểm: `Intl` cho kết quả giống nhau trên ICU 77 và 78) |
 | `useEffect` đổi timezone gây nháy ở người dùng ngoài Việt Nam | caption đổi sau khi tải | Chấp nhận có ý thức: đó là một caption 13px, và thiết kế đã nói "Theo điện thoại của bạn". Người dùng mục tiêu ở Việt Nam thấy hai giá trị trùng nhau |
+
+---
+
+# 16. Lịch sử thay đổi (Change History)
+
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-17 | Toàn bộ | Khởi tạo Implementation Guide cho E1-S2 (E1-T2, E1-T3, E1-T4) | Kế hoạch Epic E1 |

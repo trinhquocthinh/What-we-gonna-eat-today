@@ -1,67 +1,78 @@
-# Diagrams — What We Gonna Eat Today
+# 📐 Architecture & System Diagrams — What We Gonna Eat Today
 
-## Version 0.1
-
-**Status:** Draft — Awaiting review
-**Created:** 2026-08-14
-**Upstream:** Tech Spec & Architecture v0.1, SDD v0.2, Business Rules v1.6
-
-Phạm vi: **v1.0 — 17 tính năng**. Sơ đồ không mô tả các tính năng ở v1.1 và v1.2.
-
-Tất cả bằng Mermaid để render được trên GitHub và diff được bằng git. Bốn sơ đồ nằm chung một file thay vì tách thư mục, để thống nhất với bộ tài liệu phẳng hiện có của dự án.
-
-C4 chỉ có Context và Container. Component và Code bị bỏ: tầng Code chính là source code, còn Component sẽ lỗi thời trong tuần đầu tiên. Cả hai sơ đồ C4 dùng `flowchart` thay cú pháp `C4Context`, vì cú pháp C4 của Mermaid hay hỏng ở một số nơi render.
+> **Document Metadata**
+>
+> - **Version:** `0.1` | **Status:** `Approved`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
+> - **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
+> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md)
+>
+> 📌 *Tài liệu trực quan hóa toàn diện hệ thống What We Gonna Eat Today: Sơ đồ C4 Context & Container, Sơ đồ thực thể quan hệ ERD (15 bảng), Flowchart vòng đời phiên chọn món và Sequence Diagram luồng Finalize.*
 
 ---
 
-# 1. C4 — Context
+## 📑 Mục lục (Table of Contents)
 
-Dùng để quyết định: hệ thống phụ thuộc vào cái gì bên ngoài, và ai chạm vào nó.
+1. [Sơ đồ C4 — Bối cảnh hệ thống (System Context)](#1-sơ-đồ-c4--bối-cảnh-hệ-thống-system-context)
+2. [Sơ đồ C4 — Vùng chứa & Thành phần (Containers)](#2-sơ-đồ-c4--vùng-chứa--thành-phần-containers)
+3. [Sơ đồ thực thể quan hệ (ERD — Entity Relationship Diagram)](#3-sơ-đồ-thực-thể-quan-hệ-erd--entity-relationship-diagram)
+   - [3.1 Bảng phân tích các ràng buộc nghiệp vụ](#31-bảng-phân-tích-các-ràng-buộc-nghiệp-vụ)
+   - [3.2 Các quyết định đồng bộ Schema](#32-các-quyết-định-đồng-bộ-schema)
+4. [Lưu đồ vòng đời phiên chọn món (Session Lifecycle Flowchart)](#4-lưu-đồ-vòng-đời-phiên-chọn-món-session-lifecycle-flowchart)
+5. [Sơ đồ tuần tự chốt bữa ăn (Finalize Sequence Diagram)](#5-sơ-đồ-tuần-tự-chốt-bữa-ăn-finalize-sequence-diagram)
+6. [Lịch sử thay đổi (Change History)](#6-lịch-sử-thay-đổi-change-history)
+
+---
+
+# 1. Sơ đồ C4 — Bối cảnh hệ thống (System Context)
+
+> **Mục đích:** Xác định rõ các phụ thuộc bên ngoài của hệ thống và các tác nhân tương tác.
 
 ```mermaid
 flowchart TB
-    creator["Người tổ chức bữa ăn<br/>Creator, Group Admin"]
-    member["Thành viên<br/>Participant"]
-    app["What We Gonna Eat Today<br/>Next.js trên Vercel"]
-    google["Google OAuth<br/>nhà cung cấp định danh"]
-    neon["Neon Postgres<br/>free tier"]
+    creator["🧑‍🍳 Người tổ chức bữa ăn<br/>(Creator / Group Admin)"]
+    member["🏃 Thành viên gia đình<br/>(Participant)"]
+    app["🍲 What We Gonna Eat Today<br/>(Next.js App trên Vercel)"]
+    google["🔐 Google OAuth<br/>(Identity Provider / OIDC)"]
+    neon["🐘 Neon Postgres<br/>(Serverless Database)"]
 
-    creator -->|"Mở phiên, chốt bữa · HTTPS"| app
-    member -->|"Vuốt chọn món · HTTPS"| app
-    app -->|"Xác thực · OIDC"| google
-    app -->|"Đọc/ghi · SQL"| neon
+    creator -->|"Mở phiên, chọn món, chốt bữa (HTTPS)"| app
+    member -->|"Vuốt chọn / từ chối món ăn (HTTPS)"| app
+    app -->|"Xác thực người dùng (OIDC / JWT)"| google
+    app -->|"Đọc / ghi dữ liệu qua SQL (Drizzle ORM)"| neon
 ```
 
-Chỉ có hai phụ thuộc ngoài. Không có dịch vụ thanh toán, không có email, không có thông báo đẩy, không có lưu trữ file. Mỗi mũi tên thêm vào sơ đồ này là một thứ có thể hỏng lúc 6 giờ chiều khi cả nhà đang chờ.
+> [!NOTE]
+> Hệ thống chỉ duy trì **2 phụ thuộc ngoại vi cốt lõi**: Google OAuth (định danh) và Neon Postgres (lưu trữ). Không có dịch vụ thanh toán, không email, không push notification thừa thãi nhằm đảm bảo độ tin cậy tối đa lúc 6 giờ chiều khi cả nhà đang chờ cơm.
 
 ---
 
-# 2. C4 — Container
+# 2. Sơ đồ C4 — Vùng chứa & Thành phần (Containers)
 
-Dùng để quyết định: cái gì chạy ở đâu, và ranh giới nào không được vượt.
+> **Mục đích:** Phân định rõ ranh giới thực thi: Thành phần nào chạy ở trình duyệt, thành phần nào chạy trên server và giao tiếp như thế nào.
 
 ```mermaid
 flowchart TB
-    subgraph browser["Trình duyệt điện thoại"]
-        ui["React Client Components<br/>giao diện vuốt, optimistic update"]
+    subgraph browser["📱 Trình duyệt điện thoại (Client)"]
+        ui["React Client Components<br/>• Thao tác vuốt thẻ 1 tay<br/>• Cập nhật lạc quan (Optimistic UI)"]
     end
 
-    subgraph vercel["Vercel"]
-        rsc["React Server Components<br/>deck, Session Ranking"]
-        actions["Server Actions<br/>mọi mutation trừ swipe"]
-        route["Route Handler<br/>POST /api/sessions/:id/interactions"]
-        authr["Auth.js route<br/>đăng nhập, phiên cookie"]
+    subgraph vercel["⚡ Vercel Serverless Platform"]
+        rsc["React Server Components (RSC)<br/>• Render Candidate Deck ban đầu<br/>• Render Session Ranking"]
+        actions["Server Actions (Mutation)<br/>• Tạo nhóm, mở phiên, chốt bữa"]
+        route["Route Handler (Parallel Swipe)<br/>• POST /api/sessions/:id/interactions"]
+        authr["Auth.js Handler<br/>• Đăng nhập Google & Cookie JWT"]
     end
 
-    subgraph neon["Neon"]
-        pg[("Postgres<br/>14 bảng")]
+    subgraph neon["🐘 Neon Serverless Database"]
+        pg[("PostgreSQL Database<br/>(15 bảng dữ liệu)")]
     end
 
-    google["Google OAuth"]
+    google["🔐 Google OAuth"]
 
-    ui -->|"gọi"| actions
-    ui -->|"fetch song song"| route
-    ui -.->|"nhận HTML đã render"| rsc
+    ui -->|"Gọi Mutation thông thường"| actions
+    ui -->|"Fetch song song, độ trễ < 100ms"| route
+    ui -.->|"Nhận HTML Server Render"| rsc
     rsc --> pg
     actions --> pg
     route --> pg
@@ -69,13 +80,15 @@ flowchart TB
     authr --> pg
 ```
 
-Quyết định duy nhất đáng vẽ ở đây: **swipe đi qua Route Handler riêng, không qua Server Action.** React serialise các Server Action liên tiếp, còn NFR-02 yêu cầu phản hồi dưới 100ms khi người dùng vuốt liên tục. Mọi mutation khác đi qua Server Action vì chúng thưa và không cần song song.
+> [!IMPORTANT]
+> **Quyết định kiến trúc quan trọng:**  
+> Thao tác vuốt thẻ (Swipe) đi qua **Route Handler riêng**, không qua Server Actions để tránh bị nghẽn hàng đợi (serialisation) của React, đáp ứng chỉ số [NFR-02](what-we-gonna-eat-today_prd_v0_1.md) phản hồi dưới 100ms.
 
 ---
 
-# 3. ERD
+# 3. Sơ đồ thực thể quan hệ (ERD — Entity Relationship Diagram)
 
-Dùng để quyết định: dữ liệu nào là nguồn sự thật, và ràng buộc nào do database ép chứ không do code.
+> **Mục đích:** Xác định cấu trúc nguồn sự thật (Single Source of Truth) và các ràng buộc toàn vẹn do Database kiểm soát.
 
 ```mermaid
 erDiagram
@@ -108,17 +121,20 @@ erDiagram
         text provider_subject
         text email
         text display_name
+        timestamptz created_at
     }
     GROUPS {
         uuid id PK
         text name
         text timezone
+        timestamptz created_at
     }
     GROUP_MEMBERS {
         uuid id PK
         uuid group_id FK
         uuid user_id FK
         boolean is_admin
+        timestamptz joined_at
         timestamptz removed_at
     }
     GROUP_INVITES {
@@ -127,6 +143,8 @@ erDiagram
         text token_hash
         timestamptz expires_at
         timestamptz used_at
+        uuid used_by_user_id FK
+        timestamptz created_at
     }
     GLOBAL_DISHES {
         uuid id PK
@@ -134,15 +152,17 @@ erDiagram
         text normalized_name
         uuid created_by_user_id FK
         uuid created_from_group_id FK
+        timestamptz created_at
     }
     GROUP_DISHES {
         uuid id PK
         uuid group_id FK
         uuid global_dish_id FK
         text state
+        timestamptz created_at
     }
     GROUP_DISH_TAGS {
-        uuid group_dish_id PK
+        uuid group_dish_id PK, FK
         text system_tag PK
     }
     GROUP_RULES {
@@ -159,6 +179,7 @@ erDiagram
         date decision_date
         uuid creator_user_id FK
         text state
+        timestamptz created_at
         timestamptz started_at
         timestamptz finalized_at
     }
@@ -174,6 +195,7 @@ erDiagram
         uuid session_id FK
         uuid user_id FK
         text state
+        timestamptz joined_at
     }
     INTERACTIONS {
         uuid id PK
@@ -192,9 +214,10 @@ erDiagram
         timestamptz created_at
     }
     SESSION_DECKS {
-        uuid session_id PK
-        uuid user_id PK
+        uuid session_id PK, FK
+        uuid user_id PK, FK
         jsonb ordered_dish_ids
+        timestamptz created_at
     }
     FINAL_MEALS {
         uuid id PK
@@ -202,8 +225,8 @@ erDiagram
         timestamptz created_at
     }
     FINAL_MEAL_ITEMS {
-        uuid final_meal_id PK
-        uuid group_dish_id PK
+        uuid final_meal_id PK, FK
+        uuid group_dish_id PK, FK
     }
     EATING_HISTORY {
         uuid id PK
@@ -211,81 +234,71 @@ erDiagram
         uuid global_dish_id FK
         date eating_date
         uuid source_final_meal_id FK
+        timestamptz created_at
     }
 ```
 
-## 3.1 Ràng buộc bắt nguồn từ business rule
+## 3.1 Bảng phân tích các ràng buộc nghiệp vụ
 
-| Ràng buộc | Nguồn | Ép ở đâu |
-|---|---|---|
-| Unique một phần trên `(group_id, decision_date)` khi `state in (ACTIVE, FINALIZED)` | BR-025 | Database |
-| `unique(group_id, rule_type, system_tag)` | BR-012 | Database |
-| `check(minimum_count >= 1)` trên cả `group_rules` và `session_rules` | BR-012 | Database |
-| `unique(session_id, participant_id, group_dish_id)` trên `interactions` | BR-040 | Database |
-| `primary key(final_meal_id, group_dish_id)` — một Dish một lần trong Final Meal | BR-050 | Database |
-| `unique(group_id, global_dish_id)` trên `group_dishes` | BR-005 | Database |
-| `unique(session_id)` trên `final_meals` — tối đa một Final Meal mỗi Session | BR-025 | Database |
-| Participant phải là Group Member | BR-026 | Application, vì membership có thể bị gỡ sau khi tham gia |
-| Mọi Dish trong Final Meal phải Active lúc finalize | BR-050 | Application, kiểm tra lại tại SPEC-016 bước 4 |
+| Ràng buộc toàn vẹn | Nguồn quy tắc | Tầng thực thi |
+| :--- | :--- | :---: |
+| **Partial Unique:** `(group_id, decision_date)` khi `state IN ('ACTIVE', 'FINALIZED')` | [BR-025](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
+| `UNIQUE(group_id, rule_type, system_tag)` | [BR-012](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
+| `CHECK(minimum_count >= 1)` trên cả `group_rules` và `session_rules` | [BR-012](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
+| `UNIQUE(session_id, participant_id, group_dish_id)` trên `interactions` | [BR-040](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
+| `PRIMARY KEY(final_meal_id, group_dish_id)` (Một món xuất hiện 1 lần trong thực đơn) | [BR-050](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
+| `UNIQUE(group_id, global_dish_id)` trên `group_dishes` | [BR-005](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
+| `UNIQUE(session_id)` trên `final_meals` (Tối đa 1 Final Meal cho mỗi Session) | [BR-025](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
+| Participant bắt buộc phải là Group Member | [BR-026](what-we-gonna-eat-today_business-rules_v1.4.md) | **Application** |
+| Mọi Dish trong Final Meal phải Active tại thời điểm finalize | [BR-050](what-we-gonna-eat-today_business-rules_v1.4.md) | **Application** |
 
-Chín ràng buộc, bảy trong số đó do database ép. Đây là chủ ý: ràng buộc do code ép sẽ bị bỏ sót ở đường đi thứ hai, còn ràng buộc do database ép thì không.
+## 3.2 Các quyết định đồng bộ Schema
 
-## 3.2 Ba chỗ lệch so với Tech Spec v0.1
-
-Đối chiếu ERD với mô hình dữ liệu ở Tech Spec §3.1 và từ vựng ở Business Rules, tôi thấy ba chỗ cần sửa. Chúng chưa được áp dụng vào Tech Spec, chờ bạn duyệt.
-
-**1. Đổi tên bảng `sessions` thành `selection_sessions`.**
-Business Rules gọi thực thể này là Selection Session. Quan trọng hơn, `sessions` là tên Auth.js dùng cho phiên đăng nhập; v1.0 chọn chiến lược JWT nên chưa có bảng đó, nhưng nếu sau này đổi sang database session thì va tên ngay. Đổi bây giờ tốn một dòng, đổi sau tốn một migration.
-
-**2. Bỏ `group_id` và `decision_date` khỏi `final_meals`.**
-Tech Spec §3.1 để hai cột này, nhưng cả hai đều suy ra được từ `selection_sessions` qua `session_id`. Dữ liệu trùng lặp sẽ lệch nhau vào một ngày nào đó, và không có ràng buộc nào giữ chúng đồng bộ. `eating_history.eating_date` thì phải giữ, vì nó là dữ liệu ở cấp User và được Personal Correction sửa độc lập từ v1.1.
-
-**3. Bỏ cột `invalid_reason` khỏi `selection_sessions` ở v1.0.**
-Trạng thái `INVALID` không thể tới được ở v1.0 vì F26 timeout và F41 cancel đều ở v1.2. Giữ giá trị `INVALID` trong enum thì hợp lý — nó mô tả máy trạng thái đầy đủ và không tốn gì. Nhưng cột `invalid_reason` là cột chết, và nó vi phạm đúng nguyên tắc đã dùng để loại `is_chef` ở Tech Spec §3.2.
+1. **Đổi tên `sessions` $\to$ `selection_sessions`:** Tránh xung đột với bảng session của Auth.js / NextAuth.
+2. **Loại bỏ `group_id` và `decision_date` khỏi `final_meals`:** Cả hai trường đều suy ra được qua `session_id`, loại bỏ dữ liệu dư thừa.
+3. **Loại bỏ `invalid_reason` ở v1.0:** Trạng thái `INVALID` chỉ kích hoạt từ v1.1+ (F26 Timeout, F41 Cancel).
 
 ---
 
-# 4. Flowchart — Vòng đời Selection Session
+# 4. Lưu đồ vòng đời phiên chọn món (Session Lifecycle Flowchart)
 
-Dùng để quyết định: một phiên có thể kết thúc ở những trạng thái nào, và cái gì chặn nó ở mỗi bước.
-
-Nhánh lỗi được vẽ đầy đủ. Sơ đồ chỉ có happy path không giúp ai quyết định gì.
+> **Mục đích:** Mô tả đầy đủ các trạng thái và điểm rẽ nhánh xử lý lỗi trong vòng đời một phiên chọn món.
 
 ```mermaid
 flowchart TD
-    start([Creator mở phiên]) --> chk1{"Đã có Session<br/>ACTIVE hoặc FINALIZED<br/>hôm nay?"}
-    chk1 -->|Có| e1["ERR_SESSION_EXISTS_TODAY<br/>chỉ tới phiên đang chạy"]
-    chk1 -->|Không| draft["DRAFT<br/>Creator là Participant"]
+    start([🧑‍🍳 Creator mở phiên]) --> chk1{"Đã có Session<br/>ACTIVE hoặc FINALIZED<br/>hôm nay?"}
+    chk1 -->|Có| e1["⚠️ ERR_SESSION_EXISTS_TODAY<br/>(Điều hướng tới phiên đang chạy)"]
+    chk1 -->|Không| draft["📝 DRAFT<br/>(Creator là Participant mặc định)"]
 
-    draft --> addp["Thêm Participant<br/>SPEC-009"]
+    draft --> addp["Thêm Participant<br/>(SPEC-009)"]
     addp --> draft
-    draft --> startbtn["Creator bấm Start"]
+    draft --> startbtn["Creator bấm Bắt đầu (Start)"]
 
     startbtn --> v1{"Creator còn là<br/>Group Member?"}
-    v1 -->|Không| e2["ERR_NOT_GROUP_MEMBER<br/>giữ DRAFT"]
+    v1 -->|Không| e2["❌ ERR_NOT_GROUP_MEMBER<br/>(Giữ nguyên DRAFT)"]
     v1 -->|Có| v2{"Mọi Participant<br/>còn là Member?"}
-    v2 -->|Không| e3["ERR_PARTICIPANT_NOT_MEMBER<br/>kèm danh sách · giữ DRAFT"]
-    v2 -->|Có| v3{"Uniqueness còn<br/>hợp lệ?"}
+    v2 -->|Không| e3["❌ ERR_PARTICIPANT_NOT_MEMBER<br/>(Nêu rõ tên · Giữ DRAFT)"]
+    v2 -->|Có| v3{"Ràng buộc duy nhất<br/>còn hợp lệ?"}
     v3 -->|Không| e1
-    v3 -->|Có| snap["Snapshot Session Rule<br/>SPEC-022"]
+    v3 -->|Có| snap["Snapshot Session Rules<br/>(SPEC-022)"]
 
-    snap --> active["ACTIVE<br/>Participant bắt đầu vuốt"]
+    snap --> active["🚀 ACTIVE<br/>(Thành viên bắt đầu vuốt thẻ)"]
 
-    active --> swipe["Vuốt, Undo, Completed<br/>SPEC-012 · SPEC-013"]
+    active --> swipe["Vuốt thẻ, Undo, Báo xong<br/>(SPEC-012, SPEC-013)"]
     swipe --> active
-    active --> compose["Creator dựng Final Meal<br/>SPEC-015"]
+    active --> compose["Creator chọn món nháp<br/>(SPEC-015)"]
     compose --> active
 
-    active --> fin["Creator bấm Finalize"]
-    fin --> f1{"Nháp có món?"}
-    f1 -->|Không| e4["ERR_EMPTY_FINAL_MEAL<br/>giữ ACTIVE"]
-    f1 -->|Có| f2{"Mọi Dish còn Active<br/>trong Group Dish Pool?"}
-    f2 -->|Không| e5["ERR_DISH_NOT_IN_POOL<br/>giữ ACTIVE"]
-    f2 -->|Có| f3{"Required Rule<br/>đều đạt?"}
-    f3 -->|Không| e6["ERR_REQUIRED_RULE_FAILED<br/>nêu rule thiếu · giữ ACTIVE"]
-    f3 -->|Có| done["FINALIZED<br/>sinh Eating History<br/>cùng transaction"]
+    active --> fin["Creator bấm Chốt bữa (Finalize)"]
+    fin --> f1{"Thực đơn có món?"}
+    f1 -->|Không| e4["❌ ERR_EMPTY_FINAL_MEAL<br/>(Giữ nguyên ACTIVE)"]
+    f1 -->|Có| f2{"Mọi Dish còn Active<br/>trong nhóm?"}
+    f2 -->|Không| e5["❌ ERR_DISH_NOT_IN_POOL<br/>(Giữ nguyên ACTIVE)"]
+    f2 -->|Có| f3{"Required Rules<br/>đều thỏa mãn?"}
+    f3 -->|Không| e6["❌ ERR_REQUIRED_RULE_FAILED<br/>(Nêu rõ quy tắc thiếu · Giữ ACTIVE)"]
+    f3 -->|Có| done["✅ FINALIZED<br/>(Sinh Eating History trong cùng Transaction)"]
 
-    done --> stop([Không reopen])
+    done --> stop([🏁 Đóng phiên — Không Reopen])
 
     e2 --> draft
     e3 --> draft
@@ -293,129 +306,112 @@ flowchart TD
     e5 --> active
     e6 --> active
 
-    invalid["INVALID<br/>chưa tới được ở v1.0"]
-    active -.->|"F26 timeout · F41 cancel<br/>từ v1.2"| invalid
+    invalid["🛑 INVALID<br/>(Hết hạn / Hủy phiên ở v1.2)"]
+    active -.->|"Timeout cuối ngày (F26)"| invalid
 
     style invalid stroke-dasharray: 5 5
-    style e1 fill:#fdd,stroke:#c66
-    style e2 fill:#fdd,stroke:#c66
-    style e3 fill:#fdd,stroke:#c66
-    style e4 fill:#fdd,stroke:#c66
-    style e5 fill:#fdd,stroke:#c66
-    style e6 fill:#fdd,stroke:#c66
+    style e1 fill:#FBE9E7,stroke:#A3261C
+    style e2 fill:#FBE9E7,stroke:#A3261C
+    style e3 fill:#FBE9E7,stroke:#A3261C
+    style e4 fill:#FBE9E7,stroke:#A3261C
+    style e5 fill:#FBE9E7,stroke:#A3261C
+    style e6 fill:#FBE9E7,stroke:#A3261C
 ```
 
-Điều đáng chú ý nhất trong sơ đồ này: **mọi nhánh lỗi đều quay về trạng thái cũ.** Không có trạng thái `ValidationFailed`, không có phiên nào bị kẹt ở giữa. Đây là DEC-011 được vẽ ra, và nó là lý do máy trạng thái chỉ có bốn ô thay vì bảy.
-
-Đường đứt nét tới `INVALID` cho thấy phần máy trạng thái chưa dùng được ở v1.0. Một phiên mở hôm nay sẽ ở `ACTIVE` vĩnh viễn nếu không ai chốt.
+> [!NOTE]
+> Mọi nhánh lỗi nghiệp vụ đều **quay trở về trạng thái cũ an toàn** (`DRAFT` hoặc `ACTIVE`). Không có trạng thái trung gian bị treo hay dữ liệu rác.
 
 ---
 
-# 5. Sequence — Finalize
+# 5. Sơ đồ tuần tự chốt bữa ăn (Finalize Sequence Diagram)
 
-Dùng để quyết định: ranh giới tầng nào bị vượt qua ở luồng phức tạp nhất, và giao dịch bao trùm những gì.
-
-Vẽ cho Finalize vì đây là chỗ duy nhất trong v1.0 mà bốn feature chạm nhau — `meal`, `rule`, `session`, `history` — và là chỗ duy nhất có transaction nhiều bảng.
+> **Mục đích:** Minh họa ranh giới Clean Architecture và giao dịch nguyên tử (Atomic Transaction) khi thực thi Finalize Meal.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor C as Creator
-    participant UI as React Client
-    participant SA as Server Action<br/>presentation
-    participant UC as FinalizeMeal<br/>application
-    participant DOM as RuleEvaluator<br/>domain
-    participant REPO as Repository<br/>infrastructure
-    participant DB as Postgres
+    actor C as 🧑‍🍳 Creator
+    participant UI as React Client (Mobile)
+    participant SA as Server Action (Presentation)
+    participant UC as FinalizeMeal UseCase (Application)
+    participant DOM as RuleEvaluator (Domain)
+    participant REPO as MealRepository (Infrastructure)
+    participant DB as Neon Postgres
 
-    C->>UI: Bấm Finalize
-    UI->>SA: finalizeMeal(sessionId)
+    C->>UI: Bấm "Chốt bữa ăn hôm nay"
+    UI->>SA: finalizeMealAction(sessionId)
     SA->>UC: execute(sessionId, userId)
 
     UC->>REPO: loadSession(sessionId)
-    REPO->>DB: SELECT selection_sessions
-    DB-->>REPO: session
-    REPO-->>UC: Session
+    REPO->>DB: SELECT * FROM selection_sessions WHERE id = ?
+    DB-->>REPO: session record
+    REPO-->>UC: Session entity
 
-    alt state khác ACTIVE
+    alt Trạng thái khác ACTIVE
         UC-->>SA: Failure(ERR_SESSION_NOT_ACTIVE)
-        SA-->>UI: hiển thị lỗi
+        SA-->>UI: Hiển thị lỗi phiên không còn mở
     end
 
-    alt userId khác creator
+    alt Người gọi không phải Creator
         UC-->>SA: Failure(ERR_NOT_SESSION_CREATOR)
-        SA-->>UI: hiển thị lỗi
+        SA-->>UI: Hiển thị lỗi không có quyền
     end
 
     UC->>REPO: loadDraftItems(sessionId)
-    REPO->>DB: SELECT final_meal_items nháp
-    DB-->>REPO: dishIds
+    REPO->>DB: SELECT * FROM final_meal_items WHERE session_id = ?
+    DB-->>REPO: dishIds nháp
     REPO-->>UC: dishIds
 
-    alt nháp rỗng
+    alt Danh sách món rỗng
         UC-->>SA: Failure(ERR_EMPTY_FINAL_MEAL)
-        SA-->>UI: hiển thị lỗi
+        SA-->>UI: Yêu cầu chọn ít nhất 1 món
     end
 
     UC->>REPO: loadActiveDishesWithTags(groupId, dishIds)
-    Note over REPO,DB: System Tag lấy hiện tại,<br/>không snapshot theo Session · BR-052
+    Note over REPO,DB: System Tag lấy giá trị hiện tại theo BR-052
     REPO->>DB: SELECT group_dishes + group_dish_tags
-    DB-->>REPO: dishes
-    REPO-->>UC: dishes
+    DB-->>REPO: dish entities
+    REPO-->>UC: dish entities
 
-    alt có Dish không còn Active
+    alt Có món bị Inactive giữa chừng
         UC-->>SA: Failure(ERR_DISH_NOT_IN_POOL)
-        SA-->>UI: hiển thị lỗi
+        SA-->>UI: Thông báo món không còn khả dụng
     end
 
     UC->>REPO: loadSessionRules(sessionId)
-    REPO->>DB: SELECT session_rules
-    DB-->>REPO: rules
+    REPO->>DB: SELECT * FROM session_rules WHERE session_id = ?
+    DB-->>REPO: session rules snapshot
     REPO-->>UC: rules
 
     UC->>DOM: evaluateRequired(dishes, rules)
-    Note over DOM: Hàm thuần · independent tag counting<br/>một Dish thoả nhiều Tag cùng lúc
-    DOM-->>UC: pass hoặc danh sách rule thiếu
+    Note over DOM: Hàm thuần túy · Đếm Tag độc lập<br/>(1 món thỏa nhiều tag cùng lúc)
+    DOM-->>UC: Pass hoặc danh sách rule còn thiếu
 
-    alt có Required Rule fail
-        UC-->>SA: Failure(ERR_REQUIRED_RULE_FAILED, rule thiếu)
-        SA-->>UI: nêu rõ thiếu gì
-        Note over UI: Session vẫn ACTIVE
+    alt Chưa đạt Required Rules
+        UC-->>SA: Failure(ERR_REQUIRED_RULE_FAILED, missingRules)
+        SA-->>UI: Cảnh báo: "Còn thiếu 1 món Canh"
+        Note over UI: Session vẫn giữ trạng thái ACTIVE
     end
 
-    UC->>REPO: commitFinalize(session, dishes, participants)
-    REPO->>DB: BEGIN
-    REPO->>DB: INSERT final_meals
-    REPO->>DB: INSERT final_meal_items
-    REPO->>DB: INSERT eating_history cho từng Participant × Dish
-    REPO->>DB: UPDATE selection_sessions SET state = FINALIZED
+    UC->>REPO: commitFinalizeTransaction(session, dishes, participants)
+    REPO->>DB: BEGIN TRANSACTION
+    REPO->>DB: INSERT INTO final_meals (...)
+    REPO->>DB: INSERT INTO final_meal_items (...)
+    REPO->>DB: INSERT INTO eating_history (user_id, dish_id, eating_date)
+    REPO->>DB: UPDATE selection_sessions SET state = 'FINALIZED'
     REPO->>DB: COMMIT
-    DB-->>REPO: ok
-    REPO-->>UC: FinalMeal
+    DB-->>REPO: Success
+    REPO-->>UC: FinalMeal entity
+
     UC-->>SA: Success(FinalMeal)
-    SA-->>UI: điều hướng tới màn hình bữa ăn hôm nay
-    UI-->>C: Hiển thị Final Meal
+    SA-->>UI: Điều hướng sang màn hình S-11 (Bữa ăn hôm nay)
+    UI-->>C: Hiển thị mâm cơm chốt thành công 🎉
 ```
 
-Ba điều sơ đồ này ép phải đúng:
-
-1. **`RuleEvaluator` nằm ở `domain/` và là hàm thuần.** Nó không chạm database, nhận `dishes` và `rules` làm tham số. Đây là điều kiện để test nó không cần dựng Session — và nó là một trong ba chỗ Tech Spec §8.2 yêu cầu test kỹ nhất.
-2. **Bốn lệnh ghi nằm trong một transaction.** Nếu `eating_history` ghi thất bại thì Session không được chuyển sang `FINALIZED`. Không có trạng thái nửa vời nào tồn tại được.
-3. **System Tag đọc ở bước gần cuối, không phải lúc dựng nháp.** BR-052 yêu cầu validate bằng tag hiện tại, nên Admin đổi tag lúc 5 giờ chiều sẽ đổi kết quả finalize lúc 6 giờ. Đây là hành vi có chủ ý, không phải lỗi.
-
 ---
 
-# 6. Kiểm tra cuối
+# 6. Lịch sử thay đổi (Change History)
 
-- Tên gọi thống nhất giữa bốn sơ đồ, Tech Spec §3.1 và từ vựng Business Rules — trừ ba chỗ lệch đã nêu ở §3.2, đang chờ duyệt.
-- Cả bốn sơ đồ dùng cú pháp Mermaid phổ biến (`flowchart`, `erDiagram`, `sequenceDiagram`), tránh `C4Context` vì hay hỏng khi render.
-- Mỗi sơ đồ có câu mở đầu nói rõ nó dùng để quyết định điều gì.
-- Không sơ đồ nào diễn đạt lại code. Sơ đồ nào chỉ vẽ lại cấu trúc thư mục đã bị bỏ.
-
----
-
-# 7. Change History
-
-| Version | Date | Section | Change | Reason / Decision |
-|---|---|---|---|---|
-| 0.1 | 2026-08-14 | Toàn bộ | Bản draft đầu tiên: C4 Context/Container, ERD 15 bảng, flowchart vòng đời Session, sequence Finalize | Phase 7 |
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: C4 Context/Container, ERD 15 bảng, Flowchart và Sequence | Khởi tạo baseline thiết kế hệ thống |

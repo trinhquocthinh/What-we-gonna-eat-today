@@ -1,14 +1,13 @@
-# Implementation Guide — E1 Slice S3 / Dish thô
+# 🍲 Implementation Guide — E1 Slice S3: Danh mục món ăn thô & Thêm món
 
-## Version 0.1
-
-**Status:** Completed
-**Created:** 2026-08-17
-**Upstream:** Master Plan v1.0 §3 (E1-T5), SDD v0.2 SPEC-005 (rút gọn), Tech Spec v0.2 §2/§3.1/§3.3/§4.2/§5, Business Rules BR-001/BR-005, Design Handoff `docs/designs/README.md` S-04/S-05/S-06
-**Tiền đề:** guide S1 (`..._e1-t1-...`) và guide S2 (`..._e1-s2-...`) đã thi công xong
-**Lưu ý đường dẫn:** thư mục thiết kế nay là `docs/designs/` (số nhiều) và các guide nằm ở `docs/plans/`. Guide S1 và S2 đã được sửa đường dẫn theo, cùng lúc với slice này.
-
-> Tài liệu này là hướng dẫn thi công, không phải đặc tả. Khi nó lệch với SDD / Tech Spec / Design Handoff thì **các tài liệu kia đúng**.
+> **Document Metadata**
+>
+> - **Version:** `0.1` | **Status:** `Completed`
+> - **Created:** `2026-08-17` | **Last Updated:** `2026-08-18`
+> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T5`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-005`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-001, BR-005`)
+> - **Tiền đề:** `E1-S1` và `E1-S2` đã thi công xong.
+>
+> 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S3: Quản lý Global Dishes, Group Dish Pool, chuẩn hóa tên Level 1 và giao diện thêm món bằng Bottom Sheet.*
 
 ---
 
@@ -1604,3 +1603,9 @@ Ghi rõ để người thi công kiểm ngay ở bước tương ứng:
 6. **S1 đã landed thật** (kiểm lúc 2026-08-17: `src/features/auth/**`, `src/shared/{result,errors,ui/button,ui/banner,testing/factories}`, `src/app/{api/auth,groups/page.tsx}`, `postcss.config.mjs` đều có). **S2 thì CHƯA** — chưa có `src/features/group/**`, `src/shared/time/**`, `src/shared/ui/{skeleton,text-field,empty-state-card,sheet}.tsx`, `app/groups/{new,[groupId]}`, và `migrations/` mới chỉ có `0000`. Guide này giả định S2 đã landed đúng như guide S2. **Làm S2 trước S3** — S3 phụ thuộc `assertGroupAccess`, `drizzleGroupRepository`, `Sheet`, `TextField`, `EmptyStateCard`, `Skeleton`, và `Button` bản đã mở rộng (`size` / `quiet` / `muted`).
 
 ---
+
+# 16. Lịch sử thay đổi (Change History)
+
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-17 | Toàn bộ | Khởi tạo Implementation Guide cho E1-S3 (E1-T5) | Kế hoạch Epic E1 |

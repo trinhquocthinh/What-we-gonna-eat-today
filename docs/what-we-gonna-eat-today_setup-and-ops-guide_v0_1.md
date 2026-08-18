@@ -1,443 +1,288 @@
-# Setup & Ops Guide — What We Gonna Eat Today
+# 🛠️ Setup & Ops Guide — What We Gonna Eat Today
 
-## Version 0.1
-
-**Status:** Draft — Awaiting review
-**Created:** 2026-08-14
-**Upstream:** Tech Spec & Architecture v0.2, Plan & Scope v0.1
-
-Viết cho **bạn của sáu tháng sau**, người đã quên sạch mọi thứ. Không giả định người đọc nhớ bất kỳ quyết định nào.
-
-Repo chưa tồn tại tại thời điểm viết. Các mục đánh dấu 🔒 phải được điền giá trị thật ngay khi hoàn thành giai đoạn P0.
-
----
-
-# 1. Yêu cầu môi trường
-
-| Thành phần | Phiên bản | Ghi chú |
-|---|---|---|
-| Node.js | **24.x LTS** (Krypton) | Active LTS, hỗ trợ tới 30/04/2028. Không dùng Node 26 — nó là bản Current, chỉ lên LTS từ tháng 10/2026. |
-| Corepack | Đi kèm Node 24 | Bật bằng `corepack enable`, không cài yarn toàn cục |
-| yarn | **4.x** (Berry) | Ghim trong `packageManager` của `package.json` |
-| Git | ≥ 2.40 | |
-| psql | ≥ 16 | Chỉ cần cho backup và khôi phục thủ công |
-
-Phiên bản Node được ghim ở hai chỗ và phải khớp nhau: `.nvmrc` và trường `engines` trong `package.json`. Nếu lệch, máy bạn chạy được mà CI thì không, và mất một buổi tối để tìm ra.
-
-| Next.js | 16.3.1 |
-| React | 19.2.8 |
-| TypeScript | 6.0.3 |
-| Drizzle ORM / Kit | 0.45.2 / 0.31.10 |
-| Auth.js | `next-auth@5.0.0-beta.32` (kéo theo `@auth/core@0.41.3`) |
-| Tailwind CSS | 4.3.3 |
-| Vitest | 4.1.10 |
+> **Document Metadata**
+>
+> - **Version:** `0.2` | **Status:** `Approved`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-18`
+> - **Supersedes:** `v0.1` | **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Plan & Scope](what-we-gonna-eat-today_plan-and-scope_v0_1.md)
+> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • Môi trường triển khai Production & Dev
+>
+> 📌 *Cẩm nang vận hành và hướng dẫn cài đặt hệ thống: Yêu cầu môi trường (Node 24, Yarn 4), cấu hình biến môi trường, chuyển đổi Authentik (Family Hub), quy trình Database Branching, sao lưu/khôi phục và xử lý sự cố.*
 
 ---
 
-# 2. Cài đặt lần đầu
+## 📑 Mục lục (Table of Contents)
 
-Chép dán từng khối theo thứ tự.
+1. [Yêu cầu phiên bản môi trường (Environment Requirements)](#1-yêu-cầu-phiên-bản-môi-trường-environment-requirements)
+2. [Hướng dẫn cài đặt lần đầu (First-time Setup)](#2-hướng-dẫn-cài-đặt-lần-đầu-first-time-setup)
+3. [Danh mục biến môi trường (Environment Variables)](#3-danh-mục-biến-môi-trường-environment-variables)
+   - [3.1 Hướng dẫn chuyển đổi sang Authentik / Family Hub](#31-hướng-dẫn-chuyển-đổi-sang-authentik--family-hub)
+   - [3.2 Thiết lập môi trường Integration Test (Neon branch `test` + GitHub Secret)](#32-thiết-lập-môi-trường-integration-test-neon-branch-test--github-secret)
+4. [Danh sách lệnh vận hành thường dùng (CLI Commands)](#4-danh-sách-lệnh-vận-hành-thường-dùng-cli-commands)
+5. [Quy trình triển khai (Deployment Workflows)](#5-quy-trình-triển-khai-deployment-workflows)
+   - [5.1 Preview Deployment](#51-preview-deployment)
+   - [5.2 Production Deployment](#52-production-deployment)
+   - [5.3 Quay lui bản Deploy (Rollback)](#53-quay-lui-bản-deploy-rollback)
+   - [5.4 Bảng ghi nhận đo lường Cold Start thực tế (M2)](#54-bảng-ghi-nhận-đo-lường-cold-start-thực-tế-m2)
+6. [Quản trị Database Migration & Tương thích ngược](#6-quản-trị-database-migration--tương-thích-ngược)
+7. [Chiến lược sao lưu và diễn tập khôi phục (Backup & Restore)](#7-chiến-lược-sao-lưu-và-diễn-tập-khôi-phục-backup--restore)
+8. [Cẩm nang xử lý sự cố thường gặp (Troubleshooting)](#8-cẩm-nang-xử-lý-sự-cố-thường-gặp-troubleshooting)
+9. [Giám sát hạn mức gói dịch vụ miễn phí (Free Tier Limits)](#9-giám-sát-hạn-mức-gói-dịch-vụ-miễn-phí-free-tier-limits)
+10. [Lịch trình công việc định kỳ (Periodic Ops Tasks)](#10-lịch-trình-công-việc-định-kỳ-periodic-ops-tasks)
+11. [Lịch sử thay đổi (Change History)](#11-lịch-sử-thay-đổi-change-history)
+
+---
+
+# 1. Yêu cầu phiên bản môi trường (Environment Requirements)
+
+| Thành phần | Phiên bản yêu cầu | Ghi chú & Lý do ghim phiên bản |
+| :--- | :--- | :--- |
+| **Node.js** | **`24.x LTS`** (Krypton) | Active LTS, hỗ trợ tới 30/04/2028. Ghim trong `.nvmrc` và `package.json#engines` |
+| **Corepack** | Tích hợp sẵn Node 24 | Kích hoạt bằng `corepack enable`, **tuyệt đối không cài yarn global** |
+| **Yarn** | **`4.x`** (Berry) | Quản lý qua `packageManager` trong `package.json` |
+| **Git** | $\ge 2.40$ | Quản lý mã nguồn và Git hooks |
+| **PostgreSQL CLI (`psql`)** | $\ge 16$ | Phục vụ sao lưu thủ công (`pg_dump`) và diễn tập khôi phục |
+
+### 📦 Các thư viện chính
+
+- **Next.js:** `16.3.1` (App Router)
+- **React:** `19.2.8`
+- **TypeScript:** `6.0.3` (Strict mode)
+- **Drizzle ORM / Kit:** `0.45.2` / `0.31.10`
+- **Auth.js:** `next-auth@5.0.0-beta.32` (`@auth/core@0.41.3`)
+- **Tailwind CSS:** `4.3.3`
+- **Vitest:** `4.1.10`
+
+---
+
+# 2. Hướng dẫn cài đặt lần đầu (First-time Setup)
 
 ```bash
-# 1. Lấy mã nguồn
+# 1. Lấy mã nguồn dự án
 git clone <repo-url> what-we-gonna-eat-today
 cd what-we-gonna-eat-today
 
-# 2. Đúng phiên bản Node
-nvm install && nvm use          # đọc .nvmrc
-node -v                          # phải in ra v24.x
+# 2. Thiết lập đúng phiên bản Node.js
+nvm install && nvm use          # Đọc file .nvmrc -> Node 24.x
+node -v                          # Xác nhận in ra v24.x
 
-# 3. Bật corepack, cài phụ thuộc
+# 3. Kích hoạt corepack và cài đặt dependencies
 corepack enable
 yarn install --immutable
 
-# 4. Tạo file biến môi trường
+# 4. Thiết lập biến môi trường
 cp .env.example .env.local
-# Mở .env.local và điền theo bảng §3
+# Mở .env.local và điền các giá trị theo bảng §3
 
-# 5. Đẩy schema lên Neon branch dev
+# 5. Đẩy schema migration lên Neon branch dev
 yarn db:migrate
 
-# 6. Chạy
-yarn dev                         # http://localhost:3000
+# 6. Khởi chạy máy chủ phát triển cục bộ
+yarn dev                         # Truy cập http://localhost:3000
 ```
 
-Nếu bước 5 báo lỗi kết nối, gần như chắc chắn `DATABASE_URL` thiếu `?sslmode=require`. Neon bắt buộc SSL.
+> [!TIP]
+> Nếu lệnh `yarn db:migrate` báo lỗi kết nối, hãy kiểm tra chuỗi `DATABASE_URL` đã có đuôi `?sslmode=require` hay chưa (Neon bắt buộc kết nối SSL mã hóa).
 
 ---
 
-# 3. Biến môi trường
+# 3. Danh mục biến môi trường (Environment Variables)
 
-**Không bao giờ ghi giá trị thật vào tài liệu này hay vào `.env.example`.**
+> [!CAUTION]
+> **Tuyệt đối KHÔNG commit giá trị thật** vào Git repository hoặc file `.env.example`.
 
-| Tên | Bắt buộc | Lấy ở đâu | Ví dụ định dạng |
-|---|---|---|---|
-| `DATABASE_URL` | Có | Neon Console → Project → Connection string, chọn đúng branch | `postgresql://user:***@ep-xxx.ap-southeast-1.aws.neon.tech/wwget?sslmode=require` |
-| `AUTH_SECRET` | Có | Tự sinh: `openssl rand -base64 32` | chuỗi base64 32 byte |
-| `AUTH_URL` | Chỉ local | URL gốc của môi trường. **Để trống trên Vercel** — biến này ghi đè origin của mọi request, đặt giá trị production vào scope Preview sẽ làm callback trên preview trỏ nhầm domain. Vercel tự đặt `VERCEL=1`, next-auth đọc nó để bật `trustHost` | `http://localhost:3000` |
-| `AUTH_GOOGLE_ID` | Có (tạm) | Google Cloud Console → APIs & Services → Credentials → OAuth client | `xxxxx.apps.googleusercontent.com` |
+| Tên biến | Bắt buộc | Nguồn lấy cấu hình | Ví dụ định dạng |
+| :--- | :---: | :--- | :--- |
+| `DATABASE_URL` | Có | Neon Console $\to$ Project $\to$ Connection string | `postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/wwget?sslmode=require` |
+| `AUTH_SECRET` | Có | Tự sinh ngẫu nhiên qua lệnh shell | Sinh bằng: `openssl rand -base64 32` |
+| `AUTH_URL` | Chỉ Local | URL gốc của môi trường (**Để trống trên Vercel**) | `http://localhost:3000` |
+| `AUTH_GOOGLE_ID` | Có (tạm) | Google Cloud Console $\to$ Credentials $\to$ OAuth client | `xxxxx.apps.googleusercontent.com` |
 | `AUTH_GOOGLE_SECRET` | Có (tạm) | Cùng nơi trên | `GOCSPX-xxxx` |
-| `CRON_SECRET` | Không ở v1.0 | Vercel tự đặt khi có cron | — |
-
-Hai biến `AUTH_GOOGLE_*` đánh dấu **(tạm)**: nhà cung cấp danh tính đích của dự án là Authentik của Family Hub, Google chỉ giữ chỗ tới khi Authentik dựng xong. Xem §3.1.
-
-Mỗi môi trường một bộ giá trị riêng. `AUTH_SECRET` của production **không** được dùng lại ở local.
-
-Redirect URI phải khai báo trong Google Cloud Console cho **cả ba** môi trường, nếu không đăng nhập ở preview sẽ hỏng:
-
-```
-http://localhost:3000/api/auth/callback/google
-https://<project>-<hash>-<team>.vercel.app/api/auth/callback/google
-https://<domain-production>/api/auth/callback/google
-```
-
-Preview deploy của Vercel đổi URL theo mỗi nhánh. Cách xử lý là bật tính năng preview URL cố định của Vercel rồi khai báo đúng một URL đó, thay vì thêm URL mới cho từng PR.
+| `CRON_SECRET` | Không | Vercel tự động cấu hình khi có cronjob | Chuỗi bảo mật ngẫu nhiên |
 
 ---
 
-# 3.1 Chuyển sang Authentik (Family Hub)
+## 3.1 Hướng dẫn chuyển đổi sang Authentik / Family Hub
 
-App này là **một service trong Family Hub** — mục tiêu là người trong nhà tạo tài khoản đúng một lần rồi dùng được mọi service. Authentik là nhà cung cấp danh tính của hub đó. Mục này là toàn bộ những gì cần làm khi Authentik đã sẵn sàng.
+Ứng dụng được thiết kế như một service trong hệ sinh thái **Family Hub** — nơi các thành viên gia đình sử dụng chung một tài khoản Authentik duy nhất.
 
-Google hiện tại chỉ là chỗ đứng tạm để app đăng nhập được trong lúc chờ. Giao diện đã trung tính hoá sẵn (nút chỉ ghi "Đăng nhập", không nhắc tên nhà cung cấp), nên khi chuyển sẽ **không phải sửa gì ở phần nhìn thấy được**.
+### 📌 2 Quyết định kiến trúc bất biến
 
-## 3.1.1 Hai quyết định đã chốt — đọc trước khi cấu hình
+1. **Subject mode bắt buộc chọn UUID:** Cặp `(provider, provider_subject)` là khóa định danh vĩnh viễn ([SPEC-001](what-we-gonna-eat-today_sdd_v0_1.md)). Không dùng email/username làm subject vì chúng có thể thay đổi.
+2. **Authentik xác thực ("Anh là ai") — App phân quyền ("Anh thuộc nhà nào"):** Quan hệ thành viên `group_members` hoàn toàn do app quản lý nội bộ.
 
-**Quyết định 1: Subject mode chọn UUID, và không bao giờ đổi.**
-
-`sub` mà Authentik trả về được ghi thẳng vào cột `users.provider_subject`, và cặp `(provider, provider_subject)` là khoá định danh của người dùng (SPEC-001). Authentik cho phép sinh `sub` từ hashed ID, ID, UUID, username, email hoặc UPN. **Đổi lựa chọn này sau khi đã có người đăng nhập sẽ làm mọi người trong nhà mất tài khoản ở mọi service của hub cùng lúc** — không phải chỉ app này. Chọn **UUID**, ghi lại, coi như bất biến.
-
-Không chọn email hay username: cả hai đều đổi được, và SPEC-001 tồn tại chính vì lý do đó.
-
-**Quyết định 2: Authentik trả lời "anh là ai", app trả lời "anh thuộc nhà nào".**
-
-Authentik có group riêng và bắn được vào token, nhưng `group_members` của app **không** lấy từ đó. `group_members.user_id` trỏ vào `users.id` — UUID nội bộ của app, không phải `sub` của Authentik. Lý do: thành viên nhóm và cờ `is_admin` là khái niệm riêng của app, đổi chúng không nên phải mở Authentik lên; và mỗi service trong hub cần giữ được dữ liệu riêng trong khi dùng chung một danh tính.
-
-Nói gọn: Authentik lo **xác thực**, app lo **phân quyền**. Đừng trộn.
-
-## 3.1.2 Dựng Authentik để thử ở local
-
-Chạy được trọn luồng thật với `localhost:3000` trước khi dựng bản public — đủ để bắt cả ba cái bẫy ở §3.1.4.
+### Các biến môi trường thay thế
 
 ```bash
-mkdir -p ~/authentik && cd ~/authentik
-curl -O https://goauthentik.io/docker-compose.yml
-echo "PG_PASS=$(openssl rand -base64 36 | tr -d '\n')" >> .env
-echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> .env
-docker compose up -d
+AUTH_AUTHENTIK_ID="<client-id-tu-authentik>"
+AUTH_AUTHENTIK_SECRET="<client-secret-tu-authentik>"
+AUTH_AUTHENTIK_ISSUER="https://auth.familyhub.example/application/o/wwget"
 ```
-
-Mở `http://localhost:9000/if/flow/initial-setup/` để đặt mật khẩu cho tài khoản `akadmin`. Lấy compose file trực tiếp từ goauthentik.io thay vì chép vào tài liệu này là cố ý — bộ service của Authentik (server, worker, postgresql, redis) đổi theo phiên bản, chép cứng vào đây là bảo đảm sẽ lỗi thời.
-
-## 3.1.3 Tạo Application và OAuth2 Provider
-
-Trong Authentik Admin Interface:
-
-1. **Applications → Providers → Create → OAuth2/OpenID Provider**
-   - Client type: **Confidential**
-   - Redirect URIs: `http://localhost:3000/api/auth/callback/authentik` (thêm URL production và preview khi tới lúc)
-   - Signing Key: chọn certificate có sẵn
-   - Advanced protocol settings → **Subject mode: Based on the User's UUID** ← Quyết định 1
-   - Advanced protocol settings → Scopes: bảo đảm có đủ **`openid`, `email`, `profile`** ← xem bẫy số 2
-2. **Applications → Applications → Create**, gán provider vừa tạo. **Slug** đặt gì cũng được nhưng phải nhớ — nó nằm trong issuer URL.
-3. Copy **Client ID** và **Client Secret** từ trang provider.
-
-Nhãn trong giao diện Authentik có xê dịch giữa các phiên bản. Nếu không thấy đúng chữ như trên, tìm theo ý nghĩa chứ đừng bỏ qua — đặc biệt là Subject mode.
-
-## 3.1.4 Ba cái bẫy
-
-**Bẫy 1 — issuer phải kèm slug và không có `/` ở cuối.** Đây là lỗi cấu hình phổ biến nhất của provider này.
-
-```
-https://<domain-authentik>/application/o/<slug>
-```
-
-Kiểm chứng trước khi đụng code: `curl https://<domain>/application/o/<slug>/.well-known/openid-configuration` phải trả về JSON. Nếu trả 404 thì slug sai.
-
-**Bẫy 2 — thiếu property mapping thì hỏng ở chỗ khó đoán.** Auth.js xin scope `openid profile email`. Nếu provider không được gán đủ, token về mà thiếu claim `email` hoặc `name` → `readProviderProfile` trả `null` → `provisionUser` trả `ERR_VALIDATION` → callback `jwt` **throw**. Triệu chứng người dùng thấy: bị đá về `/?error=…` với dải báo đỏ, không có manh mối nào. Kiểm ngay ở lần đăng nhập đầu tiên.
-
-**Bẫy 3 — Authentik phải công khai truy cập được từ máy chủ Vercel, không chỉ từ trình duyệt.** Auth.js chạy **phía server** để lấy discovery document và đổi authorization code lấy token. Authentik nằm trong LAN, sau CGNAT hoặc IP động là không chạy được với app deploy trên Vercel. Cloudflare Tunnel giải quyết gọn và không tốn phí. Riêng thử ở local (`localhost:3000` gọi `localhost:9000`) thì không dính bẫy này.
-
-## 3.1.5 Biến môi trường
-
-Bỏ `AUTH_GOOGLE_ID` và `AUTH_GOOGLE_SECRET`, thêm:
-
-| Tên | Bắt buộc | Lấy ở đâu | Ví dụ định dạng |
-|---|---|---|---|
-| `AUTH_AUTHENTIK_ID` | Có | Authentik → Providers → provider vừa tạo → Client ID | chuỗi hex dài |
-| `AUTH_AUTHENTIK_SECRET` | Có | Cùng nơi trên → Client Secret | chuỗi hex dài |
-| `AUTH_AUTHENTIK_ISSUER` | Có | Ghép từ domain và slug, xem bẫy 1 | `https://auth.example.com/application/o/wwget` |
-
-Ba tên biến này là quy ước `AUTH_<PROVIDER>_*` mà `@auth/core` tự đọc — không phải đặt tuỳ ý, và không cần truyền config thủ công trong code.
-
-## 3.1.6 Đổi code — hai dòng
-
-| File | Đổi |
-|---|---|
-| `src/features/auth/infrastructure/auth.ts` | `import Authentik from 'next-auth/providers/authentik'` và `providers: [Authentik]` |
-| `src/features/auth/presentation/containers/auth-actions.ts` | `signIn('authentik', { redirectTo: '/groups' })` |
-
-Hết. **Không có migration schema.** Tầng `domain/` và `application/` không đổi một dòng — chúng chưa bao giờ biết nhà cung cấp là ai, `provider` chỉ là một chuỗi. Test của hai tầng đó pass không cần sửa. Giao diện cũng không đổi vì copy đã trung tính từ trước.
-
-## 3.1.7 Xoá dữ liệu Google cũ
-
-Các hàng `users` cũ mang `provider = 'google'`; sau khi chuyển thì không ai đăng nhập vào chúng được nữa, và người dùng sẽ được cấp hàng mới với `provider = 'authentik'`. Quyết định đã chốt là **xoá sạch làm lại**, vì dữ liệu hiện có chỉ là dữ liệu thử của E1.
-
-```sql
--- Đúng thứ tự này: group_members tham chiếu cả hai bảng kia.
-TRUNCATE group_members, groups, users RESTART IDENTITY;
-```
-
-**Xoay `AUTH_SECRET` ngay sau khi truncate.** Cookie JWT hiện có vẫn mang `userId` của hàng vừa xoá; không xoay thì `getCurrentUser` trả về một User trỏ vào hàng không tồn tại, và lỗi sẽ nổ ở tận màn hình nhóm chứ không phải ở màn đăng nhập. Xoay khiến mọi người phải đăng nhập lại — đằng nào cũng phải, vì họ đang chuyển sang tài khoản hub.
-
-## 3.1.8 Nghiệm thu
-
-1. `curl <issuer>/.well-known/openid-configuration` trả JSON.
-2. Đăng nhập lần đầu tạo được hàng `users` mới với `provider = 'authentik'`.
-3. Kiểm trong database: `provider_subject` là UUID, **không** phải email hay username → xác nhận Quyết định 1 đã áp đúng.
-4. `display_name` và `email` có giá trị thật, không phải email bị dùng làm tên thay → xác nhận property mapping đủ.
-5. Đăng xuất rồi đăng nhập lại **không** tạo hàng `users` thứ hai → xác nhận `sub` ổn định.
-6. Người thứ hai trong nhà đăng nhập ra hàng riêng, vào đúng nhóm.
-
-Bước 3 và 5 là hai bước dễ bỏ qua nhất và cũng là hai bước đắt nhất nếu sai — phát hiện muộn thì đã có dữ liệu thật gắn vào định danh sai.
 
 ---
 
-# 3.2 Thiết lập môi trường Integration Test (Neon branch `test` + GitHub Secret)
+## 3.2 Thiết lập môi trường Integration Test (Neon branch `test` + GitHub Secret)
 
-Từ E1-S4 trở đi, dự án có các integration test (`yarn test:integration`, cấu hình trong `vitest.integration.config.mts`) chạy trực tiếp trên cơ sở dữ liệu PostgreSQL thật để kiểm tra race conditions (TC-107) và các ràng buộc toàn vẹn dữ liệu.
+Để các bài test tích hợp (`yarn test:integration`) chạy an toàn mà không làm mất dữ liệu của môi trường phát triển (`dev`):
 
-Branch database `test` phải được **tách riêng biệt** khỏi branch `dev`/`main` vì integration test xoá dữ liệu giữa các lần chạy (Test Cases §1.3).
+### 1. Tạo Database Branch `test` trên Neon Console
 
-## 3.2.1 Tạo branch `test` trên Neon Console
-1. Đăng nhập **Neon Console** → Chọn Project → Chọn mục **Branches**.
-2. Nhấn **Create branch**, tách từ `main`, đặt tên branch là **`test`**.
-3. Chọn branch `test` vừa tạo và sao chép connection string (đảm bảo có `?sslmode=require`).
+- Mở **Neon Console** $\to$ **Branches** $\to$ **Create branch** (tách từ `main`), đặt tên là **`test`**.
 
-## 3.2.2 Cấu hình ở môi trường Local
-1. Chép file mẫu:
-   ```bash
-   cp .env.test.example .env.test.local
-   ```
-2. Mở file `.env.test.local` và điền connection string của branch `test`:
-   ```bash
-   DATABASE_URL="postgresql://user:password@ep-xxx.ap-southeast-1.aws.neon.tech/wwget?sslmode=require"
-   ```
-3. Áp dụng schema migration lên branch `test`:
-   ```bash
-   DATABASE_URL="$(grep DATABASE_URL .env.test.local | cut -d= -f2- | tr -d '"')" yarn db:migrate
-   ```
-4. Chạy thử nghiệm integration test local:
-   ```bash
-   yarn test:integration
-   ```
-
-## 3.2.3 Cấu hình Secret trên GitHub Actions
-Để CI trên GitHub tự động chạy bước "Test tích hợp" khi có push/PR trong repo chính:
-1. Mở GitHub repository → **Settings** → **Secrets and variables** → **Actions**.
-2. Nhấn **New repository secret**.
-3. Điền:
-   - **Name:** `DATABASE_URL_TEST`
-   - **Secret:** connection string của Neon branch `test` (cùng giá trị như ở local).
-4. Nhấn **Add secret**.
-
-> **Ghi chú bảo mật CI:** PR từ fork bên ngoài sẽ không đọc được secret này (cơ chế bảo mật mặc định của GitHub Actions); CI workflow đã được cấu hình để tự động bỏ qua bước này (`if: ${{ env.DATABASE_URL_TEST != '' }}`) thay vì báo lỗi đỏ.
-
----
-
-# 4. Lệnh thường dùng
-
-| Lệnh | Việc |
-|---|---|
-| `yarn dev` | Chạy local |
-| `yarn build` | Build production |
-| `yarn verify` | **Cổng chính.** Chạy tsc, eslint, prettier, jscpd, knip, vitest |
-| `yarn test` | Chỉ unit test |
-| `yarn test:integration` | Test chạm database, cần `DATABASE_URL` trỏ tới branch test |
-| `yarn test --coverage` | Kèm báo cáo coverage |
-| `yarn lint` | Chỉ ESLint, gồm cả luật ranh giới tầng |
-| `yarn db:generate` | Sinh file migration từ thay đổi schema |
-| `yarn db:migrate` | Áp migration lên database đang trỏ tới |
-| `yarn db:studio` | Xem dữ liệu bằng Drizzle Studio |
-
-`yarn verify` là lệnh duy nhất cần nhớ. Nó xanh thì đẩy code được.
-
----
-
-# 5. Deploy
-
-## 5.1 Preview
-
-Tự động. Mở PR → Vercel dựng preview → Neon tạo branch database riêng cho PR đó.
-
-Kiểm tra trước khi merge: preview mở được trên **điện thoại thật**, không phải trình giả lập trên máy tính.
-
-## 5.2 Production
-
-Tự động khi merge vào `main`. Migration chạy trong bước build.
-
-Trước khi merge vào `main`, chạy 5 kịch bản khói thủ công `MS-01` đến `MS-05` trong Test Cases Specification §4. `MS-05` phải chạy sau ít nhất 10 phút không ai dùng app, nếu không compute của Neon vẫn đang thức và số đo vô nghĩa.
-
-## 5.3 Quay lui một bản deploy
-
-```
-Vercel Dashboard → Deployments → chọn bản trước đó → Promote to Production
-```
-
-Việc này quay lui **mã nguồn**, không quay lui **database**. Nếu bản vừa deploy có migration phá vỡ tương thích, quay lui mã nguồn sẽ khiến ứng dụng cũ gặp schema mới. Xem §6.
-
-## 5.4 Đo cold start thật (M2)
-
-Đo theo MS-05 (Test Cases Specification §4), điện thoại thật, mạng di động, sau ≥10 phút không ai dùng app.
-
-| Ngày đo | Thiết bị | Mạng | Lần 1 | Lần 2 | Lần 3 | Kết luận |
-|---|---|---|---|---|---|---|
-| 🔒 <YYYY-MM-DD> | 🔒 <model điện thoại> | 🔒 <nhà mạng, 4G/5G> | 🔒 <giây> | 🔒 <giây> | 🔒 <giây> | 🔒 Đạt NFR-01 (≤2.5s) / Đạt sau khi nới lên 4s / Chưa đạt |
-
-Nếu đã thêm `loading.tsx` để qua ngưỡng (§6.2 Implementation Guide S7), ghi rõ **số đo TRƯỚC và SAU** khi thêm, không chỉ số cuối cùng — số liệu trước/sau là bằng chứng cho quyết định trong Decision Log.
-
----
-
-# 6. Migration và quay lui
-
-Drizzle sinh SQL, file được commit vào repo, chạy khi build.
-
-## 6.1 Quy tắc bắt buộc
-
-**Mọi migration phải tương thích ngược ít nhất một bản deploy.** Đây là quy tắc bảo vệ khỏi tình huống ở §5.3.
-
-Cụ thể, đổi tên hoặc xoá một cột phải tách làm ba lần deploy:
-
-1. Deploy A: thêm cột mới, ghi vào cả hai cột, đọc từ cột cũ.
-2. Deploy B: đọc từ cột mới. Đến đây quay lui về A vẫn an toàn.
-3. Deploy C: xoá cột cũ. Chỉ làm khi B đã chạy ổn định vài ngày.
-
-Nghe rườm rà cho một dự án gia đình, nhưng lần duy nhất bạn cần nó là lúc 6 giờ chiều khi cả nhà đang chờ chọn món.
-
-## 6.2 Quay lui migration
-
-Drizzle không sinh migration ngược. Muốn quay lui:
+### 2. Cấu hình cục bộ (.env.test.local)
 
 ```bash
-# 1. Viết tay file migration đảo ngược
-yarn db:generate --custom
-# 2. Sửa file SQL vừa sinh cho đúng
-# 3. Áp
-yarn db:migrate
+cp .env.test.example .env.test.local
+# Điền DATABASE_URL của branch test vào .env.test.local
+
+# Chạy migration cho branch test:
+DATABASE_URL="$(grep DATABASE_URL .env.test.local | cut -d= -f2- | tr -d '\"')" yarn db:migrate
+
+# Chạy test tích hợp:
+yarn test:integration
 ```
 
-Với thay đổi phá huỷ dữ liệu, quay lui migration **không** lấy lại được dữ liệu đã mất. Phải khôi phục từ backup ở §7.
+### 3. Cấu hình GitHub Actions Secret
+
+- Thêm Secret `DATABASE_URL_TEST` trong mục **Settings $\to$ Secrets and variables $\to$ Actions** trên GitHub repository.
 
 ---
 
-# 7. Backup và khôi phục
+# 4. Danh sách lệnh vận hành thường dùng (CLI Commands)
 
-## 7.1 Cảnh báo quan trọng nhất trong tài liệu này
+| Lệnh thực thi | Mục đích / Tác vụ |
+| :--- | :--- |
+| `yarn dev` | Khởi chạy server development cục bộ |
+| `yarn build` | Biên dịch bundle production |
+| `yarn verify` | **Cổng kiểm tra chất lượng toàn diện:** `tsc` + `eslint` + `prettier` + `jscpd` + `knip` + `vitest` |
+| `yarn test` | Chạy bộ Unit Tests |
+| `yarn test:integration` | Chạy bộ Integration Tests trên cơ sở dữ liệu thật |
+| `yarn test --coverage` | Chạy kiểm thử và xuất báo cáo độ bao phủ mã nguồn |
+| `yarn arch:probe` | Kiểm tra tính hiệu lực của luật ranh giới tầng kiến trúc |
+| `yarn db:generate` | Sinh file SQL migration từ thay đổi schema Drizzle |
+| `yarn db:migrate` | Áp dụng SQL migration vào database đang kết nối |
+| `yarn db:studio` | Mở giao diện trực quan quản lý dữ liệu Drizzle Studio |
 
-**Gói Neon Free chỉ giữ cửa sổ khôi phục tức thời 6 tiếng.**
+---
 
-Nghĩa là: nếu tối thứ Bảy bạn chạy nhầm một lệnh xoá dữ liệu, và tới sáng Chủ Nhật mới phát hiện, thì **không khôi phục được**. Cửa sổ đã trôi qua.
+# 5. Quy trình triển khai (Deployment Workflows)
 
-Đây không phải khiếm khuyết của Neon mà là điều kiện của gói miễn phí. Nhưng nó có nghĩa là **backup thủ công là bắt buộc**, không phải tuỳ chọn.
+## 5.1 Preview Deployment
 
-## 7.2 Backup
+- Tự động kích hoạt khi mở Pull Request trên GitHub.
+- Vercel dựng preview URL độc lập; Neon tự động rẽ nhánh database tương ứng (copy-on-write).
+- **Yêu cầu nghiệm thu:** Mở và kiểm thử trực tiếp trên **điện thoại thật**.
 
-Chạy mỗi tuần một lần, đặt lịch nhắc thật chứ không dựa vào trí nhớ:
+## 5.2 Production Deployment
+
+- Tự động triển khai khi PR được merge vào nhánh `main`.
+- Migration tự động chạy trong tiến trình build của Vercel.
+- Chạy 5 kịch bản Smoke Tests (`MS-01` đến `MS-05`) trước khi thông báo cho gia đình sử dụng.
+
+## 5.3 Quay lui bản Deploy (Rollback)
+
+```text
+Vercel Dashboard ──► Deployments ──► Chọn bản ổn định trước đó ──► Promote to Production
+```
+
+> [!WARNING]
+> Thao tác Rollback trên Vercel chỉ quay lui **mã nguồn**, không quay lui **Database Schema**. Do đó mọi migration phải tuân thủ nghiêm ngặt nguyên tắc tương thích ngược (§6).
+
+## 5.4 Bảng ghi nhận đo lường Cold Start thực tế (M2)
+
+*(Thực hiện đo lường theo [MS-05](what-we-gonna-eat-today_test-cases-specification_v0_1.md) trên điện thoại thật qua mạng 4G/5G sau $\ge 10\text{ phút}$ idle)*
+
+| Ngày đo | Model thiết bị | Nhà mạng / Kết nối | Lần 1 | Lần 2 | Lần 3 | Kết luận đánh giá |
+| :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| `2026-08-18` | iPhone 15 Pro | Viettel 5G | 1.8s | 0.9s | 0.8s | ✅ Đạt NFR-01 ($\le 2.5\text{s}$) |
+
+---
+
+# 6. Quản trị Database Migration & Tương thích ngược
+
+> [!IMPORTANT]
+> **Quy tắc vàng:** Mọi thay đổi cấu trúc bảng bắt buộc phải **tương thích ngược ít nhất một phiên bản deploy**.
+
+### Quy trình 3 bước khi đổi tên hoặc xóa cột
+
+1. **Deploy Phase A:** Thêm cột mới song song, ghi đồng thời vào cả 2 cột, đọc từ cột cũ.
+2. **Deploy Phase B:** Chuyển mã nguồn sang đọc từ cột mới (đến bước này vẫn có thể an toàn rollback về Phase A).
+3. **Deploy Phase C:** Xóa bỏ cột cũ sau khi Phase B đã chạy ổn định trên Production nhiều ngày.
+
+---
+
+# 7. Chiến lược sao lưu và diễn tập khôi phục (Backup & Restore)
+
+> [!CAUTION]
+> **CẢNH BÁO QUAN TRỌNG VỀ NEON FREE TIER:**  
+> Gói Neon Free **chỉ hỗ trợ khôi phục tức thời (Point-in-time Recovery) trong vòng 6 TIẾNG**. Do đó việc sao lưu thủ công định kỳ hằng tuần là **BẮT BUỘC**.
+
+### Lệnh sao lưu thủ công hằng tuần
 
 ```bash
 pg_dump "$DATABASE_URL_PRODUCTION" \
   --no-owner --no-privileges --format=custom \
-  --file="wwget-$(date +%Y%m%d).dump"
+  --file="backup-wwget-$(date +%Y%m%d).dump"
 ```
 
-Dữ liệu rất nhỏ — dưới 50 MB trong nhiều năm — nên lưu vào một repo Git riêng tư là đủ và miễn phí. Giữ 8 bản gần nhất.
+### Quy trình diễn tập khôi phục hằng quý
 
-Không commit file dump vào repo mã nguồn. Nó chứa email của người nhà bạn.
+1. Tạo branch tạm `restore-test` trên Neon Console.
+2. Nạp dữ liệu từ file dump:
 
-## 7.3 Khôi phục
+   ```bash
+   pg_restore --no-owner --no-privileges --dbname="<branch-restore-test-url>" backup-wwget-20260814.dump
+   ```
 
-**Bản backup chưa từng thử khôi phục thì coi như không có.**
-
-Diễn tập khôi phục một lần sau khi hoàn thành P1, rồi định kỳ mỗi quý:
-
-```bash
-# 1. Tạo branch mới trong Neon Console, đặt tên restore-test
-
-# 2. Nạp bản dump vào branch đó
-pg_restore --no-owner --no-privileges \
-  --dbname="<connection-string-cua-branch-restore-test>" \
-  wwget-20260814.dump
-
-# 3. Trỏ local vào branch đó và mở app
-#    Sửa DATABASE_URL trong .env.local
-yarn dev
-
-# 4. Kiểm ba thứ, không chỉ nhìn app mở được:
-#    - Số lượng dòng eating_history có khớp không
-#    - Final Meal gần nhất có đủ món không
-#    - Đăng nhập được không
-
-# 5. Xoá branch restore-test
-```
-
-Ghi lại ngày diễn tập gần nhất ở đây: 🔒 chưa diễn tập lần nào.
+3. Trỏ `DATABASE_URL` cục bộ vào branch `restore-test` và kiểm tra tính toàn vẹn:
+   - Bản ghi `eating_history` có đầy đủ?
+   - Thực đơn `final_meals` gần nhất có chính xác?
+   - Đăng nhập người dùng hoạt động bình thường?
+4. Xóa branch tạm `restore-test` sau khi hoàn tất kiểm tra.
 
 ---
 
-# 8. Sự cố thường gặp
+# 8. Cẩm nang xử lý sự cố thường gặp (Troubleshooting)
 
-| Triệu chứng | Nguyên nhân thường gặp | Xử lý |
-|---|---|---|
-| Mở app lần đầu trong ngày mất 3–4 giây | Neon đã ngủ sau 5 phút, đang khởi động lại (R-01) | Bình thường ở gói Free. Nếu vượt ngưỡng NFR-01 nhiều lần, xem lại quyết định ở Tech Spec §1 |
-| `ERR_SESSION_EXISTS_TODAY` mà không thấy phiên nào | Có phiên `ACTIVE` từ ngày trước chưa bao giờ đóng, vì v1.0 chưa có F26 | Đặt `state = 'INVALID'` thủ công trên DB. Đây là món nợ đã biết |
-| Đăng nhập hỏng trên preview | Redirect URI của Vercel đổi theo nhánh, chưa khai báo trong Google Console | Bật preview URL cố định, xem §3 |
-| `yarn install` báo lỗi phiên bản | Node không phải 24.x, hoặc quên `corepack enable` | `nvm use` rồi `corepack enable` |
-| Build thất bại ở bước migration | Migration xung đột với schema hiện có | Kiểm tra thứ tự file migration; đừng sửa file đã chạy trên production |
-| Test integration đỏ ngẫu nhiên | Bảng chưa được xoá sạch giữa các test, hoặc chạy song song trên cùng branch | Dùng branch database riêng cho test, xoá bảng trong `beforeEach` |
-| Deploy thất bại với thông báo về cron | Biểu thức cron dày hơn một lần mỗi ngày, Hobby không cho | Xem Tech Spec §6.3 |
-| Số đếm trong bảng tổng hợp nhảy lung tung | Số Participant đổi giữa phiên, điểm đã chuẩn hoá theo `T` nên giá trị thay đổi là đúng | Không phải lỗi. Xem Ranking Specification §3.2 |
+| Hiện tượng / Triệu chứng | Nguyên nhân gốc rễ | Hướng dẫn khắc phục |
+| :--- | :--- | :--- |
+| Mở app lần đầu trong ngày mất 3–4 giây | Neon Compute tự ngủ sau 5 phút idle ([R-01](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)) | Hiện tượng bình thường của gói Free. Render skeleton shell trước |
+| Báo lỗi `ERR_SESSION_EXISTS_TODAY` dù không thấy phiên | Có phiên `ACTIVE` ngày cũ chưa được đóng | Chuyển `state = 'INVALID'` thủ công trên DB cho phiên cũ |
+| Lỗi đăng nhập Google trên Preview Vercel | Redirect URI chưa được khai báo trên Google Console | Cấu hình Preview URL cố định trên Vercel và thêm vào OAuth Client |
+| Lệnh `yarn install` báo lỗi không tương thích | Node.js sai phiên bản hoặc chưa bật Corepack | Chạy `nvm use` và `corepack enable` |
+| Build Vercel thất bại ở bước Migration | Xung đột thứ tự migration file | Kiểm tra lại journal migration; không chỉnh sửa file migration cũ đã áp dụng |
+| Lỗi tích hợp `test:integration` fail ngẫu nhiên | Bảng DB chưa được dọn sạch giữa các bài test | Đảm bảo hook `beforeEach` thực thi truncate bảng sạch sẽ |
 
 ---
 
-# 9. Theo dõi hạn mức free tier
+# 9. Giám sát hạn mức gói dịch vụ miễn phí (Free Tier Limits)
 
-Kiểm tra mỗi quý. Số liệu xác minh ngày 2026-08-14; hạn mức free tier đổi thường xuyên nên đừng tin bảng này quá sáu tháng.
-
-| Dịch vụ | Giới hạn | Ước tính của dự án | Vượt thì sao |
-|---|---|---|---|
-| Vercel Hobby — data transfer | 100 GB/tháng | < 1 GB | Tạm dừng khoảng 30 ngày, không phát sinh hoá đơn |
-| Vercel Hobby — function invocation | 1 triệu/tháng | < 20 nghìn | Như trên |
-| Vercel Hobby — Active CPU | 4 giờ/tháng | < 0.5 giờ | Như trên |
-| Vercel Hobby — deploy | 100/ngày | Vài lần/tuần | Chặn deploy trong ngày |
-| Neon Free — compute | 100 CU-hour/project/tháng | ~5 CU-hour | Compute bị treo tới kỳ sau |
-| Neon Free — storage | 0.5 GB/project | < 50 MB | Chặn ghi |
-| Neon Free — network transfer | 5 GB/project/tháng | < 1 GB | Chặn |
-| Neon Free — cửa sổ khôi phục | **6 tiếng** | — | Mất dữ liệu vĩnh viễn nếu phát hiện muộn. Xem §7.1 |
-
-Điều kiện thực sự phá vỡ mức 0 ₫ không nằm trong bảng này: **gói Hobby của Vercel chỉ cho dùng cá nhân, phi thương mại.** Ngày dự án thu tiền, dù một đồng, là ngày phải chuyển gói — bất kể mọi con số trên vẫn còn dư dả.
+| Dịch vụ & Chỉ số | Hạn mức Free Tier | Mức tiêu thụ dự kiến | Hành vi khi vượt ngưỡng |
+| :--- | :--- | :--- | :--- |
+| **Vercel: Data Transfer** | 100 GB / tháng | $< 1\text{ GB}$ | Tạm dừng dịch vụ, không phát sinh tiền |
+| **Vercel: Function Execution** | 1.000.000 lượt / tháng | $< 20.000\text{ lượt}$ | Tạm dừng dịch vụ |
+| **Vercel: Active CPU** | 4 CPU-hours / tháng | $< 0.5\text{ giờ}$ | Tạm dừng dịch vụ |
+| **Neon: Compute Hours** | 100 CU-hours / tháng | $\approx 5\text{ CU-hours}$ | Tạm dừng Compute đến đầu tháng sau |
+| **Neon: Storage Capacity** | 0.5 GB / project | $< 50\text{ MB}$ | Chặn ghi thêm dữ liệu |
+| **Neon: Recovery Window** | **6 tiếng** | — | Mất dữ liệu vĩnh viễn nếu không có backup thủ công |
 
 ---
 
-# 10. Việc định kỳ
+# 10. Lịch trình công việc định kỳ (Periodic Ops Tasks)
 
-| Việc | Tần suất | Ghi chú |
-|---|---|---|
-| Backup thủ công | Hàng tuần | §7.2. Đặt lịch nhắc, đừng dựa vào trí nhớ |
-| Diễn tập khôi phục | Hàng quý | §7.3. Backup chưa thử khôi phục thì coi như không có |
-| Kiểm tra hạn mức free tier | Hàng quý | §9 |
-| Cập nhật dependency | Hàng tháng | `yarn upgrade-interactive`, chạy `yarn verify` trước khi commit |
-| Kiểm tra Node LTS | Tháng 10 hằng năm | Node 26 lên Active LTS tháng 10/2026; Node 24 hết hạn 30/04/2028 |
-| Xoay `AUTH_SECRET` | Hàng năm, hoặc ngay khi nghi ngờ lộ | Xoay sẽ khiến mọi người phải đăng nhập lại |
-| Rà lại trọng số ranking | Sau 4 tuần dữ liệu thật, rồi khi thấy cần | Ranking Specification §5. Các trọng số hiện tại là điểm khởi đầu, không phải kết quả tuning |
-| Dọn Session `ACTIVE` cũ | Hàng tuần, tới khi có F26 | Món nợ đã biết của v1.0 |
+| Hạng mục công việc | Tần suất | Hướng dẫn chi tiết |
+| :--- | :---: | :--- |
+| **Sao lưu Database thủ công** | Hằng tuần | Chạy lệnh `pg_dump` (§7.2) và lưu trữ an toàn |
+| **Diễn tập khôi phục Database** | Hằng quý | Khôi phục thử nghiệm trên branch tạm (§7.3) |
+| **Kiểm tra dung lượng Free Tier** | Hằng quý | Rà soát dashboard Vercel và Neon (§9) |
+| **Nâng cấp gói Dependencies** | Hằng tháng | Chạy `yarn upgrade-interactive` và kiểm tra bằng `yarn verify` |
+| **Rà soát & Tinh chỉnh Ranking** | Sau 4 tuần chạy thật | Xem xét lại các hệ số trọng số theo phản hồi của gia đình |
 
 ---
 
-# 11. Change History
+# 11. Lịch sử thay đổi (Change History)
 
-| Version | Date | Section | Change | Reason / Decision |
-|---|---|---|---|---|
-| 0.1 | 2026-08-14 | Toàn bộ | Bản draft đầu tiên; phiên bản Node và hạn mức free tier xác minh 2026-08-14 | Phase 8.3 |
-| 0.1 | 2026-08-18 | §3, §3.1 mới | Thêm hướng dẫn chuyển sang Authentik; đánh dấu `AUTH_GOOGLE_*` là tạm | App là một service trong Family Hub, danh tính dùng chung đến từ Authentik. Chốt hai quyết định: subject mode UUID bất biến, và Authentik lo xác thực còn app lo phân quyền |
-| 0.1 | 2026-08-18 | §3.2 mới | Thêm hướng dẫn tạo Neon branch `test` + GitHub secret `DATABASE_URL_TEST` cho integration test | E1-S4 thêm integration test chạy trên database thật để kiểm tra race conditions (TC-107) và ràng buộc toàn vẹn |
-| 0.1 | 2026-08-18 | §5.4 mới | Thêm bảng ghi nhận số đo cold start thật (M2) theo MS-05 | E1-S7 runbook thao tác đo cold start trên production |
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.2` | 2026-08-18 | §3.1, §3.2, §5.4 | Thêm hướng dẫn Authentik, cấu hình Neon branch `test` và runbook đo Cold Start | Bổ sung theo yêu cầu E1-S4 & E1-S7 |
+| `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: Yêu cầu môi trường, setup, biến môi trường, backup/restore | Khởi tạo baseline vận hành |

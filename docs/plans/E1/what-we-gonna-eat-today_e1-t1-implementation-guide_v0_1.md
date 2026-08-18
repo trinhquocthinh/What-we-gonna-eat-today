@@ -1,13 +1,13 @@
-# Implementation Guide — E1-T1 / S1 Đăng nhập
+# 🔐 Implementation Guide — E1-T1 / S1: Đăng nhập & Xác thực người dùng
 
-## Version 0.1
-
-**Status:** Completed
-**Created:** 2026-08-16
-**Upstream:** Master Plan v1.0 §3 (E1-T1), SDD v0.2 SPEC-001, Tech Spec v0.2 §2/§5, Test Cases v0.1 TC-001→003, Design Handoff `docs/designs/README.md` S-01
-**Scope:** đúng một subtask — `E1-T1 | Auth.js Google, bảng users | 3 giờ | features/auth/**`
-
-> Tài liệu này là hướng dẫn thi công, không phải đặc tả. Khi nó lệch với SDD / Tech Spec / Design Handoff thì **các tài liệu kia đúng**.
+> **Document Metadata**
+>
+> - **Version:** `0.1` | **Status:** `Completed`
+> - **Created:** `2026-08-16` | **Last Updated:** `2026-08-18`
+> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T1`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-001`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-001→003`)
+> - **Scope:** Subtask `E1-T1` — Auth.js Google OAuth, Bảng `users`, Route `/groups`
+>
+> 📌 *Hướng dẫn kỹ thuật thi công TDD cho subtask E1-T1: Tích hợp Auth.js v5 beta, xác thực Google OAuth, xử lý lỗi tại boundary và cấp phát phiên JWT an toàn.*
 
 ---
 
@@ -1500,3 +1500,11 @@ yarn verify && yarn arch:probe && yarn build
 | `pages.error = '/'` gây `ErrorPageLoop` | Auth.js render trang lỗi mặc định thay vì S-01 | `/` không yêu cầu xác thực nên an toàn. Khi thêm `proxy.ts` ở E1-T3 trở đi, nhớ **loại `/` khỏi matcher** |
 | Utility `text-*` và `font-*` tranh nhau | chữ sai weight | Đã tránh bằng cách không đặt `--text-*--font-weight` trong `@theme`; luôn viết weight tường minh |
 | Neon cold start làm callback OAuth chậm | lần đăng nhập đầu trong ngày chậm 1–2 giây | Chấp nhận (R-01, Tech Spec §9). Callback chỉ 1 SELECT + tối đa 1 INSERT, không cần transaction nên driver HTTP là đủ. Đo thật ở E1-T12 |
+
+---
+
+# 12. Lịch sử thay đổi (Change History)
+
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-16 | Toàn bộ | Khởi tạo Implementation Guide cho E1-T1 (Đăng nhập Auth.js) | Kế hoạch Epic E1 |

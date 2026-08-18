@@ -1,13 +1,13 @@
-# Implementation Guide — E1 Slice S4 / Session tối thiểu
+# ⏱️ Implementation Guide — E1 Slice S4: Khởi tạo Phiên chọn món tối thiểu
 
-## Version 0.1
-
-**Status:** Completed
-**Created:** 2026-08-17
-**Upstream:** Master Plan v1.0 §3 (E1-T6, E1-T7), SDD v0.2 SPEC-007 (SPEC-008 rút gọn), Tech Spec v0.2 §3.1–3.3/§8, Business Rules BR-020→BR-025, Test Cases v0.1 TC-026→TC-029, TC-107
-**Tiền đề:** S1 (auth) và S2 (group) đã landed. S3 (dish) **chưa landed** — không sao, S4 không phụ thuộc S3.
-
-> Tài liệu này là hướng dẫn thi công, không phải đặc tả. Khi nó lệch với SDD / Tech Spec / Business Rules thì **các tài liệu kia đúng**.
+> **Document Metadata**
+>
+> - **Version:** `0.1` | **Status:** `Completed`
+> - **Created:** `2026-08-17` | **Last Updated:** `2026-08-18`
+> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T6, E1-T7`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-007, SPEC-008`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-026→029, TC-107`)
+> - **Tiền đề:** `E1-S1` và `E1-S2` đã hoàn thành.
+>
+> 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S4: Schema `selection_sessions`, `participants`, Partial Unique Index chống race condition khi Start phiên và tích hợp Integration Tests.*
 
 ---
 
@@ -1249,3 +1249,11 @@ Mở PR nháp, xác nhận:
 | Migration số thứ tự đụng với S3 nếu code sau | conflict `_journal.json` khi merge | Không hardcode số trong tài liệu nào; sinh migration ở commit cuối cùng, ngay trước PR |
 | Integration test làm bẩn Neon branch `test` nếu `afterEach` lỗi giữa chừng | dữ liệu rác tích luỹ qua nhiều lần chạy | `cleanupQueue` chạy trong `afterEach`; nếu một bước cleanup throw, các bước sau trong hàng đợi vẫn không chạy — cân nhắc bọc từng `await cleanup()` trong try/catch riêng nếu thấy rác tích luỹ thật, nhưng đừng làm trước khi thấy vấn đề thật |
 | Nhầm `inArray` với `and`/`eq` khi gõ lại `findBlockingSessionToday` | TC-027/TC-029 không lọc đúng state, luôn báo blocking hoặc không bao giờ báo | Đối chiếu đúng import `{ and, eq, inArray } from 'drizzle-orm'` ở đầu file (§9.1) |
+
+---
+
+# 15. Lịch sử thay đổi (Change History)
+
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-17 | Toàn bộ | Khởi tạo Implementation Guide cho E1-S4 (E1-T6, E1-T7) | Kế hoạch Epic E1 |

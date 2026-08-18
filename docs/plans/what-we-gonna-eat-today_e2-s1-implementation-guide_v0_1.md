@@ -1,20 +1,20 @@
-# Implementation Guide — E2 Slice S1 / Link mời
+# 🚀 Implementation Guide — E2 Slice S1: Link mời & Tham gia nhóm
 
-## Version 0.1
-
-**Status:** Ready to code (TDD)
-**Created:** 2026-08-18
-**Upstream:** Master Plan v1.0 §4 (E2-T1, E2-T2), SDD v0.1 SPEC-003/SPEC-004, Business Rules v1.6 BR-006/007/008, Test Cases v0.1 TC-011→016, TC-112, Tech Spec & Architecture v0.2 (schema line 135), Decision Log v1.1 (thêm DEC-021, DEC-022 ở cuối guide này)
-**Tiền đề:** E1-T1 → E1-T11 đã có guide (S1-S6); slice này không phụ thuộc code thật đã chạy, chỉ phụ thuộc **thiết kế** của `group`/`dish` feature đã chốt ở các guide đó (port shape, `assertGroupAccess`, `requireGroupContext`, `db.batch` convention).
-
-> Cách làm việc giống hệt sáu guide trước: TDD, viết test trước, code sau. Bạn tự code theo thứ tự trong guide; guide chỉ đưa code mẫu để bạn đối chiếu, không phải patch để dán.
+> **Document Metadata**
+>
+> - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
+> - **Created:** `2026-08-18` | **Last Updated:** `2026-08-18`
+> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (E2-T1, E2-T2) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-003`, `SPEC-004`) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-006→008`) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-011→016, TC-112`)
+> - **Tiền đề:** E1-T1 → E1-T11 đã hoàn thành (S1→S6).
+>
+> 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S1 của Epic 2: Tạo link mời tham gia nhóm (bảo mật Token Hash SHA-256) và xử lý giao dịch tham gia nhóm an toàn.*
 
 ---
 
 # 0. Việc cần làm và điều kiện xong
 
 | ID | Việc | Giờ | File | Xong nghĩa là |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | E2-T1 | Tạo link mời, lưu hash, hạn 7 ngày | 2 | `features/group/**` | DB chỉ chứa hash, không chứa token thô |
 | E2-T2 | Tham gia bằng link, transaction, các trường hợp âm | 2 | `features/group/application/join-by-invite.ts` | TC-015 pass: Member cũ dùng token thì token **vẫn dùng được** cho người khác |
 
@@ -39,7 +39,7 @@
 
 - Bốn mã lỗi cần dùng (`ERR_INVITE_INVALID`, `ERR_INVITE_ALREADY_USED`, `ERR_ALREADY_GROUP_MEMBER`, `ERR_NOT_GROUP_ADMIN`) **đã có sẵn** trong `src/shared/errors.ts` — không cần sửa file đó.
 - `db.batch([...])` (dùng ở `group`/`dish` cho E1) chỉ hợp với "mọi giá trị biết trước, không đọc-giữa-chừng". Việc tham gia bằng link cần đọc trạng thái token trước để chọn đúng mã lỗi, RỒI ghi hai bảng cùng lúc có điều kiện — khác bản chất, xem §7.
-- Đã đọc trực tiếp `node_modules/drizzle-orm/pg-core/db.d.ts` và `node_modules/@neondatabase/serverless/index.d.ts`: `db.execute(sql\`...\`)` trên driver `neon-http` trả về kiểu `Omit<FullQueryResults<false>, 'rows'> & { rows: T[] }` — có cả `rows: T[]` và `rowCount: number`. `sql` là tagged-template export từ gói `drizzle-orm` (`import { sql } from 'drizzle-orm'`). Đây là **lần đầu tiên** `db.execute` được dùng trong dự án — không có tiền lệ trong repo để đối chiếu, code mẫu ở §7 là thiết kế mới.
+- Đã đọc trực tiếp `node_modules/drizzle-orm/pg-core/db.d.ts` và `node_modules/@neondatabase/serverless/index.d.ts`: `db.execute(sql\`...\`)` trên driver `neon-http` trả về kiểu `Omit<FullQueryResults<false>, 'rows'> & { rows: T[] }` — có cả `rows: T[]` và `rowCount: number`.`sql` là tagged-template export từ gói `drizzle-orm`(`import { sql } from 'drizzle-orm'`). Đây là **lần đầu tiên**`db.execute` được dùng trong dự án — không có tiền lệ trong repo để đối chiếu, code mẫu ở §7 là thiết kế mới.
 - Node `crypto` (`randomBytes`, `createHash`) **chưa từng dùng trong repo** — cũng là lần đầu, xem §4.
 - `eslint.config.mjs`: `group` và `dish` không nằm trong `ALLOWED_CROSS_FEATURE` — không sao, mọi việc ở slice này nằm gọn trong feature `group`, không cần đổi ESLint config.
 
@@ -193,13 +193,13 @@ Khuyến khích chạy `drizzle-kit generate` sau khi sửa `schema.ts` ở trê
 
 ```sql
 CREATE TABLE "group_invites" (
-	"id" uuid PRIMARY KEY NOT NULL,
-	"group_id" uuid NOT NULL,
-	"token_hash" text NOT NULL,
-	"expires_at" timestamp with time zone NOT NULL,
-	"used_at" timestamp with time zone,
-	"used_by_user_id" uuid,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+ "id" uuid PRIMARY KEY NOT NULL,
+ "group_id" uuid NOT NULL,
+ "token_hash" text NOT NULL,
+ "expires_at" timestamp with time zone NOT NULL,
+ "used_at" timestamp with time zone,
+ "used_by_user_id" uuid,
+ "created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 ALTER TABLE "group_invites" ADD CONSTRAINT "group_invites_group_id_groups_id_fk" FOREIGN KEY ("group_id") REFERENCES "public"."groups"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -1051,7 +1051,7 @@ Trước khi code phần này, mở `docs/designs/designs/S-01 S-02 S-03 S-13 Kh
 # 13. Rủi ro
 
 | Rủi ro | Hậu quả | Giảm thiểu |
-|---|---|---|
+| --- | --- | --- |
 | Test tích hợp §10.1 chỉ chứng minh tuần tự, không chứng minh song song thật | Race hai request ĐỒNG THỜI (không phải liên tiếp) chưa được test trực tiếp | Chấp nhận cho quy mô hộ gia đình; CTE tự nó đúng theo ngữ nghĩa Postgres (UPDATE...WHERE là atomic ở mức row-lock), rủi ro còn lại chỉ là "chưa có bài test đo được", không phải "code sai" |
 | Đăng nhập chưa xong khi bấm link mời | `?joinToken=` bị bỏ qua, người dùng phải tự bấm lại link sau khi đăng nhập | Ghi rõ giới hạn ở §12.4; nối lại luồng này là việc của lần sau nếu người dùng thật gặp khó chịu, không nằm trong ước lượng 2h |
 | `db.execute(sql\`...\`)` là code chưa có tiền lệ trong repo | Cú pháp CTE có thể không chạy đúng như kỳ vọng trên Postgres/Neon thật | Bắt buộc chạy thử qua `psql`/`db:studio` TRƯỚC khi viết integration test, đã nhắc ở §10 |
@@ -1062,7 +1062,7 @@ Trước khi code phần này, mở `docs/designs/designs/S-01 S-02 S-03 S-13 Kh
 # 14. Config changes
 
 | File | Thay đổi |
-|---|---|
+| --- | --- |
 | `src/shared/db/schema.ts` | + `groupInvites` table, `GroupInvite`/`NewGroupInvite` types |
 | `src/shared/db/migrations/0003_group_invites.sql` | Mới |
 | `src/shared/db/migrations/meta/_journal.json` | + entry idx 3 |
@@ -1113,7 +1113,7 @@ export function makeInvite(overrides: Partial<TestInvite> = {}): TestInvite {
 # 16. Test Cases coverage
 
 | TC | Mô tả | Nơi test |
-|---|---|---|
+| --- | --- | --- |
 | TC-011 | Admin tạo link — token + expiresAt, chỉ hash lưu DB | `create-invite.test.ts` |
 | TC-012 | Member tạo link — ERR_NOT_GROUP_ADMIN | `create-invite.test.ts` |
 | TC-013 | Token hợp lệ chưa dùng — tạo Member, đánh dấu dùng cùng transaction | `join-by-invite.test.ts` + `drizzle-invite-repository.integration.test.ts` |
@@ -1191,3 +1191,11 @@ anti-brute-force requirement.
 # 18. Master Plan
 
 Sau khi code xong và `yarn verify`/`yarn arch:probe`/`yarn test:integration` xanh, tick E2-T1 và E2-T2 trong `docs/what-we-gonna-eat-today_master-plan_v1_0.md` §4.
+
+---
+
+# 19. Lịch sử thay đổi (Change History)
+
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-18 | Toàn bộ | Khởi tạo Implementation Guide cho E2-S1 (E2-T1, E2-T2) | Kế hoạch Epic E2 |

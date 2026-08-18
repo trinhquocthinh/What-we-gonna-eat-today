@@ -1,89 +1,110 @@
-# What We Gonna Eat Today
+# 🍲 What We Gonna Eat Today
 
-Chốt bữa cho cả nhà mà không phải hỏi vòng quanh.
-
-Tài liệu đầy đủ nằm ở [`docs/`](docs/). Ba file cần nhất: **Tech Spec & Architecture**
-(kiến trúc và cổng chất lượng), **Master Plan** (kế hoạch theo epic), **Setup & Ops Guide**
-(vận hành).
+> **Chốt bữa cho cả nhà mà không phải hỏi vòng quanh.**  
+> Nền tảng hỗ trợ gia đình / nhóm quyết định thực đơn mỗi ngày nhanh chóng, cá nhân hoá và không tranh luận.
 
 ---
 
-## Chạy lần đầu
+## 📚 Tài liệu dự án (Documentation)
+
+Toàn bộ tài liệu thiết kế và đặc tả kỹ thuật chi tiết nằm trong thư mục [`docs/`](./docs/):
+
+| Nhóm tài liệu                | Tài liệu chính                                                                                                                                               | Mô tả                                                 |
+| :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------- |
+| **🚀 Khởi đầu & Vận hành**   | [Setup & Ops Guide](./docs/what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md)                                                                              | Hướng dẫn cài đặt, môi trường, DB branch và deploy    |
+| **🗺️ Lộ trình & Kế hoạch**   | [Master Plan](./docs/what-we-gonna-eat-today_master-plan_v1_0.md)                                                                                            | Kế hoạch thực thi theo từng Epic / Subtask            |
+| **🏗️ Kiến trúc & Thiết kế**  | [Tech Spec & Architecture](./docs/what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)                                                                    | Kiến trúc Clean Architecture, luật tầng & chất lượng  |
+| **📐 Thiết kế phần mềm**     | [SDD](./docs/what-we-gonna-eat-today_sdd_v0_1.md) • [Diagrams](./docs/what-we-gonna-eat-today_diagrams_v0_1.md)                                              | Đặc tả module (SPEC-xxx), C4 Context/Container & ERD  |
+| **📋 Yêu cầu & Nghiệp vụ**   | [PRD](./docs/what-we-gonna-eat-today_prd_v0_1.md) • [Business Rules](./docs/what-we-gonna-eat-today_business-rules_v1.4.md)                                  | Persona, User Stories và quy tắc nghiệp vụ (`BR-xxx`) |
+| **🧪 Kiểm thử & Thuật toán** | [Test Cases](./docs/what-we-gonna-eat-today_test-cases-specification_v0_1.md) • [Ranking Spec](./docs/what-we-gonna-eat-today_ranking-specification_v0_1.md) | Bộ kiểm thử (`TC-xxx`) & thuật toán chấm điểm gợi ý   |
+
+---
+
+## ⚡ Hướng dẫn chạy lần đầu (Quickstart)
 
 ```bash
-nvm install && nvm use     # đọc .nvmrc → Node 24
-corepack enable            # yarn 4, KHÔNG cài yarn toàn cục
+# 1. Cài đặt phiên bản Node.js yêu cầu (Node 24)
+nvm install && nvm use
+
+# 2. Kích hoạt Yarn Modern (Yarn 4) — KHÔNG cài đặt yarn global
+corepack enable
 yarn install --immutable
 
-cp .env.example .env.local # rồi điền theo Setup & Ops Guide §3
-yarn dev                   # http://localhost:3000
+# 3. Thiết lập biến môi trường
+cp .env.example .env.local  # Điền cấu hình theo Setup & Ops Guide §3
+
+# 4. Khởi chạy máy chủ phát triển
+yarn dev                    # Truy cập http://localhost:3000
 ```
 
-Node 24 và yarn 4 là bắt buộc, không phải khuyến nghị. Git hook sẽ từ chối chạy nếu sai
-phiên bản, vì hook chạy sai phiên bản thì hỏng theo kiểu khó đoán chứ không báo thẳng.
-
-## Lệnh
-
-| Lệnh                                   | Việc                                                            |
-| -------------------------------------- | --------------------------------------------------------------- |
-| `yarn dev`                             | Chạy local                                                      |
-| `yarn verify`                          | **Cổng chính.** tsc → eslint → prettier → jscpd → knip → vitest |
-| `yarn arch:probe`                      | Kiểm luật tầng có thật sự chặn (xem bên dưới)                   |
-| `yarn test` / `yarn test:coverage`     | Unit test / kèm coverage                                        |
-| `yarn db:generate` / `yarn db:migrate` | Sinh và áp migration                                            |
-
-`yarn verify` xanh thì đẩy code được.
+> [!IMPORTANT]
+> **Node 24** và **Yarn 4** là yêu cầu bắt buộc, không phải khuyến nghị. Git hooks sẽ từ chối thực thi nếu sai phiên bản để ngăn ngừa lỗi tiềm ẩn khó chẩn đoán.
 
 ---
 
-## Kiến trúc
+## 🛠️ Danh sách lệnh thông dụng (Commands)
 
-Chia theo feature trước, theo tầng sau (Tech Spec §2.1). Mỗi feature có bốn tầng:
+| Lệnh                 | Mục đích / Hành động                                                                            |
+| :------------------- | :---------------------------------------------------------------------------------------------- |
+| `yarn dev`           | Khởi chạy máy chủ development cục bộ                                                            |
+| `yarn verify`        | **Cổng kiểm tra chất lượng chính:** `tsc` → `eslint` → `prettier` → `jscpd` → `knip` → `vitest` |
+| `yarn arch:probe`    | Kiểm tra luật ranh giới tầng kiến trúc (Architecture boundary probe)                            |
+| `yarn test`          | Chạy bộ kiểm thử tự động (Unit Tests)                                                           |
+| `yarn test:coverage` | Chạy bộ kiểm thử và xuất báo cáo độ bao phủ mã nguồn (Coverage Report)                          |
+| `yarn db:generate`   | Sinh mã migration Drizzle từ schema                                                             |
+| `yarn db:migrate`    | Áp dụng migration vào cơ sở dữ liệu Postgres (Neon)                                             |
 
-```
+> [!TIP]
+> Trước khi tạo pull request hoặc push code lên remote branch, hãy đảm bảo lệnh `yarn verify` chạy xanh hoàn toàn.
+
+---
+
+## 🏛️ Kiến trúc hệ thống (Architecture)
+
+Dự án áp dụng **Clean Architecture** kết hợp tổ chức theo **Feature-first** ([Tech Spec §2.1](./docs/what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)):
+
+### 1. Cấu trúc thư mục Feature
+
+```text
 src/features/<feature>/
-├── domain/           # hàm thuần, không React/Drizzle/process.env
-├── application/      # use case, định nghĩa port dạng interface
-├── infrastructure/   # hiện thực port
+├── domain/           # Hàm thuần túy, business logic cốt lõi (không React/Drizzle/process.env)
+├── application/      # Use cases, định nghĩa ports dạng interface
+├── infrastructure/   # Hiện thực ports (Drizzle repositories, API clients)
 └── presentation/
-    ├── containers/   # gọi use case, giữ state, xử lý lỗi
-    ├── components/   # thuần props, không biết application/ tồn tại
-    └── hooks/
+    ├── containers/   # Gọi use cases, quản lý state & bắt lỗi
+    ├── components/   # Thuần UI components, chỉ nhận props (không import application/)
+    └── hooks/        # UI hooks tái sử dụng
 ```
 
-Luật phụ thuộc — không mũi tên nào đi ngược:
+### 2. Quy tắc phụ thuộc (Dependency Rule)
 
+Luồng phụ thuộc một chiều nghiêm ngặt — không có mũi tên nào đi ngược:
+
+```text
+presentation ──► application ──► domain
+                      ▲
+infrastructure ───────┘
 ```
-presentation → application → domain
-infrastructure → application
-```
 
-**Container/Presentational:** container biết use case, component chỉ nhận props.
-ESLint chặn `presentation/components/` import `application/`, nên ranh giới này do máy
-giữ chứ không do trí nhớ.
+- **Container / Presentational:** Container kết nối Application layer; Component chỉ nhận props. ESLint chặn cứng việc `presentation/components/` import từ `application/`.
+- **Ranh giới giữa các Feature:** Chỉ 4 chiều quan hệ được phép ([Tech Spec §2.3](./docs/what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)):
+  1. `selection → history`
+  2. `selection → dish`
+  3. `meal → rule`
+  4. `meal → history`
+     _(Mọi chiều import chéo khác đều bị ESLint chặn)._
+- **Authorization Guards ([SPEC-019](./docs/what-we-gonna-eat-today_sdd_v0_1.md)):** Được kiểm tra ở tầng `app/` trước khi gọi Use Case, không tạo thêm phụ thuộc chéo giữa các feature.
 
-**Giữa các feature:** chỉ bốn chiều được phép (§2.3) — `selection → history`,
-`selection → dish`, `meal → rule`, `meal → history`. Mọi chiều khác bị ESLint chặn.
+### 3. Cơ chế kiểm tra ranh giới kiến trúc (`yarn arch:probe`)
 
-Guard phân quyền (SPEC-019) **không** tạo thêm chiều nào: nó được lắp ở `app/` trước khi
-gọi use case. Nếu thấy mình cần thêm một chiều, hãy kiểm tra xem việc lắp ráp có thuộc về
-`app/` hay không trước đã.
-
-### Vì sao có `yarn arch:probe`
-
-`import/no-restricted-paths` **im lặng khi cấu hình sai**. Dùng glob `*` trong `target`
-thì luật không khớp gì cả mà cũng không báo lỗi — một cấu hình hỏng nhìn y hệt một
-codebase sạch. Chuyện này đã xảy ra thật lúc dựng E0.
-
-`yarn arch:probe` dựng file vi phạm cố ý, khẳng định ESLint bắt đủ 5 lỗi và không đụng
-vào chiều hợp lệ, rồi dọn sạch. CI chạy nó cạnh `yarn verify`.
+> [!NOTE]
+> Quy tắc `import/no-restricted-paths` có thể im lặng nếu cấu hình sai regex / glob. Lệnh `yarn arch:probe` chủ động tạo file vi phạm giả lập, xác nhận ESLint bắt chính xác 5 lỗi kiến trúc và không chặn chiều hợp lệ, sau đó tự động dọn sạch.
 
 ---
 
-## Quy ước
+## 📏 Quy ước phát triển (Conventions)
 
-- Commit theo Conventional Commits, `scope` là tên feature. commitlint chặn ở `commit-msg`.
-- Nhánh: `feat/<feature>-<mô-tả-ngắn>`, `fix/...`, `chore/...`
-- File test đặt cạnh file nguồn: `ranking.ts` → `ranking.test.ts`
-- Hàm thuần trong `domain/` test **không mock gì**; nhận `now`, `referenceDate` làm tham số
-  thay vì tự gọi `new Date()`.
+- **Commit Message:** Tuân thủ chuẩn [Conventional Commits](https://www.conventionalcommits.org/), với `scope` là tên feature (vd: `feat(group): add invite link generation`). Được tự động kiểm tra qua `commitlint` tại hook `commit-msg`.
+- **Đặt tên nhánh (Branching):** `feat/<feature>-<short-description>`, `fix/...`, `chore/...`.
+- **Vị trí file kiểm thử:** Đặt cạnh file nguồn cần test (vd: `ranking.ts` → `ranking.test.ts`).
+- **Domain Layer Purity:** Các hàm trong `domain/` phải là hàm thuần (pure function) — truyền `now` hoặc `referenceDate` qua tham số thay vì gọi `new Date()`, không sử dụng mock khi viết unit test.

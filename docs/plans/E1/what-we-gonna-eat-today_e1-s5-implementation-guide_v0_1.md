@@ -1,13 +1,13 @@
-# Implementation Guide — E1 Slice S5 / Deck và swipe thô
+# 🃏 Implementation Guide — E1 Slice S5: Candidate Deck & Tương tác Swipe thô
 
-## Version 0.1
-
-**Status:** Completed
-**Created:** 2026-08-17
-**Upstream:** Master Plan v1.0 §3 (E1-T8, E1-T9), SDD v0.2 SPEC-010 (rút gọn), SPEC-011, SPEC-012, Tech Spec v0.2 §3.1–3.3/§4.1/§4.2, Business Rules BR-040→BR-042, Test Cases v0.1 TC-045→TC-053, Design Handoff S-09 (`docs/designs/README.md:189-243`, `docs/designs/designs/S-09 Deck vuot prototype.dc.html`)
-**Tiền đề:** S1 (auth), S2 (group), S3 (dish), S4 (session) đều phải landed đúng như bốn guide trong `docs/plans/`. **Đây là slice ĐẦU TIÊN phụ thuộc cả bốn** — Master Plan: `E1-T8` phụ thuộc `E1-T5` (dish) và `E1-T7` (session).
-
-> Tài liệu này là hướng dẫn thi công, không phải đặc tả. Khi nó lệch với SDD / Tech Spec / Business Rules / Design Handoff thì **các tài liệu kia đúng**.
+> **Document Metadata**
+>
+> - **Version:** `0.1` | **Status:** `Completed`
+> - **Created:** `2026-08-17` | **Last Updated:** `2026-08-18`
+> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T8, E1-T9`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-010, 011, 012`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-045→053, TC-105, TC-106`) • [Design Handoff](file:///Users/thinhquoc/Desktop/Persional/Enterprise/what-we-gonna-eat-today/docs/designs/README.md) (`S-09`)
+> - **Tiền đề:** `E1-S1`, `E1-S2`, `E1-S3`, `E1-S4` đã hoàn thành.
+>
+> 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S5: Materialize Candidate Deck, Route Handler xử lý tương tác vuốt thẻ song song dưới 100ms và Optimistic UI.*
 
 ---
 
@@ -2154,3 +2154,11 @@ Env Preview trỏ Neon branch của PR; migration chạy trong build. Chạy l�
 | Nhiều lượt vuốt nhanh gửi song song, phản hồi về KHÔNG theo thứ tự gửi | effective interaction cuối cùng có thể không khớp lượt vuốt cuối cùng của UI nếu response trước bị trễ hơn response sau | SPEC-012 tự thân là upsert theo request đến sau cùng ở DB — chấp nhận độ lệch nhỏ này ở E1 (R-04 trong Tech Spec §9 đã ghi rủi ro tương tự cho trường hợp tổng quát hơn, xử lý triệt để bằng so `updated_at` phía server là việc của E2+) |
 | Test `deck-screen.test.tsx` bị treo vì `sendInteractionWithRetry` thật sự gọi `setTimeout` dài | test chạy chậm hoặc timeout | Bốn test đầu ở §12.4 chỉ assert phần UI ngay sau khi `fetch` (mock) resolve — không rơi vào nhánh retry (không cần `vi.useFakeTimers()` ở test này, chỉ cần ở `send-interaction.test.ts`) |
 | Migration số thứ tự đụng với S3/S4 nếu code sau | conflict `_journal.json` | Không hardcode; sinh migration ở commit cuối cùng trước PR |
+
+---
+
+# 18. Lịch sử thay đổi (Change History)
+
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `0.1` | 2026-08-17 | Toàn bộ | Khởi tạo Implementation Guide cho E1-S5 (E1-T8, E1-T9) | Kế hoạch Epic E1 |
