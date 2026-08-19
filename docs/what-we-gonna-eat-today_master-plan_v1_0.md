@@ -151,12 +151,12 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
 | `[x] E2-T5` | Gán System Tag, ghi đè toàn bộ, cách ly theo Group | [SPEC-006](what-we-gonna-eat-today_sdd_v0_1.md), `TC-021→025`, `TC-100`, `TC-101` | 3 | `E1-T5` | Đổi tag ở Group A không ảnh hưởng Group B | `src/features/dish/**` |
 
-### S4 — UI Danh mục món & Phát hiện trùng lặp
+### S4 — UI Danh mục món & Phát hiện trùng lặp (Đã xong)
 
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| `[ ] E2-T6` | Màn hình danh mục món | `S-05`, `S-06` | 2 | `E2-T4` | Thêm, sửa tag, tìm kiếm được trên điện thoại | `src/features/dish/presentation/**` |
-| `[ ] E2-T7` | Trạng thái phát hiện trùng trên UI | `S-06` | 2 | `E2-T6` | Nút "Dùng món này" **nổi bật hơn** "vẫn tạo mới" | `src/features/dish/presentation/duplicate-sheet.tsx` |
+| `[x] E2-T6` | Màn hình danh mục món | `S-05`, `S-06` | 2 | `E2-T4` | Thêm, sửa tag, tìm kiếm được trên điện thoại | `src/features/dish/presentation/**` |
+| `[x] E2-T7` | Trạng thái phát hiện trùng trên UI | `S-06` | 2 | `E2-T6` | Nút "Dùng món này" **nổi bật hơn** "vẫn tạo mới" | `src/features/dish/presentation/duplicate-sheet.tsx` |
 
 ---
 

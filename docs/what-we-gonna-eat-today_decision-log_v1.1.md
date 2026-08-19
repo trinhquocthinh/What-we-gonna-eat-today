@@ -2,7 +2,7 @@
 
 > **Document Metadata**
 >
-> - **Version:** `2.1` | **Status:** `Active`
+> - **Version:** `2.3` | **Status:** `Active`
 > - **Created:** `2026-07-23` | **Last Updated:** `2026-08-18`
 > - **Supersedes:** `v2.0` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
@@ -46,6 +46,7 @@
 | [`DEC-029`](#dec-029--reusing-a-duplicate-candidate-is-a-separate-use-case-outside-spec-005) | Dùng lại món trùng lặp là Use Case riêng biệt ngoài SPEC-005 | 2026-08-18 | `Accepted` | `addExistingDishToGroup`, nút "Dùng món này" S-06 |
 | [`DEC-030`](#dec-030--tc-021-system-tag-validation-deferred-to-e2-t5) | Hoãn kiểm tra System Tag (TC-021) sang E2-T5 | 2026-08-18 | `Accepted` | Điều chỉnh phạm vi validation tag sang E2-T5 |
 | [`DEC-031`](#dec-031--system-tag-model-accepts-05-add-dish-sheet-enforces-exactly-one) | System Tag: Model nhận 0..5, Sheet S-06 chọn đúng một nhãn | 2026-08-18 | `Accepted` | Định dạng SystemTag, SPEC-006, UX Sheet S-06 |
+| [`DEC-032`](#dec-032--duplicate-candidates-come-from-two-sources-with-different-actions) | Ứng viên trùng lặp từ hai nguồn với hai hành động khác nhau | 2026-08-18 | `Accepted` | Phát hiện trùng client vs server, E2-T6/E2-T7, S-06 |
 
 
 ---
@@ -442,10 +443,45 @@ Tài liệu có sự khác biệt giữa các tầng: BR-003 cho biết một m�
 
 ---
 
+# DEC-032 — Duplicate Candidates Come From Two Sources With Different Actions
+
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
+
+### Quyết định (Decision)
+
+Khối "Nhà bạn đã có món gần giống" trên màn hình S-06 hợp nhất hai loại ứng viên:
+
+- `inGroup` — near-matches tìm thấy ở client bằng substring hai chiều trên danh sách món đã tải sẵn của chính Group. "Dùng món này" không thực hiện mutation nào vào DB; món đã có trong pool nên chỉ đóng sheet và hiện toast thông báo.
+- `global` — Global Dishes trùng tên chính xác sau chuẩn hoá (`normalized_name`) do nhóm khác tạo, được server trả về sau khi bấm lưu. "Dùng món này" gọi `addExistingDishToGroup`.
+
+### Cơ sở (Rationale)
+
+Mockup và backend giải quyết hai bài toán khác nhau: `S-05 S-06 Danh muc mon.dc.html:188-193` khớp substring hai chiều với danh sách của chính nhóm; SPEC-005 / E2-T4 khớp chính xác tên chuẩn hoá trên toàn cục. Cơ chế thứ nhất ngăn việc một gia đình thêm "Canh chua" khi đã có "Canh chua cá lóc"; cơ chế thứ hai ngăn trùng lặp Global Dish giữa các gia đình. Nếu chỉ giữ cơ chế thứ hai, panel sẽ gần như không bao giờ xuất hiện trong một deployment đơn nhóm.
+
+Khớp near-match ở client không tốn tài nguyên mạng hay truy vấn DB do `DishCatalogScreen` đã có sẵn toàn bộ danh sách món.
+
+BR-001 quy định rõ: "các món có khả năng trùng **hoặc tương tự**".
+
+### Đính chính (Correction)
+
+Tài liệu PRD không có mã "D-10" và mục Out of Scope không loại trừ fuzzy matching — chỉ loại trừ tự động gộp (merge) món trùng ở mức Global. Việc phát hiện gần giống không vi phạm bất kỳ tài liệu nào.
+
+### Hệ quả (Consequence)
+
+Trường `DuplicateCandidate.kind` là bắt buộc: `inGroup` id là `group_dishes.id`, `global` id là `global_dishes.id`.
+
+### Phạm vi ảnh hưởng (Affected Documents)
+
+- SDD SPEC-005
+- Master Plan §4 (E2-T6 / E2-T7)
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `2.3` | 2026-08-18 | Bổ sung `DEC-032` (Ứng viên trùng lặp từ hai nguồn inGroup/global) cho E2-S4 |
 | `2.2` | 2026-08-18 | Bổ sung `DEC-031` (System Tag Model vs S-06 Sheet) cho E2-S3 |
 | `2.1` | 2026-08-18 | Bổ sung `DEC-029` (Use case riêng cho món trùng lặp) và `DEC-030` (Hoãn TC-021 sang E2-T5) cho E2-S2 |
 | `2.0` | 2026-08-18 | Bổ sung `DEC-027` (CTE nguyên tử cho invite) và `DEC-028` (Invite token SHA-256) cho E2-S1 |
@@ -459,6 +495,7 @@ Tài liệu có sự khác biệt giữa các tầng: BR-003 cho biết một m�
 | `1.2` | 2026-08-14 | Bổ sung `DEC-012` (Mô hình Ranking, Cooldown 7 ngày, Exploration 20%) |
 | `1.1` | 2026-07-29 | Bổ sung `DEC-010` (Group/Session Rules) và `DEC-011` (Final Meal validation) |
 | `1.0` | 2026-07-23 | Khởi tạo Decision Log ban đầu với `DEC-001` đến `DEC-009` |
+
 
 
 

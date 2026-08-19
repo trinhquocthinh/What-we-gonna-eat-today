@@ -1,14 +1,18 @@
 'use client'
 
 import type { ReactElement } from 'react'
-import { useActionState, useState } from 'react'
+import { useActionState, useMemo, useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
 import { EmptyStateCard } from '@/shared/ui/empty-state-card'
 
+import { groupDishesByTag } from '../../domain/dish-group'
+import { normalizeDishName } from '../../domain/normalize-name'
 import type { SystemTag } from '../../domain/system-tag'
 import { AddDishSheet } from './add-dish-sheet'
 import { DishRow } from './dish-row'
+import { DishSearchField } from './dish-search-field'
+import { EditDishSheet } from './edit-dish-sheet'
 import { SYSTEM_TAG_LABELS } from './system-tag-label'
 
 const DISH_EXAMPLES = ['Cá basa kho tiêu', 'Canh chua cá lóc', 'Gà chiên nước mắm']
@@ -19,52 +23,108 @@ export type AddDishFormState = {
   readonly nameError: string | null
   readonly systemTagError: string | null
   readonly addedDishName: string | null
+  readonly reusedDishName: string | null
+  readonly candidates: readonly { readonly id: string; readonly name: string }[]
 }
 
 const ADD_DISH_INITIAL_STATE: AddDishFormState = {
   nameError: null,
   systemTagError: null,
   addedDishName: null,
+  reusedDishName: null,
+  candidates: [],
+}
+
+export type EditDishFormState = {
+  readonly error: string | null
+  readonly savedAt: number | null
+}
+
+const EDIT_DISH_INITIAL_STATE: EditDishFormState = {
+  error: null,
+  savedAt: null,
+}
+
+async function defaultEditAction(): Promise<EditDishFormState> {
+  return EDIT_DISH_INITIAL_STATE
 }
 
 export type DishCatalogScreenProps = {
   groupName: string
   dishes: { id: string; name: string; systemTags: readonly SystemTag[] }[]
   action: (state: AddDishFormState, formData: FormData) => Promise<AddDishFormState>
+  editAction?: (state: EditDishFormState, formData: FormData) => Promise<EditDishFormState>
 }
 
 /**
  * S-05. Là client component vì bốn thứ dưới đây là MỘT khối tương tác: nhãn
  * CTA, số đếm, toast, và sheet. Tách chúng ra thì state phải nâng lên một
- * wrapper — đúng thứ này đang là. Cùng hình dạng `CreateGroupForm` của S2:
- * một màn hình client nhận Server Action qua prop.
+ * wrapper — đúng thứ này đang là.
  *
- * CỐ Ý chưa có ở S3: ô tìm kiếm (E2-T6), nhóm theo nhãn (E2-T6), thẻ "không
- * khớp" (E2-T6), nhóm "Đã gỡ khỏi nhóm" (F27/v1.1).
+ * CỐ Ý chưa có: nhóm "Đã gỡ khỏi nhóm" (F27/v1.1).
  */
 export function DishCatalogScreen({
   groupName,
   dishes,
   action,
+  editAction = defaultEditAction,
 }: DishCatalogScreenProps): ReactElement {
   const [state, formAction, pending] = useActionState(action, ADD_DISH_INITIAL_STATE)
   const [prevActionState, setPrevActionState] = useState(state)
+  const [editState, editFormAction, editPending] = useActionState(
+    editAction,
+    EDIT_DISH_INITIAL_STATE,
+  )
+  const [prevEditState, setPrevEditState] = useState(editState)
   const [isSheetOpen, setSheetOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [editingDish, setEditingDish] = useState<{
+    id: string
+    name: string
+    systemTags: readonly SystemTag[]
+  } | null>(null)
+  const [inGroupReusedName, setInGroupReusedName] = useState<string | null>(null)
 
-  // Thêm thành công thì sheet đóng. Chỉ đóng khi có tên trả về — thất bại phải
-  // giữ sheet mở để lỗi hiện đúng chỗ.
+  // Thêm / dùng lại từ server thành công thì sheet đóng và xoá query. Chỉ đóng khi
+  // có tên trả về — thất bại phải giữ sheet mở để lỗi hiện đúng chỗ.
   if (state !== prevActionState) {
     setPrevActionState(state)
-    if (state.addedDishName !== null) {
+    if (state.addedDishName !== null || state.reusedDishName !== null) {
       setSheetOpen(false)
+      setQuery('')
+      setInGroupReusedName(null)
     }
   }
 
-  // Toast SUY RA từ state, không lưu riêng: mở sheet lại là toast biến mất,
-  // đúng như prototype (`openSheet` đặt `toast: ""`). Không thêm useState nào.
-  const toast = isSheetOpen ? null : state.addedDishName
+  // Sửa nhãn thành công thì đóng sheet sửa.
+  if (editState !== prevEditState) {
+    setPrevEditState(editState)
+    if (editState.savedAt !== null && editState.error === null) {
+      setEditingDish(null)
+    }
+  }
 
   const hasDishes = dishes.length > 0
+
+  const visibleDishes = useMemo(() => {
+    const needle = normalizeDishName(query)
+    return needle === '' ? dishes : dishes.filter((d) => normalizeDishName(d.name).includes(needle))
+  }, [dishes, query])
+
+  const noMatch = hasDishes && query.trim() !== '' && visibleDishes.length === 0
+  const groups = useMemo(() => groupDishesByTag(visibleDishes), [visibleDishes])
+
+  // Toast SUY RA từ state và tương tác: mở sheet là toast ẩn.
+  const toast =
+    isSheetOpen || editingDish !== null
+      ? null
+      : inGroupReusedName !== null
+        ? `Dùng lại ${inGroupReusedName} — đã có trong danh mục.`
+        : state.addedDishName !== null
+          ? `Đã thêm ${state.addedDishName} vào danh mục.`
+          : state.reusedDishName !== null
+            ? `Dùng lại ${state.reusedDishName} — đã có trong danh mục.`
+            : null
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-app flex-col">
@@ -78,21 +138,11 @@ export function DishCatalogScreen({
             {hasDishes ? `${dishes.length} món` : ''}
           </span>
         </div>
-        {/* E2-T6: ô tìm "Tìm món trong nhà" 48px vào đây. */}
+        {hasDishes ? <DishSearchField value={query} onChange={setQuery} /> : null}
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto px-4 pb-2 pt-1">
-        {hasDishes ? (
-          <ul className="flex flex-col gap-2">
-            {dishes.map((dish) => (
-              <DishRow
-                key={dish.id}
-                name={dish.name}
-                meta={dish.systemTags.map((tag) => SYSTEM_TAG_LABELS[tag]).join(' · ')}
-              />
-            ))}
-          </ul>
-        ) : (
+        {!hasDishes ? (
           <EmptyStateCard
             title="Chưa có món nào."
             description="Thêm những món nhà bạn thật sự hay ăn. Cứ viết như cách cả nhà gọi tên."
@@ -105,6 +155,41 @@ export function DishCatalogScreen({
               ))}
             </div>
           </EmptyStateCard>
+        ) : noMatch ? (
+          <div className="flex flex-col gap-2 rounded-control border border-border bg-surface-raised p-4">
+            <span className="text-subtitle font-semibold text-ink">
+              {`Không có món nào khớp “${query}”.`}
+            </span>
+            <span className="text-body font-normal text-ink-muted">
+              Thêm nó vào danh mục bằng nút bên dưới.
+            </span>
+          </div>
+        ) : (
+          groups.map((group) => (
+            <section key={group.tag ?? 'untagged'} className="flex flex-col gap-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-caption font-medium text-ink-muted">
+                  {group.tag === null ? 'Chưa phân nhãn' : SYSTEM_TAG_LABELS[group.tag]}
+                </span>
+                <span className="text-caption font-medium tabular-nums text-ink-muted">
+                  {group.dishes.length}
+                </span>
+              </div>
+              <ul className="flex flex-col gap-2">
+                {group.dishes.map((dish) => (
+                  <DishRow
+                    key={`${group.tag ?? 'untagged'}-${dish.id}`}
+                    name={dish.name}
+                    meta=""
+                    onClick={() => {
+                      setInGroupReusedName(null)
+                      setEditingDish(dish)
+                    }}
+                  />
+                ))}
+              </ul>
+            </section>
+          ))
         )}
       </div>
 
@@ -112,13 +197,17 @@ export function DishCatalogScreen({
         {toast === null ? null : (
           <div role="status" className="flex items-start gap-2 rounded-control bg-yes-soft p-3">
             <span aria-hidden className="w-hairline self-stretch rounded-full bg-yes" />
-            <span className="text-pretty text-body font-medium text-ink">
-              {`Đã thêm ${toast} vào danh mục.`}
-            </span>
+            <span className="text-pretty text-body font-medium text-ink">{toast}</span>
           </div>
         )}
 
-        <Button type="button" onClick={() => setSheetOpen(true)}>
+        <Button
+          type="button"
+          onClick={() => {
+            setInGroupReusedName(null)
+            setSheetOpen(true)
+          }}
+        >
           {hasDishes ? 'Thêm món' : 'Thêm món đầu tiên'}
         </Button>
 
@@ -134,8 +223,27 @@ export function DishCatalogScreen({
           formAction={formAction}
           nameError={state.nameError}
           systemTagError={state.systemTagError}
+          candidates={state.candidates}
+          existingDishes={dishes}
+          initialName={query}
+          onUseInGroup={(name) => {
+            setSheetOpen(false)
+            setInGroupReusedName(name)
+            setQuery('')
+          }}
           pending={pending}
           onClose={() => setSheetOpen(false)}
+        />
+      ) : null}
+
+      {editingDish !== null ? (
+        <EditDishSheet
+          dishId={editingDish.id}
+          dishName={editingDish.name}
+          initialTags={editingDish.systemTags}
+          formAction={editFormAction}
+          pending={editPending}
+          onClose={() => setEditingDish(null)}
         />
       ) : null}
     </main>

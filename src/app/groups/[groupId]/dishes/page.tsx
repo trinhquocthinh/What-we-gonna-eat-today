@@ -3,7 +3,7 @@ import { drizzleDishRepository } from '@/features/dish/infrastructure/drizzle-di
 import { DishCatalogScreen } from '@/features/dish/presentation/components/dish-catalog-screen'
 
 import { requireGroupContext } from '../group-access'
-import { addDishAction } from './actions'
+import { addDishAction, setSystemTagsAction } from './actions'
 
 // Khai kiểu thủ công, KHÔNG dùng helper `PageProps<…>` (bẫy 3/9). Segment
 // `dishes` là tĩnh nên `params` vẫn chỉ có `groupId` (bẫy 18).
@@ -22,6 +22,7 @@ export default async function DishesPage({ params }: DishesPageProps) {
       groupName={group.name}
       dishes={dishes}
       action={addDishAction.bind(null, groupId)}
+      editAction={setSystemTagsAction.bind(null, groupId)}
     />
   )
 }
