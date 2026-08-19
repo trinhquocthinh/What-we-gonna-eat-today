@@ -26,6 +26,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
       dateCaption={formatVietnameseDate(decisionDate)}
       dishCount={dishes.length}
       dishesHref={`/groups/${groupId}/dishes`}
+      inviteHref={`/groups/${groupId}/invite`}
     />
   )
 }

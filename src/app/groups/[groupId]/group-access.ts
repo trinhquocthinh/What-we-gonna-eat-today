@@ -54,3 +54,27 @@ export async function requireGroupContext(groupId: string): Promise<GroupContext
 
   return { user, group }
 }
+
+/* jscpd:ignore-start */
+export async function requireGroupAdminContext(groupId: string): Promise<GroupContext> {
+  const user = await getCurrentUser()
+  if (user === null) {
+    redirect('/')
+  }
+
+  const access = await assertGroupAccess(
+    { memberships: drizzleMembershipRepository },
+    { userId: user.id, groupId, requiredRole: 'ADMIN' },
+  )
+  if (!access.ok) {
+    notFound()
+  }
+
+  const group = await drizzleGroupRepository.findById(groupId)
+  if (group === null) {
+    notFound()
+  }
+
+  return { user, group }
+}
+/* jscpd:ignore-end */

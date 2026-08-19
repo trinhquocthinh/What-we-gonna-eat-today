@@ -43,6 +43,13 @@
       "when": 1787046178278,
       "tag": "0005_final_meal_and_eating_history",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787064437758,
+      "tag": "0006_group_invites",
+      "breakpoints": true
     }
   ]
 }

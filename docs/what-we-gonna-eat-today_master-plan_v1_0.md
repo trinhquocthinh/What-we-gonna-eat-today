@@ -308,6 +308,7 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.2` | 2026-08-18 | §4 | Hoàn tất thi công Slice S1 của Epic E2 (E2-T1, E2-T2: Link mời & Tham gia nhóm) | Quyết định DEC-027, DEC-028 |
 | `1.1` | 2026-08-18 | §1, §3 | Hoàn tất thi công toàn bộ Epic E1 (S1→S6, E1-T1 đến E1-T12), cập nhật trạng thái các subtasks | Đạt cột mốc M2 (Walking Skeleton) |
 | `1.0` | 2026-08-14 | Header & Baseline | Phát hành chính thức baseline R1 | Hoàn tất review toàn bộ 11 tài liệu |
 | `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: 7 epic, 56 subtask, đường găng 51h | Khởi tạo kế hoạch thực thi |

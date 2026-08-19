@@ -18,11 +18,12 @@
 | E2-T1 | Tạo link mời, lưu hash, hạn 7 ngày | 2 | `features/group/**` | DB chỉ chứa hash, không chứa token thô |
 | E2-T2 | Tham gia bằng link, transaction, các trường hợp âm | 2 | `features/group/application/join-by-invite.ts` | TC-015 pass: Member cũ dùng token thì token **vẫn dùng được** cho người khác |
 
-- [ ] `group_invites` có trong schema + migration `0003_group_invites.sql`
-- [ ] `createInvite` pass TC-011, TC-012
-- [ ] `joinByInvite` pass TC-013, TC-014, TC-015, TC-016, TC-112
-- [ ] Test tích hợp chứng minh race hai lần dùng cùng token: lần hai `consumed: false`
-- [ ] `yarn verify && yarn arch:probe` xanh
+- [x] `group_invites` có trong schema + migration `0006_group_invites.sql`
+- [x] `createInvite` pass TC-011, TC-012
+- [x] `joinByInvite` pass TC-013, TC-014, TC-015, TC-016, TC-112
+- [x] Test tích hợp chứng minh race hai lần dùng cùng token: lần hai `consumed: false`
+- [x] `yarn verify && yarn arch:probe` xanh
+
 
 ---
 

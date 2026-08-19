@@ -101,3 +101,22 @@ export function makeParticipant(overrides: Partial<TestParticipant> = {}): TestP
     ...overrides,
   }
 }
+
+export type TestInvite = {
+  id: string
+  groupId: string
+  tokenHash: string
+  expiresAt: Date
+  usedAt: Date | null
+}
+
+export function makeInvite(overrides: Partial<TestInvite> = {}): TestInvite {
+  return {
+    id: '01920000-0000-7000-8000-0000000000e1',
+    groupId: '01920000-0000-7000-8000-0000000000a1',
+    tokenHash: 'test-hash',
+    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+    usedAt: null,
+    ...overrides,
+  }
+}

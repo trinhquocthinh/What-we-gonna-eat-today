@@ -10,20 +10,22 @@ export type GroupOverviewScreenProps = {
   dateCaption: string
   dishCount: number
   dishesHref: string
+  inviteHref: string
 }
 
 /**
  * S-04.
  *
- * Bật: hàng "Danh mục món" và CTA "Thêm món đầu tiên" / "Thêm món".
+ * Bật: hàng "Danh mục món", hàng "Mời thành viên" và CTA "Thêm món đầu tiên" / "Thêm món".
  *
- * E2-T2 + E5-T1: thêm hai hàng "Thành viên" và "Quy định bữa ăn" khi hai route đó tồn tại.
+ * E5-T1: thêm hàng "Quy định bữa ăn" khi route đó tồn tại.
  */
 export function GroupOverviewScreen({
   groupName,
   dateCaption,
   dishCount,
   dishesHref,
+  inviteHref,
 }: GroupOverviewScreenProps): ReactElement {
   const hasDishes = dishCount > 0
 
@@ -66,7 +68,14 @@ export function GroupOverviewScreen({
                 {hasDishes ? `${dishCount} món` : 'Chưa có món nào'}
               </span>
             </Link>
-            {/* E2-T2 + E5-T1: thêm hai hàng "Thành viên" và "Quy định bữa ăn" khi hai route đó tồn tại. */}
+            <Link
+              href={inviteHref}
+              className="flex min-h-14 items-center justify-between gap-3 rounded-control border border-border bg-surface-raised p-4 text-left hover:border-border-strong active:bg-surface-sunken"
+            >
+              <span className="text-subtitle font-semibold text-ink">Mời thành viên</span>
+              <span className="text-caption font-medium text-ink-muted">Tạo link mời</span>
+            </Link>
+            {/* E5-T1: thêm hàng "Quy định bữa ăn" khi route đó tồn tại. */}
           </div>
         </div>
       </div>

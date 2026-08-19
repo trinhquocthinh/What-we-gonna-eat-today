@@ -394,3 +394,28 @@ export const eatingHistory = pgTable(
 export type FinalMeal = typeof finalMeals.$inferSelect
 export type FinalMealItem = typeof finalMealItems.$inferSelect
 export type EatingHistory = typeof eatingHistory.$inferSelect
+
+/** Tech Spec dòng 135. SPEC-003/004 — DB CHỈ lưu hash, không bao giờ lưu token
+ *  thô. `usedAt`/`usedByUserId` cùng null (chưa dùng) hoặc cùng khác null (đã
+ *  dùng) — không có nửa vời; use case luôn set cả hai cùng lúc trong một câu
+ *  SQL, xem `drizzle-invite-repository.ts`. */
+export const groupInvites = pgTable(
+  'group_invites',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    groupId: uuid('group_id')
+      .notNull()
+      .references(() => groups.id),
+    tokenHash: text('token_hash').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    usedByUserId: uuid('used_by_user_id').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('group_invites_token_hash_unique').on(table.tokenHash)],
+)
+
+export type GroupInvite = typeof groupInvites.$inferSelect
+export type NewGroupInvite = typeof groupInvites.$inferInsert

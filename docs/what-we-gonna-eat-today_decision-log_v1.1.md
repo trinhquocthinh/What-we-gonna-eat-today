@@ -2,12 +2,12 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.9` | **Status:** `Active`
+> - **Version:** `2.0` | **Status:** `Active`
 > - **Created:** `2026-07-23` | **Last Updated:** `2026-08-18`
-> - **Supersedes:** `v1.3` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
+> - **Supersedes:** `v1.9` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
 >
-> 📌 *Decision Log ghi lại 26 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
+> 📌 *Decision Log ghi lại 28 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
 
 ---
 
@@ -41,6 +41,9 @@
 | [`DEC-024`](#dec-024--e1-t7s-minimal-startsession-does-not-need-the-websocket-driver) | `startSession` tối thiểu ở E1-T7 không cần WebSocket | 2026-08-18 | `Accepted` | Tối ưu hóa driver, bắt mã lỗi race condition |
 | [`DEC-025`](#dec-025--interaction_events-logs-every-spec-012-request-including-idempotent-repeats) | Ghi nhật ký mọi request tương tác vào `interaction_events` | 2026-08-18 | `Accepted` | Audit log append-only đầy đủ |
 | [`DEC-026`](#dec-026--e1-t11-does-not-need-the-websocket-driver-either) | `finalizeSession` ở E1-T11 dùng `db.batch()` an toàn | 2026-08-18 | `Accepted` | Giao dịch nguyên tử không cần kết nối WebSocket |
+| [`DEC-027`](#dec-027--invite-consumption-uses-a-single-raw-sql-cte-not-dbbatch) | Tiêu thụ Token mời nguyên tử qua câu lệnh CTE SQL thô | 2026-08-18 | `Accepted` | `joinByInvite`, cập nhật invite & thêm member |
+| [`DEC-028`](#dec-028--invite-tokens-nodecrypto-sha-256-no-bcrypt) | Token mời: `node:crypto`, SHA-256, không dùng Bcrypt | 2026-08-18 | `Accepted` | Sinh token ≥192-bit, lưu băm SHA-256 trong DB |
+
 
 ---
 
@@ -358,10 +361,39 @@ Mọi lượt request tương tác hợp lệ đều được ghi đúng 1 dòng
 
 ---
 
+# DEC-027 — Invite Consumption Uses a Single Raw-SQL CTE, Not db.batch()
+
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
+
+### Quyết định (Decision)
+
+Thao tác nguyên tử của `joinByInvite` (đánh dấu token đã dùng + tạo group membership) được triển khai qua một câu lệnh SQL duy nhất chứa CTE (`WITH consumed AS (UPDATE ... RETURNING id) INSERT INTO group_members ... SELECT ... FROM consumed`), thực thi qua `db.execute(sql\`...\`)` thay vì `db.batch([...])`.
+
+### Lý do (Rationale)
+
+`db.batch()` trên driver `neon-http` là non-interactive: không thể khiến câu lệnh thứ hai phụ thuộc vào kết quả của câu lệnh thứ nhất trong cùng 1 lượt gọi. Trong khi đó, việc INSERT membership chỉ được phép xảy ra khi UPDATE invite thực sự tiêu thụ được 1 token chưa dùng — đúng trường hợp "đọc rồi ghi thực sự" mà DEC-018/020 dự đoán. Một câu CTE duy nhất đảm bảo tính nguyên tử theo ngữ nghĩa Postgres mà không cần `db.transaction()` hay driver WebSocket.
+
+---
+
+# DEC-028 — Invite Tokens: node:crypto, SHA-256, No Bcrypt
+
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
+
+### Quyết định (Decision)
+
+Token mời sử dụng `randomBytes(24)` (192-bit) từ `node:crypto` để sinh chuỗi ngẫu nhiên (base64url) và băm SHA-256 (`createHash('sha256')`) để lưu hash trong CSDL — không dùng bcrypt hay argon2.
+
+### Lý do (Rationale)
+
+Bcrypt/argon2 sinh ra để làm chậm việc dò mật khẩu yếu do con người tự đặt. Token mời được sinh tự động từ máy với entropy ≥ 192 bit — việc brute-force là bất khả thi. SHA-256 đáp ứng đúng yêu cầu "không lưu token thô trong DB" (SPEC-003) mà vẫn giữ hiệu năng tra cứu nhanh.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `2.0` | 2026-08-18 | Bổ sung `DEC-027` (CTE nguyên tử cho invite) và `DEC-028` (Invite token SHA-256) cho E2-S1 |
 | `1.9` | 2026-08-18 | Bổ sung `DEC-026` cho E1-T10/T11: `finalizeSession` dùng `db.batch()` nguyên tử |
 | `1.8` | 2026-08-18 | Bổ sung `DEC-025` cho E1-T9: `interaction_events` ghi nhật ký mọi request |
 | `1.7` | 2026-08-18 | Bổ sung `DEC-024` cho E1-T7: `startSession` tối thiểu không cần WebSocket |
@@ -372,3 +404,4 @@ Mọi lượt request tương tác hợp lệ đều được ghi đúng 1 dòng
 | `1.2` | 2026-08-14 | Bổ sung `DEC-012` (Mô hình Ranking, Cooldown 7 ngày, Exploration 20%) |
 | `1.1` | 2026-07-29 | Bổ sung `DEC-010` (Group/Session Rules) và `DEC-011` (Final Meal validation) |
 | `1.0` | 2026-07-23 | Khởi tạo Decision Log ban đầu với `DEC-001` đến `DEC-009` |
+
