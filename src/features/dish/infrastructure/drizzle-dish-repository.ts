@@ -1,17 +1,19 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
 import { getDb } from '@/shared/db/client'
-import { globalDishes, groupDishes } from '@/shared/db/schema'
+import { globalDishes, groupDishes, groupDishTags } from '@/shared/db/schema'
 
 import type {
   DishRepository,
   GlobalDishCandidate,
+  GroupDishListItem,
   GroupDishLookup,
   GroupDishSummary,
   NewDishInGroup,
 } from '../application/dish-repository'
 import type { GroupDishState } from '../domain/group-dish'
+import { toSystemTags, type SystemTag } from '../domain/system-tag'
 
 // `tsc` canh chỗ này: nếu enum DB và union domain lệch nhau thì phép gán đỏ.
 // Đây là ràng buộc biên dịch DUY NHẤT giữa `schema.ts` và `domain/group-dish.ts`.
@@ -63,7 +65,7 @@ async function findGlobalCandidatesByNormalizedName(
  * minh ở đây — câu INSERT thứ hai cần `globalDishId` trước khi được dựng.
  *
  * Kiểu của `batch` là tuple `Readonly<[U, ...U[]]>` — truyền literal array,
- * đừng build bằng `.map()` hay gán vào `const queries: X[]`.
+ * phần tử 0 là literal, phần đuôi spread từ `.map()`.
  */
 async function createGlobalDishAndAddToPool(input: NewDishInGroup): Promise<GroupDishSummary> {
   const db = getDb()
@@ -85,6 +87,9 @@ async function createGlobalDishAndAddToPool(input: NewDishInGroup): Promise<Grou
       globalDishId,
       state: ACTIVE,
     }),
+    ...input.systemTags.map((tag) =>
+      db.insert(groupDishTags).values({ groupDishId, systemTag: tag }),
+    ),
   ])
 
   return { id: groupDishId, name: input.name }
@@ -136,15 +141,87 @@ async function addExistingGlobalDishToGroup(input: {
   return dish
 }
 
-async function listActiveInGroup(groupId: string): Promise<GroupDishSummary[]> {
-  // `state = 'ACTIVE'` ở đây là câu hỏi "lấy dòng nào", không phải quyết định
-  // nghiệp vụ — cùng ngoại lệ có chủ ý mà `listForUser` của S2 đã ghi.
-  return getDb()
+/**
+ * `array_agg ... FILTER (WHERE ...)` để món KHÔNG có tag nào vẫn ra một hàng
+ * với mảng rỗng — `LEFT JOIN` thuần sẽ cho `[null]` thay vì `[]`.
+ *
+ * `sql<string[]>` là một LỜI KHAI, không phải một phép kiểm: TypeScript tin
+ * bạn, Postgres thì không hứa gì. Vì vậy kết quả đi qua `toSystemTags()` — bản
+ * khoan dung — để một giá trị lạ trong DB không làm sập trang danh mục. Đây
+ * cũng là chỗ mảng được sắp về THỨ TỰ CHUẨN, vì `array_agg` không đảm bảo thứ
+ * tự.
+ */
+async function listActiveInGroup(groupId: string): Promise<GroupDishListItem[]> {
+  const rows = await getDb()
+    .select({
+      id: groupDishes.id,
+      name: globalDishes.name,
+      systemTags: sql<
+        string[]
+      >`coalesce(json_agg(${groupDishTags.systemTag}) filter (where ${groupDishTags.systemTag} is not null), '[]'::json)`,
+    })
+    .from(groupDishes)
+    .innerJoin(globalDishes, eq(globalDishes.id, groupDishes.globalDishId))
+    .leftJoin(groupDishTags, eq(groupDishTags.groupDishId, groupDishes.id))
+    .where(and(eq(groupDishes.groupId, groupId), eq(groupDishes.state, ACTIVE)))
+    .groupBy(groupDishes.id, globalDishes.name, groupDishes.createdAt)
+    .orderBy(asc(groupDishes.createdAt))
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    systemTags: toSystemTags(row.systemTags),
+  }))
+}
+
+/**
+ * Xác nhận món ĐANG ACTIVE trong ĐÚNG group này.
+ *
+ * Nhận CẢ HAI id là có chủ ý bảo mật: nếu chỉ nhận `groupDishId`, một Admin
+ * của Group A gửi thẳng `groupDishId` của Group B sẽ qua được vòng kiểm
+ * `assertGroupAccess` (vốn chỉ kiểm quyền trên Group A) rồi sửa tag của Group
+ * B. Điều kiện `AND group_id = ?` ở đây là thứ chặn đúng chuyện đó.
+ */
+async function findActiveGroupDish(input: {
+  groupId: string
+  groupDishId: string
+}): Promise<GroupDishSummary | null> {
+  const rows = await getDb()
     .select({ id: groupDishes.id, name: globalDishes.name })
     .from(groupDishes)
     .innerJoin(globalDishes, eq(globalDishes.id, groupDishes.globalDishId))
-    .where(and(eq(groupDishes.groupId, groupId), eq(groupDishes.state, ACTIVE)))
-    .orderBy(asc(groupDishes.createdAt))
+    .where(
+      and(
+        eq(groupDishes.id, input.groupDishId),
+        // Điều kiện làm nên vòng chặn chéo-Group — đừng bỏ.
+        eq(groupDishes.groupId, input.groupId),
+        eq(groupDishes.state, ACTIVE),
+      ),
+    )
+    .limit(1)
+
+  return rows[0] ?? null
+}
+
+/**
+ * Ghi đè toàn bộ = XOÁ HẾT rồi CHÈN LẠI, trong MỘT transaction.
+ *
+ * `systemTags` rỗng (TC-023) thì batch còn đúng một câu DELETE — vẫn hợp lệ,
+ * vì tuple chỉ đòi TỐI THIỂU một phần tử.
+ */
+async function replaceSystemTags(input: {
+  groupDishId: string
+  systemTags: readonly SystemTag[]
+}): Promise<void> {
+  const db = getDb()
+
+  const remove = db.delete(groupDishTags).where(eq(groupDishTags.groupDishId, input.groupDishId))
+
+  const add = input.systemTags.map((tag) =>
+    db.insert(groupDishTags).values({ groupDishId: input.groupDishId, systemTag: tag }),
+  )
+
+  await db.batch([remove, ...add])
 }
 
 export const drizzleDishRepository: DishRepository = {
@@ -154,4 +231,6 @@ export const drizzleDishRepository: DishRepository = {
   reactivateGroupDish,
   addExistingGlobalDishToGroup,
   listActiveInGroup,
+  findActiveGroupDish,
+  replaceSystemTags,
 }

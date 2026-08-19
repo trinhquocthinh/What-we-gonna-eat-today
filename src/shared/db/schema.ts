@@ -160,6 +160,36 @@ export const groupDishes = pgTable(
 export type GlobalDish = typeof globalDishes.$inferSelect
 export type GroupDish = typeof groupDishes.$inferSelect
 
+/** SDD §2.2 — bản sao DB của `SystemTag` ở `features/dish/domain/system-tag.ts`. */
+export const systemTag = pgEnum('system_tag', ['STAPLE', 'MAIN', 'SIDE', 'SOUP', 'DESSERT'])
+
+/**
+ * Tech Spec §3.1 dòng 153–154. KHÔNG có cột `id` — khoá chính là cặp cột, cùng
+ * khuôn `final_meal_items`.
+ *
+ * Khoá chính ghép LÀ luật khử trùng lặp của TC-101 ở mức DB: cùng một tag không
+ * gắn hai lần vào một món. `readSystemTags` khử trước ở tầng domain, nên câu
+ * INSERT không bao giờ chạm vào ràng buộc này — nó là lưới an toàn, không phải
+ * đường đi chính.
+ *
+ * Trỏ `group_dish_id` chứ KHÔNG phải `global_dish_id`: đó chính là cơ chế cách
+ * ly theo Group của TC-024. Cùng một Global Dish ở hai Group là hai hàng
+ * `group_dishes` khác nhau, nên tag của chúng không có đường nào ảnh hưởng nhau
+ * — cách ly là tính chất CẤU TRÚC, không phải điều kiện `WHERE` ai đó phải nhớ.
+ */
+export const groupDishTags = pgTable(
+  'group_dish_tags',
+  {
+    groupDishId: uuid('group_dish_id')
+      .notNull()
+      .references(() => groupDishes.id),
+    systemTag: systemTag('system_tag').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.groupDishId, table.systemTag] })],
+)
+
+export type GroupDishTag = typeof groupDishTags.$inferSelect
+
 /**
  * SDD §2.2. `INVALID` nằm trong enum để máy trạng thái đầy đủ nhưng không tới
  * được ở v1.0 (F26/F41 là v1.2) — Tech Spec §3.2 đã ghi lý do không có cột

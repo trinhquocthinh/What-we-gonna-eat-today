@@ -45,6 +45,7 @@
 | [`DEC-028`](#dec-028--invite-tokens-nodecrypto-sha-256-no-bcrypt) | Token mời: `node:crypto`, SHA-256, không dùng Bcrypt | 2026-08-18 | `Accepted` | Sinh token ≥192-bit, lưu băm SHA-256 trong DB |
 | [`DEC-029`](#dec-029--reusing-a-duplicate-candidate-is-a-separate-use-case-outside-spec-005) | Dùng lại món trùng lặp là Use Case riêng biệt ngoài SPEC-005 | 2026-08-18 | `Accepted` | `addExistingDishToGroup`, nút "Dùng món này" S-06 |
 | [`DEC-030`](#dec-030--tc-021-system-tag-validation-deferred-to-e2-t5) | Hoãn kiểm tra System Tag (TC-021) sang E2-T5 | 2026-08-18 | `Accepted` | Điều chỉnh phạm vi validation tag sang E2-T5 |
+| [`DEC-031`](#dec-031--system-tag-model-accepts-05-add-dish-sheet-enforces-exactly-one) | System Tag: Model nhận 0..5, Sheet S-06 chọn đúng một nhãn | 2026-08-18 | `Accepted` | Định dạng SystemTag, SPEC-006, UX Sheet S-06 |
 
 
 ---
@@ -423,10 +424,29 @@ Type `SystemTag` và bảng lưu trữ `group_dish_tags` chỉ xuất hiện t�
 
 ---
 
+# DEC-031 — System Tag: Model Accepts 0..5, Add-Dish Sheet Enforces Exactly One
+
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
+
+### Quyết định (Decision)
+
+`group_dish_tags`, use case `setSystemTags` (SPEC-006), và `addDishToGroup` đều chấp nhận từ 0 đến 5 System Tags (`0..5`). Tuy nhiên, sheet Thêm món (S-06) thể hiện hàng chip chọn một nhãn bắt buộc và gửi chính xác 1 tag. Giao diện chỉnh sửa đa nhãn (multi-select) sẽ được hoàn thiện cùng với màn hình danh mục món ở E2-T6.
+
+### Lý do (Rationale)
+
+Tài liệu có sự khác biệt giữa các tầng: BR-003 cho biết một món có thể mang nhiều tag; TC-022 gán 2 tag, TC-023 gán 0 tag, TC-100 gán 5 tag. Trong khi đó, mockup S-06 yêu cầu "Nhãn — chọn một" và bắt buộc chọn để quy định bữa ăn kiểm tra được (nudge UX). Do đó, mô hình dữ liệu và các port tuân theo hợp đồng chuẩn 0..5, còn sheet S-06 đóng vai trò là lối nhập liệu nhanh với 1 nhãn bắt buộc.
+
+### Hệ quả (Consequence)
+
+`SystemTagField` mang cảnh báo rõ ràng chống việc thu hẹp mô hình xuống 1 tag. E2-T6 sẽ triển khai chỉnh sửa đa nhãn mà không làm thay đổi các port domain/application.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `2.2` | 2026-08-18 | Bổ sung `DEC-031` (System Tag Model vs S-06 Sheet) cho E2-S3 |
 | `2.1` | 2026-08-18 | Bổ sung `DEC-029` (Use case riêng cho món trùng lặp) và `DEC-030` (Hoãn TC-021 sang E2-T5) cho E2-S2 |
 | `2.0` | 2026-08-18 | Bổ sung `DEC-027` (CTE nguyên tử cho invite) và `DEC-028` (Invite token SHA-256) cho E2-S1 |
 | `1.9` | 2026-08-18 | Bổ sung `DEC-026` cho E1-T10/T11: `finalizeSession` dùng `db.batch()` nguyên tử |
@@ -439,5 +459,6 @@ Type `SystemTag` và bảng lưu trữ `group_dish_tags` chỉ xuất hiện t�
 | `1.2` | 2026-08-14 | Bổ sung `DEC-012` (Mô hình Ranking, Cooldown 7 ngày, Exploration 20%) |
 | `1.1` | 2026-07-29 | Bổ sung `DEC-010` (Group/Session Rules) và `DEC-011` (Final Meal validation) |
 | `1.0` | 2026-07-23 | Khởi tạo Decision Log ban đầu với `DEC-001` đến `DEC-009` |
+
 
 

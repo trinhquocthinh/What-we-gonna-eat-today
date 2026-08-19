@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DishRepository, GroupDishSummary } from './dish-repository'
+import type { DishRepository, GroupDishListItem } from './dish-repository'
 import { listGroupDishes } from './list-group-dishes'
 
 function makeThrowingRepo(overrides: Partial<DishRepository> = {}): DishRepository {
@@ -23,6 +23,12 @@ function makeThrowingRepo(overrides: Partial<DishRepository> = {}): DishReposito
     async listActiveInGroup() {
       throw new Error('không dùng trong test này')
     },
+    async findActiveGroupDish() {
+      throw new Error('không dùng trong test này')
+    },
+    async replaceSystemTags() {
+      throw new Error('không dùng trong test này')
+    },
     ...overrides,
   }
 }
@@ -39,10 +45,10 @@ describe('listGroupDishes', () => {
     expect(result).toEqual([])
   })
 
-  it('giữ nguyên thứ tự danh sách món ACTIVE mà repository trả về', async () => {
-    const dishes: GroupDishSummary[] = [
-      { id: 'dish-1', name: 'Cá basa kho tiêu' },
-      { id: 'dish-2', name: 'Canh chua cá lóc' },
+  it('giữ nguyên thứ tự danh sách món ACTIVE mà repository trả về kèm tag', async () => {
+    const dishes: GroupDishListItem[] = [
+      { id: 'dish-1', name: 'Cá basa kho tiêu', systemTags: ['MAIN'] },
+      { id: 'dish-2', name: 'Canh chua cá lóc', systemTags: ['SOUP'] },
     ]
     const fakeRepo = makeThrowingRepo({
       async listActiveInGroup() {

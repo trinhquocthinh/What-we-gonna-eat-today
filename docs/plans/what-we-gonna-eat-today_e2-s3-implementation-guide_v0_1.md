@@ -1,6 +1,7 @@
 # 🏷️ Implementation Guide — E2 Slice S3: System Tag
 
 > **Document Metadata**
+>
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-18`
 > - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E2-T5`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-006`, §2.2) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-003`, `BR-008`) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-022→025`, `TC-100`, `TC-101`, + `TC-021` theo DEC-024)
@@ -13,7 +14,7 @@
 # 0. Việc cần làm và điều kiện xong
 
 | ID | Việc | Giờ | File | Xong nghĩa là |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `E2-T5` | Gán System Tag, ghi đè toàn bộ, cách ly theo Group | 3 | `src/features/dish/**` | Đổi tag ở Group A không ảnh hưởng Group B |
 
 - [ ] `group_dish_tags` có trong schema + migration mới (xem §1.4 về số thứ tự)
@@ -32,7 +33,7 @@ Slice này là chỗ tài liệu lệch nhau nhiều nhất từ đầu dự án
 ## 1.1 Cách viết 5 giá trị tag — SDD thắng, PRD là ngoại lệ
 
 | Tài liệu | Viết là |
-|---|---|
+| --- | --- |
 | SDD §2.2 dòng 95 | `SystemTag = STAPLE \| MAIN \| SIDE \| SOUP \| DESSERT` |
 | SDD dòng 86 (bảng quy ước đặt tên) | **Database Enum → `UPPER_SNAKE`** |
 | BR-003 | `MAIN`, `SIDE`, `SOUP`, `STAPLE`, `DESSERT` |
@@ -44,7 +45,7 @@ Slice này là chỗ tài liệu lệch nhau nhiều nhất từ đầu dự án
 ## 1.2 Chọn một tag hay nhiều tag — API và UI trả lời KHÁC nhau, có chủ ý
 
 | Nguồn | Nói gì |
-|---|---|
+| --- | --- |
 | BR-003 | *"Một món có thể mang **nhiều System Tag cùng lúc**."* |
 | TC-022 | Gán `[MAIN, SOUP]` → đúng 2 tag |
 | TC-023 | Gán `[]` → không còn tag nào |
@@ -54,6 +55,7 @@ Slice này là chỗ tài liệu lệch nhau nhiều nhất từ đầu dự án
 | Cùng file, dòng 232 | `if (!s.draft.trim() \|\| !s.tag \|\| ...) return` — **không lưu được nếu chưa chọn tag** |
 
 **Chốt (bạn đã quyết):**
+
 - **API / domain / DB: `0..5`, đúng spec.** `TC-022`, `TC-023`, `TC-100` là hợp đồng hình thức, không nhân nhượng.
 - **Sheet "Thêm món" (S-06): chọn một, bắt buộc — giữ đúng mockup.** Sheet là lối nhập nhanh, và câu nhắc trong chính mockup nói rõ lý do: *"Chọn một nhãn để quy định bữa ăn kiểm tra được."* Đây là **nudge UX**, không phải ràng buộc dữ liệu.
 - **Multi-select đầy đủ để dành cho S4 (E2-T6)** — Master Plan ghi thẳng "Xong nghĩa là: Thêm, **sửa tag**, tìm kiếm được trên điện thoại" cho E2-T6. Đó mới là nơi sửa chi tiết.
@@ -75,7 +77,7 @@ SPEC-006 (SDD dòng 212–216) chỉ có 4 gạch đầu dòng, **không có m�
 Ba mã lỗi slice này dùng đến từ ba nguồn khác nhau, mức chắc chắn khác nhau — nói rõ để bạn biết chỗ nào là spec, chỗ nào là suy luận:
 
 | Mã lỗi | Căn cứ | Mức chắc chắn |
-|---|---|---|
+| --- | --- | --- |
 | `ERR_NOT_GROUP_ADMIN` | TC-025 nói thẳng, BR-008 nói Admin mới được sửa tag | **Chắc — có test case** |
 | `ERR_INVALID_SYSTEM_TAG` | TC-021 nói thẳng (chuyển sang slice này theo DEC-024) | **Chắc — có test case** |
 | `ERR_DISH_NOT_IN_POOL` | Không tài liệu nào nói gì cho SPEC-006. Có sẵn trong bảng mã lỗi SDD (409, *"Món ăn này không còn hoạt động trong nhóm"*) | **Suy luận** — xem §8.2 |
@@ -87,7 +89,7 @@ Repo hiện có `0000` → `0005` (bạn đã code xong E1 S4–S6). **Guide E2-
 Số trống kế tiếp **tuỳ thứ tự bạn code**:
 
 | Nếu code slice này… | Migration tag |
-|---|---|
+| --- | --- |
 | Trước S1 (link mời) | `0006_group_dish_tags` |
 | Sau S1 | `0007_group_dish_tags` |
 
@@ -380,9 +382,9 @@ Chạy `yarn db:generate`. Kết quả nên khớp bản dưới (dùng để **
 ```sql
 CREATE TYPE "public"."system_tag" AS ENUM('STAPLE', 'MAIN', 'SIDE', 'SOUP', 'DESSERT');--> statement-breakpoint
 CREATE TABLE "group_dish_tags" (
-	"group_dish_id" uuid NOT NULL,
-	"system_tag" "system_tag" NOT NULL,
-	CONSTRAINT "group_dish_tags_group_dish_id_system_tag_pk" PRIMARY KEY("group_dish_id","system_tag")
+ "group_dish_id" uuid NOT NULL,
+ "system_tag" "system_tag" NOT NULL,
+ CONSTRAINT "group_dish_tags_group_dish_id_system_tag_pk" PRIMARY KEY("group_dish_id","system_tag")
 );
 --> statement-breakpoint
 ALTER TABLE "group_dish_tags" ADD CONSTRAINT "group_dish_tags_group_dish_id_group_dishes_id_fk" FOREIGN KEY ("group_dish_id") REFERENCES "public"."group_dishes"("id") ON DELETE no action ON UPDATE no action;
@@ -1171,7 +1173,7 @@ const result = await setSystemTags(
 E2-T5 phụ thuộc **E1-T5**, không phụ thuộc E2-T4 (Master Plan ghi rõ). Nên code slice này trước hay sau S2 đều được. Nhưng hai slice sửa chồng lên nhau ở ba file:
 
 | File | S2 (E2-T4) làm gì | S3 (E2-T5) làm gì | Gộp thế nào |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `add-dish-to-group.ts` | Đổi output thành union `AddDishOutcome`; thêm nhánh reactivate/candidates | Thêm input `systemTags`; đổi `FAILURE_DETAILS` → `FAILURE_FOR` | Không đụng nhau — một bên input, một bên output. Gộp thẳng. |
 | `dish-repository.ts` | + `GroupDishLookup`, `findGlobalCandidates…`, `reactivateGroupDish`, `addExistingGlobalDishToGroup` | + `GroupDishListItem`, `findActiveGroupDish`, `replaceSystemTags`; `NewDishInGroup` thêm `systemTags` | Chỉ cùng thêm method vào một interface. Gộp thẳng. |
 | `dishes/actions.ts` | Xử lý nhánh `kind: 'candidates'` | Đọc `systemTag` từ FormData, tách `systemTagError` | Gộp thẳng. |
@@ -1202,7 +1204,7 @@ Ghi ở đây để bạn **quyết**, không phải để lặng lẽ làm.
 # 15. Rủi ro
 
 | Rủi ro | Hậu quả | Giảm thiểu |
-|---|---|---|
+| --- | --- | --- |
 | `features/dish` import thẳng `features/group` để dùng `assertGroupAccess` | `yarn arch:probe` đỏ; ranh giới feature vỡ | §8.1 — tiêm `assertAdmin` qua deps. Chạy `arch:probe` NGAY sau khi viết `set-system-tags.ts` |
 | `sql<string[]>` ở `array_agg` là lời khai, `tsc` không kiểm được | Enum lạ trong DB làm vỡ kiểu lúc chạy | Đi qua `toSystemTags()` khoan dung (§10.3); integration test là chỗ kiểm thật |
 | Quên `groupDishes.createdAt` trong `groupBy` | Lỗi Postgres lúc chạy, không phải lúc build | §10.3 đã ghi; integration test bắt được ngay |
@@ -1215,7 +1217,7 @@ Ghi ở đây để bạn **quyết**, không phải để lặng lẽ làm.
 # 16. Test Cases coverage
 
 | TC | Nội dung | Tầng | Nơi test |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `TC-021` | `systemTags = ["BREAKFAST"]` → `ERR_INVALID_SYSTEM_TAG` | A | `system-tag.test.ts`, `set-system-tags.test.ts`, `add-dish-to-group.test.ts` |
 | `TC-022` | Ghi đè `[MAIN]` → `[MAIN, SOUP]`, đúng 2 tag | A | `set-system-tags.test.ts` |
 | `TC-023` | Gán `[]` → không còn tag | A + I | `set-system-tags.test.ts`, integration |
@@ -1241,7 +1243,51 @@ Ghi ở đây để bạn **quyết**, không phải để lặng lẽ làm.
 
 ---
 
-# 18. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 18. Verify
+
+## 18.1 Cổng máy
+
+```bash
+yarn verify && yarn arch:probe && yarn build
+yarn test:integration
+```
+
+`yarn test` phải in `readSystemTags` (TC-021, TC-023, TC-100, TC-101), `toSystemTags`, `isSystemTag`, `setSystemTags` (TC-022, TC-023, TC-025, TC-100, TC-101), `SystemTagField`. `yarn test:integration` in ba ca của `drizzleDishRepository — System Tag (E2-T5)`, trong đó **TC-024 là ca quan trọng nhất của cả slice**.
+
+**`yarn arch:probe` phải chạy ngay sau khi viết `set-system-tags.ts`**, đừng để tới cuối. `features/dish` không được import `features/group`, mà use case này lại cần `assertGroupAccess` — nếu bạn lỡ import thẳng thì đây là chỗ nó đỏ, và sửa sớm rẻ hơn sửa sau khi đã viết xong presentation (§8.1).
+
+Hai cổng dễ đỏ ngoài dự đoán:
+
+| Lệnh | Đỏ vì gì | Sửa |
+| --- | --- | --- |
+| `yarn knip` | `setSystemTags` export mà chưa ai gọi — S4 mới nối dây | §12.3 đã bàn: để S4 nối sớm, hoặc thêm ngoại lệ tạm có comment trỏ E2-T6. **Đừng** viết một Server Action giả để dỗ công cụ |
+| `yarn build` | `groupBy` thiếu `groupDishes.createdAt` | Lỗi Postgres lúc chạy chứ không phải lúc biên dịch — chỉ integration test bắt được (§10.3) |
+
+## 18.2 TC-024 — bằng chứng cách ly theo Group
+
+Đây là câu "Xong nghĩa là" của Master Plan cho E2-T5: *"Đổi tag ở Group A không ảnh hưởng Group B."* Integration test đã phủ, nhưng nên nhìn tận mắt một lần vì đây là bất biến quan trọng nhất của bảng `group_dish_tags`:
+
+1. Tạo **Nhóm A**, thêm món `Canh chua`, chọn nhãn `Canh`.
+2. Tạo **Nhóm B**. Thêm đúng `Canh chua` — vì cùng `normalized_name`, nó dùng lại đúng Global Dish đó (hoặc tạo mới nếu S2 chưa code; cả hai đều được cho phép kiểm này). Chọn nhãn `Món mặn`.
+3. `yarn db:studio` → `group_dish_tags`:
+   - **Hai dòng**, mỗi dòng một `group_dish_id` khác nhau, `system_tag` khác nhau.
+   - Không dòng nào trỏ `global_dish_id` — cột đó **không tồn tại** trong bảng này. Đó chính là lý do cách ly là tính chất cấu trúc, không phải điều kiện `WHERE` ai đó phải nhớ (§6.1).
+4. Đổi nhãn món ở Nhóm A. → Dòng của Nhóm B **không đổi một ký tự nào**.
+
+## 18.3 Gán tag khi chưa có UI sửa tag
+
+Màn sửa nhãn là E2-T6 (S4), nên ở slice này chỉ có **một** đường gán tag qua giao diện: chip "Nhãn — chọn một" trong sheet thêm món.
+
+- **Kiểm được qua UI**: thêm món có chọn nhãn → `group_dish_tags` có đúng một dòng; danh mục hiện nhãn ở cột phải của hàng món (§11.4).
+- **Chưa kiểm được qua UI**: `setSystemTags` với nhiều nhãn (TC-022), với mảng rỗng (TC-023), và ca Member-không-phải-Admin (TC-025). Ba ca này chỉ có test tầng `A` và integration cho tới khi S4 dựng `edit-dish-sheet.tsx`. **Đừng viết Server Action tạm chỉ để thử tay** — nó sẽ thành export chết mà `knip` bắt, và S4 sẽ phải xoá đi viết lại.
+
+## 18.4 Backfill nhãn cho món cũ? Không cần
+
+Khác E2-T3 (đổi `normalized_name` của dữ liệu đã có nên **bắt buộc** backfill), slice này chỉ **thêm** một bảng rỗng. Món tạo từ E1 đơn giản là chưa có nhãn — hợp lệ theo TC-023, và hiển thị bình thường với `meta` rỗng. Không có script backfill nào cho E2-T5.
+
+---
+
+# 19. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
 
 ```markdown
 # DEC-025 — System Tag: Model Accepts 0..5, Add-Dish Sheet Enforces Exactly One
@@ -1288,6 +1334,6 @@ Ngoài ra, cân nhắc ghi thêm hai điều chỉnh nhỏ vào phần "Affected
 
 ---
 
-# 19. Master Plan
+# 20. Master Plan
 
 Sau khi `yarn verify`, `yarn arch:probe`, `yarn test:integration` xanh: tick `E2-T5` ở §4, và thêm `TC-021` vào cột "Nguồn" của dòng đó (theo DEC-024).

@@ -1125,7 +1125,49 @@ export function makeInvite(overrides: Partial<TestInvite> = {}): TestInvite {
 
 ---
 
-# 17. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 17. Verify
+
+## 17.1 Cổng máy
+
+```bash
+yarn verify && yarn arch:probe && yarn build
+yarn test:integration
+```
+
+`yarn test` phải in các nhóm mới: `generateInviteToken`, `hashInviteToken`, `isInviteExpired`, `createInvite`, `joinByInvite`, `InviteScreen`. `yarn test:integration` in `drizzleInviteRepository.consumeAndAddMember` (cả hai ca: cùng transaction, và lần gọi thứ hai `consumed: false`).
+
+Slice này là lần **đầu tiên** repo dùng `db.execute(sql\`…\`)`. Trước khi tin `yarn test:integration` xanh nghĩa là câu CTE đúng, chạy thử nó một lần bằng tay trên Neon branch `test` (đã dặn ở §10) — một câu SQL sai cú pháp vẫn có thể làm test "xanh" nếu test chưa chạm tới nhánh đó.
+
+## 17.2 Bằng chứng DoD của E2-T1 — DB không chứa token thô
+
+Master Plan ghi điều kiện hoàn thành đúng một câu: *"DB chỉ chứa hash, không chứa token thô."* Đây là cách chứng minh, không phải tin vào code:
+
+1. `yarn dev`, đăng nhập, tạo một nhóm (bạn là Admin).
+2. Vào `/groups/{id}/invite`, bấm `Tạo link mời`. **Copy nguyên token thô** trên màn hình (phần sau `/join/`).
+3. `yarn db:studio` → bảng `group_invites`:
+   - `token_hash` là chuỗi **64 ký tự hex** — không phải token bạn vừa copy.
+   - Không cột nào chứa token thô. Dán token vào ô tìm của Studio trên bảng này → **không ra dòng nào**.
+   - `expires_at` cách `created_at` đúng 7 ngày; `used_at` và `used_by_user_id` đều `null`.
+
+Nếu tìm ra token thô ở bất kỳ cột nào, dừng lại — E2-T1 chưa đạt, bất kể test có xanh.
+
+## 17.3 Bằng chứng DoD của E2-T2 — TC-015, token còn dùng được
+
+Master Plan ghi: *"TC-015 pass: Member cũ dùng token thì token **vẫn dùng được** cho người khác."* Ca này cần **ba lượt** và **hai tài khoản Google**:
+
+1. **Chính bạn** (đã là Member) mở `/join/{token}`. → Thấy `Bạn đã ở trong nhóm này rồi.` Kiểm `db:studio`: `used_at` vẫn `null` — token **chưa** bị tiêu.
+2. **Tài khoản thứ hai** mở đúng link đó. → Vào được nhóm. `db:studio`: `used_at` có giá trị, `used_by_user_id` trỏ đúng người thứ hai, `group_members` thêm một dòng `is_admin = false`.
+3. Mở lại link lần ba (tài khoản bất kỳ). → `Link mời này đã được dùng rồi.`
+
+Bước 1 là chỗ dễ làm sai nhất của cả slice: nếu `used_at` bị set ngay ở bước 1 thì thứ tự kiểm trong `joinByInvite` sai — vòng kiểm membership phải chạy **trước** `consumeAndAddMember` (§9).
+
+## 17.4 Token hết hạn
+
+Không chờ 7 ngày. Sửa thẳng `expires_at` về quá khứ trong `db:studio`, rồi mở link → `Link mời không còn hiệu lực.`
+
+---
+
+# 18. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
 
 ```markdown
 # DEC-021 — Invite Consumption Uses a Single Raw-SQL CTE, Not db.batch()
@@ -1189,13 +1231,13 @@ anti-brute-force requirement.
 
 ---
 
-# 18. Master Plan
+# 19. Master Plan
 
 Sau khi code xong và `yarn verify`/`yarn arch:probe`/`yarn test:integration` xanh, tick E2-T1 và E2-T2 trong `docs/what-we-gonna-eat-today_master-plan_v1_0.md` §4.
 
 ---
 
-# 19. Lịch sử thay đổi (Change History)
+# 20. Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |

@@ -978,11 +978,31 @@ it('ô tìm prefill vào sheet khi mở', async () => { … })
 7. `add-dish-sheet.test.tsx` (mở rộng) → `add-dish-sheet.tsx`
 8. `edit-dish-sheet.test.tsx` → `edit-dish-sheet.tsx`
 9. `actions.ts` + `page.tsx`
-10. `yarn verify && yarn arch:probe`, rồi `yarn dev` thử tay theo §14
+10. `yarn verify && yarn arch:probe`, rồi `yarn dev` thử tay theo §14.2
 
 ---
 
-# 14. Thử tay trước khi tick
+# 14. Verify
+
+## 14.1 Cổng máy
+
+```bash
+yarn verify && yarn arch:probe && yarn build
+```
+
+`yarn test` phải in các nhóm mới: `findNearMatches`, `groupDishesByTag`, `DuplicateSheet`, `EditDishSheet`, và các test đã mở rộng của `DishCatalogScreen` (ô tìm, thẻ không khớp, nhóm theo nhãn) và `AddDishSheet`.
+
+Slice này **không thêm integration test nào** — không có truy vấn DB mới (near-match chạy ở client, nhóm theo nhãn là hàm thuần). `yarn test:integration` vẫn phải xanh nguyên trạng, coi như test hồi quy cho S2/S3.
+
+Ba cổng dễ đỏ nhất ở slice này, biết trước để không mất thời gian:
+
+| Lệnh | Đỏ vì gì | Sửa |
+| --- | --- | --- |
+| `yarn knip` | `setSystemTagsAction` hoặc `DuplicateSheet` export mà chưa ai import | Nối dây xong hẵng chạy — đừng viết action trước component dùng nó |
+| `yarn dup` (jscpd) | `dish-search-field.tsx` trùng class với ô tìm của `time-zone-picker-sheet.tsx` | Xem §12 "Rủi ro" — nếu vượt ngưỡng thì cho ô tìm múi giờ dùng lại `DishSearchField` |
+| `yarn arch:probe` | `presentation/components` lỡ import `application/` (ví dụ import thẳng `setSystemTags`) | Use case chỉ được gọi từ `app/`; component nhận Server Action qua prop |
+
+## 14.2 Thử tay trên trình duyệt
 
 ```bash
 yarn dev
@@ -996,6 +1016,19 @@ yarn dev
 6. Gõ `ca loc` (không dấu) vào ô tìm. → vẫn ra `Canh chua cá lóc` (nhờ E2-T3).
 7. Bấm vào hàng món. → sheet sửa nhãn, tick thêm `Món mặn`, lưu. → món hiện ở **cả hai** nhóm `Món mặn` và `Canh`.
 8. Bỏ tick hết, lưu. → món rơi xuống nhóm `Chưa phân nhãn`.
+
+Tám bước trên chỉ chạm được ứng viên `inGroup`. Ứng viên `global` cần **hai nhóm** — xem §14.3.
+
+## 14.3 Ứng viên `global` — đường duy nhất để thử
+
+Đây là nhánh dễ bị bỏ sót nhất: với một nhóm duy nhất nó không bao giờ hiện (đúng lý do đã ghi ở §2.2). Dựng đủ điều kiện:
+
+1. Tạo **Nhóm A**, thêm món `Bún chả` (nhãn bất kỳ).
+2. Tạo **Nhóm B** (cùng tài khoản cũng được — `createGroup` không cấm một người có nhiều nhóm).
+3. Vào danh mục món của **Nhóm B**, gõ đúng `Bún chả`, chọn nhãn, bấm `Thêm vào danh mục`.
+4. → Khối trùng hiện **sau khi bấm lưu** (không phải khi đang gõ — đây là ứng viên server, khác thời điểm với `inGroup`), liệt kê `Bún chả`.
+5. Bấm `Dùng món này`. → Nhóm B có `Bún chả`, và trong `yarn db:studio`, `global_dishes` vẫn **đúng một dòng** `Bún chả` — hai hàng `group_dishes` cùng trỏ về nó. Đây chính là mục đích chống trùng toàn cục của SPEC-005.
+6. Đối chiếu: nếu bước 5 tạo ra **hai** dòng `global_dishes`, tức là nút `Dùng món này` đã đi nhầm sang nhánh tạo mới — kiểm lại `name`/`value` của nút submit trong `duplicate-sheet.tsx` (§6) và thứ tự ba nhánh trong `addDishAction` (§10.2).
 
 ---
 
@@ -1059,6 +1092,6 @@ foreign-key error.
 
 # 16. Master Plan
 
-Sau khi `yarn verify` và `yarn arch:probe` xanh và thử tay §14 xong: tick `E2-T6` và `E2-T7` ở §4.
+Sau khi `yarn verify` và `yarn arch:probe` xanh và thử tay §14.2–§14.3 xong: tick `E2-T6` và `E2-T7` ở §4.
 
 **E2 kết thúc tại đây.** Master Plan ghi *"Điểm kiểm tra sau E2: đạt cột mốc M3 khi kết hợp với E3"* — nên M3 chưa đạt ở slice này, còn chờ E3. Nợ đã ghi nhận khi khép epic: **F27 (gỡ món khỏi pool)** chưa làm (§2.1), kéo theo TC-020 chưa có đường đi thật và TC-065/069/108 chưa dựng được dữ liệu.

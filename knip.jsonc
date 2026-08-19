@@ -45,6 +45,9 @@
 
     // GỠ Ở E2-T7 (S4): addExistingDishToGroup use case được tạo ở E2-S2, S4 sẽ nối dây UI.
     "src/features/dish/application/add-existing-dish-to-group.ts",
+
+    // GỠ Ở E2-T6 (S4): setSystemTags use case được tạo ở E2-S3, S4 sẽ nối dây UI sửa tag.
+    "src/features/dish/application/set-system-tags.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu
@@ -61,4 +64,6 @@
     // lặng ngừng merge.
     "@auth/core",
   ],
+
+  "ignoreExportsUsedInFile": true,
 }

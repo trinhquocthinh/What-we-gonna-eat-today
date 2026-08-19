@@ -6,8 +6,10 @@ import { useActionState, useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { EmptyStateCard } from '@/shared/ui/empty-state-card'
 
+import type { SystemTag } from '../../domain/system-tag'
 import { AddDishSheet } from './add-dish-sheet'
 import { DishRow } from './dish-row'
+import { SYSTEM_TAG_LABELS } from './system-tag-label'
 
 const DISH_EXAMPLES = ['Cá basa kho tiêu', 'Canh chua cá lóc', 'Gà chiên nước mắm']
 
@@ -15,14 +17,19 @@ const DISH_EXAMPLES = ['Cá basa kho tiêu', 'Canh chua cá lóc', 'Gà chiên n
  *  Cùng hình dạng `CreateGroupFormState` của S2. */
 export type AddDishFormState = {
   readonly nameError: string | null
+  readonly systemTagError: string | null
   readonly addedDishName: string | null
 }
 
-const ADD_DISH_INITIAL_STATE: AddDishFormState = { nameError: null, addedDishName: null }
+const ADD_DISH_INITIAL_STATE: AddDishFormState = {
+  nameError: null,
+  systemTagError: null,
+  addedDishName: null,
+}
 
 export type DishCatalogScreenProps = {
   groupName: string
-  dishes: { id: string; name: string }[]
+  dishes: { id: string; name: string; systemTags: readonly SystemTag[] }[]
   action: (state: AddDishFormState, formData: FormData) => Promise<AddDishFormState>
 }
 
@@ -32,7 +39,7 @@ export type DishCatalogScreenProps = {
  * wrapper — đúng thứ này đang là. Cùng hình dạng `CreateGroupForm` của S2:
  * một màn hình client nhận Server Action qua prop.
  *
- * CỐ Ý chưa có ở S3: ô tìm kiếm (E2-T6), nhóm theo nhãn (E2-T5/T6), thẻ "không
+ * CỐ Ý chưa có ở S3: ô tìm kiếm (E2-T6), nhóm theo nhãn (E2-T6), thẻ "không
  * khớp" (E2-T6), nhóm "Đã gỡ khỏi nhóm" (F27/v1.1).
  */
 export function DishCatalogScreen({
@@ -78,7 +85,11 @@ export function DishCatalogScreen({
         {hasDishes ? (
           <ul className="flex flex-col gap-2">
             {dishes.map((dish) => (
-              <DishRow key={dish.id} name={dish.name} meta="" />
+              <DishRow
+                key={dish.id}
+                name={dish.name}
+                meta={dish.systemTags.map((tag) => SYSTEM_TAG_LABELS[tag]).join(' · ')}
+              />
             ))}
           </ul>
         ) : (
@@ -122,6 +133,7 @@ export function DishCatalogScreen({
         <AddDishSheet
           formAction={formAction}
           nameError={state.nameError}
+          systemTagError={state.systemTagError}
           pending={pending}
           onClose={() => setSheetOpen(false)}
         />

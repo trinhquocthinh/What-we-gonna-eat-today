@@ -5,7 +5,15 @@ import { AddDishSheet } from './add-dish-sheet'
 
 describe('AddDishSheet', () => {
   it('nút "Thêm vào danh mục" enabled khi tên trống', () => {
-    render(<AddDishSheet formAction={vi.fn()} nameError={null} pending={false} onClose={vi.fn()} />)
+    render(
+      <AddDishSheet
+        formAction={vi.fn()}
+        nameError={null}
+        systemTagError={null}
+        pending={false}
+        onClose={vi.fn()}
+      />,
+    )
 
     const submitButton = screen.getByRole('button', { name: 'Thêm vào danh mục' })
     expect(submitButton).toBeDefined()
@@ -17,6 +25,7 @@ describe('AddDishSheet', () => {
       <AddDishSheet
         formAction={vi.fn()}
         nameError="Nhập tên món trước đã."
+        systemTagError={null}
         pending={false}
         onClose={vi.fn()}
       />,
@@ -34,6 +43,7 @@ describe('AddDishSheet', () => {
       <AddDishSheet
         formAction={vi.fn()}
         nameError="Món này đã có trong danh mục rồi."
+        systemTagError={null}
         pending={false}
         onClose={vi.fn()}
       />,
@@ -41,5 +51,20 @@ describe('AddDishSheet', () => {
 
     const errorText = screen.getByText('Món này đã có trong danh mục rồi.')
     expect(errorText).toBeDefined()
+  })
+
+  it('systemTagError hiện dưới hàng chip nhãn', () => {
+    render(
+      <AddDishSheet
+        formAction={vi.fn()}
+        nameError={null}
+        systemTagError="Chọn một nhãn để quy định bữa ăn kiểm tra được."
+        pending={false}
+        onClose={vi.fn()}
+      />,
+    )
+
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toBe('Chọn một nhãn để quy định bữa ăn kiểm tra được.')
   })
 })

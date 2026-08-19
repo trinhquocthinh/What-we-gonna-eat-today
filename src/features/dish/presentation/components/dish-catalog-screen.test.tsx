@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { SystemTag } from '../../domain/system-tag'
 import { DishCatalogScreen } from './dish-catalog-screen'
 
 describe('DishCatalogScreen (S-05)', () => {
@@ -21,16 +22,18 @@ describe('DishCatalogScreen (S-05)', () => {
     expect(screen.queryByText('Khoảng 15–20 món là đủ để bắt đầu')).toBeNull()
   })
 
-  it('có 2 món: tên món hiện, nút "Thêm món", caption "Khoảng 15–20 món...", số đếm "2 món", không có empty state', () => {
-    const dishes = [
-      { id: '1', name: 'Cá basa kho tiêu' },
-      { id: '2', name: 'Canh chua cá lóc' },
+  it('có 2 món: tên món hiện, nhãn hệ thống hiển thị, nút "Thêm món", caption "Khoảng 15–20 món...", số đếm "2 món", không có empty state', () => {
+    const dishes: { id: string; name: string; systemTags: readonly SystemTag[] }[] = [
+      { id: '1', name: 'Cá basa kho tiêu', systemTags: ['MAIN'] },
+      { id: '2', name: 'Canh chua cá lóc', systemTags: ['SOUP'] },
     ]
     render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={dishes} action={vi.fn()} />)
 
     expect(screen.getByText('2 món')).toBeDefined()
     expect(screen.getByText('Cá basa kho tiêu')).toBeDefined()
+    expect(screen.getByText('Món mặn')).toBeDefined()
     expect(screen.getByText('Canh chua cá lóc')).toBeDefined()
+    expect(screen.getByText('Canh')).toBeDefined()
     expect(screen.getByRole('button', { name: 'Thêm món' })).toBeDefined()
     expect(screen.getByText('Khoảng 15–20 món là đủ để bắt đầu')).toBeDefined()
     expect(screen.queryByText('Chưa có món nào.')).toBeNull()
@@ -46,7 +49,7 @@ describe('DishCatalogScreen (S-05)', () => {
 
   it('action trả về addedDishName thì sheet đóng và toast hiện', async () => {
     async function successAction() {
-      return { nameError: null, addedDishName: 'Cá basa kho tiêu' }
+      return { nameError: null, systemTagError: null, addedDishName: 'Cá basa kho tiêu' }
     }
 
     render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={[]} action={successAction} />)

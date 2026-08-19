@@ -1,4 +1,4 @@
-import type { DishRepository, GroupDishSummary } from './dish-repository'
+import type { DishRepository, GroupDishListItem } from './dish-repository'
 
 export type ListGroupDishesDeps = {
   readonly dishes: DishRepository
@@ -14,6 +14,6 @@ export type ListGroupDishesDeps = {
 export async function listGroupDishes(
   deps: ListGroupDishesDeps,
   groupId: string,
-): Promise<GroupDishSummary[]> {
+): Promise<GroupDishListItem[]> {
   return deps.dishes.listActiveInGroup(groupId)
 }

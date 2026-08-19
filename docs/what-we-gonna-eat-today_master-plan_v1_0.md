@@ -145,11 +145,11 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 | `[x] E2-T3` | Chuẩn hoá tên món bỏ dấu, hàm thuần | [SPEC-005](what-we-gonna-eat-today_sdd_v0_1.md), `TC-098` | 2 | — | `Ca kho` và `Cá kho` cùng `normalized_name`; test dùng tiếng Việt có dấu thật | `src/features/dish/domain/normalize-name.ts` |
 | `[x] E2-T4` | Phát hiện trùng, `forceCreate`, khôi phục Dish Inactive | [SPEC-005](what-we-gonna-eat-today_sdd_v0_1.md), `TC-017→021`, `TC-097→099` | 3 | `E2-T3` | Thêm lại Dish Inactive chuyển `ACTIVE`, không tạo Global Dish mới | `src/features/dish/application/**` |
 
-### S3 — System Tag (Kế tiếp)
+### S3 — System Tag (Đã xong)
 
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| `[ ] E2-T5` | Gán System Tag, ghi đè toàn bộ, cách ly theo Group | [SPEC-006](what-we-gonna-eat-today_sdd_v0_1.md), `TC-022→025`, `TC-100`, `TC-101` | 3 | `E1-T5` | Đổi tag ở Group A không ảnh hưởng Group B | `src/features/dish/**` |
+| `[x] E2-T5` | Gán System Tag, ghi đè toàn bộ, cách ly theo Group | [SPEC-006](what-we-gonna-eat-today_sdd_v0_1.md), `TC-021→025`, `TC-100`, `TC-101` | 3 | `E1-T5` | Đổi tag ở Group A không ảnh hưởng Group B | `src/features/dish/**` |
 
 ### S4 — UI Danh mục món & Phát hiện trùng lặp
 

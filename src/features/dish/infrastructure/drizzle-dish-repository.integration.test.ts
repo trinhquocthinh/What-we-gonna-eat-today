@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { normalizeDishName } from '@/features/dish/domain/normalize-name'
 import { getDb } from '@/shared/db/client'
-import { globalDishes, groupDishes, groups, users } from '@/shared/db/schema'
+import { globalDishes, groupDishes, groupDishTags, groups, users } from '@/shared/db/schema'
 import { makeGroup, makeUser } from '@/shared/testing/factories'
 
 import { drizzleDishRepository } from './drizzle-dish-repository'
@@ -16,6 +16,16 @@ type Cleanable = {
 
 async function cleanupEntities(cleanable: Cleanable) {
   const db = getDb()
+  // 0. Xoá groupDishTags
+  for (const groupId of cleanable.groupIds) {
+    const dishes = await db
+      .select({ id: groupDishes.id })
+      .from(groupDishes)
+      .where(eq(groupDishes.groupId, groupId))
+    for (const d of dishes) {
+      await db.delete(groupDishTags).where(eq(groupDishTags.groupDishId, d.id))
+    }
+  }
   // 1. Xoá toàn bộ groupDishes của các groups trước để không còn FK trỏ tới globalDishes
   for (const groupId of cleanable.groupIds) {
     await db.delete(groupDishes).where(eq(groupDishes.groupId, groupId))
@@ -80,6 +90,7 @@ describe('drizzleDishRepository — E2-T4', () => {
       name: 'Canh chua',
       normalizedName: normalizeDishName('Canh chua'),
       creatorUserId: user.id,
+      systemTags: [],
     })
 
     const globalRows = await db
@@ -128,6 +139,7 @@ describe('drizzleDishRepository — E2-T4', () => {
       name: 'Canh chua',
       normalizedName: normalizeDishName('Canh chua'),
       creatorUserId: user.id,
+      systemTags: [],
     })
 
     const globalRows = await db
@@ -145,5 +157,163 @@ describe('drizzleDishRepository — E2-T4', () => {
     const rows = await db.select().from(groupDishes).where(eq(groupDishes.groupId, group.id))
     expect(rows).toHaveLength(1)
     expect(rows[0]?.state).toBe('ACTIVE')
+  })
+})
+
+describe('drizzleDishRepository — System Tag (E2-T5)', () => {
+  it('TC-024 — cùng món ở 2 Group: đổi tag Group A, Group B giữ nguyên', async () => {
+    const db = getDb()
+    const user = makeUser({
+      id: uuidv7(),
+      email: `test-${uuidv7()}@example.com`,
+    })
+    const groupA = makeGroup({
+      id: uuidv7(),
+      name: 'Nhà A',
+      creatorUserId: user.id,
+    })
+    const groupB = makeGroup({
+      id: uuidv7(),
+      name: 'Nhà B',
+      creatorUserId: user.id,
+    })
+
+    cleanupQueue.push(() =>
+      cleanupEntities({
+        userIds: [user.id],
+        groupIds: [groupA.id, groupB.id],
+      }),
+    )
+
+    await db.insert(users).values({
+      ...user,
+      provider: 'test',
+      providerSubject: `test-${user.id}`,
+    })
+    await db.insert(groups).values([groupA, groupB])
+
+    // Group A tạo món, mang sẵn tag MAIN.
+    const dishA = await drizzleDishRepository.createGlobalDishAndAddToPool({
+      groupId: groupA.id,
+      name: 'Canh chua',
+      normalizedName: 'canh chua',
+      creatorUserId: user.id,
+      systemTags: ['MAIN'],
+    })
+
+    // Group B dùng CÙNG Global Dish, nhưng gắn tag SOUP.
+    const [globalDish] = await db
+      .select()
+      .from(globalDishes)
+      .where(eq(globalDishes.createdFromGroupId, groupA.id))
+    const groupDishB = uuidv7()
+    await db.insert(groupDishes).values({
+      id: groupDishB,
+      groupId: groupB.id,
+      globalDishId: globalDish!.id,
+      state: 'ACTIVE',
+    })
+    await drizzleDishRepository.replaceSystemTags({
+      groupDishId: groupDishB,
+      systemTags: ['SOUP'],
+    })
+
+    // Đổi tag ở Group A.
+    await drizzleDishRepository.replaceSystemTags({
+      groupDishId: dishA.id,
+      systemTags: ['STAPLE', 'DESSERT'],
+    })
+
+    const listA = await drizzleDishRepository.listActiveInGroup(groupA.id)
+    const listB = await drizzleDishRepository.listActiveInGroup(groupB.id)
+
+    expect(listA[0]?.systemTags).toEqual(['STAPLE', 'DESSERT'])
+    expect(listB[0]?.systemTags).toEqual(['SOUP']) // ← GIỮ NGUYÊN
+  })
+
+  it('TC-023 — replaceSystemTags([]) xoá sạch tag', async () => {
+    const db = getDb()
+    const user = makeUser({
+      id: uuidv7(),
+      email: `test-${uuidv7()}@example.com`,
+    })
+    const group = makeGroup({
+      id: uuidv7(),
+      creatorUserId: user.id,
+    })
+
+    cleanupQueue.push(() =>
+      cleanupEntities({
+        userIds: [user.id],
+        groupIds: [group.id],
+      }),
+    )
+
+    await db.insert(users).values({
+      ...user,
+      provider: 'test',
+      providerSubject: `test-${user.id}`,
+    })
+    await db.insert(groups).values(group)
+    const dish = await drizzleDishRepository.createGlobalDishAndAddToPool({
+      groupId: group.id,
+      name: 'Canh chua',
+      normalizedName: 'canh chua',
+      creatorUserId: user.id,
+      systemTags: ['MAIN', 'SOUP'],
+    })
+
+    await drizzleDishRepository.replaceSystemTags({ groupDishId: dish.id, systemTags: [] })
+
+    const rows = await db.select().from(groupDishTags).where(eq(groupDishTags.groupDishId, dish.id))
+    expect(rows).toHaveLength(0)
+    const list = await drizzleDishRepository.listActiveInGroup(group.id)
+    expect(list[0]?.systemTags).toEqual([]) // món không tag vẫn ra một hàng
+  })
+
+  it('findActiveGroupDish chặn truy cập chéo Group', async () => {
+    const db = getDb()
+    const user = makeUser({
+      id: uuidv7(),
+      email: `test-${uuidv7()}@example.com`,
+    })
+    const groupA = makeGroup({
+      id: uuidv7(),
+      name: 'Nhà A',
+      creatorUserId: user.id,
+    })
+    const groupB = makeGroup({
+      id: uuidv7(),
+      name: 'Nhà B',
+      creatorUserId: user.id,
+    })
+
+    cleanupQueue.push(() =>
+      cleanupEntities({
+        userIds: [user.id],
+        groupIds: [groupA.id, groupB.id],
+      }),
+    )
+
+    await db.insert(users).values({
+      ...user,
+      provider: 'test',
+      providerSubject: `test-${user.id}`,
+    })
+    await db.insert(groups).values([groupA, groupB])
+    const dishA = await drizzleDishRepository.createGlobalDishAndAddToPool({
+      groupId: groupA.id,
+      name: 'Canh chua',
+      normalizedName: 'canh chua',
+      creatorUserId: user.id,
+      systemTags: [],
+    })
+
+    const stolen = await drizzleDishRepository.findActiveGroupDish({
+      groupId: groupB.id, // Admin của B…
+      groupDishId: dishA.id, // …nhắm vào món của A
+    })
+
+    expect(stolen).toBeNull()
   })
 })

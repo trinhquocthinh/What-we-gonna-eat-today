@@ -33,9 +33,9 @@
 - **BR-001**: *"User có thể chọn Dish đã tồn tại."* **PRD US-002**: *"...hệ thống hiển thị Dish đang có và cho tôi chọn dùng lại."* **Design S-06**: nút "Dùng món này" nổi bật hơn nút tạo mới.
 - **SPEC-005** (đầu vào hình thức): `{ groupId, name: string 1..120, systemTags: SystemTag[] 0..5 }` + cờ `forceCreate` (chỉ xuất hiện trong prose, không trong dòng "Đầu vào" chính thức). **Không có tham số nào** kiểu `reuseGlobalDishId` để biểu diễn "chọn dùng ứng viên nào". Test Cases cũng chỉ có đúng TC-018 (trả ứng viên, không tạo) và TC-019 (forceCreate tạo mới) — không có TC thứ ba cho "dùng lại".
 
-**Quyết định lấp khoảng hở (ghi thành DEC-023 ở §14)**: "dùng lại một ứng viên" là một **use case riêng**, nằm ngoài hợp đồng SPEC-005, nhận thẳng `globalDishId` đã chọn thay vì `name`. Đặt ở slice này (E2-T4 là "phát hiện trùng" trong Master Plan) — S4 (E2-T6/T7) chỉ nối dây UI vào use case đã có sẵn, không tự thiết kế lại.
+**Quyết định lấp khoảng hở (ghi thành DEC-023 ở §15)**: "dùng lại một ứng viên" là một **use case riêng**, nằm ngoài hợp đồng SPEC-005, nhận thẳng `globalDishId` đã chọn thay vì `name`. Đặt ở slice này (E2-T4 là "phát hiện trùng" trong Master Plan) — S4 (E2-T6/T7) chỉ nối dây UI vào use case đã có sẵn, không tự thiết kế lại.
 
-**Khoảng hở thứ hai**: TC-021 (`systemTags` không hợp lệ → `ERR_INVALID_SYSTEM_TAG`) nằm trong dải TC Master Plan gán cho E2-T4, nhưng cột "Xong nghĩa là" của E2-T4 không nhắc System Tag, và bảng lưu tag (`group_dish_tags`) + type `SystemTag` chỉ tồn tại từ **E2-T5**. Thêm `systemTags` làm input mà chưa có chỗ lưu là nửa vời — **quyết định dời TC-021 sang guide S3/E2-T5** (ghi thành DEC-024 ở §14), nơi nó thực sự có ý nghĩa.
+**Khoảng hở thứ hai**: TC-021 (`systemTags` không hợp lệ → `ERR_INVALID_SYSTEM_TAG`) nằm trong dải TC Master Plan gán cho E2-T4, nhưng cột "Xong nghĩa là" của E2-T4 không nhắc System Tag, và bảng lưu tag (`group_dish_tags`) + type `SystemTag` chỉ tồn tại từ **E2-T5**. Thêm `systemTags` làm input mà chưa có chỗ lưu là nửa vời — **quyết định dời TC-021 sang guide S3/E2-T5** (ghi thành DEC-024 ở §15), nơi nó thực sự có ý nghĩa.
 
 ---
 
@@ -773,7 +773,55 @@ Thêm field ẩn `forceCreate` vào form của `add-dish-sheet.tsx` (S3) nếu m
 
 ---
 
-# 14. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 14. Verify
+
+## 14.1 Cổng máy
+
+```bash
+yarn verify && yarn arch:probe && yarn build
+yarn test:integration
+```
+
+`yarn test` phải in `normalizeDishName` (có TC-098), `addDishToGroup` (TC-017, TC-018, TC-019, TC-020, TC-099, TC-097), `addExistingDishToGroup`. `yarn test:integration` in hai ca upsert của `addExistingGlobalDishToGroup`.
+
+**Một test cũ PHẢI đổi màu, không phải PHẢI xanh.** Guide E1-S3 để lại một test đánh dấu sẵn `E1 CỐ Ý chưa bỏ dấu — E2-T3 đổi kỳ vọng này thành toBe`. Nếu nó vẫn xanh mà bạn chưa sửa dòng nào trong nó, tức là `normalizeDishName` **chưa** thật sự bỏ dấu — xem lại §4.
+
+## 14.2 Backfill — chạy trên branch `test` trước, không phải `dev`
+
+Script này **ghi dữ liệu**, không chỉ đọc. Trình tự an toàn:
+
+```bash
+# .env.local trỏ DATABASE_URL sang Neon branch `test`
+yarn backfill:normalized-name
+```
+
+Đọc kỹ output: mỗi dòng `✏️` là một bản ghi bị đổi, dạng `"Cá kho": "cá kho" → "ca kho"`. Ba thứ phải đúng:
+
+1. **Số dòng đổi khớp kỳ vọng** — chỉ những món có dấu mới đổi. Món viết không dấu sẵn (`Kho quet`) phải **không** xuất hiện trong output.
+2. **Chạy lần hai in `Đã cập nhật 0/N dòng`** — script phải idempotent. Nếu lần hai vẫn đổi tiếp, phép so sánh trước khi ghi bị sai.
+3. `yarn db:studio` → `global_dishes.normalized_name` không còn dấu nào, còn `name` thì **vẫn nguyên dấu** (cột hiển thị không được đụng tới).
+
+Chỉ khi cả ba đúng mới chạy trên branch `dev`.
+
+## 14.3 TC-098 — bằng chứng "Ca kho" và "Cá kho" là một
+
+Sau backfill, trên `yarn dev`:
+
+1. Thêm món `Cá kho`. → thành công.
+2. Thêm món `Ca kho` (không dấu). → **không** tạo món mới. Ở slice này chưa có UI đẹp cho ứng viên trùng (đó là S4), nên biểu hiện đúng là thông báo lỗi/chung chung mà §9 đã dặn — điều quan trọng là `db:studio` cho thấy `global_dishes` vẫn chỉ có **một** dòng.
+
+## 14.4 TC-020 — khôi phục Dish `INACTIVE`
+
+F27 (gỡ món khỏi pool) chưa được lên lịch ở epic nào, nên **không có đường nào trong giao diện tạo ra `INACTIVE`**. Dựng bằng tay để kiểm nhánh này:
+
+1. Thêm món `Canh chua`, xác nhận `group_dishes` có một dòng `state = 'ACTIVE'`.
+2. Trong `yarn db:studio`, sửa dòng đó thành `state = 'INACTIVE'`.
+3. Thêm lại đúng `Canh chua` qua giao diện.
+4. → Dòng cũ quay về `'ACTIVE'`; `group_dishes` vẫn **một** dòng; `global_dishes` vẫn **một** dòng. Nếu số dòng tăng, nhánh reactivate ở §6 chưa chạy.
+
+---
+
+# 15. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
 
 ```markdown
 # DEC-023 — Reusing a Duplicate Candidate Is a Separate Use Case, Outside SPEC-005
@@ -841,13 +889,13 @@ validation that gives it meaning.
 
 ---
 
-# 15. Master Plan
+# 16. Master Plan
 
 Sau khi code xong và `yarn verify`/`yarn arch:probe`/`yarn test:integration` xanh, tick E2-T3 và E2-T4 trong `docs/what-we-gonna-eat-today_master-plan_v1_0.md` §4.
 
 ---
 
-# 16. Lịch sử thay đổi (Change History)
+# 17. Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
