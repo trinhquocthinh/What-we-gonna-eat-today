@@ -42,6 +42,9 @@
     // E5 (màn hình chốt bữa S-10) sẽ import và sử dụng chúng.
     "src/features/meal/**",
     "src/features/history/**",
+
+    // GỠ Ở E2-T7 (S4): addExistingDishToGroup use case được tạo ở E2-S2, S4 sẽ nối dây UI.
+    "src/features/dish/application/add-existing-dish-to-group.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

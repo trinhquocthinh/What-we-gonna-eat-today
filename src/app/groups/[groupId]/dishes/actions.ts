@@ -9,8 +9,6 @@ import type { Failure } from '@/shared/errors'
 
 import { requireGroupContext } from '../group-access'
 
-// E6-T2 chuyển bảng này sang `shared/errors/messages.ts`. Ở đây chỉ có đúng
-// những câu S-06 cần.
 function toVietnameseMessage(error: Failure): string {
   if (error.code === 'ERR_DISH_ALREADY_IN_POOL') {
     return 'Món này đã có trong danh mục rồi.'
@@ -21,16 +19,6 @@ function toVietnameseMessage(error: Failure): string {
   return 'Không thêm được món. Thử lại giúp mình.'
 }
 
-/**
- * Lắp ráp cho SPEC-005 rút gọn — không chứa business logic.
- *
- * Server Action gọi được bằng POST trực tiếp, không chỉ qua UI, nên
- * `requireGroupContext` chạy Ở ĐÂY chứ không dựa vào việc page đã guard
- * (Tech Spec §5).
- *
- * `groupId` tới từ `.bind()` ở page — vẫn không tin được, nên guard vẫn chạy
- * đủ trên chính giá trị đó.
- */
 export async function addDishAction(
   groupId: string,
   _previousState: AddDishFormState,
@@ -44,6 +32,7 @@ export async function addDishAction(
       groupId,
       creatorUserId: user.id,
       name: String(formData.get('name') ?? ''),
+      forceCreate: formData.get('forceCreate') === 'true',
     },
   )
 
@@ -51,15 +40,18 @@ export async function addDishAction(
     return { nameError: toVietnameseMessage(result.error), addedDishName: null }
   }
 
-  // Trang nhóm hiện meta "{n} món" ở hàng lối tắt — số đó vừa cũ đi. Đường dẫn
-  // LITERAL (đã nội suy groupId), KHÔNG truyền 'page': truyền '/groups/[groupId]'
-  // sẽ xoá cache trang nhóm của MỌI nhóm (docs revalidatePath.md).
-  revalidatePath(`/groups/${groupId}`)
+  // TODO(E2-T7): kind === 'candidates' hiện chỉ báo lỗi chung, chưa có UI
+  // "Dùng món này" / "vẫn tạo mới" thật — S4 sẽ thay bằng duplicate-sheet.tsx
+  // thật (S-06), gọi addExistingDishToGroupAction cho nhánh "Dùng món này".
+  if (result.value.kind === 'candidates') {
+    return {
+      nameError: 'Nhà bạn đã có món gần giống, xem lại danh mục trước khi thêm.',
+      addedDishName: null,
+    }
+  }
 
-  // Người dùng ở lại đúng trang vừa ghi. `refresh()` (mới ở Next 16, chỉ gọi
-  // được trong Server Action) làm tươi client router của trang hiện tại — đúng
-  // ca "read-your-own-writes" mà không đụng data cache của đường dẫn nào khác.
+  revalidatePath(`/groups/${groupId}`)
   refresh()
 
-  return { nameError: null, addedDishName: result.value.name }
+  return { nameError: null, addedDishName: result.value.dish.name }
 }

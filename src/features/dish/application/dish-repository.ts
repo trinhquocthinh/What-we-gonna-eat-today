@@ -1,10 +1,18 @@
-/**
- * `id` là `group_dishes.id`, KHÔNG phải `global_dishes.id`. Mọi feature phía
+import type { GroupDishState } from '../domain/group-dish'
 
- * sau tham chiếu đúng khoá này (Tech Spec §3.1: `interactions.group_dish_id`,
- * `final_meal_items.group_dish_id`).
- */
 export type GroupDishSummary = {
+  readonly id: string
+  readonly name: string
+}
+
+/** MỚI — E2-T4 cần biết state để phân biệt ACTIVE (lỗi TC-099) và INACTIVE
+ *  (khôi phục TC-020) khi tra theo tên trong group. */
+export type GroupDishLookup = GroupDishSummary & {
+  readonly state: GroupDishState
+}
+
+/** MỚI — ứng viên trùng ở phạm vi TOÀN CỤC (không giới hạn theo group). */
+export type GlobalDishCandidate = {
   readonly id: string
   readonly name: string
 }
@@ -17,23 +25,16 @@ export type NewDishInGroup = {
 }
 
 export interface DishRepository {
-  /**
-   * Tìm món trong Group theo `normalized_name`. KHÔNG lọc `state`: quyết định
-   * "đã có rồi" hay "khôi phục lại" thuộc về application — xem `add-dish-to-group.ts`.
-   * E2-T4 thêm `state` vào kiểu trả về; SQL không phải đổi.
-   */
   findInGroupByNormalizedName(
     groupId: string,
     normalizedName: string,
-  ): Promise<GroupDishSummary | null>
-
-  /**
-   * Chèn `global_dishes` + `group_dishes` NGUYÊN TỬ (SDD §2.4). Global Dish mới
-   * mang provenance bắt buộc của BR-001: user tạo, group tạo từ đó, thời điểm.
-   * Hàng Group Dish sinh ra ở `state = 'ACTIVE'` (BR-005).
-   */
+  ): Promise<GroupDishLookup | null>
+  findGlobalCandidatesByNormalizedName(normalizedName: string): Promise<GlobalDishCandidate[]>
   createGlobalDishAndAddToPool(input: NewDishInGroup): Promise<GroupDishSummary>
-
-  /** Chỉ món `ACTIVE`. Thứ tự do adapter quyết định; luật sắp xếp thuộc E2-T6. */
+  reactivateGroupDish(groupDishId: string): Promise<void>
+  addExistingGlobalDishToGroup(input: {
+    readonly groupId: string
+    readonly globalDishId: string
+  }): Promise<GroupDishSummary>
   listActiveInGroup(groupId: string): Promise<GroupDishSummary[]>
 }

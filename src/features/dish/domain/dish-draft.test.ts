@@ -32,7 +32,7 @@ describe('SPEC-005 — validation của DishDraft', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.value.name).toBe('Cá basa kho tiêu')
-      expect(result.value.normalizedName).toBe('cá basa kho tiêu')
+      expect(result.value.normalizedName).toBe('ca basa kho tieu')
     }
   })
 })

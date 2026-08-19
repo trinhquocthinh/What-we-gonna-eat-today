@@ -2,12 +2,12 @@
 
 > **Document Metadata**
 >
-> - **Version:** `2.0` | **Status:** `Active`
+> - **Version:** `2.1` | **Status:** `Active`
 > - **Created:** `2026-07-23` | **Last Updated:** `2026-08-18`
-> - **Supersedes:** `v1.9` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
+> - **Supersedes:** `v2.0` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
 >
-> 📌 *Decision Log ghi lại 28 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
+> 📌 *Decision Log ghi lại 30 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
 
 ---
 
@@ -43,6 +43,8 @@
 | [`DEC-026`](#dec-026--e1-t11-does-not-need-the-websocket-driver-either) | `finalizeSession` ở E1-T11 dùng `db.batch()` an toàn | 2026-08-18 | `Accepted` | Giao dịch nguyên tử không cần kết nối WebSocket |
 | [`DEC-027`](#dec-027--invite-consumption-uses-a-single-raw-sql-cte-not-dbbatch) | Tiêu thụ Token mời nguyên tử qua câu lệnh CTE SQL thô | 2026-08-18 | `Accepted` | `joinByInvite`, cập nhật invite & thêm member |
 | [`DEC-028`](#dec-028--invite-tokens-nodecrypto-sha-256-no-bcrypt) | Token mời: `node:crypto`, SHA-256, không dùng Bcrypt | 2026-08-18 | `Accepted` | Sinh token ≥192-bit, lưu băm SHA-256 trong DB |
+| [`DEC-029`](#dec-029--reusing-a-duplicate-candidate-is-a-separate-use-case-outside-spec-005) | Dùng lại món trùng lặp là Use Case riêng biệt ngoài SPEC-005 | 2026-08-18 | `Accepted` | `addExistingDishToGroup`, nút "Dùng món này" S-06 |
+| [`DEC-030`](#dec-030--tc-021-system-tag-validation-deferred-to-e2-t5) | Hoãn kiểm tra System Tag (TC-021) sang E2-T5 | 2026-08-18 | `Accepted` | Điều chỉnh phạm vi validation tag sang E2-T5 |
 
 
 ---
@@ -389,10 +391,43 @@ Bcrypt/argon2 sinh ra để làm chậm việc dò mật khẩu yếu do con ng�
 
 ---
 
+# DEC-029 — Reusing a Duplicate Candidate Is a Separate Use Case, Outside SPEC-005
+
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
+
+### Quyết định (Decision)
+
+"Dùng lại món ăn đang có từ danh sách ứng viên trùng lặp" (nút "Dùng món này" trên màn hình S-06) được thiết kế thành một use case độc lập `addExistingDishToGroup`, nhận trực tiếp `{ groupId, globalDishId }` — không phải là mở rộng tham số của `addDishToGroup` (`{ groupId, name, forceCreate }`).
+
+### Cơ sở (Rationale)
+
+BR-001 và PRD US-002 mô tả khả năng "chọn một món đang có", thiết kế S-06 thể hiện nút "Dùng món này". Tuy nhiên, hợp đồng chuẩn của SPEC-005 và TC-017 đến TC-021 chỉ tập trung vào việc tạo mới theo tên hoặc trả danh sách ứng viên (TC-018) và cờ `forceCreate` (TC-019), không có trường hợp thứ ba cho reuse. Thay vì làm phức tạp hoá hợp đồng `addDishToGroup`, việc tách `addExistingDishToGroup` giúp biểu diễn đúng bản chất: gắn một Global Dish đã biết vào Group Dish Pool và luôn an toàn để upsert (vì candidate không bao giờ trùng món đang ACTIVE trong cùng group).
+
+### Hệ quả (Consequence)
+
+E2-T6/E2-T7 (S4) sẽ nối trực tiếp nút "Dùng món này" với Server Action gọi `addExistingDishToGroup`.
+
+---
+
+# DEC-030 — TC-021 (System Tag Validation) Deferred to E2-T5
+
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
+
+### Quyết định (Decision)
+
+TC-021 (`systemTags` chứa giá trị không hợp lệ → `ERR_INVALID_SYSTEM_TAG`) được chuyển sang triển khai ở E2-T5 (S3) thay vì E2-T4.
+
+### Cơ sở (Rationale)
+
+Type `SystemTag` và bảng lưu trữ `group_dish_tags` chỉ xuất hiện từ E2-T5 (SPEC-006). Việc đưa `systemTags` vào input của `addDishToGroup` ở E2-T4 nhưng chưa thể lưu trữ vào DB là không hoàn chỉnh. E2-T5 là nơi type, bảng dữ liệu và logic validation được triển khai đồng bộ.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `2.1` | 2026-08-18 | Bổ sung `DEC-029` (Use case riêng cho món trùng lặp) và `DEC-030` (Hoãn TC-021 sang E2-T5) cho E2-S2 |
 | `2.0` | 2026-08-18 | Bổ sung `DEC-027` (CTE nguyên tử cho invite) và `DEC-028` (Invite token SHA-256) cho E2-S1 |
 | `1.9` | 2026-08-18 | Bổ sung `DEC-026` cho E1-T10/T11: `finalizeSession` dùng `db.batch()` nguyên tử |
 | `1.8` | 2026-08-18 | Bổ sung `DEC-025` cho E1-T9: `interaction_events` ghi nhật ký mọi request |
@@ -404,4 +439,5 @@ Bcrypt/argon2 sinh ra để làm chậm việc dò mật khẩu yếu do con ng�
 | `1.2` | 2026-08-14 | Bổ sung `DEC-012` (Mô hình Ranking, Cooldown 7 ngày, Exploration 20%) |
 | `1.1` | 2026-07-29 | Bổ sung `DEC-010` (Group/Session Rules) và `DEC-011` (Final Meal validation) |
 | `1.0` | 2026-07-23 | Khởi tạo Decision Log ban đầu với `DEC-001` đến `DEC-009` |
+
 

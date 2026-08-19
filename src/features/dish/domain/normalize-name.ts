@@ -17,11 +17,9 @@ export function collapseDishName(name: string): string {
 /** Dạng SO KHỚP: ghi vào `global_dishes.normalized_name`.
  *  '  Canh   Chua  ' → 'canh chua'. */
 export function normalizeDishName(name: string): string {
-  // `toLowerCase()` chứ không `toLocaleLowerCase('vi')`: tiếng Việt không có
-  // luật đổi hoa/thường riêng, và bản locale-sensitive làm kết quả phụ thuộc ICU.
-  return collapseDishName(name).toLowerCase()
-
-  // ↓ E2-T3 chèn vào ĐÂY, không tạo file mới:
-  //   .normalize('NFD').replace(/[\u0300-\u036f]/gu, '').replaceAll('đ', 'd')
-  // Kèm migration backfill — xem §15 "Rủi ro".
+  return collapseDishName(name)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/gu, '')
+    .replaceAll('đ', 'd')
 }

@@ -17,12 +17,20 @@ describe('SPEC-005 — chuẩn hoá tên món (mức 1)', () => {
   })
 
   it('SPEC-005: coi tab và xuống dòng là khoảng trắng', () => {
-    expect(normalizeDishName('Gà\tchiên\nnước mắm')).toBe('gà chiên nước mắm')
+    expect(normalizeDishName('Gà\tchiên\nnước mắm')).toBe('ga chien nuoc mam')
   })
 
-  // E2-T3 SẼ LẬT TEST NÀY. Nó tồn tại để "chưa bỏ dấu" là một quyết định có chữ
-  // ký, không phải một thiếu sót ai đó vô tình vá.
-  it('E1 CỐ Ý chưa bỏ dấu — E2-T3 đổi kỳ vọng này thành toBe', () => {
-    expect(normalizeDishName('Cá kho')).not.toBe(normalizeDishName('Ca kho'))
+  it('TC-098 — bỏ dấu tiếng Việt, "Ca kho" và "Cá kho" cùng normalized_name', () => {
+    expect(normalizeDishName('Ca kho')).toBe(normalizeDishName('Cá kho'))
+    expect(normalizeDishName('Cá kho')).toBe('ca kho')
+  })
+
+  it('bỏ dấu cho nguyên âm có dấu mũ + thanh điệu cùng lúc', () => {
+    expect(normalizeDishName('Phở bò')).toBe('pho bo')
+    expect(normalizeDishName('Bún đậu')).toBe('bun dau')
+  })
+
+  it('giữ nguyên chữ không dấu', () => {
+    expect(normalizeDishName('Kho quet')).toBe('kho quet')
   })
 })

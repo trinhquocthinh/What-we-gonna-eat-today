@@ -1,138 +1,118 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { makeGroup, makeUser } from '@/shared/testing/factories'
+import { addDishToGroup, type AddDishToGroupDeps } from './add-dish-to-group'
+import type { DishRepository, GroupDishLookup } from './dish-repository'
 
-import type { DishRepository, GroupDishSummary, NewDishInGroup } from './dish-repository'
-import { addDishToGroup } from './add-dish-to-group'
-
-type Row = NewDishInGroup & { id: string }
-
-/** Cổng giả là object thuần, không auto-mock (Test Cases §1.3). */
-function makeFakeDishRepository(seed: Row[] = []) {
-  const rows: Row[] = [...seed]
-
-  const repository: DishRepository = {
-    async findInGroupByNormalizedName(groupId, normalizedName) {
-      const found = rows.find(
-        (row) => row.groupId === groupId && row.normalizedName === normalizedName,
-      )
-      return found === undefined ? null : { id: found.id, name: found.name }
-    },
-    async createGlobalDishAndAddToPool(input) {
-      const id = `group-dish-${rows.length + 1}`
-      rows.push({ ...input, id })
-      return { id, name: input.name }
-    },
-    async listActiveInGroup(): Promise<GroupDishSummary[]> {
-      return rows.map((row) => ({ id: row.id, name: row.name }))
-    },
+function makeDeps(
+  overrides: {
+    existing?: GroupDishLookup | null
+    candidates?: { id: string; name: string }[]
+  } = {},
+): AddDishToGroupDeps {
+  const dishes: DishRepository = {
+    findInGroupByNormalizedName: vi.fn(async () => overrides.existing ?? null),
+    findGlobalCandidatesByNormalizedName: vi.fn(async () => overrides.candidates ?? []),
+    createGlobalDishAndAddToPool: vi.fn(async (input) => ({ id: 'new-dish', name: input.name })),
+    reactivateGroupDish: vi.fn(async () => undefined),
+    addExistingGlobalDishToGroup: vi.fn(async () => ({ id: 'reused', name: 'x' })),
+    listActiveInGroup: vi.fn(async () => []),
   }
-
-  return { repository, rows }
+  return { dishes }
 }
 
-const GROUP_ID = makeGroup().id
-const CREATOR = makeUser().id
+describe('addDishToGroup', () => {
+  it('TC-017 — chưa có Dish nào: tạo mới, normalized_name đúng', async () => {
+    const deps = makeDeps()
 
-describe('SPEC-005 rút gọn — Thêm Dish vào Group Dish Pool', () => {
-  it('SPEC-005: thêm "  Cá basa   kho tiêu " thì lưu tên đã dọn và normalized_name', async () => {
-    const fake = makeFakeDishRepository()
-
-    const result = await addDishToGroup(
-      { dishes: fake.repository },
-      { groupId: GROUP_ID, creatorUserId: CREATOR, name: '  Cá basa   kho tiêu ' },
-    )
-
-    expect(result.ok).toBe(true)
-    expect(fake.rows).toHaveLength(1)
-    expect(fake.rows[0]?.name).toBe('Cá basa kho tiêu')
-    expect(fake.rows[0]?.normalizedName).toBe('cá basa kho tiêu')
-  })
-
-  it('BR-001: provenance đi kèm mọi Global Dish mới', async () => {
-    const fake = makeFakeDishRepository()
-
-    await addDishToGroup(
-      { dishes: fake.repository },
-      { groupId: GROUP_ID, creatorUserId: CREATOR, name: 'Canh chua cá lóc' },
-    )
-
-    expect(fake.rows[0]?.creatorUserId).toBe(CREATOR)
-    expect(fake.rows[0]?.groupId).toBe(GROUP_ID)
-  })
-
-  it('SPEC-005: món đã có trong pool thì ERR_DISH_ALREADY_IN_POOL và KHÔNG ghi thêm', async () => {
-    const fake = makeFakeDishRepository([
-      {
-        id: 'group-dish-1',
-        groupId: GROUP_ID,
-        name: 'Canh chua cá lóc',
-        normalizedName: 'canh chua cá lóc',
-        creatorUserId: CREATOR,
-      },
-    ])
-
-    const result = await addDishToGroup(
-      { dishes: fake.repository },
-      { groupId: GROUP_ID, creatorUserId: CREATOR, name: '  canh   CHUA cá lóc  ' },
-    )
-
-    expect(result.ok === false && result.error.code).toBe('ERR_DISH_ALREADY_IN_POOL')
-    expect(fake.rows).toHaveLength(1)
-  })
-
-  it('BR-005: cùng tên ở Group KHÁC vẫn thêm được — pool là của từng Group', async () => {
-    const fake = makeFakeDishRepository([
-      {
-        id: 'group-dish-1',
-        groupId: GROUP_ID,
-        name: 'Canh chua cá lóc',
-        normalizedName: 'canh chua cá lóc',
-        creatorUserId: CREATOR,
-      },
-    ])
-
-    const result = await addDishToGroup(
-      { dishes: fake.repository },
-      { groupId: 'group-khac', creatorUserId: CREATOR, name: 'Canh chua cá lóc' },
-    )
-
-    expect(result.ok).toBe(true)
-    expect(fake.rows).toHaveLength(2)
-  })
-
-  it('SPEC-005: tên toàn khoảng trắng thì ERR_VALIDATION và KHÔNG chạm repository', async () => {
-    const fake = makeFakeDishRepository()
-
-    const result = await addDishToGroup(
-      { dishes: fake.repository },
-      { groupId: GROUP_ID, creatorUserId: CREATOR, name: '   ' },
-    )
-
-    expect(result.ok === false && result.error.code).toBe('ERR_VALIDATION')
-    expect(result.ok === false && result.error.details?.['field']).toBe('name')
-    expect(fake.rows).toHaveLength(0)
-  })
-
-  it('SPEC-005: 120 ký tự thì được, 121 thì ERR_VALIDATION', async () => {
-    const fake = makeFakeDishRepository()
-    const deps = { dishes: fake.repository }
-
-    expect(
-      (
-        await addDishToGroup(deps, {
-          groupId: GROUP_ID,
-          creatorUserId: CREATOR,
-          name: 'à'.repeat(120),
-        })
-      ).ok,
-    ).toBe(true)
-
-    const tooLong = await addDishToGroup(deps, {
-      groupId: GROUP_ID,
-      creatorUserId: CREATOR,
-      name: 'à'.repeat(121),
+    const result = await addDishToGroup(deps, {
+      groupId: 'g1',
+      creatorUserId: 'u1',
+      name: '  Canh   Chua  ',
     })
-    expect(tooLong.ok === false && tooLong.error.code).toBe('ERR_VALIDATION')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.kind).toBe('added')
+    expect(deps.dishes.createGlobalDishAndAddToPool).toHaveBeenCalledWith(
+      expect.objectContaining({ normalizedName: 'canh chua' }),
+    )
+  })
+
+  it('TC-018 — đã có Global Dish cùng tên, không forceCreate: trả candidates, không tạo', async () => {
+    const deps = makeDeps({ candidates: [{ id: 'gd1', name: 'Canh chua' }] })
+
+    const result = await addDishToGroup(deps, {
+      groupId: 'g1',
+      creatorUserId: 'u1',
+      name: 'canh chua',
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value).toEqual({
+      kind: 'candidates',
+      candidates: [{ id: 'gd1', name: 'Canh chua' }],
+    })
+    expect(deps.dishes.createGlobalDishAndAddToPool).not.toHaveBeenCalled()
+  })
+
+  it('TC-019 — forceCreate=true: tạo Global Dish thứ hai dù có candidate', async () => {
+    const deps = makeDeps({ candidates: [{ id: 'gd1', name: 'Canh chua' }] })
+
+    const result = await addDishToGroup(deps, {
+      groupId: 'g1',
+      creatorUserId: 'u1',
+      name: 'canh chua',
+      forceCreate: true,
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.kind).toBe('added')
+    expect(deps.dishes.createGlobalDishAndAddToPool).toHaveBeenCalledOnce()
+    expect(deps.dishes.findGlobalCandidatesByNormalizedName).not.toHaveBeenCalled()
+  })
+
+  it('TC-020 — Dish INACTIVE trong group: khôi phục ACTIVE, không tạo Global Dish mới', async () => {
+    const deps = makeDeps({ existing: { id: 'gd-existing', name: 'Canh chua', state: 'INACTIVE' } })
+
+    const result = await addDishToGroup(deps, {
+      groupId: 'g1',
+      creatorUserId: 'u1',
+      name: 'canh chua',
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value).toEqual({ kind: 'added', dish: { id: 'gd-existing', name: 'Canh chua' } })
+    expect(deps.dishes.reactivateGroupDish).toHaveBeenCalledWith('gd-existing')
+    expect(deps.dishes.createGlobalDishAndAddToPool).not.toHaveBeenCalled()
+  })
+
+  it('TC-099 — Dish đã ACTIVE trong group: ERR_DISH_ALREADY_IN_POOL', async () => {
+    const deps = makeDeps({ existing: { id: 'gd-existing', name: 'Canh chua', state: 'ACTIVE' } })
+
+    const result = await addDishToGroup(deps, {
+      groupId: 'g1',
+      creatorUserId: 'u1',
+      name: 'canh chua',
+    })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('unreachable')
+    expect(result.error.code).toBe('ERR_DISH_ALREADY_IN_POOL')
+  })
+
+  it('TC-097 (hồi quy) — tên 120 ký tự vẫn được chấp nhận', async () => {
+    const deps = makeDeps()
+    const longName = 'a'.repeat(120)
+
+    const result = await addDishToGroup(deps, {
+      groupId: 'g1',
+      creatorUserId: 'u1',
+      name: longName,
+    })
+
+    expect(result.ok).toBe(true)
   })
 })

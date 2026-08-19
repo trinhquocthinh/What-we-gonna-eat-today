@@ -2,9 +2,9 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.1` | **Status:** `Active (In Progress)` | **Release:** `R1`
+> - **Version:** `1.3` | **Status:** `Active (In Progress)` | **Release:** `R1`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-18`
-> - **Supersedes:** `v1.0` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
+> - **Supersedes:** `v1.2` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 >
 > 📌 *Tài liệu này là cẩm nang thực thi hằng ngày: 56 subtask, 121 giờ cơ sở, 157 giờ gồm 30% dự phòng. Mỗi subtask được thiết kế để hoàn thành trong một buổi ngồi (1 đến 4 giờ).*
 
@@ -36,7 +36,7 @@
 | :--- | :--- | :---: | :---: | :---: |
 | **E0** | Scaffold & Hạ tầng kỹ thuật | 7 | 10 | `[x]` ✅ Xong |
 | **E1** | Walking skeleton (End-to-End thô) | 12 | 24 | `[x]` ✅ Xong |
-| **E2** | Group và Dish hoàn chỉnh | 7 | 16 | `[ ]` ⬜ ⏳ Đang làm |
+| **E2** | Group và Dish hoàn chỉnh | 7 | 16 | `[ ]` ⬜ ⏳ Đang làm (4/7 subtasks: S1 & S2 xong) |
 | **E3** | Phiên và người tham gia | 6 | 14 | `[ ]` ⬜ Chưa bắt đầu |
 | **E4** | Deck vuốt và thuật toán Ranking | 9 | 21 | `[ ]` ⬜ Chưa bắt đầu |
 | **E5** | Rule engine và chốt bữa (Final Meal) | 9 | 21 | `[ ]` ⬜ Chưa bắt đầu |
@@ -131,15 +131,32 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 
 # 4. E2 — Group và Dish hoàn chỉnh
 
+### S1 — Link mời & Tham gia nhóm (Đã xong)
+
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| `E2-T1` | Tạo link mời, lưu hash, hạn 7 ngày | [SPEC-003](what-we-gonna-eat-today_sdd_v0_1.md), `TC-011`, `TC-012` | 2 | `E1-T3` | DB chỉ chứa hash, không chứa token thô | `src/features/group/**` |
-| `E2-T2` | Tham gia bằng link, transaction, trường hợp âm | [SPEC-004](what-we-gonna-eat-today_sdd_v0_1.md), `TC-013→016`, `TC-112` | 2 | `E2-T1` | `TC-015` pass: Member cũ dùng token thì token **vẫn dùng được** cho người khác | `src/features/group/application/join-by-invite.ts` |
-| `E2-T3` | Chuẩn hoá tên món bỏ dấu, hàm thuần | [SPEC-005](what-we-gonna-eat-today_sdd_v0_1.md), `TC-098` | 2 | — | `Ca kho` và `Cá kho` cùng `normalized_name`; test dùng tiếng Việt có dấu thật | `src/features/dish/domain/normalize-name.ts` |
-| `E2-T4` | Phát hiện trùng, `forceCreate`, khôi phục Dish Inactive | [SPEC-005](what-we-gonna-eat-today_sdd_v0_1.md), `TC-017→021`, `TC-097→099` | 3 | `E2-T3` | Thêm lại Dish Inactive chuyển `ACTIVE`, không tạo Global Dish mới | `src/features/dish/application/**` |
-| `E2-T5` | Gán System Tag, ghi đè toàn bộ, cách ly theo Group | [SPEC-006](what-we-gonna-eat-today_sdd_v0_1.md), `TC-022→025`, `TC-100`, `TC-101` | 3 | `E1-T5` | Đổi tag ở Group A không ảnh hưởng Group B | `src/features/dish/**` |
-| `E2-T6` | Màn hình danh mục món | `S-05`, `S-06` | 2 | `E2-T4` | Thêm, sửa tag, tìm kiếm được trên điện thoại | `src/features/dish/presentation/**` |
-| `E2-T7` | Trạng thái phát hiện trùng trên UI | `S-06` | 2 | `E2-T6` | Nút "Dùng món này" **nổi bật hơn** "vẫn tạo mới" | `src/features/dish/presentation/duplicate-sheet.tsx` |
+| `[x] E2-T1` | Tạo link mời, lưu hash, hạn 7 ngày | [SPEC-003](what-we-gonna-eat-today_sdd_v0_1.md), `TC-011`, `TC-012` | 2 | `E1-T3` | DB chỉ chứa hash, không chứa token thô | `src/features/group/**` |
+| `[x] E2-T2` | Tham gia bằng link, transaction, trường hợp âm | [SPEC-004](what-we-gonna-eat-today_sdd_v0_1.md), `TC-013→016`, `TC-112` | 2 | `E2-T1` | `TC-015` pass: Member cũ dùng token thì token **vẫn dùng được** cho người khác | `src/features/group/application/join-by-invite.ts` |
+
+### S2 — Chuẩn hoá tên món & Phát hiện trùng lặp (Đã xong)
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E2-T3` | Chuẩn hoá tên món bỏ dấu, hàm thuần | [SPEC-005](what-we-gonna-eat-today_sdd_v0_1.md), `TC-098` | 2 | — | `Ca kho` và `Cá kho` cùng `normalized_name`; test dùng tiếng Việt có dấu thật | `src/features/dish/domain/normalize-name.ts` |
+| `[x] E2-T4` | Phát hiện trùng, `forceCreate`, khôi phục Dish Inactive | [SPEC-005](what-we-gonna-eat-today_sdd_v0_1.md), `TC-017→021`, `TC-097→099` | 3 | `E2-T3` | Thêm lại Dish Inactive chuyển `ACTIVE`, không tạo Global Dish mới | `src/features/dish/application/**` |
+
+### S3 — System Tag (Kế tiếp)
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[ ] E2-T5` | Gán System Tag, ghi đè toàn bộ, cách ly theo Group | [SPEC-006](what-we-gonna-eat-today_sdd_v0_1.md), `TC-022→025`, `TC-100`, `TC-101` | 3 | `E1-T5` | Đổi tag ở Group A không ảnh hưởng Group B | `src/features/dish/**` |
+
+### S4 — UI Danh mục món & Phát hiện trùng lặp
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[ ] E2-T6` | Màn hình danh mục món | `S-05`, `S-06` | 2 | `E2-T4` | Thêm, sửa tag, tìm kiếm được trên điện thoại | `src/features/dish/presentation/**` |
+| `[ ] E2-T7` | Trạng thái phát hiện trùng trên UI | `S-06` | 2 | `E2-T6` | Nút "Dùng món này" **nổi bật hơn** "vẫn tạo mới" | `src/features/dish/presentation/duplicate-sheet.tsx` |
 
 ---
 
@@ -308,6 +325,7 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.3` | 2026-08-18 | §4 | Hoàn tất thi công Slice S2 của Epic E2 (E2-T3, E2-T4: Chuẩn hoá tên món & Phát hiện trùng lặp) | Quyết định DEC-029, DEC-030 |
 | `1.2` | 2026-08-18 | §4 | Hoàn tất thi công Slice S1 của Epic E2 (E2-T1, E2-T2: Link mời & Tham gia nhóm) | Quyết định DEC-027, DEC-028 |
 | `1.1` | 2026-08-18 | §1, §3 | Hoàn tất thi công toàn bộ Epic E1 (S1→S6, E1-T1 đến E1-T12), cập nhật trạng thái các subtasks | Đạt cột mốc M2 (Walking Skeleton) |
 | `1.0` | 2026-08-14 | Header & Baseline | Phát hành chính thức baseline R1 | Hoàn tất review toàn bộ 11 tài liệu |

@@ -1,11 +1,7 @@
-import type { Failure } from '@/shared/errors'
-import { failure } from '@/shared/errors'
-import type { Result } from '@/shared/result'
-import { err, ok } from '@/shared/result'
-
-import type { DishDraftError } from '../domain/dish-draft'
 import { readDishDraft } from '../domain/dish-draft'
-import type { DishRepository, GroupDishSummary } from './dish-repository'
+import type { DishRepository, GlobalDishCandidate, GroupDishSummary } from './dish-repository'
+import { failure, type Failure } from '@/shared/errors'
+import type { Result } from '@/shared/result'
 
 export type AddDishToGroupDeps = {
   readonly dishes: DishRepository
@@ -15,60 +11,52 @@ export type AddDishToGroupInput = {
   readonly groupId: string
   readonly creatorUserId: string
   readonly name: string
+  readonly forceCreate?: boolean
 }
 
-/** `field` để presentation đặt lỗi NGAY DƯỚI đúng input (Design Criteria §12). */
-const FAILURE_DETAILS: Record<DishDraftError, { field: string; reason: string }> = {
-  NAME_EMPTY: { field: 'name', reason: 'Tên món không được để trống' },
-  NAME_TOO_LONG: { field: 'name', reason: 'Tên món tối đa 120 ký tự' },
-}
+export type AddDishOutcome =
+  | { readonly kind: 'added'; readonly dish: GroupDishSummary }
+  | { readonly kind: 'candidates'; readonly candidates: GlobalDishCandidate[] }
 
-/**
- * SPEC-005 rút gọn — Thêm Dish vào Group Dish Pool.
- *
- * Thứ tự BẤT BIẾN: validate → chặn trùng → ghi. Validate chạy trước khi chạm
- * repository, nên tên rỗng/quá dài không ghi gì; chặn trùng chạy trước khi ghi,
- * nên lỗi trùng cũng không ghi gì (SDD §2.4 — "không để lại thay đổi từng phần").
- *
- * KHÔNG có ở S3, theo Plan & Scope §P1:
- * - `systemTags` + `ERR_INVALID_SYSTEM_TAG`     → E2-T5
- * - `existingCandidates` + `forceCreate`         → E2-T4
- * - nhánh INACTIVE → reactivate                  → E2-T4
- *
- * Ở S3, BẤT KỲ hàng nào tìm thấy đều là `ERR_DISH_ALREADY_IN_POOL`. Hàng
- * INACTIVE không tồn tại được vì gỡ món khỏi pool là F27/v1.1.
- */
 export async function addDishToGroup(
   deps: AddDishToGroupDeps,
   input: AddDishToGroupInput,
-): Promise<Result<GroupDishSummary, Failure>> {
+): Promise<Result<AddDishOutcome, Failure>> {
   const draft = readDishDraft({ name: input.name })
-
   if (!draft.ok) {
-    return err(failure('ERR_VALIDATION', FAILURE_DETAILS[draft.error]))
+    return { ok: false, error: failure('ERR_VALIDATION', { field: 'name' }) }
   }
 
+  // 1. Đã có row cho tên này TRONG group này? (TC-020, TC-099)
   const existing = await deps.dishes.findInGroupByNormalizedName(
     input.groupId,
     draft.value.normalizedName,
   )
-
   if (existing !== null) {
-    return err(
-      failure('ERR_DISH_ALREADY_IN_POOL', {
-        field: 'name',
-        groupDishId: existing.id,
-        existingName: existing.name,
-      }),
-    )
+    if (existing.state === 'ACTIVE') {
+      return { ok: false, error: failure('ERR_DISH_ALREADY_IN_POOL') }
+    }
+    // INACTIVE — TC-020: khôi phục, KHÔNG tạo Global Dish mới.
+    await deps.dishes.reactivateGroupDish(existing.id)
+    return { ok: true, value: { kind: 'added', dish: { id: existing.id, name: existing.name } } }
   }
 
-  const created = await deps.dishes.createGlobalDishAndAddToPool({
+  // 2. Chưa có trong group này. Nếu không forceCreate, tra ứng viên TOÀN CỤC theo tên chuẩn hoá (TC-018).
+  if (!input.forceCreate) {
+    const candidates = await deps.dishes.findGlobalCandidatesByNormalizedName(
+      draft.value.normalizedName,
+    )
+    if (candidates.length > 0) {
+      return { ok: true, value: { kind: 'candidates', candidates } }
+    }
+  }
+
+  // 3. forceCreate=true (TC-019) hoặc không có candidate nào (TC-017) — tạo mới bình thường.
+  const dish = await deps.dishes.createGlobalDishAndAddToPool({
     groupId: input.groupId,
     name: draft.value.name,
     normalizedName: draft.value.normalizedName,
     creatorUserId: input.creatorUserId,
   })
-
-  return ok(created)
+  return { ok: true, value: { kind: 'added', dish } }
 }

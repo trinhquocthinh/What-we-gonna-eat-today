@@ -1,6 +1,7 @@
 # 🍲 Implementation Guide — E2 Slice S2: Chuẩn hoá tên món & Phát hiện trùng lặp
 
 > **Document Metadata**
+>
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-18` | **Last Updated:** `2026-08-18`
 > - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E2-T3, E2-T4`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-005`) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-001, BR-002`) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-017→021, TC-097→099, TC-098`)
@@ -13,15 +14,15 @@
 # 0. Việc cần làm và điều kiện xong
 
 | ID | Việc | Giờ | File | Xong nghĩa là |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | E2-T3 | Chuẩn hoá tên món bỏ dấu, hàm thuần | 2 | `features/dish/domain/normalize-name.ts` | `Ca kho` và `Cá kho` cùng `normalized_name`; backfill xong dữ liệu cũ |
 | E2-T4 | Phát hiện trùng, `forceCreate`, khôi phục Dish Inactive | 3 | `features/dish/application/**` | Thêm lại Dish Inactive chuyển `ACTIVE`, không tạo Global Dish mới |
 
-- [ ] TC-098 pass: `Ca kho`/`Cá kho` cùng `normalized_name`
-- [ ] Script backfill chạy được, cập nhật đúng các dòng `global_dishes` cũ
-- [ ] TC-017, TC-018, TC-019, TC-020, TC-099 pass
-- [ ] `dishes/actions.ts` (từ S3) biên dịch lại được với hợp đồng trả về mới
-- [ ] `yarn verify && yarn arch:probe` xanh
+- [x] TC-098 pass: `Ca kho`/`Cá kho` cùng `normalized_name`
+- [x] Script backfill chạy được, cập nhật đúng các dòng `global_dishes` cũ
+- [x] TC-017, TC-018, TC-019, TC-020, TC-099 pass
+- [x] `dishes/actions.ts` (từ S3) biên dịch lại được với hợp đồng trả về mới
+- [x] `yarn verify && yarn arch:probe` xanh
 
 ---
 
@@ -734,7 +735,7 @@ Thêm field ẩn `forceCreate` vào form của `add-dish-sheet.tsx` (S3) nếu m
 # 11. Rủi ro
 
 | Rủi ro | Hậu quả | Giảm thiểu |
-|---|---|---|
+| --- | --- | --- |
 | `addExistingGlobalDishToGroup` không validate `globalDishId` tồn tại trước khi insert | `globalDishId` giả/cũ → lỗi FK constraint (`DatabaseError`, không phải `Failure` có kiểm soát) | Chấp nhận cho slice này — đường vào duy nhất của giá trị này là danh sách `candidates` do chính hệ thống trả ra, không phải input người dùng gõ tay; validate thêm là phòng thủ cho kịch bản không thể xảy ra qua UI thật |
 | `dishes/actions.ts` sau khi sửa chưa có UI thật cho `forceCreate` | TC-019 khó kiểm chứng qua UI thật cho tới S4 | Đã ghi rõ ở §9; test tầng A đã phủ đầy đủ hành vi, không chặn merge |
 | Backfill chạy nhầm lên `dev`/`main` trước khi test kỹ trên `test` | Sửa dữ liệu thật ngoài ý muốn (dù chỉ là UPDATE một cột, không phá huỷ) | Nhắc rõ ở §4.2 — chạy `test` trước |
@@ -745,7 +746,7 @@ Thêm field ẩn `forceCreate` vào form của `add-dish-sheet.tsx` (S3) nếu m
 # 12. Test Cases coverage
 
 | TC | Mô tả | Nơi test |
-|---|---|---|
+| --- | --- | --- |
 | TC-017 | Chưa có Dish — tạo mới, `normalized_name` đúng | `add-dish-to-group.test.ts` |
 | TC-018 | Đã có Global Dish, không forceCreate — trả candidates, không tạo | `add-dish-to-group.test.ts` |
 | TC-019 | forceCreate=true — tạo Global Dish thứ hai | `add-dish-to-group.test.ts` |
@@ -760,7 +761,7 @@ Thêm field ẩn `forceCreate` vào form của `add-dish-sheet.tsx` (S3) nếu m
 # 13. Config changes
 
 | File | Thay đổi |
-|---|---|
+| --- | --- |
 | `src/features/dish/domain/normalize-name.ts` | Thêm bước bỏ dấu vào `normalizeDishName` |
 | `src/features/dish/application/dish-repository.ts` | + `GroupDishLookup`, `GlobalDishCandidate`, 3 method mới, sửa 1 kiểu trả về |
 | `src/features/dish/application/add-dish-to-group.ts` | Output đổi thành `AddDishOutcome` union, thêm nhánh reactivate/candidates/forceCreate |
