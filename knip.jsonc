@@ -48,6 +48,10 @@
 
     // GỠ Ở E2-T6 (S4): setSystemTags use case được tạo ở E2-S3, S4 sẽ nối dây UI sửa tag.
     "src/features/dish/application/set-system-tags.ts",
+
+    // GỠ Ở E4-T4 (S2): Ranking và RankingConfig được tạo ở E4-S1, S2 sẽ dùng trong listDeck/buildDeck.
+    "src/features/selection/domain/ranking-config.ts",
+    "src/features/selection/domain/ranking.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

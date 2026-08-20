@@ -2,12 +2,12 @@
 
 > **Document Metadata**
 >
-> - **Version:** `2.5` | **Status:** `Active`
+> - **Version:** `2.7` | **Status:** `Active`
 > - **Created:** `2026-07-23` | **Last Updated:** `2026-08-19`
 > - **Supersedes:** `v2.0` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
 >
-> 📌 *Decision Log ghi lại 32 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
+> 📌 *Decision Log ghi lại 37 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
 
 ---
 
@@ -49,6 +49,9 @@
 | [`DEC-032`](#dec-032--duplicate-candidates-come-from-two-sources-with-different-actions) | Ứng viên trùng lặp từ hai nguồn với hai hành động khác nhau | 2026-08-18 | `Accepted` | Phát hiện trùng client vs server, E2-T6/E2-T7, S-06 |
 | [`DEC-033`](#dec-033--e3-t1-does-not-need-the-websocket-driver-the-rule-snapshot-belongs-to-e5-t4) | E3-T1 không cần WebSocket; Snapshot Rule thuộc về E5-T4 | 2026-08-19 | `Accepted` | Cơ chế Start, driver DB, phân định phạm vi E3/E5 |
 | [`DEC-034`](#dec-034--e3-t3e3-t4-ship-as-one-function-draftactive-are-illustrative-labels) | E3-T3/E3-T4 gộp làm một hàm; "Draft"/"Active" là nhãn minh hoạ | 2026-08-19 | `Accepted` | Use case `addParticipant`, SPEC-009 |
+| [`DEC-035`](#dec-035--completereopen-ui-predates-its-backend-e3-t5-is-purely-wiring) | Complete/Reopen UI đã có sẵn; E3-T5 chỉ đấu nối backend | 2026-08-19 | `Accepted` | Giao diện deck, use case set completed |
+| [`DEC-036`](#dec-036--v10-personal-score-uses-only-the-recency-term-two-level-tie-break) | Personal Score v1.0 chỉ dùng số hạng recency; Tie-break hai tầng | 2026-08-19 | `Accepted` | Công thức điểm, thứ tự candidate deck, SPEC-010 |
+| [`DEC-037`](#dec-037--builddeck-takes-an-input-object-not-the-bare-array-of-tech-spec-24) | `buildDeck` nhận Input Object thay vì mảng trần | 2026-08-19 | `Accepted` | Chữ ký hàm domain ranking, seed hash |
 
 
 ---
@@ -595,10 +598,87 @@ sign of scope drift.
 
 ---
 
+# DEC-036 — v1.0 Personal Score Uses Only the Recency Term; Two-Level Tie-Break
+
+**Ngày quyết định:** 2026-08-19 | **Trạng thái:** Accepted
+
+## Quyết định
+
+`computePersonalScore` implements `score = −w_recency × R` only. `RankingInput`
+declares just `recencyPenalty`. `buildDeck` sorts by score, then by days-since-
+last-eaten (never-eaten first), then by `stableHash` — two tie-break levels, not
+the three in Ranking Spec §2.5.
+
+## Rationale
+
+Ranking Spec §2.2 (Approved) defines five score terms, but SDD SPEC-010 states
+the v1.0 rule explicitly and narrowly: `score = −w_recency × R`. The other four
+terms have no data source in v1.0 — `E` needs Like/Dislike (F16, v1.1), `I`
+needs Implicit Preference (F30, v1.2), `C` needs Chef Mode (F33, v1.2), `S`
+needs Purchase Source (F36, v1.2). SPEC-010 likewise drops Ranking Spec §2.5's
+middle tie-break ("known purchase source first") for the same reason.
+
+Declaring the unused terms on `RankingInput` would force every call site to
+pass meaningless zeros and would suggest a capability that does not exist. The
+weights themselves ARE kept, in `RANKING_CONFIG`, because Ranking Spec §1
+principle 4 requires all constants to live in exactly one place.
+
+Explore Lane interleaving (Ranking Spec Stage 3 / BR-047) and mid-session deck
+freezing (§2.7 / BR-048) are likewise out of E4: PRD §6 schedules "Explore lane
+20%" for v1.1, and E1-S5 already marked both as `F18/v1.1` in shipped code
+comments.
+
+## Consequence
+
+When F16/F30/F33/F36 land, extend `RankingInput` and `computePersonalScore`
+together — the config values are already present and correct. Reviewers of E4
+should expect a one-term formula and not treat it as an incomplete port of the
+Ranking Spec.
+
+## Affected Documents
+
+- Ranking Spec §2.2, §2.5 (documents the v1.0 narrowing; specs unchanged)
+- SDD SPEC-010 (the governing contract)
+
+---
+
+# DEC-037 — `buildDeck` Takes an Input Object, Not the Bare Array of Tech Spec §2.4
+
+**Ngày quyết định:** 2026-08-19 | **Trạng thái:** Accepted
+
+## Quyết định
+
+`buildDeck(input: BuildDeckInput, config: RankingConfig)` where
+`BuildDeckInput = { sessionId, userId, eligible }`, instead of Tech Spec §2.4's
+`buildDeck(eligible: DishRankingInput[], config: RankingConfig)`.
+`computePersonalScore` and `computeSessionScore` keep their §2.4 signatures.
+
+## Rationale
+
+The third tie-break level is `stable_hash(session_id, user_id, dish_id)`
+(Ranking Spec §2.5, SDD SPEC-010). The two-parameter signature has nowhere to
+carry a per-(session, user) seed. The alternative — duplicating `sessionId` and
+`userId` onto every element of `eligible` — repeats two values N times and
+creates a class of bug where elements disagree about which session they belong
+to. Tech Spec §2.4 is an illustrative shape sketch for the module, not a
+byte-exact contract.
+
+## Consequence
+
+E5-T6's `computeSessionScore` lands in this same file and should keep the §2.4
+signature — this deviation is specific to `buildDeck`'s seed requirement.
+
+## Affected Documents
+
+- Tech Spec §2.4 (signature sketch; not updated in place)
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `2.7` | 2026-08-19 | Bổ sung `DEC-036` (v1.0 Personal Score chỉ có Recency; Tie-break hai tầng) và `DEC-037` (`buildDeck` nhận Input Object) cho E4-S1 |
 | `2.6` | 2026-08-19 | Bổ sung `DEC-035` (Complete/Reopen UI Predates Its Backend; E3-T5 Is Purely Wiring) cho E3-S3 |
 | `2.5` | 2026-08-19 | Bổ sung `DEC-034` (E3-T3/E3-T4 gộp làm một hàm; "Draft"/"Active" là nhãn minh hoạ) cho E3-S2 |
 | `2.4` | 2026-08-19 | Bổ sung `DEC-033` (E3-T1 không cần WebSocket; Snapshot Rule thuộc E5-T4) cho E3-S1 |

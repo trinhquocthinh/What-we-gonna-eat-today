@@ -1,6 +1,7 @@
 # 🧮 Implementation Guide — E4 Slice S1: Thuật toán ranking thuần
 
 > **Document Metadata**
+>
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
 > - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E4-T1`, `E4-T2`) • [Ranking Spec](../what-we-gonna-eat-today_ranking-specification_v0_1.md) (§2.2, §2.5, §5) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-020`, `SPEC-010`) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-045`, `BR-046`, `BR-033`) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-079→084`, `TC-042`, `TC-043`)
@@ -13,7 +14,7 @@
 # 0. Việc cần làm và điều kiện xong
 
 | ID | Việc | Giờ | File | Xong nghĩa là |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `E4-T1` | `computeRecencyPenalty`, hàm thuần | 3 | `src/features/history/domain/recency.ts` | Không mock gì, nhận `referenceDate` làm tham số; `TC-084` pass |
 | `E4-T2` | `computePersonalScore` & `buildDeck` kèm tie-break | 3 | `src/features/selection/domain/ranking.ts` | `RankingConfig` nằm ở **một** module hằng số duy nhất |
 
@@ -44,6 +45,7 @@ Nhưng **SDD SPEC-010 quy định riêng cho v1.0** (verbatim):
 Bốn số hạng còn lại đều ngoài v1.0: $E$ cần Like/Dislike (`F16`, v1.1), $I$ cần Implicit Preference (`F30`, v1.2), $C$ cần Chef Mode (`F33`, v1.2), $S$ cần Purchase Source (`F36`, v1.2). SDD §1.1 liệt kê v1.0 chỉ có `F07`, `F08`, `F09`, `F17` trong nhóm deck/ranking.
 
 **Tie-break cũng khác nhau giữa hai tài liệu.** Ranking Spec §2.5 có **ba** tầng:
+
 1. $d$ lớn hơn ($d = \infty$ cho món chưa ăn)
 2. Món có nguồn mua đã biết lên trước
 3. `stable_hash(session_id, user_id, dish_id)` tăng dần
@@ -94,7 +96,7 @@ Nhưng tie-break tầng cuối là `stable_hash(sessionId, userId, dishId)` — 
 Master Plan gán cả dải `TC-040→044` cho E4-T2, nhưng Test Cases Spec ghi tầng khác nhau:
 
 | TC | Tầng | Nội dung | Slice |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `TC-040` | `A` | Group có 30 món `ACTIVE` → deck chứa đúng 30 món | **S2** |
 | `TC-041` | `A` | Mở lại deck lần 2 → thứ tự giữ nguyên | **S2** |
 | `TC-042` | `D` | 2 User khác nhau → thứ tự deck khác nhau theo lịch sử ăn | **S1** ← đây |
@@ -670,7 +672,7 @@ Ngoài ra `d` còn là dữ liệu mà **S4 cần** để hiện nhãn *"Lần c
 # 7. Rủi ro
 
 | Rủi ro | Hậu quả | Giảm thiểu |
-|---|---|---|
+| --- | --- | --- |
 | Quên kiểm `Number.isNaN` ở tie-break tầng 2 | Nhóm mới (mọi món chưa ăn) cho comparator trả `NaN` → thứ tự deck không xác định, `TC-041` ở S2 sẽ đỏ ngẫu nhiên | Đã xử lý ở §5; test "hoà hoàn toàn" bắt đúng ca này |
 | Hardcode `7` trong `recency.ts` cho tiện | Vi phạm nguyên tắc 4 (Ranking Spec §1); hai nguồn sự thật lệch nhau khi đổi cửa sổ cooldown | Tham số hoá, §1.3 |
 | Thêm `explicit`/`implicit`/`chef`/`source` vào `RankingInput` "cho đủ công thức" | Tạo ảo giác tính năng đã có; không dữ liệu nào điền được, và mọi call site phải truyền số 0 vô nghĩa | Chỉ khai trường có dữ liệu thật; §5 |
@@ -682,7 +684,7 @@ Ngoài ra `d` còn là dữ liệu mà **S4 cần** để hiện nhãn *"Lần c
 # 8. Test Cases coverage
 
 | TC | Mô tả | Tầng | Nơi test |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `TC-079` | $d = 0$ → $R = 1.0$ | `D` | `recency.test.ts` |
 | `TC-080` | $d = 3$ → $R \approx 0.57$ | `D` | `recency.test.ts` |
 | `TC-081` | $d = 7$ → $R = 0.0$ | `D` | `recency.test.ts` |
@@ -717,6 +719,7 @@ yarn verify && yarn arch:probe
 **Không có `yarn test:integration` ở slice này** — toàn bộ tầng `D`, không chạm DB. Nếu bạn thấy mình cần một test tích hợp ở đây, đó là dấu hiệu code đã rò xuống hạ tầng: kiểm lại xem có import nào ngoài `./ranking-config` không.
 
 `yarn arch:probe` là cổng đáng chú ý nhất của slice:
+
 - `history/domain/recency.ts` **không được** import bất cứ thứ gì từ `features/selection` (chiều đó không nằm trong `ALLOWED_CROSS_FEATURE`).
 - Cả ba file `domain/` không được chạm `shared/db`, `drizzle-orm`, `react`, `next` — ESLint chặn sẵn, nhưng biết trước thì không mất thời gian gỡ.
 
@@ -725,7 +728,7 @@ yarn verify && yarn arch:probe
 Cách nhanh nhất để tin thuật toán đúng là so với bảng in sẵn trong Ranking Spec §2.2:
 
 | $d$ | Ranking Spec | Hàm phải trả |
-|---:|---:|---:|
+| ---: | ---: | ---: |
 | 0 | `1.00` | `1.0` |
 | 1 | `0.86` | `0.857…` |
 | 3 | `0.57` | `0.571…` |

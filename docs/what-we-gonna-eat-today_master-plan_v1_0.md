@@ -192,8 +192,8 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| `E4-T1` | `computeRecencyPenalty`, hàm thuần | [SPEC-020](what-we-gonna-eat-today_sdd_v0_1.md), `TC-079→084` | 3 | `E1-T11` | Không mock gì, nhận `referenceDate` làm tham số; `TC-084` pass | `src/features/history/domain/recency.ts` |
-| `E4-T2` | `computePersonalScore` & `buildDeck` kèm tie-break | [SPEC-010](what-we-gonna-eat-today_sdd_v0_1.md), `TC-040→044` | 3 | `E4-T1` | `RankingConfig` nằm ở **một** module hằng số duy nhất | `src/features/selection/domain/ranking.ts` |
+| `[x] E4-T1` | `computeRecencyPenalty`, hàm thuần | [SPEC-020](what-we-gonna-eat-today_sdd_v0_1.md), `TC-079→084` | 3 | `E1-T11` | Không mock gì, nhận `referenceDate` làm tham số; `TC-084` pass | `src/features/history/domain/recency.ts` |
+| `[x] E4-T2` | `computePersonalScore` & `buildDeck` kèm tie-break | [SPEC-010](what-we-gonna-eat-today_sdd_v0_1.md), `TC-040→044` | 3 | `E4-T1` | `RankingConfig` nằm ở **một** module hằng số duy nhất | `src/features/selection/domain/ranking.ts` |
 | `E4-T3` | Lưu `session_decks`, thứ tự bất biến trong phiên | [SPEC-010](what-we-gonna-eat-today_sdd_v0_1.md), `TC-041` | 2 | `E4-T2` | Mở lại deck lần hai thứ tự giống hệt | `src/features/selection/infrastructure/**` |
 | `E4-T4` | Phân trang và lọc theo `group_dishes.state` | [SPEC-011](what-we-gonna-eat-today_sdd_v0_1.md), `TC-045→047`, `TC-102→104`, `TC-108` | 3 | `E4-T3` | `TC-108` pass: Dish bị gỡ sau khi deck materialize không xuất hiện | `src/features/selection/application/**` |
 | `E4-T5` | Upsert Interaction chống ghi đè sai thứ tự | [SPEC-012](what-we-gonna-eat-today_sdd_v0_1.md), `TC-106` | 2.5 | `E1-T9` | `TC-106` pass: Record đến muộn có timestamp cũ hơn bị bỏ qua | `src/features/selection/application/record-interaction.ts` |
