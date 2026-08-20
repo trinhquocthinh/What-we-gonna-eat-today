@@ -197,7 +197,7 @@ export type GroupDishTag = typeof groupDishTags.$inferSelect
  */
 export const sessionState = pgEnum('session_state', ['DRAFT', 'ACTIVE', 'FINALIZED', 'INVALID'])
 
-/** SDD §2.2. Ở S4 chỉ `ACTIVE` khả thi — `COMPLETED` là SPEC-013 (E4),
+/** SDD §2.2. Ở S4 chỉ `ACTIVE` khả thi — `COMPLETED` là SPEC-013 (E3-T5),
  *  `REMOVED` là F25 (ngoài v1.0, SPEC-009 nói rõ). */
 export const participantState = pgEnum('participant_state', ['ACTIVE', 'COMPLETED', 'REMOVED'])
 

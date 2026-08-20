@@ -176,12 +176,12 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 | `[x] E3-T3` | Thêm Participant khi Draft | [SPEC-009](what-we-gonna-eat-today_sdd_v0_1.md), `TC-036`, `TC-037` | 1.5 | `E3-T1` | Participant mới có 0 Interaction | `src/features/session/application/add-participant.ts` |
 | `[x] E3-T4` | Thêm Participant khi Active | [SPEC-009](what-we-gonna-eat-today_sdd_v0_1.md), `TC-038`, `TC-039` | 1.5 | `E3-T3` | `TC-038` pass: Thêm trùng trả `ERR_PARTICIPANT_EXISTS` | Như trên |
 
-### S3 — Tiến trình & Giao diện
+### S3 — Tiến trình & Giao diện (Đã xong)
 
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| `E3-T5` | Completed và mở lại | [SPEC-013](what-we-gonna-eat-today_sdd_v0_1.md), `TC-054→057` | 3 | `E1-T9` | `TC-055` pass: Participant `COMPLETED` **vẫn vuốt được tiếp** | `src/features/session/**` |
-| `E3-T6` | Màn hình phiên cho Creator | `S-04`, `S-08` | 4 | `E3-T5` | Thấy ai xong ai chưa, vào phiên được — **Cột mốc M3** | `src/features/session/presentation/**` |
+| `[x] E3-T5` | Completed và mở lại | [SPEC-013](what-we-gonna-eat-today_sdd_v0_1.md), `TC-054→057` | 3 | `E1-T9` | `TC-055` pass: Participant `COMPLETED` **vẫn vuốt được tiếp** | `src/features/session/**` |
+| `[x] E3-T6` | Màn hình phiên cho Creator | `S-04`, `S-08` | 4 | `E3-T5` | Thấy ai xong ai chưa, vào phiên được — **Cột mốc M3** | `src/features/session/presentation/**` |
 
 ---
 
@@ -337,6 +337,7 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.4` | 2026-08-19 | §5 | Hoàn tất thi công Slice S3 của Epic E3 (E3-T5, E3-T6: Completed & Màn hình Creator) — Đạt cột mốc M3 | Quyết định DEC-035 |
 | `1.3` | 2026-08-18 | §4 | Hoàn tất thi công Slice S2 của Epic E2 (E2-T3, E2-T4: Chuẩn hoá tên món & Phát hiện trùng lặp) | Quyết định DEC-029, DEC-030 |
 | `1.2` | 2026-08-18 | §4 | Hoàn tất thi công Slice S1 của Epic E2 (E2-T1, E2-T2: Link mời & Tham gia nhóm) | Quyết định DEC-027, DEC-028 |
 | `1.1` | 2026-08-18 | §1, §3 | Hoàn tất thi công toàn bộ Epic E1 (S1→S6, E1-T1 đến E1-T12), cập nhật trạng thái các subtasks | Đạt cột mốc M2 (Walking Skeleton) |

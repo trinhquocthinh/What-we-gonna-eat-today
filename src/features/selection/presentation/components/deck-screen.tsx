@@ -15,6 +15,7 @@ export type DeckScreenProps = {
   sessionId: string
   dateCaption: string
   dishes: DishCard[]
+  initialParticipantState: 'ACTIVE' | 'COMPLETED'
 }
 
 type ViewState = 'deck' | 'done'
@@ -29,13 +30,24 @@ const NEVER_EATEN_LABEL = 'Chưa từng ăn' // eating_history chưa tồn tại
  * cục bộ. E1-T9 thêm `sendInteractionWithRetry` vào `commit()` — cùng một
  * UI, không viết lại (Implementation Guide §2.1).
  *
+ * E3-T5 nối nút "Tôi chọn xong" và "Mở lại lượt chọn" tới Route Handler
+ * `/api/sessions/[id]/completed`, và khởi tạo `view` ban đầu theo dữ liệu
+ * server.
+ *
  * CỐ Ý CHƯA CÓ ở S5 (F15/F18, v1.1): nút "Tôi không ăn được món này", đổi màu
  * reason chip theo explore lane.
  */
-export function DeckScreen({ sessionId, dateCaption, dishes }: DeckScreenProps): ReactElement {
+export function DeckScreen({
+  sessionId,
+  dateCaption,
+  dishes,
+  initialParticipantState,
+}: DeckScreenProps): ReactElement {
   const [cursor, setCursor] = useState(0)
   const [marks, setMarks] = useState<Array<'yes' | 'no'>>([])
-  const [view, setView] = useState<ViewState>('deck')
+  const [view, setView] = useState<ViewState>(
+    initialParticipantState === 'COMPLETED' ? 'done' : 'deck',
+  )
   const [sendStatus, setSendStatus] = useState<SendInteractionStatus>('idle')
   const [failedCount, setFailedCount] = useState(0)
 
@@ -77,6 +89,29 @@ export function DeckScreen({ sessionId, dateCaption, dishes }: DeckScreenProps):
         setSendStatus,
       )
     }
+  }
+
+  function handleFinish() {
+    setView('done') // optimistic — đúng tinh thần vuốt (E1-T9), UI đi trước
+    void fetch(`/api/sessions/${sessionId}/completed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed: true }),
+    }).catch(() => {
+      // Lỗi mạng: không revert `view`. Người dùng vẫn thấy "Xong lượt của bạn"
+      // đúng ý định của họ; request thất bại sẽ được coi là đồng bộ lại ở lần
+      // tương tác kế tiếp (mở lại/vuốt tiếp), không cần cơ chế retry riêng cho
+      // một hành động đơn lẻ, không thường xuyên như swipe.
+    })
+  }
+
+  function handleReopen() {
+    setView('deck')
+    void fetch(`/api/sessions/${sessionId}/completed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed: false }),
+    }).catch(() => {})
   }
 
   const upcoming = dishes.slice(cursor + 1, cursor + 3).map((d) => d.name)
@@ -180,7 +215,7 @@ export function DeckScreen({ sessionId, dateCaption, dishes }: DeckScreenProps):
                 Hoàn tác
               </Button>
             </div>
-            <Button type="button" variant="quiet" size="sm" onClick={() => setView('done')}>
+            <Button type="button" variant="quiet" size="sm" onClick={handleFinish}>
               Tôi chọn xong
             </Button>
           </>
@@ -188,7 +223,7 @@ export function DeckScreen({ sessionId, dateCaption, dishes }: DeckScreenProps):
 
         {isEmpty ? (
           <>
-            <Button type="button" onClick={() => setView('done')}>
+            <Button type="button" onClick={handleFinish}>
               Tôi chọn xong
             </Button>
             <Button
@@ -207,11 +242,11 @@ export function DeckScreen({ sessionId, dateCaption, dishes }: DeckScreenProps):
 
         {isDone ? (
           <>
-            <Button type="button" variant="secondary" onClick={() => setView('deck')}>
+            <Button type="button" variant="secondary" onClick={handleReopen}>
               Mở lại lượt chọn
             </Button>
             <span className="self-center text-caption font-medium text-ink-muted">
-              Sửa được cho tới khi Mẹ chốt bữa
+              Sửa được cho tới khi phiên được chốt
             </span>
           </>
         ) : null}

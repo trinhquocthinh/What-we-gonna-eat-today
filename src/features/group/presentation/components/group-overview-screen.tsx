@@ -5,6 +5,13 @@ import { EmptyStateCard } from '@/shared/ui/empty-state-card'
 
 const DISH_EXAMPLES = ['Cá basa kho tiêu', 'Canh chua cá lóc', 'Gà chiên nước mắm']
 
+export type GroupOverviewParticipant = {
+  readonly userId: string
+  readonly displayName: string
+  readonly state: 'ACTIVE' | 'COMPLETED' | 'REMOVED'
+  readonly statusLabel: string
+}
+
 export type GroupOverviewScreenProps = {
   groupName: string
   dateCaption: string
@@ -12,12 +19,15 @@ export type GroupOverviewScreenProps = {
   dishesHref: string
   inviteHref: string
   openSessionHref: string
+  activeSession: { id: string; participants: readonly GroupOverviewParticipant[] } | null
+  currentUserId: string
 }
 
 /**
  * S-04.
  *
  * Bật: hàng "Danh mục món", hàng "Mời thành viên" và CTA "Thêm món đầu tiên" / "Mở phiên".
+ * E3-T6: thêm khối "Phiên đang mở" khi có activeSession.
  *
  * E5-T1: thêm hàng "Quy định bữa ăn" khi route đó tồn tại.
  */
@@ -28,8 +38,14 @@ export function GroupOverviewScreen({
   dishesHref,
   inviteHref,
   openSessionHref,
+  activeSession,
+  currentUserId,
 }: GroupOverviewScreenProps): ReactElement {
   const hasDishes = dishCount > 0
+  const selfCompleted =
+    activeSession?.participants.find((p) => p.userId === currentUserId)?.state === 'COMPLETED'
+  const completedCount =
+    activeSession?.participants.filter((p) => p.state === 'COMPLETED').length ?? 0
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-app flex-col">
@@ -39,6 +55,45 @@ export function GroupOverviewScreen({
       </header>
 
       <div className="flex flex-1 flex-col gap-6 px-4 pt-3">
+        {activeSession === null ? null : (
+          <div className="flex flex-col gap-4 rounded-card border border-border bg-surface-raised p-6">
+            <div className="flex items-center justify-between gap-3">
+              <span className="rounded-chip bg-accent-soft px-3 py-1.5 text-caption font-semibold text-accent">
+                Phiên đang mở
+              </span>
+              <span className="tabular-nums text-caption font-medium text-ink-muted">
+                {completedCount} / {activeSession.participants.length} người xong
+              </span>
+            </div>
+
+            <h2 className="text-title font-semibold text-ink">
+              {selfCompleted ? 'Bạn đã xong lượt của mình.' : 'Lượt của bạn chưa xong.'}
+            </h2>
+
+            <ul className="flex flex-col gap-2 border-t border-border pt-4">
+              {activeSession.participants.map((p) => (
+                <li key={p.userId} className="flex items-center justify-between gap-3">
+                  <span
+                    className={`text-subtitle font-semibold ${
+                      p.userId === currentUserId ? 'text-ink' : 'text-ink-muted'
+                    }`}
+                  >
+                    {p.displayName}
+                  </span>
+                  <span className="text-caption font-medium text-ink-muted">{p.statusLabel}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href={`/sessions/${activeSession.id}`}
+              className="flex min-h-14 w-full items-center justify-center rounded-control bg-accent px-6 text-subtitle font-semibold text-on-accent shadow-button transition-transform duration-100 hover:bg-accent-hover active:scale-[0.98] active:bg-accent-active"
+            >
+              Vào lượt của bạn
+            </Link>
+          </div>
+        )}
+
         <EmptyStateCard
           title="Trước tiên hãy thêm vài món nhà bạn hay ăn."
           description="Chưa có món thì chưa mở phiên chọn được. Khoảng 15–20 món là đủ để bắt đầu."
@@ -63,7 +118,7 @@ export function GroupOverviewScreen({
             >
               <span className="text-subtitle font-semibold text-ink">Danh mục món</span>
               <span
-                className={`text-caption font-medium tabular-nums ${
+                className={`tabular-nums text-caption font-medium ${
                   hasDishes ? 'text-ink-muted' : 'text-accent'
                 }`}
               >

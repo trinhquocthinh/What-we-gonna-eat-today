@@ -1,17 +1,19 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
 import { getDb } from '@/shared/db/client'
-import { participants, selectionSessions } from '@/shared/db/schema'
+import { interactions, participants, selectionSessions, users } from '@/shared/db/schema'
 
 import type {
   AddParticipantOutcome,
   NewSessionDraft,
   SessionForStart,
+  SessionOverview,
   SessionRepository,
   SessionSummary,
   StartDraftOutcome,
 } from '../application/session-repository'
+import type { ParticipantState, SessionState } from '../domain/session'
 
 const UNIQUE_VIOLATION = '23505'
 const SESSION_UNIQUENESS_CONSTRAINT = 'selection_sessions_active_per_group_date'
@@ -49,12 +51,12 @@ const SESSION_SUMMARY_COLUMNS = {
 async function findBlockingSessionToday(
   groupId: string,
   decisionDate: string,
-): Promise<{ id: string } | null> {
+): Promise<{ id: string; state: SessionState } | null> {
   // SPEC-007: chỉ ACTIVE/FINALIZED được tính (BR-025, TC-028: session INVALID
   // không chặn tạo mới nên KHÔNG đưa vào danh sách này). FINALIZED chưa tồn
   // tại được ở S4 (E1-T10) nhưng liệt kê sẵn để E1-T10 không phải sửa lại.
   const rows = await getDb()
-    .select({ id: selectionSessions.id })
+    .select({ id: selectionSessions.id, state: selectionSessions.state })
     .from(selectionSessions)
     .where(
       and(
@@ -210,6 +212,74 @@ async function addParticipant(input: {
   }
 }
 
+async function findParticipantState(
+  sessionId: string,
+  userId: string,
+): Promise<ParticipantState | null> {
+  const rows = await getDb()
+    .select({ state: participants.state })
+    .from(participants)
+    .where(and(eq(participants.sessionId, sessionId), eq(participants.userId, userId)))
+    .limit(1)
+
+  return rows[0]?.state ?? null
+}
+
+async function setParticipantState(
+  sessionId: string,
+  userId: string,
+  state: 'ACTIVE' | 'COMPLETED',
+): Promise<{ outcome: 'UPDATED' | 'NOT_FOUND' }> {
+  const rows = await getDb()
+    .update(participants)
+    .set({ state })
+    .where(and(eq(participants.sessionId, sessionId), eq(participants.userId, userId)))
+    .returning({ id: participants.id })
+
+  return { outcome: rows[0] === undefined ? 'NOT_FOUND' : 'UPDATED' }
+}
+
+/**
+ * JOIN `participants` + `users` (tên hiển thị) + `LEFT JOIN interactions`
+ * (đếm). Lọc `state != 'REMOVED'` — F25 (gỡ participant) ngoài v1.0 nhưng
+ * cột đã tồn tại, phòng hờ rẻ.
+ *
+ * `proposedCount` đếm riêng `SWIPE_RIGHT` (chữ hiển thị "Xong · N món"), còn
+ * `totalInteractions` đếm MỌI loại — cần cả hai vì "Chưa mở" (0 tương tác
+ * bất kỳ) khác "Đang chọn" (có tương tác nhưng chưa đề xuất món nào), một
+ * phân biệt mà chỉ đếm `SWIPE_RIGHT` không thấy được.
+ */
+async function findSessionOverview(sessionId: string): Promise<SessionOverview | null> {
+  const db = getDb()
+
+  const rows = await db
+    .select({
+      userId: participants.userId,
+      displayName: users.displayName,
+      state: participants.state,
+      proposedCount: sql<number>`count(${interactions.id}) filter (where ${interactions.type} = 'SWIPE_RIGHT')`,
+      totalInteractions: sql<number>`count(${interactions.id})`,
+    })
+    .from(participants)
+    .innerJoin(users, eq(users.id, participants.userId))
+    .leftJoin(interactions, eq(interactions.participantId, participants.id))
+    .where(and(eq(participants.sessionId, sessionId), ne(participants.state, 'REMOVED')))
+    .groupBy(participants.id, participants.userId, users.displayName, participants.state)
+
+  if (rows.length === 0) {
+    return null
+  }
+
+  return {
+    id: sessionId,
+    participants: rows.map((row) => ({
+      ...row,
+      proposedCount: Number(row.proposedCount),
+      totalInteractions: Number(row.totalInteractions),
+    })),
+  }
+}
+
 export const drizzleSessionRepository: SessionRepository = {
   findBlockingSessionToday,
   createDraftWithCreatorParticipant,
@@ -218,4 +288,7 @@ export const drizzleSessionRepository: SessionRepository = {
   findDraftToday,
   findForStart,
   addParticipant,
+  findParticipantState,
+  setParticipantState,
+  findSessionOverview,
 }

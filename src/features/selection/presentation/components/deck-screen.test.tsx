@@ -21,6 +21,7 @@ describe('S-09 Deck vuốt', () => {
         sessionId="s1"
         dateCaption="Thứ Ba 18/8"
         dishes={makeDishes(['Cá basa kho tiêu', 'Canh chua'])}
+        initialParticipantState="ACTIVE"
       />,
     )
 
@@ -34,6 +35,7 @@ describe('S-09 Deck vuốt', () => {
         sessionId="s1"
         dateCaption="Thứ Ba 18/8"
         dishes={makeDishes(['Cá basa kho tiêu'])}
+        initialParticipantState="ACTIVE"
       />,
     )
 
@@ -54,6 +56,7 @@ describe('S-09 Deck vuốt', () => {
         sessionId="s1"
         dateCaption="Thứ Ba 18/8"
         dishes={makeDishes(['Cá basa kho tiêu', 'Canh chua'])}
+        initialParticipantState="ACTIVE"
       />,
     )
     await userEvent.click(screen.getByRole('button', { name: 'Đề xuất Cá basa kho tiêu' }))
@@ -78,6 +81,7 @@ describe('S-09 Deck vuốt', () => {
         sessionId="s1"
         dateCaption="Thứ Ba 18/8"
         dishes={makeDishes(['Cá basa kho tiêu'])}
+        initialParticipantState="ACTIVE"
       />,
     )
     await userEvent.click(screen.getByRole('button', { name: 'Đề xuất Cá basa kho tiêu' }))
@@ -94,6 +98,7 @@ describe('S-09 Deck vuốt', () => {
         sessionId="s1"
         dateCaption="Thứ Ba 18/8"
         dishes={makeDishes(['Cá basa kho tiêu'])}
+        initialParticipantState="ACTIVE"
       />,
     )
 
@@ -101,5 +106,37 @@ describe('S-09 Deck vuốt', () => {
 
     expect(screen.getByText('Xong lượt của bạn.')).toBeInTheDocument()
     expect(screen.getByText('Mở lại lượt chọn')).toBeInTheDocument()
+  })
+
+  it('initialParticipantState COMPLETED: mở thẳng vào màn "Xong lượt của bạn"', () => {
+    render(
+      <DeckScreen
+        sessionId="s1"
+        dateCaption="Thứ Ba · 19 tháng 8"
+        dishes={makeDishes(['Cá basa kho tiêu'])}
+        initialParticipantState="COMPLETED"
+      />,
+    )
+
+    expect(screen.getByText('Xong lượt của bạn.')).toBeInTheDocument()
+  })
+
+  it('bấm "Tôi chọn xong" gọi đúng endpoint với completed=true', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ state: 'COMPLETED' }) })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    render(
+      <DeckScreen sessionId="s1" dateCaption="..." dishes={[]} initialParticipantState="ACTIVE" />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tôi chọn xong' }))
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/sessions/s1/completed',
+      expect.objectContaining({ body: JSON.stringify({ completed: true }) }),
+    )
+    vi.unstubAllGlobals()
   })
 })

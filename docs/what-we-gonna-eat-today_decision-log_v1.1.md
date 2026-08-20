@@ -558,10 +558,48 @@ function's test suite, not a new file.
 
 ---
 
+# DEC-035 — Complete/Reopen UI Predates Its Backend; E3-T5 Is Purely Wiring
+
+**Ngày quyết định:** 2026-08-19 | **Trạng thái:** Accepted
+
+## Quyết định
+
+`deck-screen.tsx`'s "Tôi chọn xong"/"Mở lại lượt chọn" UI, shipped at E1-T8,
+is left visually and structurally unchanged. E3-T5 adds a backend (use case,
+two repository methods, one Route Handler) and rewires the two existing
+`onClick` handlers plus the initial `view` state to reflect it — no new UI
+is designed from scratch.
+
+## Rationale
+
+Reading the shipped file before designing showed the mockup-accurate UI
+already existed as pure local `setState` calls with zero backend
+integration. `record-interaction.ts` and `list-deck.ts` (SPEC-012/011) were
+also independently confirmed already correct for TC-055 — both already treat
+`COMPLETED` participants as eligible to keep swiping (blacklist- and
+whitelist-style checks respectively, neither requiring `state === 'ACTIVE'`).
+Redesigning any of this would have duplicated already-correct, already-built
+work.
+
+## Consequence
+
+Anyone reviewing this slice's diff should expect it to touch application/
+infrastructure/route files heavily and `deck-screen.tsx` only lightly (new
+prop, two handler bodies, one copy fix) — a large UI diff here would be a
+sign of scope drift.
+
+## Affected Documents
+
+- `src/shared/db/schema.ts` (stale "(E4)" comment on `participantState`,
+  corrected to "(E3-T5)")
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `2.6` | 2026-08-19 | Bổ sung `DEC-035` (Complete/Reopen UI Predates Its Backend; E3-T5 Is Purely Wiring) cho E3-S3 |
 | `2.5` | 2026-08-19 | Bổ sung `DEC-034` (E3-T3/E3-T4 gộp làm một hàm; "Draft"/"Active" là nhãn minh hoạ) cho E3-S2 |
 | `2.4` | 2026-08-19 | Bổ sung `DEC-033` (E3-T1 không cần WebSocket; Snapshot Rule thuộc E5-T4) cho E3-S1 |
 | `2.3` | 2026-08-18 | Bổ sung `DEC-032` (Ứng viên trùng lặp từ hai nguồn inGroup/global) cho E2-S4 |
@@ -578,6 +616,7 @@ function's test suite, not a new file.
 | `1.2` | 2026-08-14 | Bổ sung `DEC-012` (Mô hình Ranking, Cooldown 7 ngày, Exploration 20%) |
 | `1.1` | 2026-07-29 | Bổ sung `DEC-010` (Group/Session Rules) và `DEC-011` (Final Meal validation) |
 | `1.0` | 2026-07-23 | Khởi tạo Decision Log ban đầu với `DEC-001` đến `DEC-009` |
+
 
 
 

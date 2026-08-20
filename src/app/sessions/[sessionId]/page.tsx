@@ -46,9 +46,16 @@ export default async function SessionPage({ params }: SessionPageProps) {
     { sessionId, userId: user.id, cursor: 0, pageSize: WHOLE_DECK_PAGE_SIZE },
   )
   if (!deck.ok) {
-    // ERR_NOT_PARTICIPANT — thành viên Group nhưng chưa từng được thêm vào
-    // Session này. E3-T3 (thêm Participant) sẽ cho lối vào hợp lệ; ở S5 chỉ
-    // báo not found, không có UI riêng cho trường hợp này.
+    // ERR_NOT_PARTICIPANT — Group Member chưa từng được thêm vào Session này qua `addParticipant`.
+    notFound()
+  }
+
+  const participantState = await drizzleSessionRepository.findParticipantState(sessionId, user.id)
+
+  // listDeck ở trên đã thành công (participant ACTIVE|COMPLETED, không REMOVED) —
+  // participantState ở đây không bao giờ null/REMOVED trong thực tế, nhưng vẫn
+  // ép kiểu tường minh thay vì `as` để tsc bắt được nếu giả định này sai sau này.
+  if (participantState !== 'ACTIVE' && participantState !== 'COMPLETED') {
     notFound()
   }
 
@@ -57,6 +64,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
       sessionId={sessionId}
       dateCaption={formatVietnameseDateShort(session.decisionDate)}
       dishes={deck.value.items}
+      initialParticipantState={participantState}
     />
   )
 }

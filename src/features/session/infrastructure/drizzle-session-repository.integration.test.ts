@@ -2,7 +2,16 @@ import { and, eq } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { getDb } from '@/shared/db/client'
-import { groupMembers, groups, participants, selectionSessions, users } from '@/shared/db/schema'
+import {
+  globalDishes,
+  groupDishes,
+  groupMembers,
+  groups,
+  interactions,
+  participants,
+  selectionSessions,
+  users,
+} from '@/shared/db/schema'
 
 import { createSession } from '../application/create-session'
 import { startSession } from '../application/start-session'
@@ -43,9 +52,12 @@ async function cleanupGroupAndUser(groupId: string, userIds: string | string[]) 
     .where(eq(selectionSessions.groupId, groupId))
 
   for (const s of sessionRows) {
+    await db.delete(interactions).where(eq(interactions.sessionId, s.id))
     await db.delete(participants).where(eq(participants.sessionId, s.id))
   }
   await db.delete(selectionSessions).where(eq(selectionSessions.groupId, groupId))
+  await db.delete(groupDishes).where(eq(groupDishes.groupId, groupId))
+  await db.delete(globalDishes).where(eq(globalDishes.createdFromGroupId, groupId))
   for (const uid of ids) {
     await db
       .delete(groupMembers)
@@ -288,5 +300,105 @@ describe('SPEC-009 — Thêm Participant (integration)', () => {
     expect(second.outcome).toBe('ALREADY_EXISTS')
     const rows = await db.select().from(participants).where(eq(participants.userId, secondUserId))
     expect(rows).toHaveLength(1)
+  })
+})
+
+describe('SPEC-013 / S3 — findParticipantState & setParticipantState (integration)', () => {
+  it('TC-054/TC-056 — đổi qua lại COMPLETED/ACTIVE, đọc lại đúng giá trị', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    cleanupQueue.push(() => cleanupGroupAndUser(groupId, userId))
+
+    const session = await drizzleSessionRepository.createDraftWithCreatorParticipant({
+      groupId,
+      decisionDate: '2026-08-19',
+      creatorUserId: userId,
+    })
+
+    expect(await drizzleSessionRepository.findParticipantState(session.id, userId)).toBe('ACTIVE')
+
+    await drizzleSessionRepository.setParticipantState(session.id, userId, 'COMPLETED')
+    expect(await drizzleSessionRepository.findParticipantState(session.id, userId)).toBe(
+      'COMPLETED',
+    )
+
+    await drizzleSessionRepository.setParticipantState(session.id, userId, 'ACTIVE')
+    expect(await drizzleSessionRepository.findParticipantState(session.id, userId)).toBe('ACTIVE')
+  })
+})
+
+describe('E3-T6 — findSessionOverview (integration)', () => {
+  it('findSessionOverview đếm đúng proposedCount và totalInteractions cho từng participant', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    const secondUserId = crypto.randomUUID()
+    const db = getDb()
+    await db.insert(users).values({
+      id: secondUserId,
+      provider: 'test',
+      providerSubject: `integration-${secondUserId}`,
+      email: `${secondUserId}@example.test`,
+      displayName: 'Second User',
+    })
+    cleanupQueue.push(() => cleanupGroupAndUser(groupId, [userId, secondUserId]))
+
+    const session = await drizzleSessionRepository.createDraftWithCreatorParticipant({
+      groupId,
+      decisionDate: '2026-08-19',
+      creatorUserId: userId,
+    })
+
+    const added = await drizzleSessionRepository.addParticipant({
+      sessionId: session.id,
+      userId: secondUserId,
+    })
+    if (added.outcome !== 'ADDED') throw new Error('addParticipant setup failed')
+
+    const creatorParticipants = await db
+      .select({ id: participants.id })
+      .from(participants)
+      .where(and(eq(participants.sessionId, session.id), eq(participants.userId, userId)))
+    const creatorParticipantId = creatorParticipants[0]!.id
+
+    const globalDishId = crypto.randomUUID()
+    const groupDishId = crypto.randomUUID()
+    await db.insert(globalDishes).values({
+      id: globalDishId,
+      name: 'Món Test',
+      normalizedName: 'mon test',
+      createdFromGroupId: groupId,
+      createdByUserId: userId,
+    })
+    await db.insert(groupDishes).values({
+      id: groupDishId,
+      groupId,
+      globalDishId,
+      state: 'ACTIVE',
+    })
+
+    await db.insert(interactions).values([
+      {
+        id: crypto.randomUUID(),
+        sessionId: session.id,
+        participantId: creatorParticipantId,
+        groupDishId,
+        type: 'SWIPE_RIGHT',
+      },
+    ])
+
+    const overview = await drizzleSessionRepository.findSessionOverview(session.id)
+    expect(overview).not.toBeNull()
+    expect(overview?.id).toBe(session.id)
+    expect(overview?.participants).toHaveLength(2)
+
+    const creatorProgress = overview?.participants.find((p) => p.userId === userId)
+    expect(creatorProgress).toBeDefined()
+    expect(creatorProgress?.proposedCount).toBe(1)
+    expect(creatorProgress?.totalInteractions).toBe(1)
+    expect(creatorProgress?.displayName).toBe('Integration Test User')
+
+    const secondProgress = overview?.participants.find((p) => p.userId === secondUserId)
+    expect(secondProgress).toBeDefined()
+    expect(secondProgress?.proposedCount).toBe(0)
+    expect(secondProgress?.totalInteractions).toBe(0)
+    expect(secondProgress?.displayName).toBe('Second User')
   })
 })

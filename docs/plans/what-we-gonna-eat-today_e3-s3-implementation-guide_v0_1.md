@@ -1,6 +1,7 @@
 # 🏁 Implementation Guide — E3 Slice S3: Completed + Màn hình Creator
 
 > **Document Metadata**
+>
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
 > - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E3-T5`, `E3-T6`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-013`) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-026`, `BR-044`) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-054→057`) • Mockup `docs/designs/designs/S-04 Trang nhom.dc.html`, `docs/designs/designs/S-09 Deck vuot prototype.dc.html`
@@ -13,7 +14,7 @@
 # 0. Việc cần làm và điều kiện xong
 
 | ID | Việc | Giờ | File | Xong nghĩa là |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `E3-T5` | Completed và mở lại | 3 | `src/features/session/**` | `TC-055` pass: Participant `COMPLETED` **vẫn vuốt được tiếp** |
 | `E3-T6` | Màn hình phiên cho Creator | 4 | `src/features/session/presentation/**` | Thấy ai xong ai chưa, vào phiên được — **Cột mốc M3** |
 
@@ -47,16 +48,19 @@ Cả hai chỉ đổi `view` — biến state **cục bộ**, không gọi API, 
 **Việc thật của `E3-T5` là nối dây, không phải dựng UI mới**: một use case + 2 method port đọc/ghi `participants.state`, một Route Handler, sửa `deck-screen.tsx` để `onClick` gọi request thật thay vì chỉ `setView`, và khởi tạo `view` ban đầu theo dữ liệu server.
 
 `record-interaction.ts` (SPEC-012) và `list-deck.ts` (SPEC-011) đã đọc kỹ — **cả hai đã đúng sẵn**:
+
 - `record-interaction.ts` chỉ chặn `participant === null || participant.state === 'REMOVED'` — danh sách **đen**, không chặn `COMPLETED`.
 - `list-deck.ts` chấp nhận `ACTIVE`/`COMPLETED` — danh sách **trắng**, viết khác cách nhưng cùng kết quả (comment trong file giải thích chủ ý giữ hai cách viết khác nhau, khớp đúng lời văn của từng SPEC).
 
 **`TC-055` đã pass từ E1-T9, trước cả khi slice này tồn tại.** Không sửa hai file đó — chạm vào là thừa.
 
 **Một comment cũ ghi sai epic**, `src/shared/db/schema.ts` dòng 199-200:
+
 ```ts
 /** SDD §2.2. Ở S4 chỉ `ACTIVE` khả thi — `COMPLETED` là SPEC-013 (E4),
  *  `REMOVED` là F25 (ngoài v1.0, SPEC-009 nói rõ). */
 ```
+
 Sửa `(E4)` thành `(E3-T5)` — nhãn cũ lệch với Master Plan hiện tại.
 
 ---
@@ -788,6 +792,7 @@ Chèn ngay sau header, trước khối `EmptyStateCard`/danh sách dish hiện c
 ```
 
 với hai biến suy ra ngay trên:
+
 ```tsx
 const selfCompleted = activeSession?.participants.find((p) => p.userId === currentUserId)?.state === 'COMPLETED'
 const completedCount = activeSession?.participants.filter((p) => p.state === 'COMPLETED').length ?? 0
@@ -834,7 +839,7 @@ it('activeSession === null: không hiện khối phiên đang mở', () => {
 # 13. Rủi ro
 
 | Rủi ro | Hậu quả | Giảm thiểu |
-|---|---|---|
+| --- | --- | --- |
 | `handleFinish`/`handleReopen` không revert `view` khi request lỗi mạng | UI nói "Xong" nhưng DB vẫn `ACTIVE` — lệch tạm thời | Đã chấp nhận có chủ ý (§8.2); lần tương tác kế tiếp (mở lại, hoặc reload trang) tự đồng bộ lại theo `findParticipantState` |
 | `count(...)` trả `bigint`/string mà quên `Number(...)` | So sánh `proposedCount > 0` sai kiểu, hoặc hiện `"6"` lẫn `6` không nhất quán | Đã ép kiểu tường minh ở §11.1, không dùng `as` |
 | `findBlockingSessionToday` đổi chữ ký (`{id}` → `{id, state}`) | Nếu có chỗ gọi cũ destructure sai | Đã kiểm: `create-session.ts` và `openSessionAction` (S1) chỉ kiểm `!== null`, không đọc field nào khác — an toàn |
@@ -845,7 +850,7 @@ it('activeSession === null: không hiện khối phiên đang mở', () => {
 # 14. Test Cases coverage
 
 | TC | Mô tả | Tầng | Nơi test |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `TC-054` | Participant `ACTIVE`, gửi `completed=true` → chuyển `COMPLETED` | `A` | `set-participant-completed.test.ts` |
 | `TC-055` | Participant `COMPLETED`, gửi tiếp `SWIPE_RIGHT` → ghi nhận bình thường | — | **Đã pass từ E1-T9** (`record-interaction.ts` không chặn COMPLETED) — không cần test mới |
 | `TC-056` | Participant `COMPLETED`, gửi `completed=false` → chuyển lại `ACTIVE` | `A` | `set-participant-completed.test.ts` |

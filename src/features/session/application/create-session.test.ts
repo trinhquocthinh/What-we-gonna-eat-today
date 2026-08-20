@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { makeGroup, makeUser } from '@/shared/testing/factories'
 
-import type { NewSessionDraft, SessionRepository, SessionSummary } from './session-repository'
 import { createSession } from './create-session'
+import type { NewSessionDraft, SessionRepository, SessionSummary } from './session-repository'
 
 type Row = NewSessionDraft & { id: string; state: 'DRAFT' }
 
@@ -37,6 +37,15 @@ function makeFakeSessionRepository(seed: Row[] = []) {
     async addParticipant(): Promise<never> {
       throw new Error('không dùng trong test này')
     },
+    async findParticipantState() {
+      return null
+    },
+    async setParticipantState() {
+      return { outcome: 'UPDATED' }
+    },
+    async findSessionOverview() {
+      return null
+    },
   }
 
   return { repository, rows }
@@ -48,7 +57,7 @@ function makeBlockingFakeSessionRepository(): SessionRepository {
   return {
     ...base,
     async findBlockingSessionToday() {
-      return { id: 'session-blocking' }
+      return { id: 'session-blocking', state: 'ACTIVE' }
     },
   }
 }
