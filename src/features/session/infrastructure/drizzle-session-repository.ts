@@ -6,6 +6,7 @@ import { participants, selectionSessions } from '@/shared/db/schema'
 
 import type {
   NewSessionDraft,
+  SessionForStart,
   SessionRepository,
   SessionSummary,
   StartDraftOutcome,
@@ -135,9 +136,62 @@ async function findById(sessionId: string): Promise<SessionSummary | null> {
   return rows[0] ?? null
 }
 
+async function findDraftToday(
+  groupId: string,
+  decisionDate: string,
+): Promise<SessionSummary | null> {
+  const rows = await getDb()
+    .select({
+      id: selectionSessions.id,
+      groupId: selectionSessions.groupId,
+      decisionDate: selectionSessions.decisionDate,
+      state: selectionSessions.state,
+    })
+    .from(selectionSessions)
+    .where(
+      and(
+        eq(selectionSessions.groupId, groupId),
+        eq(selectionSessions.decisionDate, decisionDate),
+        eq(selectionSessions.state, 'DRAFT'),
+      ),
+    )
+    .limit(1)
+
+  return rows[0] ?? null
+}
+
+async function findForStart(sessionId: string): Promise<SessionForStart | null> {
+  const db = getDb()
+
+  const sessionRows = await db
+    .select({
+      id: selectionSessions.id,
+      groupId: selectionSessions.groupId,
+      creatorUserId: selectionSessions.creatorUserId,
+      state: selectionSessions.state,
+    })
+    .from(selectionSessions)
+    .where(eq(selectionSessions.id, sessionId))
+    .limit(1)
+
+  const session = sessionRows[0]
+  if (session === undefined) {
+    return null
+  }
+
+  const participantRows = await db
+    .select({ userId: participants.userId })
+    .from(participants)
+    .where(eq(participants.sessionId, sessionId))
+
+  return { ...session, participantUserIds: participantRows.map((row) => row.userId) }
+}
+
 export const drizzleSessionRepository: SessionRepository = {
   findBlockingSessionToday,
   createDraftWithCreatorParticipant,
   startDraft,
   findById,
+  findDraftToday,
+  findForStart,
 }

@@ -24,6 +24,7 @@ function makeDeps(
   }
   const memberships: MembershipRepository = {
     findMembership: vi.fn(async () => overrides.membership ?? null),
+    findInvalidMembers: vi.fn(async () => []),
   }
   return { invites, memberships }
 }

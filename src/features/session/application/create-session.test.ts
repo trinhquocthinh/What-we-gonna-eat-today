@@ -28,6 +28,12 @@ function makeFakeSessionRepository(seed: Row[] = []) {
     async findById(): Promise<SessionSummary | null> {
       throw new Error('không dùng trong test này')
     },
+    async findDraftToday() {
+      return null
+    },
+    async findForStart() {
+      return null
+    },
   }
 
   return { repository, rows }

@@ -34,7 +34,8 @@ async function seedGroupAndUser() {
   return { userId, groupId }
 }
 
-async function cleanupGroupAndUser(groupId: string, userId: string) {
+async function cleanupGroupAndUser(groupId: string, userIds: string | string[]) {
+  const ids = Array.isArray(userIds) ? userIds : [userIds]
   const db = getDb()
   const sessionRows = await db
     .select({ id: selectionSessions.id })
@@ -45,11 +46,15 @@ async function cleanupGroupAndUser(groupId: string, userId: string) {
     await db.delete(participants).where(eq(participants.sessionId, s.id))
   }
   await db.delete(selectionSessions).where(eq(selectionSessions.groupId, groupId))
-  await db
-    .delete(groupMembers)
-    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+  for (const uid of ids) {
+    await db
+      .delete(groupMembers)
+      .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, uid)))
+  }
   await db.delete(groups).where(eq(groups.id, groupId))
-  await db.delete(users).where(eq(users.id, userId))
+  for (const uid of ids) {
+    await db.delete(users).where(eq(users.id, uid))
+  }
 }
 
 const cleanupQueue: Array<() => Promise<void>> = []
@@ -76,7 +81,11 @@ describe('SPEC-007 — Tạo Session (integration)', () => {
       { groupId, creatorUserId: userId, decisionDate },
     )
     if (!first.ok) throw new Error('setup thất bại: không tạo được Session đầu tiên')
-    const started = await startSession({ sessions: drizzleSessionRepository }, first.value.id)
+    const started = await startSession(
+      { sessions: drizzleSessionRepository, findInvalidParticipants: async () => [] },
+      first.value.id,
+      userId,
+    )
     if (!started.ok) throw new Error('setup thất bại: không Start được Session đầu tiên')
 
     const second = await createSession(
@@ -135,6 +144,57 @@ describe('SPEC-007 — Tạo Session (integration)', () => {
 
     expect(result.ok === false && result.error.code).toBe('ERR_SESSION_EXISTS_TODAY')
   })
+
+  it('findForStart trả đủ participantUserIds, kể cả khi có nhiều người', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    const otherUserId = crypto.randomUUID()
+    const db = getDb()
+    await db.insert(users).values({
+      id: otherUserId,
+      provider: 'test',
+      providerSubject: `integration-${otherUserId}`,
+      email: `${otherUserId}@example.test`,
+      displayName: 'Other User',
+    })
+    cleanupQueue.push(() => cleanupGroupAndUser(groupId, [userId, otherUserId]))
+
+    const decisionDate = '2026-08-17'
+    const draft = await createSession(
+      { sessions: drizzleSessionRepository },
+      { groupId, creatorUserId: userId, decisionDate },
+    )
+    if (!draft.ok) throw new Error('setup thất bại')
+
+    await db.insert(participants).values({
+      id: crypto.randomUUID(),
+      sessionId: draft.value.id,
+      userId: otherUserId,
+      state: 'ACTIVE',
+    })
+
+    const forStart = await drizzleSessionRepository.findForStart(draft.value.id)
+    expect(forStart).not.toBeNull()
+    expect(forStart?.participantUserIds).toHaveLength(2)
+    expect(forStart?.participantUserIds).toContain(userId)
+    expect(forStart?.participantUserIds).toContain(otherUserId)
+  })
+
+  it('findDraftToday trả về Draft cũ nếu gọi createSession-flow hai lần trong cùng ngày', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    cleanupQueue.push(() => cleanupGroupAndUser(groupId, userId))
+    const decisionDate = '2026-08-17'
+
+    const first = await createSession(
+      { sessions: drizzleSessionRepository },
+      { groupId, creatorUserId: userId, decisionDate },
+    )
+    if (!first.ok) throw new Error('setup thất bại')
+
+    const draft = await drizzleSessionRepository.findDraftToday(groupId, decisionDate)
+    expect(draft).not.toBeNull()
+    expect(draft?.id).toBe(first.value.id)
+    expect(draft?.state).toBe('DRAFT')
+  })
 })
 
 describe('BR-025 — race condition khi Start (TC-107)', () => {
@@ -166,8 +226,16 @@ describe('BR-025 — race condition khi Start (TC-107)', () => {
       // thay vì trả Result, allSettled vẫn cho thấy cả hai nhánh thay vì làm
       // toàn bộ test fail ở đúng chỗ cần quan sát nhất.
       const [outcomeA, outcomeB] = await Promise.allSettled([
-        startSession({ sessions: drizzleSessionRepository }, first.value.id),
-        startSession({ sessions: drizzleSessionRepository }, second.value.id),
+        startSession(
+          { sessions: drizzleSessionRepository, findInvalidParticipants: async () => [] },
+          first.value.id,
+          userId,
+        ),
+        startSession(
+          { sessions: drizzleSessionRepository, findInvalidParticipants: async () => [] },
+          second.value.id,
+          userId,
+        ),
       ])
 
       const results = [outcomeA, outcomeB].map((settled) =>

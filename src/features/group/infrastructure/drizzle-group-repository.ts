@@ -1,8 +1,8 @@
-import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, count, desc, eq, inArray, isNotNull, isNull, or } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
 import { getDb } from '@/shared/db/client'
-import { groupMembers, groups } from '@/shared/db/schema'
+import { groupMembers, groups, users } from '@/shared/db/schema'
 
 import type {
   GroupListItem,
@@ -94,6 +94,32 @@ async function findMembership(groupId: string, userId: string): Promise<Membersh
   return rows[0] ?? null
 }
 
+async function findInvalidMembers(
+  groupId: string,
+  userIds: readonly string[],
+): Promise<{ userId: string; displayName: string }[]> {
+  if (userIds.length === 0) {
+    return []
+  }
+
+  const db = getDb()
+  const rows = await db
+    .select({ userId: users.id, displayName: users.displayName })
+    .from(users)
+    .leftJoin(
+      groupMembers,
+      and(eq(groupMembers.userId, users.id), eq(groupMembers.groupId, groupId)),
+    )
+    .where(
+      and(
+        inArray(users.id, userIds),
+        or(isNull(groupMembers.id), isNotNull(groupMembers.removedAt)),
+      ),
+    )
+
+  return rows
+}
+
 export const drizzleGroupRepository: GroupRepository = {
   createWithAdmin,
   listForUser,
@@ -102,4 +128,5 @@ export const drizzleGroupRepository: GroupRepository = {
 
 export const drizzleMembershipRepository: MembershipRepository = {
   findMembership,
+  findInvalidMembers,
 }

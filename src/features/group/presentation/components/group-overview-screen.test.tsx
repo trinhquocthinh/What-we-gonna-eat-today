@@ -12,6 +12,7 @@ describe('GroupOverviewScreen (S-04)', () => {
         dishCount={0}
         dishesHref="/groups/group-1/dishes"
         inviteHref="/groups/group-1/invite"
+        openSessionHref="/groups/group-1/sessions/new"
       />,
     )
 
@@ -22,7 +23,7 @@ describe('GroupOverviewScreen (S-04)', () => {
     expect(screen.getByRole('link', { name: /Mời thành viên/ })).toBeDefined()
   })
 
-  it('dishCount={7} thì hiện "7 món" và nút "Thêm món"', () => {
+  it('dishCount={7} thì hiện "7 món" và nút "Mở phiên"', () => {
     render(
       <GroupOverviewScreen
         groupName="Nhà Bảy Hiền"
@@ -30,10 +31,11 @@ describe('GroupOverviewScreen (S-04)', () => {
         dishCount={7}
         dishesHref="/groups/group-1/dishes"
         inviteHref="/groups/group-1/invite"
+        openSessionHref="/groups/group-1/sessions/new"
       />,
     )
 
     expect(screen.getByText('7 món')).toBeDefined()
-    expect(screen.getByRole('link', { name: 'Thêm món' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Mở phiên' })).toBeDefined()
   })
 })

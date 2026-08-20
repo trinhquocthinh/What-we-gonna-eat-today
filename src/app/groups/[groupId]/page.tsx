@@ -27,6 +27,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
       dishCount={dishes.length}
       dishesHref={`/groups/${groupId}/dishes`}
       inviteHref={`/groups/${groupId}/invite`}
+      openSessionHref={`/groups/${groupId}/sessions/new`}
     />
   )
 }

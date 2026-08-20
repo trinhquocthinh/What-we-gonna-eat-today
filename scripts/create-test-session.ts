@@ -8,6 +8,7 @@ config({ path: '.env', quiet: true })
 import { createSession } from '../src/features/session/application/create-session'
 import { startSession } from '../src/features/session/application/start-session'
 import { resolveDecisionDate } from '../src/features/session/domain/decision-date'
+import { drizzleMembershipRepository } from '../src/features/group/infrastructure/drizzle-group-repository'
 import { drizzleSessionRepository } from '../src/features/session/infrastructure/drizzle-session-repository'
 import { getDb } from '../src/shared/db/client'
 import {
@@ -78,7 +79,15 @@ async function main() {
 
     if (todaySession.state === 'DRAFT') {
       console.log('🔄 Đang chuyển phiên từ DRAFT sang ACTIVE...')
-      const startResult = await startSession({ sessions: drizzleSessionRepository }, sessionId)
+      const startResult = await startSession(
+        {
+          sessions: drizzleSessionRepository,
+          findInvalidParticipants: ({ groupId, userIds }) =>
+            drizzleMembershipRepository.findInvalidMembers(groupId, userIds),
+        },
+        sessionId,
+        creator.userId,
+      )
       if (!startResult.ok) {
         console.error('❌ Không thể bắt đầu phiên:', startResult.error)
         process.exit(1)
@@ -107,7 +116,15 @@ async function main() {
 
     // Kích hoạt session sang ACTIVE
     console.log('🚀 Đang bắt đầu phiên (chuyển sang ACTIVE)...')
-    const startResult = await startSession({ sessions: drizzleSessionRepository }, sessionId)
+    const startResult = await startSession(
+      {
+        sessions: drizzleSessionRepository,
+        findInvalidParticipants: ({ groupId, userIds }) =>
+          drizzleMembershipRepository.findInvalidMembers(groupId, userIds),
+      },
+      sessionId,
+      creator.userId,
+    )
     if (!startResult.ok) {
       console.error('❌ Lỗi khi bắt đầu phiên:', startResult.error)
       process.exit(1)

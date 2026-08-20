@@ -2,12 +2,12 @@
 
 > **Document Metadata**
 >
-> - **Version:** `2.3` | **Status:** `Active`
-> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-18`
+> - **Version:** `2.4` | **Status:** `Active`
+> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-19`
 > - **Supersedes:** `v2.0` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
 >
-> 📌 *Decision Log ghi lại 30 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
+> 📌 *Decision Log ghi lại 31 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
 
 ---
 
@@ -47,6 +47,7 @@
 | [`DEC-030`](#dec-030--tc-021-system-tag-validation-deferred-to-e2-t5) | Hoãn kiểm tra System Tag (TC-021) sang E2-T5 | 2026-08-18 | `Accepted` | Điều chỉnh phạm vi validation tag sang E2-T5 |
 | [`DEC-031`](#dec-031--system-tag-model-accepts-05-add-dish-sheet-enforces-exactly-one) | System Tag: Model nhận 0..5, Sheet S-06 chọn đúng một nhãn | 2026-08-18 | `Accepted` | Định dạng SystemTag, SPEC-006, UX Sheet S-06 |
 | [`DEC-032`](#dec-032--duplicate-candidates-come-from-two-sources-with-different-actions) | Ứng viên trùng lặp từ hai nguồn với hai hành động khác nhau | 2026-08-18 | `Accepted` | Phát hiện trùng client vs server, E2-T6/E2-T7, S-06 |
+| [`DEC-033`](#dec-033--e3-t1-does-not-need-the-websocket-driver-the-rule-snapshot-belongs-to-e5-t4) | E3-T1 không cần WebSocket; Snapshot Rule thuộc về E5-T4 | 2026-08-19 | `Accepted` | Cơ chế Start, driver DB, phân định phạm vi E3/E5 |
 
 
 ---
@@ -477,10 +478,52 @@ Trường `DuplicateCandidate.kind` là bắt buộc: `inGroup` id là `group_di
 
 ---
 
+# DEC-033 — E3-T1 Does Not Need the WebSocket Driver; the Rule Snapshot Belongs to E5-T4
+
+**Ngày quyết định:** 2026-08-19 | **Trạng thái:** Accepted
+
+## Quyết định
+
+`startSession`'s 4-step revalidation (session state, caller-is-creator,
+participants-still-members) runs entirely on the existing `neon-http` driver:
+explicit SELECT reads followed by the single conditional UPDATE already
+implemented at E1-T7. No WebSocket driver (`neon-serverless`) is introduced at
+E3-T1.
+
+## Rationale
+
+Earlier guides (E1-S4, E1-S6) and their resulting code comments
+(`src/shared/db/client.ts`, `start-session.ts`) claimed the WebSocket driver
+would be required starting at E3-T1, reasoning that SPEC-008's "snapshot
+Group Rule → Session Rule" step needed a genuine interactive read-then-write
+transaction. This was incorrect: `group_rules`/`session_rules` do not exist
+until `E5-T1` (dependency: `E2-T5`), which lands after E3 entirely. The
+snapshot is its own Master Plan subtask, `E5-T4`, which explicitly depends on
+`E3-T1` (not the reverse) — it inserts the snapshot into the transaction
+`startDraft` already provides, once the rule tables exist. E3-T1's own scope
+never touches rules at all.
+
+## Consequence
+
+The forward-looking comments in `client.ts` and `start-session.ts` are
+corrected to point at `E5-T4` instead of `E3-T1` (see Implementation Guide
+§1/§11). Anyone implementing `E5-T4` should re-read this entry before
+reaching for `neon-serverless` — the interactive transaction requirement is
+real, just two epics later than previously documented.
+
+## Affected Documents
+
+- `src/shared/db/client.ts` (comment corrected)
+- `src/features/session/application/start-session.ts` (docstring corrected)
+- Master Plan §7 (E5-T4 scope note, no textual change needed — already correct)
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `2.4` | 2026-08-19 | Bổ sung `DEC-033` (E3-T1 không cần WebSocket; Snapshot Rule thuộc E5-T4) cho E3-S1 |
 | `2.3` | 2026-08-18 | Bổ sung `DEC-032` (Ứng viên trùng lặp từ hai nguồn inGroup/global) cho E2-S4 |
 | `2.2` | 2026-08-18 | Bổ sung `DEC-031` (System Tag Model vs S-06 Sheet) cho E2-S3 |
 | `2.1` | 2026-08-18 | Bổ sung `DEC-029` (Use case riêng cho món trùng lặp) và `DEC-030` (Hoãn TC-021 sang E2-T5) cho E2-S2 |

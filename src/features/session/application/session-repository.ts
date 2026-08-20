@@ -11,6 +11,14 @@ export type SessionSummary = {
   readonly state: SessionState
 }
 
+export type SessionForStart = {
+  readonly id: string
+  readonly groupId: string
+  readonly creatorUserId: string
+  readonly state: SessionState
+  readonly participantUserIds: readonly string[]
+}
+
 export type NewSessionDraft = {
   readonly groupId: string
   readonly decisionDate: string
@@ -55,4 +63,20 @@ export interface SessionRepository {
    * bản S4 gốc vì S4 không có route nào cần đọc lại một Session đã tạo.
    */
   findById(sessionId: string): Promise<SessionSummary | null>
+
+  /**
+   * MỚI — tái dùng Draft hôm nay thay vì tạo rác. `findBlockingSessionToday`
+   * chỉ tính ACTIVE/FINALIZED (BR-025); đây là bản soi ngược lại: người dùng
+   * ghé màn "Mở phiên" lần hai trong cùng ngày (ví dụ Start thất bại lần đầu
+   * rồi quay lại) phải thấy lại đúng Draft cũ, không phải một Draft mới rỗng.
+   */
+  findDraftToday(groupId: string, decisionDate: string): Promise<SessionSummary | null>
+
+  /**
+   * MỚI — đọc đủ dữ liệu cho 4 bước revalidate của `startSession`. Tách khỏi
+   * `findById` (dùng cho trang deck, S5) vì hai nơi cần hai hình dạng khác
+   * nhau: deck cần `decisionDate` để hiện header, đây cần `creatorUserId` +
+   * `participantUserIds` để kiểm quyền.
+   */
+  findForStart(sessionId: string): Promise<SessionForStart | null>
 }
