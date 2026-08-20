@@ -198,9 +198,9 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 | `[x] E4-T4` | Phân trang và lọc theo `group_dishes.state` | [SPEC-011](what-we-gonna-eat-today_sdd_v0_1.md), `TC-045→047`, `TC-102→104`, `TC-108` | 3 | `E4-T3` | `TC-108` pass: Dish bị gỡ sau khi deck materialize không xuất hiện | `src/features/selection/application/**` |
 | `[x] E4-T5` | Upsert Interaction chống ghi đè sai thứ tự | [SPEC-012](what-we-gonna-eat-today_sdd_v0_1.md), `TC-106` | 2.5 | `E1-T9` | `TC-106` pass: Record đến muộn có timestamp cũ hơn bị bỏ qua | `src/features/selection/application/record-interaction.ts` |
 | `[x] E4-T6` | Retry khi mất mạng, không chặn thao tác | `NFR-05`, `S-09` | 1.5 | `E4-T5` | Tắt mạng vẫn vuốt tiếp được, có dải thông báo ở đỉnh | `src/features/selection/presentation/**` |
-| `E4-T7` | Thẻ món và cử chỉ vuốt | `S-09`, [Design §4](designs/README.md) | 3 | `E4-T4` | Nghiêng tối đa 8°, lớp phủ theo hướng, **vuốt trái không dùng màu đỏ** | `src/features/selection/presentation/dish-card.tsx` |
-| `E4-T8` | Nút vuốt và khả năng tiếp cận | [Design §7](designs/README.md), `NFR-03` | 2 | `E4-T7` | Mọi cử chỉ có nút tương đương; nhãn screen reader đầy đủ; vùng chạm ≥44px | `src/features/selection/presentation/swipe-controls.tsx` |
-| `E4-T9` | Chỉ báo tiến độ và lối vào Completed | `S-09` | 1 | `E4-T8` | Hết deck hiện gợi ý "Tôi chọn xong" — **Cột mốc M4** | Như trên |
+| `[x] E4-T7` | Thẻ món và cử chỉ vuốt | `S-09`, [Design §4](designs/README.md) | 3 | `E4-T4` | Nghiêng tối đa 8°, lớp phủ theo hướng, **vuốt trái không dùng màu đỏ** | `src/features/selection/presentation/components/dish-swipe-card.tsx` |
+| `[x] E4-T8` | Nút vuốt và khả năng tiếp cận | [Design §7](designs/README.md), `NFR-03` | 2 | `E4-T7` | Mọi cử chỉ có nút tương đương; nhãn screen reader đầy đủ; vùng chạm ≥44px | `src/features/selection/presentation/components/swipe-controls.tsx` |
+| `[x] E4-T9` | Chỉ báo tiến độ và lối vào Completed | `S-09` | 1 | `E4-T8` | Hết deck hiện gợi ý "Tôi chọn xong" — **Cột mốc M4** | `src/features/selection/presentation/components/deck-screen.tsx` |
 
 ---
 
@@ -337,6 +337,7 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.5` | 2026-08-20 | §6 | Hoàn tất thi công toàn bộ Epic E4 (S1→S4, E4-T1 đến E4-T9: Deck vuốt & Thuật toán Ranking cá nhân) — Đạt cột mốc M4 | Quyết định DEC-036 đến DEC-039 |
 | `1.4` | 2026-08-19 | §5 | Hoàn tất thi công Slice S3 của Epic E3 (E3-T5, E3-T6: Completed & Màn hình Creator) — Đạt cột mốc M3 | Quyết định DEC-035 |
 | `1.3` | 2026-08-18 | §4 | Hoàn tất thi công Slice S2 của Epic E2 (E2-T3, E2-T4: Chuẩn hoá tên món & Phát hiện trùng lặp) | Quyết định DEC-029, DEC-030 |
 | `1.2` | 2026-08-18 | §4 | Hoàn tất thi công Slice S1 của Epic E2 (E2-T1, E2-T2: Link mời & Tham gia nhóm) | Quyết định DEC-027, DEC-028 |

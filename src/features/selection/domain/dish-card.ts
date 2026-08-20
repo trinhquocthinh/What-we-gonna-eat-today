@@ -7,4 +7,10 @@ export type DishCard = {
   /** Luôn rỗng ở S5 — `group_dish_tags` là E2-T5, chưa tồn tại. */
   readonly systemTags: readonly string[]
   readonly effectiveInteraction: InteractionType | null
+  /**
+   * MỚI — S4. `null` = chưa từng ăn. Dữ liệu THÔ, không phải câu chữ — câu
+   * chữ tiếng Việt ("Lần cuối ăn · N ngày trước") thuộc `presentation/`, đúng
+   * kỷ luật đã giữ xuyên suốt dự án (domain không chứa chuỗi hiển thị).
+   */
+  readonly daysSinceLastEaten: number | null
 }

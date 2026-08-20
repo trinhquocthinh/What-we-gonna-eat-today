@@ -8,17 +8,16 @@ import type { SwipeDirection } from '../../domain/swipe-gesture'
 
 export type DishSwipeCardProps = {
   dish: DishCard
-  /** "Lần cuối ăn · N ngày trước" — LUÔN "Chưa từng ăn" ở S5, `eating_history`
-   *  chưa tồn tại (E1-T11). */
+  /** "Lần cuối ăn · N ngày trước" (hoặc "hôm nay"/"hôm qua"/"Chưa từng ăn") — định dạng từ `formatLastEatenLabel`. */
   lastEatenLabel: string
-  /** Câu giải thích ranking — LUÔN một câu chung ở S5, ranking thật là E4. */
+  /** Câu giải thích ranking — định dạng từ `formatExplanation`. */
   explanation: string
   /** Tên hai món kế tiếp trong deck — "Trong chồng". */
   upcomingNames: readonly string[]
   onCommit: (direction: SwipeDirection, dishId: string) => void
 }
 
-const DIRECTION_STYLES: Record<
+export const DIRECTION_STYLES: Record<
   SwipeDirection,
   { background: string; border: string; label: string; dragLabelBackground: string }
 > = {

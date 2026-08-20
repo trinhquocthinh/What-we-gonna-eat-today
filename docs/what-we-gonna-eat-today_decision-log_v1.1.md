@@ -716,10 +716,48 @@ the accurate audit trail of processing order if ever needed independently of
 
 ---
 
+# DEC-039 — list-deck Reads Eating History on Every Call, Not Just First Materialize
+
+**Ngày quyết định:** 2026-08-19 | **Trạng thái:** Accepted
+
+## Quyết định
+
+`listDeck` (S2/E4-T4) is amended: `history.findEatingDates` now runs on every
+call, not only when `findMaterializedDeck` returns `null`. Only the ranking
+computation (`buildDeck`) and the `materializeDeck` write remain conditional
+on first-open.
+
+## Rationale
+
+S2 optimized the history read away for repeat views because the deck's ORDER
+is frozen once materialized and doesn't need recomputing. But S1 committed to
+displaying real `lastEatenLabel`/explanation data on every card (deferred to
+S4), and that display data is not the same thing as the order — it must stay
+current across every view, not just the first. Splitting "read history" from
+"compute and persist ranking" resolves both requirements without reintroducing
+the cost S2 was avoiding (the ranking computation and the `session_decks`
+write still only happen once).
+
+## Consequence
+
+Every deck page load now performs one indexed SELECT against `eating_history`
+in addition to the existing queries. This is page-load cost, not
+swipe-interaction cost, so it does not affect NFR-02 (which governs the
+interaction Route Handler's response time, not initial page render).
+
+## Affected Documents
+
+- E4-S2 implementation guide (`list-deck.ts`'s design section is superseded by
+  this entry for the history-read timing; the materialize/pagination logic
+  itself is unchanged)
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `2.9` | 2026-08-19 | Bổ sung `DEC-039` (list-deck Reads Eating History on Every Call) cho E4-S4 |
 | `2.8` | 2026-08-19 | Bổ sung `DEC-038` (Interaction Ordering Uses Client-Reported Timestamp) cho E4-S3 |
 | `2.7` | 2026-08-19 | Bổ sung `DEC-036` (v1.0 Personal Score chỉ có Recency; Tie-break hai tầng) và `DEC-037` (`buildDeck` nhận Input Object) cho E4-S1 |
 | `2.6` | 2026-08-19 | Bổ sung `DEC-035` (Complete/Reopen UI Predates Its Backend; E3-T5 Is Purely Wiring) cho E3-S3 |
@@ -739,6 +777,7 @@ the accurate audit trail of processing order if ever needed independently of
 | `1.2` | 2026-08-14 | Bổ sung `DEC-012` (Mô hình Ranking, Cooldown 7 ngày, Exploration 20%) |
 | `1.1` | 2026-07-29 | Bổ sung `DEC-010` (Group/Session Rules) và `DEC-011` (Final Meal validation) |
 | `1.0` | 2026-07-23 | Khởi tạo Decision Log ban đầu với `DEC-001` đến `DEC-009` |
+
 
 
 

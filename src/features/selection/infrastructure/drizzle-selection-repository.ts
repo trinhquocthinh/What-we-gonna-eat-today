@@ -71,6 +71,7 @@ async function listEligibleDishCards(
     name: row.name,
     systemTags: [],
     effectiveInteraction: row.effectiveType,
+    daysSinceLastEaten: null,
   }))
 }
 

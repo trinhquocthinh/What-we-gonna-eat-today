@@ -56,8 +56,6 @@ export async function listDeck(
   deps: ListDeckDeps,
   input: ListDeckInput,
 ): Promise<Result<ListDeckResult, Failure>> {
-  // TC-103 — trước MỌI truy vấn, cùng nguyên tắc "validate không chạm DB"
-  // đã dùng ở `addDishToGroup`.
   if (input.cursor < 0) {
     return err(failure('ERR_VALIDATION', { field: 'cursor' }))
   }
@@ -72,16 +70,19 @@ export async function listDeck(
 
   const eligible = await deps.selection.listEligibleDishCards(input.sessionId, participant.id)
 
+  // SỬA (S4): đọc lịch sử ăn ở MỌI lần gọi — cần cho lastEatenLabel bất kể
+  // deck đã materialize hay chưa. Xem Implementation Guide §2.
+  const eatingRows = await deps.history.findEatingDates(
+    input.userId,
+    eligible.map((d) => d.globalDishId),
+  )
+  const eatingByDish = groupEatingDatesByDish(eatingRows)
+
   let orderedDishIds = await deps.selection.findMaterializedDeck(input.sessionId, input.userId)
 
   if (orderedDishIds === null) {
-    // Lần đầu mở deck — TÍNH RANKING, chỉ MỘT lần trong đời deck này.
-    const eatingRows = await deps.history.findEatingDates(
-      input.userId,
-      eligible.map((d) => d.globalDishId),
-    )
-    const eatingByDish = groupEatingDatesByDish(eatingRows)
-
+    // Chỉ bước TÍNH RANKING + GHI còn nằm trong nhánh điều kiện — không phải
+    // việc đọc lịch sử (đã chuyển ra ngoài, ở trên).
     const rankingInputs = eligible.map((dish) => {
       const dates = eatingByDish.get(dish.globalDishId) ?? []
       return {
@@ -107,18 +108,21 @@ export async function listDeck(
     orderedDishIds =
       materialized.outcome === 'MATERIALIZED'
         ? built
-        : // Thua race hiếm: request khác vừa materialize xong. Đọc lại để hội
-          // tụ về ĐÚNG thứ tự đã thắng, không dùng bản mình vừa tính.
-          ((await deps.selection.findMaterializedDeck(input.sessionId, input.userId)) ?? built)
+        : ((await deps.selection.findMaterializedDeck(input.sessionId, input.userId)) ?? built)
   }
 
-  // R-02 (TC-108) — giao giữa thứ tự đã lưu và tập ACTIVE hiện tại. Giữ
-  // nguyên thứ tự đã lưu, chỉ bớt dish không còn hợp lệ. Món mới thêm sau
-  // materialize KHÔNG xuất hiện — đây là chủ ý (BR-048 Deck Stability).
   const eligibleById = new Map(eligible.map((dish) => [dish.dishId, dish]))
   const orderedCards = orderedDishIds
     .map((dishId) => eligibleById.get(dishId))
     .filter((dish): dish is DishCard => dish !== undefined)
+    .map((dish) => ({
+      ...dish,
+      // MỚI — S4. Tính từ CÙNG `eatingByDish` đã đọc ở trên, không query thêm.
+      daysSinceLastEaten: daysSinceLastEaten({
+        eatingDates: eatingByDish.get(dish.globalDishId) ?? [],
+        referenceDate: input.referenceDate,
+      }),
+    }))
 
   const page = getDeckPage(orderedCards, input.cursor, input.pageSize)
   return ok({ items: [...page.items], nextCursor: page.nextCursor })

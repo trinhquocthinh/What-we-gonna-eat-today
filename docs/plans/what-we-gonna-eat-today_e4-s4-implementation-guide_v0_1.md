@@ -18,13 +18,13 @@
 | `E4-T8` | Nút vuốt và khả năng tiếp cận | 2 | `.../swipe-controls.tsx` | Mọi cử chỉ có nút tương đương; nhãn screen reader đầy đủ; vùng chạm ≥44px |
 | `E4-T9` | Chỉ báo tiến độ và lối vào Completed | 1 | như trên | Hết deck hiện gợi ý "Tôi chọn xong" — **Cột mốc M4** |
 
-- [ ] `lastEatenLabel` hiện số ngày thật, không còn hardcode `'Chưa từng ăn'`
-- [ ] Câu giải thích chỉ đổi khi vừa ăn gần đây (R > 0), còn lại giữ trung tính
-- [ ] `SwipeControls` tồn tại thành file riêng, đúng hợp đồng Design Criteria §5
-- [ ] `Hoàn tác`/`Tôi chọn xong` có `aria-label` câu hoàn chỉnh
-- [ ] Test tĩnh xác nhận không style nào cho "vuốt trái" tham chiếu màu đỏ
-- [ ] `use-swipe-gesture.ts` có test riêng (hiện đang 0 test)
-- [ ] `yarn verify && yarn arch:probe` xanh
+- [x] `lastEatenLabel` hiện số ngày thật, không còn hardcode `'Chưa từng ăn'`
+- [x] Câu giải thích chỉ đổi khi vừa ăn gần đây (R > 0), còn lại giữ trung tính
+- [x] `SwipeControls` tồn tại thành file riêng, đúng hợp đồng Design Criteria §5
+- [x] `Hoàn tác`/`Tôi chọn xong` có `aria-label` câu hoàn chỉnh
+- [x] Test tĩnh xác nhận không style nào cho "vuốt trái" tham chiếu màu đỏ
+- [x] `use-swipe-gesture.ts` có test riêng (hiện đang 0 test)
+- [x] `yarn verify && yarn arch:probe` xanh
 
 ---
 

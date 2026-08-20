@@ -12,6 +12,7 @@ function makeDishes(names: string[]): DishCard[] {
     name,
     systemTags: [],
     effectiveInteraction: null,
+    daysSinceLastEaten: null,
   }))
 }
 
@@ -40,7 +41,7 @@ describe('S-09 Deck vuốt', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Hoàn tác' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Hoàn tác lượt vuốt vừa rồi' })).toBeDisabled()
   })
 
   it('bấm Đề xuất thì tiến sang món kế tiếp', async () => {
@@ -103,7 +104,9 @@ describe('S-09 Deck vuốt', () => {
       />,
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Tôi chọn xong' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Tôi chọn xong, dừng vuốt cho lượt này' }),
+    )
 
     expect(screen.getByText('Xong lượt của bạn.')).toBeInTheDocument()
     expect(screen.getByText('Mở lại lượt chọn')).toBeInTheDocument()

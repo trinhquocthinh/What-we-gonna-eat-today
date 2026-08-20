@@ -11,6 +11,7 @@ function makeDishCard(overrides: Partial<DishCard> = {}): DishCard {
     name: 'Canh chua',
     systemTags: [],
     effectiveInteraction: null,
+    daysSinceLastEaten: null,
     ...overrides,
   }
 }
@@ -66,7 +67,7 @@ describe('listDeck — E4-T3/T4', () => {
     expect(deps.materializeDeck).toHaveBeenCalledOnce()
   })
 
-  it('TC-041 — đã materialize: KHÔNG gọi history lại, dùng thứ tự đã lưu', async () => {
+  it('TC-041 — đã materialize: KHÔNG tính lại ranking, NHƯNG vẫn đọc lịch sử cho nhãn hiển thị', async () => {
     const deps = makeDeps({
       eligible: [makeDishCard({ dishId: 'a' }), makeDishCard({ dishId: 'b' })],
       materialized: ['b', 'a'],
@@ -74,10 +75,23 @@ describe('listDeck — E4-T3/T4', () => {
 
     const result = await listDeck(deps, BASE_INPUT)
 
-    expect(deps.history.findEatingDates).not.toHaveBeenCalled()
+    expect(deps.history.findEatingDates).toHaveBeenCalledOnce()
     expect(deps.materializeDeck).not.toHaveBeenCalled()
     if (!result.ok) throw new Error('unreachable')
     expect(result.value.items.map((d) => d.dishId)).toEqual(['b', 'a'])
+  })
+
+  it('daysSinceLastEaten gắn đúng vào từng card, kể cả khi đã materialize', async () => {
+    const deps = makeDeps({
+      eligible: [makeDishCard({ dishId: 'a', globalDishId: 'ga' })],
+      materialized: ['a'],
+      eatingRows: [{ globalDishId: 'ga', eatingDate: '2026-08-17' }], // referenceDate 2026-08-19 → d=2
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items[0]?.daysSinceLastEaten).toBe(2)
   })
 
   it('TC-108 — món trong thứ tự đã lưu nhưng KHÔNG còn trong eligible: tự loại bỏ', async () => {

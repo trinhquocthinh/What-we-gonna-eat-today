@@ -7,9 +7,11 @@ import { Button } from '@/shared/ui/button'
 
 import type { DishCard } from '../../domain/dish-card'
 import type { SwipeDirection } from '../../domain/swipe-gesture'
+import { formatExplanation, formatLastEatenLabel } from './dish-explanation'
 import { DishSwipeCard } from './dish-swipe-card'
 import type { SendInteractionStatus } from './send-interaction'
 import { sendInteractionWithRetry } from './send-interaction'
+import { SwipeControls } from './swipe-controls'
 
 export type DeckScreenProps = {
   sessionId: string
@@ -19,9 +21,6 @@ export type DeckScreenProps = {
 }
 
 type ViewState = 'deck' | 'done'
-
-const GENERIC_EXPLANATION = 'Món này đang có trong danh mục của nhóm.'
-const NEVER_EATEN_LABEL = 'Chưa từng ăn' // eating_history chưa tồn tại (E1-T11)
 
 /**
  * S-09 Deck vuốt ⭐ màn hình chính.
@@ -33,6 +32,9 @@ const NEVER_EATEN_LABEL = 'Chưa từng ăn' // eating_history chưa tồn tại
  * E3-T5 nối nút "Tôi chọn xong" và "Mở lại lượt chọn" tới Route Handler
  * `/api/sessions/[id]/completed`, và khởi tạo `view` ban đầu theo dữ liệu
  * server.
+ *
+ * E4-S4 tách `SwipeControls` theo Design Criteria §5 và dùng dữ liệu thật
+ * cho `lastEatenLabel` / `explanation`.
  *
  * CỐ Ý CHƯA CÓ ở S5 (F15/F18, v1.1): nút "Tôi không ăn được món này", đổi màu
  * reason chip theo explore lane.
@@ -149,8 +151,8 @@ export function DeckScreen({
             <div className="absolute inset-x-7.5 top-1.25 h-35 rounded-card border border-border" />
             <DishSwipeCard
               dish={current}
-              lastEatenLabel={NEVER_EATEN_LABEL}
-              explanation={GENERIC_EXPLANATION}
+              lastEatenLabel={formatLastEatenLabel(current.daysSinceLastEaten)}
+              explanation={formatExplanation(current.daysSinceLastEaten)}
               upcomingNames={upcoming}
               onCommit={handleCommit}
             />
@@ -178,47 +180,14 @@ export function DeckScreen({
 
       <div className="flex flex-col gap-3 px-4 pb-8 pt-6">
         {isDeck ? (
-          <>
-            <div className="flex gap-3">
-              {/* `flex-1` bù lại `w-full` mà size="lg" đặt trên chính button —
-                  không có nó hai nút sẽ co về kích thước chữ thay vì chia đôi
-                  hàng, đúng thiết kế "flex:1 mỗi nút". */}
-              <Button
-                type="button"
-                variant="no"
-                className="flex-1"
-                aria-label={
-                  current === undefined ? undefined : `Không muốn ăn ${current.name} hôm nay`
-                }
-                onClick={() => current !== undefined && handleCommit(-1, current.dishId)}
-              >
-                Không hôm nay
-              </Button>
-              <Button
-                type="button"
-                variant="yes"
-                className="flex-1"
-                aria-label={current === undefined ? undefined : `Đề xuất ${current.name}`}
-                onClick={() => current !== undefined && handleCommit(1, current.dishId)}
-              >
-                Đề xuất
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="quiet"
-                size="sm"
-                disabled={cursor === 0}
-                onClick={handleUndo}
-              >
-                Hoàn tác
-              </Button>
-            </div>
-            <Button type="button" variant="quiet" size="sm" onClick={handleFinish}>
-              Tôi chọn xong
-            </Button>
-          </>
+          <SwipeControls
+            currentDishName={current?.name ?? null}
+            canUndo={cursor > 0}
+            onSwipeLeft={() => current !== undefined && handleCommit(-1, current.dishId)}
+            onSwipeRight={() => current !== undefined && handleCommit(1, current.dishId)}
+            onUndo={handleUndo}
+            onFinish={handleFinish}
+          />
         ) : null}
 
         {isEmpty ? (

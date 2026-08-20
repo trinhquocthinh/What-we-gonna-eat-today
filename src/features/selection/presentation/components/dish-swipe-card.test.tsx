@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { DishCard } from '../../application/selection-repository'
-import { DishSwipeCard } from './dish-swipe-card'
+import { DIRECTION_STYLES, DishSwipeCard } from './dish-swipe-card'
 
 const DISH: DishCard = {
   dishId: 'dish-1',
@@ -10,6 +10,7 @@ const DISH: DishCard = {
   name: 'Cá basa kho tiêu',
   systemTags: [],
   effectiveInteraction: null,
+  daysSinceLastEaten: null,
 }
 
 describe('DishSwipeCard', () => {
@@ -42,5 +43,20 @@ describe('DishSwipeCard', () => {
     )
 
     expect(screen.queryByText('Trong chồng')).not.toBeInTheDocument()
+  })
+})
+
+describe('DIRECTION_STYLES — bất biến thiết kế', () => {
+  it('KHÔNG hướng nào dùng màu đỏ/danger — Design Criteria §10 anti-pattern', () => {
+    for (const style of Object.values(DIRECTION_STYLES)) {
+      expect(style.background).not.toMatch(/red|danger/)
+      expect(style.border).not.toMatch(/red|danger/)
+      expect(style.dragLabelBackground).not.toMatch(/red|danger/)
+    }
+  })
+
+  it('vuốt trái dùng đúng token trung tính --no, không phải --danger', () => {
+    expect(DIRECTION_STYLES[-1]?.background).toBe('bg-no-soft')
+    expect(DIRECTION_STYLES[-1]?.border).toBe('border-no')
   })
 })
