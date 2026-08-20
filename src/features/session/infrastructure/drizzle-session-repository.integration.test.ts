@@ -254,3 +254,39 @@ describe('BR-025 — race condition khi Start (TC-107)', () => {
     }
   })
 })
+
+describe('SPEC-009 — Thêm Participant (integration)', () => {
+  it('TC-038 — thêm trùng userId+sessionId: lần hai ALREADY_EXISTS, không tạo hàng thứ hai', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    const secondUserId = crypto.randomUUID()
+    const db = getDb()
+    await db.insert(users).values({
+      id: secondUserId,
+      provider: 'test',
+      providerSubject: `integration-${secondUserId}`,
+      email: `${secondUserId}@example.test`,
+      displayName: 'Second User',
+    })
+    cleanupQueue.push(() => cleanupGroupAndUser(groupId, [userId, secondUserId]))
+
+    const session = await drizzleSessionRepository.createDraftWithCreatorParticipant({
+      groupId,
+      decisionDate: '2026-08-19',
+      creatorUserId: userId,
+    })
+
+    const first = await drizzleSessionRepository.addParticipant({
+      sessionId: session.id,
+      userId: secondUserId,
+    })
+    const second = await drizzleSessionRepository.addParticipant({
+      sessionId: session.id,
+      userId: secondUserId,
+    })
+
+    expect(first.outcome).toBe('ADDED')
+    expect(second.outcome).toBe('ALREADY_EXISTS')
+    const rows = await db.select().from(participants).where(eq(participants.userId, secondUserId))
+    expect(rows).toHaveLength(1)
+  })
+})

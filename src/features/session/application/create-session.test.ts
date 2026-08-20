@@ -34,6 +34,9 @@ function makeFakeSessionRepository(seed: Row[] = []) {
     async findForStart() {
       return null
     },
+    async addParticipant(): Promise<never> {
+      throw new Error('không dùng trong test này')
+    },
   }
 
   return { repository, rows }

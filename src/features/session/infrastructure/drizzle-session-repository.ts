@@ -5,6 +5,7 @@ import { getDb } from '@/shared/db/client'
 import { participants, selectionSessions } from '@/shared/db/schema'
 
 import type {
+  AddParticipantOutcome,
   NewSessionDraft,
   SessionForStart,
   SessionRepository,
@@ -14,6 +15,36 @@ import type {
 
 const UNIQUE_VIOLATION = '23505'
 const SESSION_UNIQUENESS_CONSTRAINT = 'selection_sessions_active_per_group_date'
+const PARTICIPANT_UNIQUENESS_CONSTRAINT = 'participants_session_user_unique'
+
+/**
+ * Kiểm tra lỗi vi phạm unique index PostgreSQL.
+ *
+ * Lưu ý về thiết kế (DEC-024):
+ * Không dùng `error instanceof DatabaseError` vì hai lý do thực tế:
+ * 1. Drizzle ORM bắt lỗi từ database driver rồi bọc lại trong `Error("Failed query: ...", { cause })`,
+ *    do đó lỗi bắt được ở tầng repo có cấu trúc lồng `error.cause`.
+ * 2. Driver HTTP `@neondatabase/serverless` ném instance của `NeonDbError` (thay vì `DatabaseError`
+ *    vốn chỉ dành cho WebSocket/Pool connection).
+ * Do đó, kiểm tra duck-typing qua `code === '23505'` và `constraint` trên `target` (hoặc `target.cause`)
+ * là phương án duy nhất bảo đảm bắt chính xác lỗi PostgreSQL thô.
+ */
+function isUniqueViolation(error: unknown, constraint: string): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  const target: Record<string, unknown> =
+    'cause' in error && typeof error.cause === 'object' && error.cause !== null
+      ? (error.cause as Record<string, unknown>)
+      : (error as Record<string, unknown>)
+
+  return target.code === UNIQUE_VIOLATION && target.constraint === constraint
+}
+
+const SESSION_SUMMARY_COLUMNS = {
+  id: selectionSessions.id,
+  groupId: selectionSessions.groupId,
+  decisionDate: selectionSessions.decisionDate,
+  state: selectionSessions.state,
+}
 
 async function findBlockingSessionToday(
   groupId: string,
@@ -64,28 +95,6 @@ async function createDraftWithCreatorParticipant(input: NewSessionDraft): Promis
   return { id: sessionId, groupId: input.groupId, decisionDate: input.decisionDate, state: 'DRAFT' }
 }
 
-/**
- * Kiểm tra lỗi vi phạm partial unique index `selection_sessions_active_per_group_date`.
- *
- * Lưu ý về thiết kế (DEC-024):
- * Không dùng `error instanceof DatabaseError` vì hai lý do thực tế:
- * 1. Drizzle ORM bắt lỗi từ database driver rồi bọc lại trong `Error("Failed query: ...", { cause })`,
- *    do đó lỗi bắt được ở tầng repo có cấu trúc lồng `error.cause`.
- * 2. Driver HTTP `@neondatabase/serverless` ném instance của `NeonDbError` (thay vì `DatabaseError`
- *    vốn chỉ dành cho WebSocket/Pool connection).
- * Do đó, kiểm tra duck-typing qua `code === '23505'` và `constraint` trên `target` (hoặc `target.cause`)
- * là phương án duy nhất bảo đảm bắt chính xác lỗi PostgreSQL thô.
- */
-function isSessionUniquenessViolation(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) return false
-  const target: Record<string, unknown> =
-    'cause' in error && typeof error.cause === 'object' && error.cause !== null
-      ? (error.cause as Record<string, unknown>)
-      : (error as Record<string, unknown>)
-
-  return target.code === UNIQUE_VIOLATION && target.constraint === SESSION_UNIQUENESS_CONSTRAINT
-}
-
 async function startDraft(sessionId: string): Promise<StartDraftOutcome> {
   try {
     const rows = await getDb()
@@ -111,7 +120,7 @@ async function startDraft(sessionId: string): Promise<StartDraftOutcome> {
     // thắng, cái kia vi phạm partial unique index khi commit (TC-107). Đây là
     // CHỖ DUY NHẤT trong feature này bắt lỗi Postgres thô — không để
     // DatabaseError rò rỉ qua khỏi hàm này (SDD §2.3).
-    if (isSessionUniquenessViolation(error)) {
+    if (isUniqueViolation(error, SESSION_UNIQUENESS_CONSTRAINT)) {
       return { outcome: 'ALREADY_EXISTS_TODAY' }
     }
     throw error
@@ -123,12 +132,7 @@ async function startDraft(sessionId: string): Promise<StartDraftOutcome> {
 // về deck.
 async function findById(sessionId: string): Promise<SessionSummary | null> {
   const rows = await getDb()
-    .select({
-      id: selectionSessions.id,
-      groupId: selectionSessions.groupId,
-      decisionDate: selectionSessions.decisionDate,
-      state: selectionSessions.state,
-    })
+    .select(SESSION_SUMMARY_COLUMNS)
     .from(selectionSessions)
     .where(eq(selectionSessions.id, sessionId))
     .limit(1)
@@ -141,12 +145,7 @@ async function findDraftToday(
   decisionDate: string,
 ): Promise<SessionSummary | null> {
   const rows = await getDb()
-    .select({
-      id: selectionSessions.id,
-      groupId: selectionSessions.groupId,
-      decisionDate: selectionSessions.decisionDate,
-      state: selectionSessions.state,
-    })
+    .select(SESSION_SUMMARY_COLUMNS)
     .from(selectionSessions)
     .where(
       and(
@@ -187,6 +186,30 @@ async function findForStart(sessionId: string): Promise<SessionForStart | null> 
   return { ...session, participantUserIds: participantRows.map((row) => row.userId) }
 }
 
+async function addParticipant(input: {
+  sessionId: string
+  userId: string
+}): Promise<AddParticipantOutcome> {
+  const db = getDb()
+  const participantId = uuidv7()
+
+  try {
+    await db.insert(participants).values({
+      id: participantId,
+      sessionId: input.sessionId,
+      userId: input.userId,
+      state: 'ACTIVE',
+    })
+
+    return { outcome: 'ADDED', participantId }
+  } catch (error) {
+    if (isUniqueViolation(error, PARTICIPANT_UNIQUENESS_CONSTRAINT)) {
+      return { outcome: 'ALREADY_EXISTS' }
+    }
+    throw error
+  }
+}
+
 export const drizzleSessionRepository: SessionRepository = {
   findBlockingSessionToday,
   createDraftWithCreatorParticipant,
@@ -194,4 +217,5 @@ export const drizzleSessionRepository: SessionRepository = {
   findById,
   findDraftToday,
   findForStart,
+  addParticipant,
 }

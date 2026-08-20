@@ -162,12 +162,24 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 
 # 5. E3 — Phiên và người tham gia
 
+### S1 — Bắt đầu phiên (Đã xong)
+
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| `E3-T1` | Revalidate 5 bước lúc Start | [SPEC-008](what-we-gonna-eat-today_sdd_v0_1.md), `TC-030→035` | 3 | `E1-T7` | Dừng ở lỗi đầu tiên, trả đúng mã lỗi tương ứng từng bước | `src/features/session/application/start-session.ts` |
-| `E3-T2` | Hiện Participant không hợp lệ ngay tại hàng | `S-08`, `TC-031` | 1 | `E3-T1` | Thấy tên người cụ thể, không phải thông báo chung | `src/features/session/presentation/**` |
-| `E3-T3` | Thêm Participant khi Draft | [SPEC-009](what-we-gonna-eat-today_sdd_v0_1.md), `TC-036`, `TC-037` | 1.5 | `E3-T1` | Participant mới có 0 Interaction | `src/features/session/application/add-participant.ts` |
-| `E3-T4` | Thêm Participant khi Active | [SPEC-009](what-we-gonna-eat-today_sdd_v0_1.md), `TC-038`, `TC-039` | 1.5 | `E3-T3` | `TC-038` pass: Thêm trùng trả `ERR_PARTICIPANT_EXISTS` | Như trên |
+| `[x] E3-T1` | Revalidate 5 bước lúc Start | [SPEC-008](what-we-gonna-eat-today_sdd_v0_1.md), `TC-030→035` | 3 | `E1-T7` | Dừng ở lỗi đầu tiên, trả đúng mã lỗi tương ứng từng bước | `src/features/session/application/start-session.ts` |
+| `[x] E3-T2` | Hiện Participant không hợp lệ ngay tại hàng | `S-08`, `TC-031` | 1 | `E3-T1` | Thấy tên người cụ thể, không phải thông báo chung | `src/features/session/presentation/**` |
+
+### S2 — Thêm Participant (Đã xong)
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E3-T3` | Thêm Participant khi Draft | [SPEC-009](what-we-gonna-eat-today_sdd_v0_1.md), `TC-036`, `TC-037` | 1.5 | `E3-T1` | Participant mới có 0 Interaction | `src/features/session/application/add-participant.ts` |
+| `[x] E3-T4` | Thêm Participant khi Active | [SPEC-009](what-we-gonna-eat-today_sdd_v0_1.md), `TC-038`, `TC-039` | 1.5 | `E3-T3` | `TC-038` pass: Thêm trùng trả `ERR_PARTICIPANT_EXISTS` | Như trên |
+
+### S3 — Tiến trình & Giao diện
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
 | `E3-T5` | Completed và mở lại | [SPEC-013](what-we-gonna-eat-today_sdd_v0_1.md), `TC-054→057` | 3 | `E1-T9` | `TC-055` pass: Participant `COMPLETED` **vẫn vuốt được tiếp** | `src/features/session/**` |
 | `E3-T6` | Màn hình phiên cho Creator | `S-04`, `S-08` | 4 | `E3-T5` | Thấy ai xong ai chưa, vào phiên được — **Cột mốc M3** | `src/features/session/presentation/**` |
 

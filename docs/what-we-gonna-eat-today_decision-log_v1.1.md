@@ -2,12 +2,12 @@
 
 > **Document Metadata**
 >
-> - **Version:** `2.4` | **Status:** `Active`
+> - **Version:** `2.5` | **Status:** `Active`
 > - **Created:** `2026-07-23` | **Last Updated:** `2026-08-19`
 > - **Supersedes:** `v2.0` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
 >
-> 📌 *Decision Log ghi lại 31 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
+> 📌 *Decision Log ghi lại 32 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
 
 ---
 
@@ -48,6 +48,7 @@
 | [`DEC-031`](#dec-031--system-tag-model-accepts-05-add-dish-sheet-enforces-exactly-one) | System Tag: Model nhận 0..5, Sheet S-06 chọn đúng một nhãn | 2026-08-18 | `Accepted` | Định dạng SystemTag, SPEC-006, UX Sheet S-06 |
 | [`DEC-032`](#dec-032--duplicate-candidates-come-from-two-sources-with-different-actions) | Ứng viên trùng lặp từ hai nguồn với hai hành động khác nhau | 2026-08-18 | `Accepted` | Phát hiện trùng client vs server, E2-T6/E2-T7, S-06 |
 | [`DEC-033`](#dec-033--e3-t1-does-not-need-the-websocket-driver-the-rule-snapshot-belongs-to-e5-t4) | E3-T1 không cần WebSocket; Snapshot Rule thuộc về E5-T4 | 2026-08-19 | `Accepted` | Cơ chế Start, driver DB, phân định phạm vi E3/E5 |
+| [`DEC-034`](#dec-034--e3-t3e3-t4-ship-as-one-function-draftactive-are-illustrative-labels) | E3-T3/E3-T4 gộp làm một hàm; "Draft"/"Active" là nhãn minh hoạ | 2026-08-19 | `Accepted` | Use case `addParticipant`, SPEC-009 |
 
 
 ---
@@ -519,10 +520,49 @@ real, just two epics later than previously documented.
 
 ---
 
+# DEC-034 — E3-T3/E3-T4 Ship as One Function; "Draft"/"Active" Are Illustrative Labels
+
+**Ngày quyết định:** 2026-08-19 | **Trạng thái:** Accepted
+
+## Quyết định
+
+`addParticipant` is implemented once, accepting a session in either `DRAFT`
+or `ACTIVE` state, covering all four of TC-036 through TC-039 in a single
+function. The Master Plan's subtask titles ("Thêm Participant khi Draft" /
+"...khi Active") do not correspond to a state-based code branch.
+
+## Rationale
+
+TC-036's own precondition text reads "Session ACTIVE, User là Member" —
+verbatim from the Test Cases Specification — despite being the test Master
+Plan assigns to the "khi Draft" subtask (`E3-T3`). No test case in the
+SPEC-009 group actually exercises a `DRAFT` precondition. SPEC-009 itself
+states plainly that both states are allowed. Both subtasks also share the
+exact same file target (`add-participant.ts`). Splitting the implementation
+into two state-gated code paths to match the subtask titles would invent a
+distinction the source documents don't actually draw — the real split is
+test-case difficulty (T3 = happy path + membership check; T4 = the two
+harder negative cases, one of which needs a real database).
+
+## Consequence
+
+Anyone reading `add-participant.ts` should not look for separate
+Draft-only/Active-only logic — there isn't any, by design. Future test cases
+referencing "khi Draft" behavior specifically should be added to this same
+function's test suite, not a new file.
+
+## Affected Documents
+
+- Test Cases Specification (TC-036's precondition text is inconsistent with
+  Master Plan's E3-T3 label; noted here, not edited in the source doc)
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `2.5` | 2026-08-19 | Bổ sung `DEC-034` (E3-T3/E3-T4 gộp làm một hàm; "Draft"/"Active" là nhãn minh hoạ) cho E3-S2 |
 | `2.4` | 2026-08-19 | Bổ sung `DEC-033` (E3-T1 không cần WebSocket; Snapshot Rule thuộc E5-T4) cho E3-S1 |
 | `2.3` | 2026-08-18 | Bổ sung `DEC-032` (Ứng viên trùng lặp từ hai nguồn inGroup/global) cho E2-S4 |
 | `2.2` | 2026-08-18 | Bổ sung `DEC-031` (System Tag Model vs S-06 Sheet) cho E2-S3 |

@@ -34,6 +34,10 @@ export type StartDraftOutcome =
   | { readonly outcome: 'NOT_DRAFT' }
   | { readonly outcome: 'ALREADY_EXISTS_TODAY' }
 
+export type AddParticipantOutcome =
+  | { readonly outcome: 'ADDED'; readonly participantId: string }
+  | { readonly outcome: 'ALREADY_EXISTS' }
+
 export interface SessionRepository {
   /**
    * SPEC-007. Chỉ Session `ACTIVE`/`FINALIZED` được tính — DRAFT/INVALID
@@ -79,4 +83,16 @@ export interface SessionRepository {
    * `participantUserIds` để kiểm quyền.
    */
   findForStart(sessionId: string): Promise<SessionForStart | null>
+
+  /**
+   * SPEC-009. Chèn `participants` với `state='ACTIVE'`, 0 tương tác (đúng
+   * nghĩa "chưa có hàng interactions nào" — không cần cột đếm riêng).
+   *
+   * KHÔNG SELECT trước để kiểm trùng — dựa thẳng vào
+   * `participants_session_user_unique` (đã có từ E1-T7/T8) và bắt lỗi vi
+   * phạm, đúng khuôn `isSessionUniquenessViolation` đã dùng cho
+   * `startDraft`. TC-038 ở tầng `I` (không phải `A`) chính là vì hành vi này
+   * chỉ chứng minh được với DB thật.
+   */
+  addParticipant(input: { sessionId: string; userId: string }): Promise<AddParticipantOutcome>
 }
