@@ -1,6 +1,7 @@
 # 📦 Implementation Guide — E4 Slice S2: session_decks + phân trang
 
 > **Document Metadata**
+>
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
 > - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E4-T3`, `E4-T4`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-010`, `SPEC-011`) • [Tech Spec](../what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) (§3.1 `session_decks`, §11 `R-02`) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-041`, `TC-045→047`, `TC-102→104`, `TC-108`)
@@ -13,7 +14,7 @@
 # 0. Việc cần làm và điều kiện xong
 
 | ID | Việc | Giờ | File | Xong nghĩa là |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `E4-T3` | Lưu `session_decks`, thứ tự bất biến trong phiên | 2 | `src/features/selection/infrastructure/**` | Mở lại deck lần hai thứ tự giống hệt |
 | `E4-T4` | Phân trang và lọc theo `group_dishes.state` | 3 | `src/features/selection/application/**` | `TC-108` pass — Dish bị gỡ sau khi deck materialize không xuất hiện |
 
@@ -143,11 +144,11 @@ Chạy `yarn db:generate` sau khi sửa `schema.ts`, đối chiếu với bản 
 
 ```sql
 CREATE TABLE "session_decks" (
-	"session_id" uuid NOT NULL,
-	"user_id" uuid NOT NULL,
-	"ordered_dish_ids" jsonb NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "session_decks_session_id_user_id_pk" PRIMARY KEY("session_id","user_id")
+ "session_id" uuid NOT NULL,
+ "user_id" uuid NOT NULL,
+ "ordered_dish_ids" jsonb NOT NULL,
+ "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+ CONSTRAINT "session_decks_session_id_user_id_pk" PRIMARY KEY("session_id","user_id")
 );
 --> statement-breakpoint
 ALTER TABLE "session_decks" ADD CONSTRAINT "session_decks_session_id_selection_sessions_id_fk" FOREIGN KEY ("session_id") REFERENCES "public"."selection_sessions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -240,6 +241,7 @@ export interface SelectionRepository {
 ```
 
 `DishCard` (`domain/dish-card.ts`) thêm:
+
 ```ts
 export type DishCard = {
   readonly dishId: string
@@ -649,7 +651,7 @@ describe('listDeck — E4-T3/T4', () => {
 # 8. Rủi ro
 
 | Rủi ro | Hậu quả | Giảm thiểu |
-|---|---|---|
+| --- | --- | --- |
 | Nhầm `null` với `[]` ở `findMaterializedDeck` | Deck đã materialize rỗng (TC-102) bị tính ranking lại mỗi lần mở — không sai kết quả nhưng sai lý do tồn tại của materialize | `??` chỉ bắt `undefined`/`null`, không bắt `[]` — đã kiểm ở §6.2, có test riêng ở §6.3 |
 | Quên `[...orderedDishIds]` khi ghi cột `jsonb` | Drizzle serialize kiểu `readonly` có thể lỗi hoặc mất kiểu tuỳ phiên bản driver | Đã spread tường minh, §6.2 |
 | Đổi `page.tsx` sang `pageSize=20` "cho khớp config" | Cắt cụt deck thật ở nhóm >20 món, không có UI "tải thêm" để bù | Quyết định rõ ràng ở §1.6 — đừng tự ý đổi call site |
@@ -661,7 +663,7 @@ describe('listDeck — E4-T3/T4', () => {
 # 9. Test Cases coverage
 
 | TC | Mô tả | Tầng | Nơi test |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `TC-041` | Mở lại deck lần 2 → thứ tự giữ nguyên | `A`+`I` | `list-deck.test.ts`, `drizzle-selection-repository.integration.test.ts` |
 | `TC-045` | 30 món, cursor=0 → 20 món, nextCursor=20 | `A` | `list-deck.test.ts` |
 | `TC-046` | 30 món, cursor=20 → 10 món, nextCursor=null | `A` | `list-deck.test.ts` |

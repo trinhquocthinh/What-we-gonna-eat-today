@@ -38,20 +38,18 @@
     "src/features/session/domain/session.ts",
     "src/features/session/infrastructure/**",
 
-    // GỠ Ở E5-T7/T8/T9: Meal và History use cases, domain và repository ở S6 chưa có route trong app/.
+    // GỠ Ở E5-T7/T8/T9: Meal use cases, domain và repository ở S6 chưa có route trong app/.
     // E5 (màn hình chốt bữa S-10) sẽ import và sử dụng chúng.
     "src/features/meal/**",
-    "src/features/history/**",
+
+    // GỠ Ở E5-T5: default-eating-history tạo ở E1-T11, E5 (Finalize) sẽ dùng khi ghi nhận Eating History.
+    "src/features/history/domain/default-eating-history.ts",
 
     // GỠ Ở E2-T7 (S4): addExistingDishToGroup use case được tạo ở E2-S2, S4 sẽ nối dây UI.
     "src/features/dish/application/add-existing-dish-to-group.ts",
 
     // GỠ Ở E2-T6 (S4): setSystemTags use case được tạo ở E2-S3, S4 sẽ nối dây UI sửa tag.
     "src/features/dish/application/set-system-tags.ts",
-
-    // GỠ Ở E4-T4 (S2): Ranking và RankingConfig được tạo ở E4-S1, S2 sẽ dùng trong listDeck/buildDeck.
-    "src/features/selection/domain/ranking-config.ts",
-    "src/features/selection/domain/ranking.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

@@ -11,6 +11,7 @@ import {
   interactions,
   participants,
   selectionSessions,
+  sessionDecks,
   users,
 } from '@/shared/db/schema'
 
@@ -58,6 +59,7 @@ async function seedActiveSessionWithDish() {
 
 async function cleanup(seed: Awaited<ReturnType<typeof seedActiveSessionWithDish>>) {
   const db = getDb()
+  await db.delete(sessionDecks).where(eq(sessionDecks.sessionId, seed.sessionId))
   await db.delete(interactionEvents).where(eq(interactionEvents.sessionId, seed.sessionId))
   await db.delete(interactions).where(eq(interactions.sessionId, seed.sessionId))
   await db.delete(groupDishes).where(eq(groupDishes.id, seed.groupDishId))
@@ -115,5 +117,56 @@ describe('SPEC-012 — idempotent thật (TC-053)', () => {
       .where(eq(interactions.sessionId, seed.sessionId))
     expect(rows).toHaveLength(1)
     expect(rows[0]?.type).toBe('SWIPE_RIGHT')
+  })
+})
+
+describe('sessionDecks — materializeDeck / findMaterializedDeck (TC-041)', () => {
+  it('TC-041 — materializeDeck rồi findMaterializedDeck: đọc lại đúng thứ tự đã lưu', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+
+    const outcome = await drizzleSelectionRepository.materializeDeck(seed.sessionId, seed.userId, [
+      'd3',
+      'd1',
+      'd2',
+    ])
+    expect(outcome.outcome).toBe('MATERIALIZED')
+
+    const read = await drizzleSelectionRepository.findMaterializedDeck(seed.sessionId, seed.userId)
+    expect(read).toEqual(['d3', 'd1', 'd2']) // đúng thứ tự đã ghi, không sắp lại
+  })
+
+  it('materialize hai lần cho cùng (session, user): lần hai ALREADY_MATERIALIZED, dữ liệu KHÔNG đổi', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+
+    await drizzleSelectionRepository.materializeDeck(seed.sessionId, seed.userId, ['d1'])
+    const second = await drizzleSelectionRepository.materializeDeck(seed.sessionId, seed.userId, [
+      'd2',
+    ])
+
+    expect(second.outcome).toBe('ALREADY_MATERIALIZED')
+    expect(
+      await drizzleSelectionRepository.findMaterializedDeck(seed.sessionId, seed.userId),
+    ).toEqual(['d1'])
+  })
+
+  it('findMaterializedDeck: chưa materialize trả null, KHÁC mảng rỗng', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+
+    expect(
+      await drizzleSelectionRepository.findMaterializedDeck(seed.sessionId, crypto.randomUUID()),
+    ).toBeNull()
+  })
+
+  it('materialize mảng rỗng (TC-102, Group 0 món): đọc lại ra [] chứ không phải null', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+
+    await drizzleSelectionRepository.materializeDeck(seed.sessionId, seed.userId, [])
+    expect(
+      await drizzleSelectionRepository.findMaterializedDeck(seed.sessionId, seed.userId),
+    ).toEqual([])
   })
 })

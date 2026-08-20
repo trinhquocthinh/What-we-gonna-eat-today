@@ -9,6 +9,7 @@ import {
   interactions,
   participants,
   selectionSessions,
+  sessionDecks,
 } from '@/shared/db/schema'
 
 import type { InteractionAction, InteractionType } from '../domain/interaction'
@@ -46,6 +47,7 @@ async function listEligibleDishCards(
   const rows = await getDb()
     .select({
       dishId: groupDishes.id,
+      globalDishId: globalDishes.id,
       name: globalDishes.name,
       effectiveType: interactions.type,
     })
@@ -63,9 +65,9 @@ async function listEligibleDishCards(
     .where(and(eq(selectionSessions.id, sessionId), eq(groupDishes.state, 'ACTIVE')))
     .orderBy(groupDishes.id)
 
-  // `systemTags` luôn rỗng ở S5 — `group_dish_tags` là E2-T5, chưa tồn tại.
   return rows.map((row) => ({
     dishId: row.dishId,
+    globalDishId: row.globalDishId,
     name: row.name,
     systemTags: [],
     effectiveInteraction: row.effectiveType,
@@ -162,10 +164,61 @@ async function applyInteraction(input: {
   return type
 }
 
+const UNIQUE_VIOLATION = '23505'
+const SESSION_DECK_PK_VIOLATION_CONSTRAINT = 'session_decks_session_id_user_id_pk'
+
+function isSessionDeckAlreadyMaterialized(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  const target: Record<string, unknown> =
+    'cause' in error && typeof error.cause === 'object' && error.cause !== null
+      ? (error.cause as Record<string, unknown>)
+      : (error as Record<string, unknown>)
+
+  return (
+    target.code === UNIQUE_VIOLATION && target.constraint === SESSION_DECK_PK_VIOLATION_CONSTRAINT
+  )
+}
+
+async function findMaterializedDeck(
+  sessionId: string,
+  userId: string,
+): Promise<readonly string[] | null> {
+  const rows = await getDb()
+    .select({ orderedDishIds: sessionDecks.orderedDishIds })
+    .from(sessionDecks)
+    .where(and(eq(sessionDecks.sessionId, sessionId), eq(sessionDecks.userId, userId)))
+    .limit(1)
+
+  // `rows[0]?.orderedDishIds ?? null`: một mảng RỖNG là giá trị hợp lệ (không
+  // "nullish"), nên toán tử `??` KHÔNG nhầm nó với "chưa materialize". Chỉ khi
+  // `rows[0]` chính nó là `undefined` (không có dòng nào) mới trả `null`.
+  return rows[0]?.orderedDishIds ?? null
+}
+
+async function materializeDeck(
+  sessionId: string,
+  userId: string,
+  orderedDishIds: readonly string[],
+): Promise<{ outcome: 'MATERIALIZED' | 'ALREADY_MATERIALIZED' }> {
+  try {
+    await getDb()
+      .insert(sessionDecks)
+      .values({ sessionId, userId, orderedDishIds: [...orderedDishIds] })
+    return { outcome: 'MATERIALIZED' }
+  } catch (error) {
+    if (isSessionDeckAlreadyMaterialized(error)) {
+      return { outcome: 'ALREADY_MATERIALIZED' }
+    }
+    throw error
+  }
+}
+
 export const drizzleSelectionRepository: SelectionRepository = {
   findParticipant,
   listEligibleDishCards,
   findSessionState,
   isDishActiveInSession,
   applyInteraction,
+  findMaterializedDeck,
+  materializeDeck,
 }

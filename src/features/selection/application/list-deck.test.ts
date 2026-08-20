@@ -1,98 +1,160 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { DishCard, ParticipantRecord, SelectionRepository } from './selection-repository'
+import type { HistoryRepository } from '@/features/history/application/history-repository'
 import { listDeck } from './list-deck'
+import type { DishCard, SelectionRepository } from './selection-repository'
 
-function makeDishCards(count: number): DishCard[] {
-  return Array.from({ length: count }, (_, i) => ({
-    dishId: `dish-${i}`,
-    name: `Món ${i}`,
+function makeDishCard(overrides: Partial<DishCard> = {}): DishCard {
+  return {
+    dishId: 'gd-1',
+    globalDishId: 'gld-1',
+    name: 'Canh chua',
     systemTags: [],
     effectiveInteraction: null,
-  }))
-}
-
-function makeFakeSelectionRepository(options: {
-  participant: ParticipantRecord | null
-  eligible: DishCard[]
-}): SelectionRepository {
-  return {
-    async findParticipant() {
-      return options.participant
-    },
-    async listEligibleDishCards() {
-      return options.eligible
-    },
-    async findSessionState(): Promise<never> {
-      throw new Error('không dùng trong test này')
-    },
-    async isDishActiveInSession(): Promise<never> {
-      throw new Error('không dùng trong test này')
-    },
-    async applyInteraction(): Promise<never> {
-      throw new Error('không dùng trong test này')
-    },
+    ...overrides,
   }
 }
 
-describe('SPEC-011 — Lấy trang deck', () => {
-  it('TC-045: deck 30 Dish, cursor=0 thì trả 20 item và nextCursor=20', async () => {
-    const repository = makeFakeSelectionRepository({
-      participant: { id: 'participant-1', state: 'ACTIVE' },
-      eligible: makeDishCards(30),
+function makeDeps(
+  overrides: {
+    eligible?: DishCard[]
+    materialized?: readonly string[] | null
+    eatingRows?: { globalDishId: string; eatingDate: string }[]
+  } = {},
+) {
+  const materializeDeck = vi.fn(async () => ({ outcome: 'MATERIALIZED' as const }))
+  const selection: Partial<SelectionRepository> = {
+    findParticipant: vi.fn(async () => ({ id: 'p-1', state: 'ACTIVE' as const })),
+    listEligibleDishCards: vi.fn(async () => overrides.eligible ?? [makeDishCard()]),
+    findMaterializedDeck: vi.fn(async () => overrides.materialized ?? null),
+    materializeDeck,
+  }
+  const history: HistoryRepository = {
+    findEatingDates: vi.fn(async () => overrides.eatingRows ?? []),
+  }
+  return { selection: selection as SelectionRepository, history, materializeDeck }
+}
+
+const BASE_INPUT = {
+  sessionId: 's1',
+  userId: 'u1',
+  cursor: 0,
+  pageSize: 20,
+  referenceDate: '2026-08-19',
+}
+
+describe('listDeck — E4-T3/T4', () => {
+  it('TC-103 — cursor âm: ERR_VALIDATION, không chạm DB', async () => {
+    const deps = makeDeps()
+
+    const result = await listDeck(deps, { ...BASE_INPUT, cursor: -1 })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('unreachable')
+    expect(result.error.code).toBe('ERR_VALIDATION')
+    expect(deps.selection.findParticipant).not.toHaveBeenCalled()
+  })
+
+  it('lần đầu mở deck: gọi history, materialize đúng một lần', async () => {
+    const deps = makeDeps({
+      eligible: [makeDishCard({ dishId: 'a' }), makeDishCard({ dishId: 'b' })],
     })
 
-    const result = await listDeck(
-      { selection: repository },
-      { sessionId: 'session-1', userId: 'user-1', cursor: 0, pageSize: 20 },
-    )
+    await listDeck(deps, BASE_INPUT)
+
+    expect(deps.history.findEatingDates).toHaveBeenCalledOnce()
+    expect(deps.materializeDeck).toHaveBeenCalledOnce()
+  })
+
+  it('TC-041 — đã materialize: KHÔNG gọi history lại, dùng thứ tự đã lưu', async () => {
+    const deps = makeDeps({
+      eligible: [makeDishCard({ dishId: 'a' }), makeDishCard({ dishId: 'b' })],
+      materialized: ['b', 'a'],
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(deps.history.findEatingDates).not.toHaveBeenCalled()
+    expect(deps.materializeDeck).not.toHaveBeenCalled()
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items.map((d) => d.dishId)).toEqual(['b', 'a'])
+  })
+
+  it('TC-108 — món trong thứ tự đã lưu nhưng KHÔNG còn trong eligible: tự loại bỏ', async () => {
+    const deps = makeDeps({
+      eligible: [makeDishCard({ dishId: 'a' })], // 'b' đã bị gỡ (INACTIVE), không còn trong eligible
+      materialized: ['b', 'a'],
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items.map((d) => d.dishId)).toEqual(['a'])
+  })
+
+  it('TC-102 — 0 món ACTIVE: deck rỗng, không lỗi', async () => {
+    const deps = makeDeps({ eligible: [] })
+
+    const result = await listDeck(deps, BASE_INPUT)
 
     expect(result.ok).toBe(true)
-    expect(result.ok && result.value.items).toHaveLength(20)
-    expect(result.ok && result.value.nextCursor).toBe(20)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items).toEqual([])
+    expect(result.value.nextCursor).toBeNull()
   })
 
-  it('TC-046: cursor=20 thì trả 10 item và nextCursor=null', async () => {
-    const repository = makeFakeSelectionRepository({
-      participant: { id: 'participant-1', state: 'ACTIVE' },
-      eligible: makeDishCards(30),
-    })
+  it('TC-045 — 30 món, cursor=0, pageSize=20: 20 món, nextCursor=20', async () => {
+    const eligible = Array.from({ length: 30 }, (_, i) => makeDishCard({ dishId: `d${i}` }))
+    const deps = makeDeps({ eligible, materialized: eligible.map((d) => d.dishId) })
 
-    const result = await listDeck(
-      { selection: repository },
-      { sessionId: 'session-1', userId: 'user-1', cursor: 20, pageSize: 20 },
-    )
+    const result = await listDeck(deps, { ...BASE_INPUT, pageSize: 20 })
 
-    expect(result.ok).toBe(true)
-    expect(result.ok && result.value.items).toHaveLength(10)
-    expect(result.ok && result.value.nextCursor).toBeNull()
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items).toHaveLength(20)
+    expect(result.value.nextCursor).toBe(20)
   })
 
-  it('TC-047: người gọi không phải Participant thì ERR_NOT_PARTICIPANT', async () => {
-    const repository = makeFakeSelectionRepository({
-      participant: null,
-      eligible: makeDishCards(30),
-    })
+  it('TC-046 — 30 món, cursor=20, pageSize=20: 10 món còn lại, nextCursor=null', async () => {
+    const eligible = Array.from({ length: 30 }, (_, i) => makeDishCard({ dishId: `d${i}` }))
+    const deps = makeDeps({ eligible, materialized: eligible.map((d) => d.dishId) })
 
-    const result = await listDeck(
-      { selection: repository },
-      { sessionId: 'session-1', userId: 'user-la', cursor: 0, pageSize: 20 },
-    )
+    const result = await listDeck(deps, { ...BASE_INPUT, cursor: 20, pageSize: 20 })
 
-    expect(result.ok === false && result.error.code).toBe('ERR_NOT_PARTICIPANT')
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items).toHaveLength(10)
+    expect(result.value.nextCursor).toBeNull()
   })
 
-  it('SPEC-011: Participant REMOVED cũng bị từ chối như chưa từng tham gia', async () => {
-    const repository = makeFakeSelectionRepository({
-      participant: { id: 'participant-1', state: 'REMOVED' },
-      eligible: makeDishCards(30),
-    })
+  it('TC-104 — cursor vượt quá tổng số món: 0 item, nextCursor=null, không lỗi', async () => {
+    const eligible = [makeDishCard()]
+    const deps = makeDeps({ eligible, materialized: ['gd-1'] })
 
-    const result = await listDeck(
-      { selection: repository },
-      { sessionId: 'session-1', userId: 'user-1', cursor: 0, pageSize: 20 },
-    )
+    const result = await listDeck(deps, { ...BASE_INPUT, cursor: 100 })
 
-    expect(result.ok === false && result.error.code).toBe('ERR_NOT_PARTICIPANT')
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items).toEqual([])
+    expect(result.value.nextCursor).toBeNull()
+  })
+
+  it('TC-047 — không phải Participant: ERR_NOT_PARTICIPANT (đã có từ E1-T9, test hồi quy)', async () => {
+    const deps = makeDeps()
+    deps.selection.findParticipant = vi.fn(async () => null)
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('unreachable')
+    expect(result.error.code).toBe('ERR_NOT_PARTICIPANT')
+  })
+
+  it('SPEC-011 — Participant REMOVED cũng bị từ chối như chưa từng tham gia', async () => {
+    const deps = makeDeps()
+    deps.selection.findParticipant = vi.fn(async () => ({ id: 'p-1', state: 'REMOVED' as const }))
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('unreachable')
+    expect(result.error.code).toBe('ERR_NOT_PARTICIPANT')
   })
 })

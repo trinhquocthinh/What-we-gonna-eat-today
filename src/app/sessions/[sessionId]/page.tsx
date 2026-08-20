@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentUser } from '@/features/auth/infrastructure/session'
 import { assertGroupAccess } from '@/features/group/application/assert-group-access'
 import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
+import { drizzleHistoryRepository } from '@/features/history/infrastructure/drizzle-history-repository'
 import { listDeck } from '@/features/selection/application/list-deck'
 import { drizzleSelectionRepository } from '@/features/selection/infrastructure/drizzle-selection-repository'
 import { DeckScreen } from '@/features/selection/presentation/components/deck-screen'
@@ -42,8 +43,14 @@ export default async function SessionPage({ params }: SessionPageProps) {
   }
 
   const deck = await listDeck(
-    { selection: drizzleSelectionRepository },
-    { sessionId, userId: user.id, cursor: 0, pageSize: WHOLE_DECK_PAGE_SIZE },
+    { selection: drizzleSelectionRepository, history: drizzleHistoryRepository },
+    {
+      sessionId,
+      userId: user.id,
+      cursor: 0,
+      pageSize: WHOLE_DECK_PAGE_SIZE,
+      referenceDate: session.decisionDate,
+    },
   )
   if (!deck.ok) {
     // ERR_NOT_PARTICIPANT — Group Member chưa từng được thêm vào Session này qua `addParticipant`.

@@ -43,4 +43,20 @@ export interface SelectionRepository {
     groupDishId: string
     action: InteractionAction
   }): Promise<InteractionType | null>
+
+  /** `null` = chưa materialize lần nào. Mảng RỖNG (đã materialize, 0 món) là
+   *  một giá trị hợp lệ KHÁC `null` — TC-102 (Group 0 món ACTIVE) đi qua đây. */
+  findMaterializedDeck(sessionId: string, userId: string): Promise<readonly string[] | null>
+
+  /**
+   * INSERT một lần. `ALREADY_MATERIALIZED` (không phải lỗi) khi race: hai
+   * request đồng thời cùng lần đầu mở deck. Người gọi (`list-deck.ts`) đọc lại
+   * qua `findMaterializedDeck` để cả hai hội tụ về ĐÚNG MỘT thứ tự đã thắng,
+   * không phải mỗi request tự tin dùng bản mình vừa tính.
+   */
+  materializeDeck(
+    sessionId: string,
+    userId: string,
+    orderedDishIds: readonly string[],
+  ): Promise<{ readonly outcome: 'MATERIALIZED' | 'ALREADY_MATERIALIZED' }>
 }

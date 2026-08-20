@@ -8,6 +8,7 @@ import { DeckScreen } from './deck-screen'
 function makeDishes(names: string[]): DishCard[] {
   return names.map((name, i) => ({
     dishId: `dish-${i}`,
+    globalDishId: `gld-${i}`,
     name,
     systemTags: [],
     effectiveInteraction: null,

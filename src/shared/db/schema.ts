@@ -3,6 +3,7 @@ import {
   boolean,
   date,
   index,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -342,6 +343,31 @@ export const interactionEvents = pgTable('interaction_events', {
 
 export type Interaction = typeof interactions.$inferSelect
 export type InteractionEvent = typeof interactionEvents.$inferSelect
+
+/**
+ * Tech Spec §3.1. `ordered_dish_ids` LÀ bộ khung cố định của deck — materialize
+ * đúng MỘT lần (SPEC-010, TC-041). Lọc lại theo `group_dishes.state` hiện tại
+ * là việc của TẦNG ĐỌC (`list-deck.ts`), không phải của bảng này — bảng chỉ
+ * lưu, không tự biết dish nào còn ACTIVE.
+ *
+ * KHÔNG có cột `id` — khoá chính là cặp cột, cùng khuôn `final_meal_items`.
+ */
+export const sessionDecks = pgTable(
+  'session_decks',
+  {
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => selectionSessions.id),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    orderedDishIds: jsonb('ordered_dish_ids').$type<string[]>().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.sessionId, table.userId] })],
+)
+
+export type SessionDeck = typeof sessionDecks.$inferSelect
 
 /**
  * Tech Spec §3.1, §3.2. ĐÂY LÀ BẢNG NHÁP — SPEC-015 ghi đè lên chính bảng

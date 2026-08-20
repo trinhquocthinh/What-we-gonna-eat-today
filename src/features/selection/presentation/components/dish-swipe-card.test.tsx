@@ -6,6 +6,7 @@ import { DishSwipeCard } from './dish-swipe-card'
 
 const DISH: DishCard = {
   dishId: 'dish-1',
+  globalDishId: 'gld-1',
   name: 'Cá basa kho tiêu',
   systemTags: [],
   effectiveInteraction: null,

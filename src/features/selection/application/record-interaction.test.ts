@@ -33,6 +33,12 @@ function makeFakeSelectionRepository(options: {
       effective = input.action === 'UNDO' ? null : (input.action as InteractionType)
       return effective
     },
+    async findMaterializedDeck(): Promise<never> {
+      throw new Error('không dùng trong test này')
+    },
+    async materializeDeck(): Promise<never> {
+      throw new Error('không dùng trong test này')
+    },
   }
 
   return {
