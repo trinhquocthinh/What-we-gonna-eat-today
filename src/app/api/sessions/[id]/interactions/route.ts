@@ -47,8 +47,21 @@ export async function POST(request: Request, { params }: RouteParams) {
     typeof body === 'object' && body !== null
       ? (body as Record<string, unknown>)['action']
       : undefined
+  const clientTimestampRaw =
+    typeof body === 'object' && body !== null
+      ? (body as Record<string, unknown>)['clientTimestamp']
+      : undefined
 
-  if (typeof dishId !== 'string' || dishId === '' || !isValidAction(action)) {
+  const clientTimestamp =
+    typeof clientTimestampRaw === 'string' ? new Date(clientTimestampRaw) : null
+
+  if (
+    typeof dishId !== 'string' ||
+    dishId === '' ||
+    !isValidAction(action) ||
+    clientTimestamp === null ||
+    Number.isNaN(clientTimestamp.getTime())
+  ) {
     return Response.json(
       { code: 'ERR_VALIDATION' },
       { status: httpStatusForErrorCode('ERR_VALIDATION') },
@@ -57,7 +70,7 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   const result = await recordInteraction(
     { selection: drizzleSelectionRepository },
-    { sessionId, userId: user.id, groupDishId: dishId, action },
+    { sessionId, userId: user.id, groupDishId: dishId, action, clientTimestamp },
   )
 
   if (!result.ok) {

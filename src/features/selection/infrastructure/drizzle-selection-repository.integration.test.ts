@@ -94,6 +94,7 @@ describe('SPEC-012 — idempotent thật (TC-053)', () => {
         userId: seed.userId,
         groupDishId: seed.groupDishId,
         action: 'SWIPE_RIGHT',
+        clientTimestamp: new Date(),
       },
     )
     const second = await recordInteraction(
@@ -103,6 +104,7 @@ describe('SPEC-012 — idempotent thật (TC-053)', () => {
         userId: seed.userId,
         groupDishId: seed.groupDishId,
         action: 'SWIPE_RIGHT',
+        clientTimestamp: new Date(),
       },
     )
 
@@ -117,6 +119,63 @@ describe('SPEC-012 — idempotent thật (TC-053)', () => {
       .where(eq(interactions.sessionId, seed.sessionId))
     expect(rows).toHaveLength(1)
     expect(rows[0]?.type).toBe('SWIPE_RIGHT')
+  })
+
+  it('TC-106 — bản đến sau có clientTimestamp CŨ hơn bị bỏ qua, giữ bản mới hơn', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+
+    const newer = new Date('2026-08-19T10:00:05Z')
+    const older = new Date('2026-08-19T10:00:00Z')
+
+    // Request "mới hơn" tới server TRƯỚC (giả lập network jitter: request có
+    // clientTimestamp SỚM hơn lại ĐẾN sau — đây chính là kịch bản TC-106).
+    const first = await drizzleSelectionRepository.applyInteraction({
+      sessionId: seed.sessionId,
+      participantId: seed.participantId,
+      groupDishId: seed.groupDishId,
+      action: 'SWIPE_RIGHT',
+      clientTimestamp: newer,
+    })
+    const second = await drizzleSelectionRepository.applyInteraction({
+      sessionId: seed.sessionId,
+      participantId: seed.participantId,
+      groupDishId: seed.groupDishId,
+      action: 'SWIPE_LEFT',
+      clientTimestamp: older, // ĐẾN SAU nhưng Ý ĐỊNH cũ hơn
+    })
+
+    expect(first).toBe('SWIPE_RIGHT')
+    expect(second).toBe('SWIPE_RIGHT') // ← KHÔNG phải 'SWIPE_LEFT' — bản cũ bị bỏ qua
+
+    const db = getDb()
+    const rows = await db
+      .select()
+      .from(interactions)
+      .where(eq(interactions.groupDishId, seed.groupDishId))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.type).toBe('SWIPE_RIGHT') // DB thật giữ đúng bản mới hơn
+
+    const events = await db
+      .select()
+      .from(interactionEvents)
+      .where(eq(interactionEvents.groupDishId, seed.groupDishId))
+    expect(events).toHaveLength(2) // cả hai request đều để lại vết audit, kể cả bản bị từ chối
+  })
+
+  it('request bình thường (không đụng độ): vẫn ghi và trả đúng type, không round-trip thừa', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+
+    const result = await drizzleSelectionRepository.applyInteraction({
+      sessionId: seed.sessionId,
+      participantId: seed.participantId,
+      groupDishId: seed.groupDishId,
+      action: 'SWIPE_RIGHT',
+      clientTimestamp: new Date(),
+    })
+
+    expect(result).toBe('SWIPE_RIGHT')
   })
 })
 

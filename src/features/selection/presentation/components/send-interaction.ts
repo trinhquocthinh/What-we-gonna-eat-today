@@ -22,12 +22,19 @@ export async function sendInteractionWithRetry(
   input: { dishId: string; action: InteractionAction },
   onStatusChange: (status: SendInteractionStatus) => void,
 ): Promise<SendInteractionResult> {
+  // Capture MỘT LẦN, TRƯỚC vòng lặp retry — mọi lần thử lại gửi lại ĐÚNG mốc
+  // thời gian gốc. Retry là gửi lại CÙNG một hành động đã xảy ra, không phải
+  // tạo ra một hành động mới mỗi lần thử — nếu mỗi lần retry tự lấy
+  // `new Date()` mới, một request bị delay 4 giây (qua cả 3 lần retry) sẽ tự
+  // báo cáo thời điểm SAI, làm hỏng chính cơ chế mà E4-T5 vừa dựng.
+  const clientTimestamp = new Date().toISOString()
+
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
     try {
       const response = await fetch(`/api/sessions/${sessionId}/interactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
+        body: JSON.stringify({ ...input, clientTimestamp }),
       })
 
       if (response.ok) {

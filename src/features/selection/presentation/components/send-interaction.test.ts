@@ -63,4 +63,25 @@ describe('sendInteractionWithRetry', () => {
     expect(onStatusChange).toHaveBeenLastCalledWith('failed')
     vi.useRealTimers()
   })
+
+  it('gửi kèm clientTimestamp, GIỮ NGUYÊN qua các lần retry', async () => {
+    vi.useFakeTimers()
+    const capturedTimestamps: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url, options) => {
+        const body = JSON.parse((options as { body: string }).body)
+        capturedTimestamps.push(body.clientTimestamp)
+        return Promise.resolve({ ok: false, status: 503 }) // buộc retry
+      }),
+    )
+
+    const promise = sendInteractionWithRetry('s1', { dishId: 'd1', action: 'SWIPE_RIGHT' }, vi.fn())
+    await vi.runAllTimersAsync()
+    await promise
+
+    expect(capturedTimestamps).toHaveLength(4)
+    expect(new Set(capturedTimestamps).size).toBe(1) // MỌI lần gửi cùng một giá trị
+    vi.useRealTimers()
+  })
 })

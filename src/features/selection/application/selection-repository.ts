@@ -32,16 +32,17 @@ export interface SelectionRepository {
   isDishActiveInSession(sessionId: string, groupDishId: string): Promise<boolean>
 
   /**
-   * SPEC-012 — ghi/xoá effective interaction + LUÔN append event, NGUYÊN TỬ
-   * (`db.batch`). `SWIPE_RIGHT`/`SWIPE_LEFT` → upsert vào `interactions`.
-   * `UNDO` → xoá khỏi `interactions` (không phải ghi giá trị rỗng — SDD §2.2:
-   * "None" = không tồn tại row). Trả về effective interaction SAU thao tác.
+   * SPEC-012 + R-04. `clientTimestamp` là mốc THỜI ĐIỂM NGƯỜI DÙNG THAO TÁC
+   * (client báo lên) — KHÁC `interactions.updatedAt` cũ vốn là "lúc server xử
+   * lý". Đây là thay đổi ngữ nghĩa có chủ ý của cột đó — xem Decision Log
+   * DEC-038.
    */
   applyInteraction(input: {
     sessionId: string
     participantId: string
     groupDishId: string
     action: InteractionAction
+    clientTimestamp: Date
   }): Promise<InteractionType | null>
 
   /** `null` = chưa materialize lần nào. Mảng RỖNG (đã materialize, 0 món) là

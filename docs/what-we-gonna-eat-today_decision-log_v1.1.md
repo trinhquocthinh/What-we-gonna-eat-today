@@ -674,10 +674,53 @@ signature — this deviation is specific to `buildDeck`'s seed requirement.
 
 ---
 
+# DEC-038 — Interaction Ordering Uses Client-Reported Timestamp, Not Server Arrival Order
+
+**Ngày quyết định:** 2026-08-19 | **Trạng thái:** Accepted
+
+## Quyết định
+
+`interactions.updated_at` now stores the CLIENT's reported action timestamp
+(`clientTimestamp`, captured at gesture-commit time), not the server's
+processing time. `applyInteraction`'s upsert uses
+`ON CONFLICT ... DO UPDATE ... WHERE updated_at < clientTimestamp` — a single
+SQL statement, no read-then-write — to reject writes whose reported intent is
+older than what's already stored, regardless of network arrival order.
+
+## Rationale
+
+SPEC-012's formal input (`{ sessionId, dishId, action }`) has no timestamp
+field, but TC-106 and R-04 require rejecting a write when the ARRIVING request
+represents an OLDER user intent than one already applied — a distinction the
+server cannot make from arrival order alone. This is the same class of gap as
+DEC-030-style spec omissions: a parameter genuinely necessary for the stated
+DoD, absent from the formal contract, added by necessity.
+
+Only SWIPE_RIGHT/SWIPE_LEFT are guarded this way. UNDO keeps its original
+unconditional delete — extending the guard there requires distinguishing "no
+row ever existed" from "a newer row exists," which TC-106 does not test and
+no other TC requires.
+
+## Consequence
+
+A client can only affect the ordering of its OWN swipes on a dish it
+controls (the unique constraint is per session+participant+dish) — a
+malicious or buggy client can at most confuse its own deck state, not another
+participant's. `interaction_events.created_at` remains server-generated and is
+the accurate audit trail of processing order if ever needed independently of
+`clientTimestamp`.
+
+## Affected Documents
+
+- SDD SPEC-012 (documents the gap; input contract not edited in place)
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `2.8` | 2026-08-19 | Bổ sung `DEC-038` (Interaction Ordering Uses Client-Reported Timestamp) cho E4-S3 |
 | `2.7` | 2026-08-19 | Bổ sung `DEC-036` (v1.0 Personal Score chỉ có Recency; Tie-break hai tầng) và `DEC-037` (`buildDeck` nhận Input Object) cho E4-S1 |
 | `2.6` | 2026-08-19 | Bổ sung `DEC-035` (Complete/Reopen UI Predates Its Backend; E3-T5 Is Purely Wiring) cho E3-S3 |
 | `2.5` | 2026-08-19 | Bổ sung `DEC-034` (E3-T3/E3-T4 gộp làm một hàm; "Draft"/"Active" là nhãn minh hoạ) cho E3-S2 |

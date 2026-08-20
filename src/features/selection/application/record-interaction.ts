@@ -15,6 +15,7 @@ export type RecordInteractionInput = {
   readonly userId: string
   readonly groupDishId: string
   readonly action: InteractionAction
+  readonly clientTimestamp: Date
 }
 
 /**
@@ -49,6 +50,7 @@ export async function recordInteraction(
     participantId: participant.id,
     groupDishId: input.groupDishId,
     action: input.action,
+    clientTimestamp: input.clientTimestamp,
   })
 
   return ok({ effectiveInteraction })

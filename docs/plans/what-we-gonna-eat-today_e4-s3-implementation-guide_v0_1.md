@@ -1,6 +1,7 @@
 # 🔒 Implementation Guide — E4 Slice S3: Ghi tương tác đáng tin cậy
 
 > **Document Metadata**
+>
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
 > - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E4-T5`, `E4-T6`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-012`) • [Tech Spec](../what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) (§11 `R-04`, NFR-05) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-106`)
@@ -13,15 +14,15 @@
 # 0. Việc cần làm và điều kiện xong
 
 | ID | Việc | Giờ | File | Xong nghĩa là |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `E4-T5` | Upsert Interaction chống ghi đè sai thứ tự | 2.5 | `src/features/selection/application/record-interaction.ts` | `TC-106` pass — Record đến muộn có timestamp cũ hơn bị bỏ qua |
 | `E4-T6` | Retry khi mất mạng, không chặn thao tác | 1.5 | `src/features/selection/presentation/**` | Tắt mạng vẫn vuốt tiếp được, có dải thông báo ở đỉnh |
 
-- [ ] `TC-106` pass ở tầng `I` — hai swipe cùng dish, bản đến sau có `clientTimestamp` cũ hơn bị bỏ qua, DB giữ giá trị mới hơn
-- [ ] `applyInteraction`/`recordInteraction` nhận `clientTimestamp`, xuyên xuống tới tận `onConflictDoUpdate`
-- [ ] Route Handler validate `clientTimestamp` là ISO date hợp lệ
-- [ ] `send-interaction.ts` gửi `clientTimestamp` cố định cho mọi lần thử lại của CÙNG một hành động
-- [ ] `yarn verify && yarn arch:probe && yarn test:integration` xanh
+- [x] `TC-106` pass ở tầng `I` — hai swipe cùng dish, bản đến sau có `clientTimestamp` cũ hơn bị bỏ qua, DB giữ giá trị mới hơn
+- [x] `applyInteraction`/`recordInteraction` nhận `clientTimestamp`, xuyên xuống tới tận `onConflictDoUpdate`
+- [x] Route Handler validate `clientTimestamp` là ISO date hợp lệ
+- [x] `send-interaction.ts` gửi `clientTimestamp` cố định cho mọi lần thử lại của CÙNG một hành động
+- [x] `yarn verify && yarn arch:probe && yarn test:integration` xanh
 
 ---
 
@@ -85,6 +86,7 @@ export interface PgInsertOnConflictDoUpdateConfig<T extends AnyPgInsert> {
 **Khi thua (WHERE sai):** `.returning()` của chính statement đó trả về **rỗng** — không phải lỗi, không phải ngoại lệ. `interactionEvents` vẫn thêm đúng một dòng trong CÙNG batch (audit log ghi MỌI request, kể cả bị từ chối — đúng comment sẵn có trong file: *"mọi request SPEC-012 đều thêm một dòng"*, DEC-025).
 
 `applyInteraction` đọc `.length` của kết quả UPDATE:
+
 - **Thắng** (`.length > 0`): trả `type` vừa ghi — đúng, vì nó THẬT SỰ vừa được ghi.
 - **Thua** (`.length === 0`): KHÔNG trả `type` mà client vừa gửi — làm vậy là nói dối `effectiveInteraction` (tên trường tự hứa "giá trị đang có hiệu lực"). Làm thêm **một SELECT phụ** (round-trip thứ hai, CHỈ xảy ra ở nhánh hiếm — phần lớn request không đụng độ, không trả tiền cho round-trip này) để lấy đúng giá trị thật.
 
@@ -103,6 +105,7 @@ export type BatchResponse<T extends BatchItem[] | readonly BatchItem[]> = {
 # 4. Quyết định phạm vi: KHÔNG áp cùng cơ chế cho UNDO
 
 `TC-106` chỉ nói "2 Swipe". Áp cùng logic cho UNDO (một request Undo tới sớm hơn một Swipe theo ý định người dùng) đòi phân biệt hai lý do "DELETE không khớp dòng nào":
+
 1. Chưa từng có dòng nào (bình thường, `TC-051` đã dựa đúng vào việc này — DELETE khớp 0 dòng KHÔNG phải lỗi).
 2. Dòng hiện tại MỚI hơn thời điểm Undo (thua race thật — cần đọc lại giá trị thật, y hệt nhánh Swipe).
 
@@ -456,7 +459,7 @@ it('gửi kèm clientTimestamp, GIỮ NGUYÊN qua các lần retry', async () =>
 # 10. Rủi ro
 
 | Rủi ro | Hậu quả | Giảm thiểu |
-|---|---|---|
+| --- | --- | --- |
 | `.returning()` bên trong `db.batch()` không hoạt động như kiểu hứa hẹn trên driver `neon-http` thật | `TC-106` xanh giả (mock qua được) nhưng dữ liệu thật sai | §7.1 — integration test thật trên Neon branch `test`, không chỉ tin `tsc` |
 | Quên đổi `updatedAt` từ `new Date()` (server time) sang `input.clientTimestamp` ở CẢ HAI chỗ (`values` và `set`) | Dòng đầu tiên (INSERT, không đụng độ) vẫn dùng server time, dòng update dùng client time — hai nguồn sự thật lẫn lộn trong cùng một cột | Cả `values` và `onConflictDoUpdate.set` đều dùng `input.clientTimestamp`, §7 |
 | `send-interaction.ts` lấy `new Date()` MỚI mỗi lần retry thay vì capture một lần | Request bị delay qua nhiều lần retry tự báo sai thời điểm, làm hỏng chính cơ chế chống ghi đè | Capture trước vòng lặp, có test riêng xác nhận (§9.1) |

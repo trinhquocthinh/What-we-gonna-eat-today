@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { InteractionType } from '../domain/interaction'
 import type { ParticipantRecord, SelectionRepository } from './selection-repository'
@@ -50,7 +50,13 @@ function makeFakeSelectionRepository(options: {
   }
 }
 
-const INPUT = { sessionId: 'session-1', userId: 'user-1', groupDishId: 'dish-1' } as const
+const TEST_TIMESTAMP = new Date('2026-08-19T10:00:00Z')
+const INPUT = {
+  sessionId: 'session-1',
+  userId: 'user-1',
+  groupDishId: 'dish-1',
+  clientTimestamp: TEST_TIMESTAMP,
+} as const
 
 describe('SPEC-012 — Ghi Session Interaction và Undo', () => {
   it('TC-048: chưa có interaction, SWIPE_RIGHT thì effective SWIPE_RIGHT, 1 event', async () => {
@@ -132,5 +138,28 @@ describe('SPEC-012 — Ghi Session Interaction và Undo', () => {
     )
 
     expect(result.ok === false && result.error.code).toBe('ERR_DISH_NOT_IN_POOL')
+  })
+
+  it('xuyên clientTimestamp xuống applyInteraction nguyên vẹn', async () => {
+    const applyInteraction = vi.fn(async () => 'SWIPE_RIGHT' as const)
+    const fake = makeFakeSelectionRepository({})
+    const repository: SelectionRepository = {
+      ...fake.repository,
+      applyInteraction,
+    }
+    const clientTimestamp = new Date('2026-08-19T10:00:00Z')
+
+    await recordInteraction(
+      { selection: repository },
+      {
+        sessionId: 's1',
+        userId: 'u1',
+        groupDishId: 'gd1',
+        action: 'SWIPE_RIGHT',
+        clientTimestamp,
+      },
+    )
+
+    expect(applyInteraction).toHaveBeenCalledWith(expect.objectContaining({ clientTimestamp }))
   })
 })

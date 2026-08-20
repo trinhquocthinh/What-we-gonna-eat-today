@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
 import { getDb } from '@/shared/db/client'
@@ -108,13 +108,13 @@ async function applyInteraction(input: {
   participantId: string
   groupDishId: string
   action: InteractionAction
+  clientTimestamp: Date
 }): Promise<InteractionType | null> {
   const db = getDb()
 
   if (input.action === 'UNDO') {
-    // `db.batch([...])` của neon-http LÀ transaction thật (verify ở S2/S3/S4).
-    // DELETE khớp 0 dòng (chưa từng có interaction) KHÔNG phải lỗi — TC-051
-    // dựa đúng vào việc này.
+    // KHÔNG đổi — xem Implementation Guide §4 cho lý do UNDO không được
+    // timestamp-guard ở slice này.
     await db.batch([
       db
         .delete(interactions)
@@ -138,7 +138,13 @@ async function applyInteraction(input: {
 
   const type: InteractionType = input.action
 
-  await db.batch([
+  /**
+   * R-04, TC-106 — `setWhere` chặn UPDATE nếu dòng đang lưu MỚI hơn
+   * `clientTimestamp` này. `.returning()` trả rỗng khi bị chặn — KHÔNG phải
+   * lỗi. `interactionEvents` vẫn ghi audit log dù bị chặn (DEC-025 — mọi
+   * request đều để lại vết, kể cả bị từ chối).
+   */
+  const [upsertedRows] = await db.batch([
     db
       .insert(interactions)
       .values({
@@ -147,11 +153,14 @@ async function applyInteraction(input: {
         participantId: input.participantId,
         groupDishId: input.groupDishId,
         type,
+        updatedAt: input.clientTimestamp,
       })
       .onConflictDoUpdate({
         target: [interactions.sessionId, interactions.participantId, interactions.groupDishId],
-        set: { type, updatedAt: new Date() },
-      }),
+        set: { type, updatedAt: input.clientTimestamp },
+        setWhere: sql`${interactions.updatedAt} < ${input.clientTimestamp}`,
+      })
+      .returning({ type: interactions.type }),
     db.insert(interactionEvents).values({
       id: uuidv7(),
       sessionId: input.sessionId,
@@ -161,7 +170,28 @@ async function applyInteraction(input: {
     }),
   ])
 
-  return type
+  const upserted = upsertedRows[0]
+  if (upserted !== undefined) {
+    // Thắng — dòng vừa ghi CHÍNH LÀ giá trị hiệu lực.
+    return upserted.type
+  }
+
+  // Thua race hiếm: một request khác (có clientTimestamp mới hơn) đã tới
+  // trước, dù có thể tới SAU về mặt mạng. Đọc lại giá trị THẬT — KHÔNG trả
+  // `type` mà request này vừa gửi, vì đó không còn là giá trị hiệu lực.
+  const current = await db
+    .select({ type: interactions.type })
+    .from(interactions)
+    .where(
+      and(
+        eq(interactions.sessionId, input.sessionId),
+        eq(interactions.participantId, input.participantId),
+        eq(interactions.groupDishId, input.groupDishId),
+      ),
+    )
+    .limit(1)
+
+  return current[0]?.type ?? null
 }
 
 const UNIQUE_VIOLATION = '23505'
