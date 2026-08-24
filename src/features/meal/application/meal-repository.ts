@@ -11,6 +11,18 @@ export type DraftDish = {
   readonly groupDishId: string
 }
 
+export type FinalMealView = {
+  readonly decisionDate: string
+  readonly finalizedAt: Date
+  readonly finalizedByDisplayName: string
+  readonly dishes: readonly {
+    readonly groupDishId: string
+    readonly name: string
+    readonly systemTags: readonly SystemTag[]
+  }[]
+  readonly participantNames: readonly string[]
+}
+
 export interface MealRepository {
   findSessionForMeal(sessionId: string): Promise<SessionForMeal | null>
 
@@ -68,4 +80,19 @@ export interface MealRepository {
       sourceFinalMealId: string
     }[]
   }): Promise<void>
+
+  /**
+   * SPEC-016 phía ĐỌC — mâm cơm đã chốt, đủ để dựng S-11 trong một lần gọi.
+   *
+   * Trả `null` khi Session không tồn tại HOẶC chưa `FINALIZED`. Gộp hai
+   * trường hợp có chủ ý: cả hai đều là "không có mâm cơm để xem ở đây", và
+   * phân biệt chúng chỉ để lộ ra phiên nào tồn tại (NFR-04) mà không giúp
+   * người dùng thêm được gì.
+   *
+   * KHÁC `getDraft`: `getDraft` đọc `final_meal_items` khi Session còn
+   * `ACTIVE` để Finalize kiểm tra; hàm này đọc CÙNG bảng đó sau khi Session đã
+   * `FINALIZED`, kèm tên món, tên người chốt và danh sách người tham gia. Cùng
+   * dữ liệu, hai thời điểm, hai mục đích — không gộp.
+   */
+  findFinalMeal(sessionId: string): Promise<FinalMealView | null>
 }

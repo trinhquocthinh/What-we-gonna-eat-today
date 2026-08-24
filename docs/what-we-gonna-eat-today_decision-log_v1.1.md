@@ -1006,10 +1006,86 @@ một kiểu dữ liệu.
 
 ---
 
+# DEC-047 — E6 Adds E6-T7 and E6-T8: the Two Read-Only Screens MS-01 Requires
+
+- **Ngày:** 2026-08-21
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E6-S1
+
+## Quyết định
+
+Thêm `E6-T7` (màn S-11 "Bữa ăn hôm nay" + trạng thái "đã chốt" của S-04, 3h) và `E6-T8`
+(màn S-12 "Lịch sử ăn", 2.5h) vào Master Plan §8. Cả hai đi TRƯỚC `E6-T1` và `E6-T6` trong
+thứ tự slice.
+
+## Rationale
+
+`MS-01` — smoke test mà chính `E6-T3` phải chạy — ghi kết quả kỳ vọng là "Thấy thực đơn Final
+Meal và lịch sử ăn cá nhân". Sau E5 không có route nào cho cả hai, và `MealRepository` chỉ có
+`getDraft` còn `HistoryRepository` chỉ trả `globalDishId` không kèm tên món. Không có hai màn
+này thì `E6-T3` không hoàn thành được, tức là M6 không đạt.
+
+Ngoài ra `app/groups/[groupId]/page.tsx` chỉ xử lý `state === 'ACTIVE'`; phiên `FINALIZED` rơi
+vào nhánh null và Group Hub hiện lại CTA "Mở phiên" dẫn tới `ERR_SESSION_EXISTS_TODAY`. Luồng
+chính đang đứt ở bước cuối.
+
+Đi trước `E6-T1`/`E6-T6` vì cả hai là thao tác QUÉT trên toàn bộ màn hình; quét khi tập màn
+hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mốc M6.
+
+## Consequence
+
+- E6 lên 8 subtask, 20.5 giờ cơ sở (từ 6 subtask, 15 giờ).
+- Hai màn dựng bản v1.0: bỏ `F15` (Cannot Eat), `F40` (Sửa Final Meal), `F24` (Lưu vết cảnh
+  báo), `F28` (Sửa lịch sử ăn) khỏi mockup.
+
+## Affected Documents
+
+- Master Plan §1 (giờ của E6), §8 (thêm hai dòng).
+
+---
+
+# DEC-048 — SYSTEM_TAG_LABELS Moves to shared/ui; Eating History Is Queried by User, Routed by Group
+
+- **Ngày:** 2026-08-21
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E6-S1
+
+## Quyết định
+
+1. `SYSTEM_TAG_LABELS` chuyển từ `features/dish/presentation/components/system-tag-label.ts`
+   sang `src/shared/ui/system-tag-label.ts`.
+2. Màn S-12 đặt ở route `/groups/[groupId]/history` nhưng TRUY VẤN theo `userId`; `groupId`
+   chỉ dùng cho guard, tên nhóm ở header và đường quay lại.
+
+## Rationale
+
+1. Feature thứ ba (`meal`, cho S-11) cần bảng nhãn này, mà `meal → dish` không nằm trong
+   `ALLOWED_CROSS_FEATURE`. Cùng lý lẽ đã áp cho `SystemTag` ở DEC-040: chuyển lên tầng dùng
+   chung rẻ hơn nới bảng cross-feature hoặc nhân bản lần thứ ba.
+2. `eating_history` trỏ `global_dish_id` và không có cột `group_id` (BR-056) — lịch sử thuộc
+   về User. Nhưng header trong mockup ghi tên nhóm, và ở v1.0 mỗi User chỉ thuộc một Group
+   (DEC-004). Route theo Group cho header và điều hướng; truy vấn theo User cho đúng dữ liệu.
+   Khi F43 vào v1.1+, route giữ nguyên còn truy vấn phải đổi — ghi chú đã đặt sẵn trong
+   `page.tsx`.
+
+## Consequence
+
+- `features/dish/presentation/components/system-tag-label.ts` re-export để 4 chỗ đang import
+   không phải đổi; nếu knip báo export chết thì đổi import thẳng.
+- S-12 không lọc theo Group: một User (giả định) thuộc hai Group sẽ thấy cả hai — đúng ý đồ
+   BR-046 Multi-source Collapse.
+
+## Affected Documents
+
+- Design Criteria §5 — `TagChip` nay lấy nhãn từ `shared/ui`.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.4` | 2026-08-21 | Bổ sung `DEC-047` (Bổ sung E6-T7/E6-T8 cho MS-01) và `DEC-048` (SYSTEM_TAG_LABELS chuyển sang shared/ui; Eating History query theo User) cho E6-S1 |
 | `3.3` | 2026-08-20 | Bổ sung `DEC-046` (Màn S-10 sống trọn trong features/meal; app/ ánh xạ ranking) cho E5-S4 (Cột mốc M5) |
 | `3.2` | 2026-08-20 | Bổ sung `DEC-045` (Session Score Drops the Cannot-Eat Term and Defines Its Own Tie-Break) cho E5-S3 |
 | `3.1` | 2026-08-20 | Bổ sung `DEC-042` (Snapshot lúc Start), `DEC-043` (session → rule cross-feature statement), và `DEC-044` (session_rules composite PK) cho E5-S2 |
@@ -1036,6 +1112,7 @@ một kiểu dữ liệu.
 | `1.2` | 2026-08-14 | Bổ sung `DEC-012` (Mô hình Ranking, Cooldown 7 ngày, Exploration 20%) |
 | `1.1` | 2026-07-29 | Bổ sung `DEC-010` (Group/Session Rules) và `DEC-011` (Final Meal validation) |
 | `1.0` | 2026-07-23 | Khởi tạo Decision Log ban đầu với `DEC-001` đến `DEC-009` |
+
 
 
 

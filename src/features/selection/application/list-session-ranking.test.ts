@@ -92,6 +92,9 @@ function makeFakeHistoryRepository(options: {
       options.countRecentCalls?.push(input)
       return options.recentEatersMap ?? new Map()
     },
+    async findEatingHistory(): Promise<never> {
+      throw new Error('không dùng trong ranking')
+    },
   }
 
   return repository

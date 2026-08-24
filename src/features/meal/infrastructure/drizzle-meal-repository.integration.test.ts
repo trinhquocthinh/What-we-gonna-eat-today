@@ -373,3 +373,84 @@ describe('TC-109 — rollback thật khi một dòng eating_history lỗi', () =
     expect(session[0]?.state).toBe('ACTIVE')
   })
 })
+
+describe('findFinalMeal — E6-T7 (S-11)', () => {
+  it('trả về chi tiết mâm cơm khi Session đã FINALIZED, bao gồm tags và người tham gia (loại bỏ REMOVED)', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // Gắn tag cho dish1: MAIN + SOUP
+    await db.insert(groupDishTags).values([
+      { groupDishId: seed.dish1.groupDishId, systemTag: 'SOUP' },
+      { groupDishId: seed.dish1.groupDishId, systemTag: 'MAIN' },
+    ])
+
+    // Thêm participant REMOVED
+    const removedUserId = crypto.randomUUID()
+    await db.insert(users).values({
+      id: removedUserId,
+      provider: 'test',
+      providerSubject: `r-${removedUserId}`,
+      email: `${removedUserId}@test`,
+      displayName: 'Removed User',
+    })
+    await db.insert(participants).values({
+      sessionId: seed.sessionId,
+      userId: removedUserId,
+      state: 'REMOVED',
+    })
+
+    // Lưu nháp dish1 và dish2
+    await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      {
+        sessionId: seed.sessionId,
+        userId: seed.creatorId,
+        dishIds: [seed.dish1.groupDishId, seed.dish2.groupDishId],
+      },
+    )
+
+    // Chốt session
+    const finalize = await finalizeSession(
+      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId },
+    )
+    expect(finalize.ok).toBe(true)
+
+    const result = await drizzleMealRepository.findFinalMeal(seed.sessionId)
+    expect(result).not.toBeNull()
+    expect(result?.decisionDate).toBe('2026-08-14')
+    expect(result?.finalizedByDisplayName).toBe('Creator')
+    expect(result?.finalizedAt).toBeInstanceOf(Date)
+    expect(result?.dishes).toHaveLength(2)
+    expect(result?.dishes.map((d) => d.name)).toEqual(['Món 1', 'Món 2'])
+
+    // Dish 1 có cả MAIN và SOUP, thứ tự MAIN trước SOUP
+    const d1 = result?.dishes.find((d) => d.name === 'Món 1')
+    expect(d1?.systemTags).toEqual(['MAIN', 'SOUP'])
+
+    // ParticipantNames chứa Creator và Other, KHÔNG chứa Removed User
+    expect(result?.participantNames).toContain('Creator')
+    expect(result?.participantNames).toContain('Other')
+    expect(result?.participantNames).not.toContain('Removed User')
+  })
+
+  it('Session ACTIVE có nháp trả về null', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+
+    await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId, dishIds: [seed.dish1.groupDishId] },
+    )
+
+    const result = await drizzleMealRepository.findFinalMeal(seed.sessionId)
+    expect(result).toBeNull()
+  })
+
+  it('SessionId không tồn tại trả về null', async () => {
+    const result = await drizzleMealRepository.findFinalMeal(crypto.randomUUID())
+    expect(result).toBeNull()
+  })
+})

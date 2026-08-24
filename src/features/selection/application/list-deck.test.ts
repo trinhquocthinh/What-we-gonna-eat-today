@@ -33,6 +33,7 @@ function makeDeps(
   const history: HistoryRepository = {
     findEatingDates: vi.fn(async () => overrides.eatingRows ?? []),
     countRecentEatersByDish: vi.fn(async () => new Map()),
+    findEatingHistory: vi.fn(async () => []),
   }
   return { selection: selection as SelectionRepository, history, materializeDeck }
 }

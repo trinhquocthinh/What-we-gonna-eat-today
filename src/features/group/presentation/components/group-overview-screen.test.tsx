@@ -11,6 +11,7 @@ const BASE_PROPS = {
   inviteHref: '/groups/group-1/invite',
   openSessionHref: '/groups/group-1/sessions/new',
   activeSession: null,
+  finalizedMeal: null,
   currentUserId: 'me',
   rulesHref: '/groups/group-1/rules',
   ruleCount: 0,
@@ -90,5 +91,41 @@ describe('GroupOverviewScreen (S-04)', () => {
     const summaryLink = screen.getByRole('link', { name: 'Xem tổng hợp' })
     expect(summaryLink).toBeDefined()
     expect(summaryLink.getAttribute('href')).toBe('/sessions/s1/summary')
+  })
+
+  it('đã chốt (finalizedMeal !== null): hiện card mâm cơm với chip "Đã chốt lúc", CTA đáy là "Xem bữa hôm nay", không có chữ "Mở phiên"', () => {
+    const finalizedMeal = {
+      finalizedCaption: 'Đã chốt lúc 17:42 · Mẹ chốt',
+      dishNames: ['Cá basa kho tiêu', 'Canh chua cá lóc', 'Rau muống xào tỏi'],
+      mealHref: '/sessions/s1/meal',
+    }
+
+    render(<GroupOverviewScreen {...BASE_PROPS} finalizedMeal={finalizedMeal} />)
+
+    expect(screen.getByText(/Đã chốt lúc 17:42 · Mẹ chốt/)).toBeDefined()
+    expect(screen.getByText('Tối nay nhà mình ăn')).toBeDefined()
+    expect(screen.getByText('Cá basa kho tiêu')).toBeDefined()
+    expect(screen.getByText('Canh chua cá lóc')).toBeDefined()
+    expect(screen.getByText('Rau muống xào tỏi')).toBeDefined()
+
+    const viewMealLink = screen.getByRole('link', { name: 'Xem bữa hôm nay' })
+    expect(viewMealLink).toBeDefined()
+    expect(viewMealLink.getAttribute('href')).toBe('/sessions/s1/meal')
+
+    expect(screen.queryByText('Mở phiên')).toBeNull()
+    expect(screen.queryByText('Phiên đang mở')).toBeNull()
+  })
+
+  it('đã chốt khi dishCount={0}: vẫn không hiện EmptyStateCard thêm món', () => {
+    const finalizedMeal = {
+      finalizedCaption: 'Đã chốt lúc 17:42 · Mẹ chốt',
+      dishNames: ['Cá basa kho tiêu'],
+      mealHref: '/sessions/s1/meal',
+    }
+
+    render(<GroupOverviewScreen {...BASE_PROPS} dishCount={0} finalizedMeal={finalizedMeal} />)
+
+    expect(screen.queryByText('Trước tiên hãy thêm vài món nhà bạn hay ăn.')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Xem bữa hôm nay' })).toBeDefined()
   })
 })

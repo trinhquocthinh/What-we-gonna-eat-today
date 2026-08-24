@@ -1,9 +1,13 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 
 import { getDb } from '@/shared/db/client'
-import { eatingHistory } from '@/shared/db/schema'
+import { eatingHistory, globalDishes } from '@/shared/db/schema'
 
-import type { EatingDateRecord, HistoryRepository } from '../application/history-repository'
+import type {
+  EatingDateRecord,
+  EatingRecord,
+  HistoryRepository,
+} from '../application/history-repository'
 
 async function findEatingDates(
   userId: string,
@@ -58,7 +62,31 @@ async function countRecentEatersByDish(input: {
   return map
 }
 
+async function findEatingHistory(input: {
+  readonly userId: string
+  readonly from: string
+  readonly to: string
+}): Promise<EatingRecord[]> {
+  const rows = await getDb()
+    .select({
+      eatingDate: eatingHistory.eatingDate,
+      dishName: globalDishes.name,
+    })
+    .from(eatingHistory)
+    .innerJoin(globalDishes, eq(globalDishes.id, eatingHistory.globalDishId))
+    .where(
+      and(
+        eq(eatingHistory.userId, input.userId),
+        gte(eatingHistory.eatingDate, input.from),
+        lte(eatingHistory.eatingDate, input.to),
+      ),
+    )
+
+  return rows
+}
+
 export const drizzleHistoryRepository: HistoryRepository = {
   findEatingDates,
   countRecentEatersByDish,
+  findEatingHistory,
 }

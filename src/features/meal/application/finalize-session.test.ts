@@ -52,6 +52,9 @@ function makeFakeMealRepository(options: {
     async commitFinalize(input) {
       commitCalls.push(input)
     },
+    async findFinalMeal(): Promise<never> {
+      throw new Error('không dùng trong test này')
+    },
   }
 
   return { repository, commitCalls }

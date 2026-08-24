@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, ne } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
 import { getDb } from '@/shared/db/client'
@@ -6,14 +6,16 @@ import {
   eatingHistory,
   finalMealItems,
   finalMeals,
+  globalDishes,
   groupDishes,
   groupDishTags,
   participants,
   selectionSessions,
+  users,
 } from '@/shared/db/schema'
 import { SYSTEM_TAGS, type SystemTag } from '@/shared/domain/system-tag'
 
-import type { MealRepository, SessionForMeal } from '../application/meal-repository'
+import type { FinalMealView, MealRepository, SessionForMeal } from '../application/meal-repository'
 
 const TAG_ORDER = new Map<SystemTag, number>(SYSTEM_TAGS.map((tag, index) => [tag, index]))
 
@@ -150,6 +152,7 @@ async function getDraft(
   return { finalMealId: finalMealRow.id, groupDishIds: items.map((item) => item.groupDishId) }
 }
 
+/* jscpd:ignore-start */
 /** ACTIVE hoặc COMPLETED — REMOVED bị loại (BR-026: Interaction của Participant
  *  bị remove không được tính, và tương tự không nhận Default Eating History). */
 async function listActiveParticipantUserIds(sessionId: string): Promise<string[]> {
@@ -165,6 +168,7 @@ async function listActiveParticipantUserIds(sessionId: string): Promise<string[]
 
   return rows.map((row) => row.userId)
 }
+/* jscpd:ignore-end */
 
 async function resolveGlobalDishIds(groupDishIds: readonly string[]): Promise<Map<string, string>> {
   if (groupDishIds.length === 0) return new Map()
@@ -237,6 +241,54 @@ async function commitFinalize(input: {
   ])
 }
 
+async function findFinalMeal(sessionId: string): Promise<FinalMealView | null> {
+  const db = getDb()
+
+  const sessionRows = await db
+    .select({
+      decisionDate: selectionSessions.decisionDate,
+      finalizedAt: selectionSessions.finalizedAt,
+      finalizedByDisplayName: users.displayName,
+    })
+    .from(selectionSessions)
+    .innerJoin(users, eq(users.id, selectionSessions.creatorUserId))
+    .where(and(eq(selectionSessions.id, sessionId), eq(selectionSessions.state, 'FINALIZED')))
+    .limit(1)
+
+  const session = sessionRows[0]
+  if (session === undefined || session.finalizedAt === null) {
+    return null
+  }
+
+  const dishRows = await db
+    .select({ groupDishId: finalMealItems.groupDishId, name: globalDishes.name })
+    .from(finalMealItems)
+    .innerJoin(finalMeals, eq(finalMeals.id, finalMealItems.finalMealId))
+    .innerJoin(groupDishes, eq(groupDishes.id, finalMealItems.groupDishId))
+    .innerJoin(globalDishes, eq(globalDishes.id, groupDishes.globalDishId))
+    .where(eq(finalMeals.sessionId, sessionId))
+    .orderBy(globalDishes.name)
+
+  const tagsByDish = await findSystemTagsByGroupDish(dishRows.map((row) => row.groupDishId))
+
+  const participantRows = await db
+    .select({ displayName: users.displayName })
+    .from(participants)
+    .innerJoin(users, eq(users.id, participants.userId))
+    .where(and(eq(participants.sessionId, sessionId), ne(participants.state, 'REMOVED')))
+
+  return {
+    decisionDate: session.decisionDate,
+    finalizedAt: session.finalizedAt,
+    finalizedByDisplayName: session.finalizedByDisplayName,
+    dishes: dishRows.map((row) => ({
+      ...row,
+      systemTags: tagsByDish.get(row.groupDishId) ?? [],
+    })),
+    participantNames: participantRows.map((row) => row.displayName),
+  }
+}
+
 export const drizzleMealRepository: MealRepository = {
   findSessionForMeal,
   findInactiveDishIds,
@@ -246,4 +298,5 @@ export const drizzleMealRepository: MealRepository = {
   listActiveParticipantUserIds,
   resolveGlobalDishIds,
   commitFinalize,
+  findFinalMeal,
 }

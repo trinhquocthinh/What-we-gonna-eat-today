@@ -40,7 +40,7 @@
 | **E3** | Phiên và người tham gia | 6 | 14 | `[x]` ✅ Xong — Cột mốc M3 |
 | **E4** | Deck vuốt và thuật toán Ranking | 9 | 21 | `[x]` ✅ Xong — Cột mốc M4 |
 | **E5** | Rule engine và chốt bữa (Final Meal) | 10 | 23 | `[x]` ✅ Xong — Cột mốc M5 |
-| **E6** | Hoàn thiện UX, Coverage & NFRs | 8 | 20.5 | `[ ]` ⬜ ⏳ Đang làm (0/8 — 4 Implementation Guide đã sẵn sàng) |
+| **E6** | Hoàn thiện UX, Coverage & NFRs | 8 | 20.5 | `⏳ Đang làm (2/8)` |
 
 > [!TIP]
 > Cột trạng thái dùng để theo dõi tiến độ. Nếu sau ba tuần chưa có ô nào được tick, vấn đề không nằm ở kế hoạch mà ở nhịp độ thực thi.
@@ -249,8 +249,8 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| `E6-T7` | Màn S-11 "Bữa ăn hôm nay" + trạng thái "đã chốt" của S-04 | `S-11`, `S-04`, `MS-01` | 3 | `E5-T9` | Chốt xong quay về Group Hub thấy ngay mâm cơm, bấm vào xem được chi tiết | `src/features/meal/**` |
-| `E6-T8` | Màn S-12 "Lịch sử ăn" | `S-12`, `MS-01` | 2.5 | `E6-T7` | 30 ngày gần đây, nhóm theo ngày, ngày mới nhất trên cùng | `src/features/history/**` |
+| `[x] E6-T7` | Màn S-11 "Bữa ăn hôm nay" + trạng thái "đã chốt" của S-04 | `S-11`, `S-04`, `MS-01` | 3 | `E5-T9` | Chốt xong quay về Group Hub thấy ngay mâm cơm | `src/features/meal/**` |
+| `[x] E6-T8` | Màn S-12 "Lịch sử ăn" | `S-12`, `MS-01` | 2.5 | `E6-T7` | 30 ngày gần đây, nhóm theo ngày | `src/features/history/**` |
 | `E6-T1` | Toàn bộ trạng thái rỗng (Empty States) | [Design Criteria §4](what-we-gonna-eat-today_design-criteria_v0_1.md) | 4 | `E5-T9` | Mỗi trạng thái rỗng nêu **việc cần làm tiếp**, không để trống trơn | Mọi `presentation/` |
 | `E6-T2` | Bảng dịch mã lỗi và lỗi tại chỗ | [SDD §2.5](what-we-gonna-eat-today_sdd_v0_1.md), [Design Criteria §5](what-we-gonna-eat-today_design-criteria_v0_1.md) | 2 | `E6-T1` | Một bảng tra duy nhất; không popup modal cho lỗi form | `src/shared/errors/messages.ts` |
 | `E6-T3` | Đo NFR-01 đến NFR-05 bằng số thật | [Tech §9](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md), `MS-01→05` | 3 | `E6-T2` | Có con số định lượng cho từng NFR | — |

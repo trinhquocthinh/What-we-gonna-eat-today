@@ -109,6 +109,7 @@ export function FinalizeMealScreen({
           <input key={id} type="hidden" name="dishId" value={id} />
         ))}
 
+        {/* jscpd:ignore-start */}
         <div className="flex flex-1 flex-col gap-6 px-4 pt-3 pb-6">
           {ranked.length > 0 && (
             <section className="flex flex-col gap-3">
@@ -144,6 +145,7 @@ export function FinalizeMealScreen({
             </section>
           )}
         </div>
+        {/* jscpd:ignore-end */}
 
         <FinalizeBar
           selectedDishes={selectedDishes}

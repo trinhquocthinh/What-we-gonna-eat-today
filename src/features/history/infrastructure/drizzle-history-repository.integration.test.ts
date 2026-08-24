@@ -305,3 +305,33 @@ describe('drizzleHistoryRepository.countRecentEatersByDish (SPEC-014)', () => {
     expect(empty2.size).toBe(0)
   })
 })
+
+describe('findEatingHistory — E6-T8 (S-12)', () => {
+  it('truy vấn lịch sử ăn kèm tên món đúng khoảng ngày và đúng user', async () => {
+    const seed = await seedHistoryTestData()
+    cleanupQueue.push(() => cleanup(seed))
+
+    const records = await drizzleHistoryRepository.findEatingHistory({
+      userId: seed.userId,
+      from: '2026-08-01',
+      to: '2026-08-15',
+    })
+
+    expect(records).toHaveLength(2)
+    expect(records).toContainEqual({ eatingDate: '2026-08-10', dishName: 'Món A' })
+    expect(records).toContainEqual({ eatingDate: '2026-08-12', dishName: 'Món B' })
+  })
+
+  it('khoảng ngày không khớp trả về mảng rỗng', async () => {
+    const seed = await seedHistoryTestData()
+    cleanupQueue.push(() => cleanup(seed))
+
+    const records = await drizzleHistoryRepository.findEatingHistory({
+      userId: seed.userId,
+      from: '2026-08-15',
+      to: '2026-08-20',
+    })
+
+    expect(records).toEqual([])
+  })
+})

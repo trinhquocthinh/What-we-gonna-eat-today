@@ -1,7 +1,11 @@
+import type { EatingRecord } from '../domain/eating-history'
+
 export type EatingDateRecord = {
   readonly globalDishId: string
   readonly eatingDate: string
 }
+
+export type { EatingRecord } from '../domain/eating-history'
 
 export interface HistoryRepository {
   /**
@@ -35,4 +39,22 @@ export interface HistoryRepository {
     readonly referenceDate: string
     readonly windowDays: number
   }): Promise<Map<string, number>>
+
+  /**
+   * SPEC-017 phía ĐỌC, cho S-12. Trả bản ghi PHẲNG kèm TÊN MÓN; gom theo ngày
+   * là việc của `groupEatingHistory` ở `domain/`.
+   *
+   * Trả tên món chứ không chỉ `globalDishId` — khác hẳn `findEatingDates` và
+   * `countRecentEatersByDish`, vốn để TÍNH TOÁN nên không cần tên. Tên lấy
+   * bằng JOIN `global_dishes` ngay trong `history/infrastructure`: đọc một
+   * BẢNG, không import feature `dish` (Guide §1.5).
+   *
+   * `from`/`to` là ngày lịch dạng `YYYY-MM-DD`, đã quy đổi theo timezone Group
+   * bởi người gọi — cùng khuôn `countRecentEatersByDish`.
+   */
+  findEatingHistory(input: {
+    readonly userId: string
+    readonly from: string
+    readonly to: string
+  }): Promise<EatingRecord[]>
 }

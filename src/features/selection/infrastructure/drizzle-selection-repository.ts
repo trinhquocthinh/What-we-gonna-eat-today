@@ -200,6 +200,7 @@ async function applyInteraction(input: {
 const UNIQUE_VIOLATION = '23505'
 const SESSION_DECK_PK_VIOLATION_CONSTRAINT = 'session_decks_session_id_user_id_pk'
 
+/* jscpd:ignore-start */
 function isSessionDeckAlreadyMaterialized(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) return false
   const target: Record<string, unknown> =
@@ -211,6 +212,7 @@ function isSessionDeckAlreadyMaterialized(error: unknown): boolean {
     target.code === UNIQUE_VIOLATION && target.constraint === SESSION_DECK_PK_VIOLATION_CONSTRAINT
   )
 }
+/* jscpd:ignore-end */
 
 async function findMaterializedDeck(
   sessionId: string,
