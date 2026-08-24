@@ -21,15 +21,15 @@ export type GroupOverviewScreenProps = {
   openSessionHref: string
   activeSession: { id: string; participants: readonly GroupOverviewParticipant[] } | null
   currentUserId: string
+  rulesHref: string
+  ruleCount: number
 }
 
 /**
  * S-04.
  *
- * Bật: hàng "Danh mục món", hàng "Mời thành viên" và CTA "Thêm món đầu tiên" / "Mở phiên".
+ * Bật: hàng "Danh mục món", hàng "Mời thành viên", hàng "Quy định bữa ăn" và CTA "Thêm món đầu tiên" / "Mở phiên".
  * E3-T6: thêm khối "Phiên đang mở" khi có activeSession.
- *
- * E5-T1: thêm hàng "Quy định bữa ăn" khi route đó tồn tại.
  */
 export function GroupOverviewScreen({
   groupName,
@@ -40,6 +40,8 @@ export function GroupOverviewScreen({
   openSessionHref,
   activeSession,
   currentUserId,
+  rulesHref,
+  ruleCount,
 }: GroupOverviewScreenProps): ReactElement {
   const hasDishes = dishCount > 0
   const selfCompleted =
@@ -132,7 +134,15 @@ export function GroupOverviewScreen({
               <span className="text-subtitle font-semibold text-ink">Mời thành viên</span>
               <span className="text-caption font-medium text-ink-muted">Tạo link mời</span>
             </Link>
-            {/* E5-T1: thêm hàng "Quy định bữa ăn" khi route đó tồn tại. */}
+            <Link
+              href={rulesHref}
+              className="flex min-h-14 items-center justify-between gap-3 rounded-control border border-border bg-surface-raised p-4 text-left hover:border-border-strong active:bg-surface-sunken"
+            >
+              <span className="text-subtitle font-semibold text-ink">Quy định bữa ăn</span>
+              <span className="tabular-nums text-caption font-medium text-ink-muted">
+                {ruleCount === 0 ? 'Chưa có quy định nào' : `${ruleCount} quy định`}
+              </span>
+            </Link>
           </div>
         </div>
       </div>

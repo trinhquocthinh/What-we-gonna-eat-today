@@ -50,6 +50,9 @@
 
     // GỠ Ở E2-T6 (S4): setSystemTags use case được tạo ở E2-S3, S4 sẽ nối dây UI sửa tag.
     "src/features/dish/application/set-system-tags.ts",
+
+    // GỠ Ở E5-T9 (S4): ruleShortfallPhrase dùng cho dòng "Còn thiếu: …" trên nút chốt bữa.
+    "src/features/rule/presentation/components/rule-sentence.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

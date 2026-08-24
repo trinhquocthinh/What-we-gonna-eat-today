@@ -1,37 +1,12 @@
 import type { Result } from '@/shared/result'
 import { err, ok } from '@/shared/result'
 
-/**
- * SDD §2.2 — `SystemTag = STAPLE | MAIN | SIDE | SOUP | DESSERT` (BR-003).
- *
- * Bản sao của enum `system_tag` trong `src/shared/db/schema.ts`, cùng lý do và
- * cùng ràng buộc như `group-dish.ts`: `domain/` không được import drizzle, nên
- * hai chỗ chỉ gặp nhau ở `infrastructure/drizzle-dish-repository.ts`. Sửa một
- * bên thì sửa cả hai.
- */
-export type SystemTag = 'STAPLE' | 'MAIN' | 'SIDE' | 'SOUP' | 'DESSERT'
+import { SYSTEM_TAGS, isSystemTag, type SystemTag } from '@/shared/domain/system-tag'
 
-/**
- * Thứ tự CHUẨN của bữa cơm Việt, lấy từ mockup S-05/S-06
- * (`designs/S-05 S-06 Danh muc mon.dc.html:164`): Cơm → Món mặn → Món phụ →
- * Canh → Tráng miệng.
- *
- * Đặt ở `domain/` chứ không phải `presentation/` vì đây là thứ tự của MÂM CƠM,
- * không phải quyết định thẩm mỹ: E2-T6 nhóm danh sách món theo đúng thứ tự này,
- * và mọi chỗ đọc tag đều chuẩn hoá về nó để so sánh được bằng `toEqual`.
- * Nhãn tiếng Việt thì thuộc presentation — xem `system-tag-label.ts`.
- */
-export const SYSTEM_TAGS = [
-  'STAPLE',
-  'MAIN',
-  'SIDE',
-  'SOUP',
-  'DESSERT',
-] as const satisfies readonly SystemTag[]
-
-export function isSystemTag(value: string): value is SystemTag {
-  return (SYSTEM_TAGS as readonly string[]).includes(value)
-}
+// Giữ đường import cũ còn hiệu lực cho 12 chỗ trong `features/dish/**` —
+// chuyển nhà một kiểu dữ liệu không đáng làm bẩn 12 file diff.
+export { SYSTEM_TAGS, isSystemTag }
+export type { SystemTag }
 
 export type SystemTagError = 'INVALID_SYSTEM_TAG'
 

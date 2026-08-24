@@ -12,6 +12,8 @@ const BASE_PROPS = {
   openSessionHref: '/groups/group-1/sessions/new',
   activeSession: null,
   currentUserId: 'me',
+  rulesHref: '/groups/group-1/rules',
+  ruleCount: 0,
 }
 
 describe('GroupOverviewScreen (S-04)', () => {
@@ -23,12 +25,15 @@ describe('GroupOverviewScreen (S-04)', () => {
     expect(screen.getByText('Chưa có món nào')).toBeDefined()
     expect(screen.getByRole('link', { name: 'Thêm món đầu tiên' })).toBeDefined()
     expect(screen.getByRole('link', { name: /Mời thành viên/ })).toBeDefined()
+    expect(screen.getByRole('link', { name: /Quy định bữa ăn/ })).toBeDefined()
+    expect(screen.getByText('Chưa có quy định nào')).toBeDefined()
   })
 
-  it('dishCount={7} thì hiện "7 món" và nút "Mở phiên"', () => {
-    render(<GroupOverviewScreen {...BASE_PROPS} dishCount={7} />)
+  it('dishCount={7} và ruleCount={2} thì hiện "7 món", "2 quy định" và nút "Mở phiên"', () => {
+    render(<GroupOverviewScreen {...BASE_PROPS} dishCount={7} ruleCount={2} />)
 
     expect(screen.getByText('7 món')).toBeDefined()
+    expect(screen.getByText('2 quy định')).toBeDefined()
     expect(screen.getByRole('link', { name: 'Mở phiên' })).toBeDefined()
   })
 

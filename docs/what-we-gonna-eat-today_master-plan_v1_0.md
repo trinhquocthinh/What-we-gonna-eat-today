@@ -39,7 +39,7 @@
 | **E2** | Group và Dish hoàn chỉnh | 7 | 16 | `[x]` ✅ Xong |
 | **E3** | Phiên và người tham gia | 6 | 14 | `[x]` ✅ Xong — Cột mốc M3 |
 | **E4** | Deck vuốt và thuật toán Ranking | 9 | 21 | `[x]` ✅ Xong — Cột mốc M4 |
-| **E5** | Rule engine và chốt bữa (Final Meal) | 10 | 23 | `[ ]` ⬜ ⏳ Đang làm (0/10 — 4 Implementation Guide đã sẵn sàng) |
+| **E5** | Rule engine và chốt bữa (Final Meal) | 10 | 23 | `[ ]` ⬜ ⏳ Đang làm (3/10) |
 | **E6** | Hoàn thiện UX, Coverage & NFRs | 6 | 15 | `[ ]` ⬜ Chưa bắt đầu |
 
 > [!TIP]
@@ -218,9 +218,9 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| `E5-T1` | Schema `group_rules` và CRUD | [SPEC-021](what-we-gonna-eat-today_sdd_v0_1.md), `TC-085`, `TC-088` | 2 | `E2-T5` | Lưu danh sách rỗng thì Group không còn rule nào | `src/features/rule/**` |
-| `E5-T1b` | Màn hình S-07 "Quy định bữa ăn" | `S-07`, [Design §4](designs/README.md) | 2 | `E5-T1` | Admin đặt được rule trên điện thoại; Member chỉ xem, không thấy nút sửa | `src/features/rule/presentation/**`, `src/app/groups/[groupId]/rules/**` |
-| `E5-T2` | Invariant của rule ép ở tầng DB | [SPEC-021](what-we-gonna-eat-today_sdd_v0_1.md), `TC-086`, `TC-087`, `TC-089` | 2 | `E5-T1` | `unique(group_id, rule_type, system_tag)` và `check(minimum_count >= 1)` là ràng buộc thật trong DB | `src/features/rule/infrastructure/schema.ts` |
+| `[x] E5-T1` | Schema `group_rules` và CRUD | [SPEC-021](what-we-gonna-eat-today_sdd_v0_1.md), `TC-085`, `TC-088` | 2 | `E2-T5` | Lưu danh sách rỗng thì Group không còn rule nào | `src/features/rule/**` |
+| `[x] E5-T1b` | Màn hình S-07 "Quy định bữa ăn" | `S-07`, [Design §4](designs/README.md) | 2 | `E5-T1` | Admin đặt được rule trên điện thoại; Member chỉ xem, không thấy nút sửa | `src/features/rule/presentation/**`, `src/app/groups/[groupId]/rules/**` |
+| `[x] E5-T2` | Invariant của rule ép ở tầng DB | [SPEC-021](what-we-gonna-eat-today_sdd_v0_1.md), `TC-086`, `TC-087`, `TC-089` | 2 | `E5-T1` | `unique(group_id, rule_type, system_tag)` và `check(minimum_count >= 1)` là ràng buộc thật trong DB | `src/features/rule/infrastructure/schema.ts` |
 | `E5-T3` | `evaluateRequired`, independent tag counting | [SPEC-016](what-we-gonna-eat-today_sdd_v0_1.md), `TC-072`, `TC-073`, `TC-110` | 3 | `E5-T1` | **Viết `TC-073` trước khi viết hàm:** Dish mang cả `MAIN` và `SOUP` thoả cả hai rule | `src/features/rule/domain/evaluate.ts` |
 | `E5-T4` | Snapshot Session Rule trong transaction Start | [SPEC-022](what-we-gonna-eat-today_sdd_v0_1.md), `TC-091→094` | 2 | `E5-T2`, `E3-T1` | `TC-035` pass: Start thất bại thì không có Session Rule nào được tạo | `src/features/rule/application/snapshot.ts` |
 | `E5-T5` | Finalize revalidate đầy đủ trong transaction | [SPEC-016](what-we-gonna-eat-today_sdd_v0_1.md), `TC-067→075` | 4 | `E5-T3`, `E5-T4`, `E1-T11` | `TC-074` và `TC-075` pass: Rule theo snapshot, System Tag theo hiện tại | `src/features/meal/application/finalize.ts` |

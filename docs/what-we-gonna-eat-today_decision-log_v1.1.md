@@ -52,6 +52,10 @@
 | [`DEC-035`](#dec-035--completereopen-ui-predates-its-backend-e3-t5-is-purely-wiring) | Complete/Reopen UI đã có sẵn; E3-T5 chỉ đấu nối backend | 2026-08-19 | `Accepted` | Giao diện deck, use case set completed |
 | [`DEC-036`](#dec-036--v10-personal-score-uses-only-the-recency-term-two-level-tie-break) | Personal Score v1.0 chỉ dùng số hạng recency; Tie-break hai tầng | 2026-08-19 | `Accepted` | Công thức điểm, thứ tự candidate deck, SPEC-010 |
 | [`DEC-037`](#dec-037--builddeck-takes-an-input-object-not-the-bare-array-of-tech-spec-24) | `buildDeck` nhận Input Object thay vì mảng trần | 2026-08-19 | `Accepted` | Chữ ký hàm domain ranking, seed hash |
+| [`DEC-038`](#dec-038--interaction-ordering-uses-client-reported-timestamp-not-server-arrival-order) | Thứ tự tương tác dùng timestamp từ client | 2026-08-19 | `Accepted` | Xử lý đụng độ swipe, TC-106 |
+| [`DEC-039`](#dec-039--list-deck-reads-eating-history-on-every-call-not-just-first-materialize) | `list-deck` đọc lịch sử ăn ở mỗi lần gọi | 2026-08-19 | `Accepted` | Nhãn giải thích thẻ món ăn |
+| [`DEC-040`](#dec-040--systemtag-moves-to-shareddomain-schema-follows-tech-spec-31-verbatim) | SystemTag chuyển sang `shared/domain`; Schema đủ 6 cột | 2026-08-20 | `Accepted` | Kiến trúc domain dùng chung, bảng `group_rules` |
+| [`DEC-041`](#dec-041--e5-adds-subtask-e5-t1b-the-group-rules-screen) | Bổ sung subtask `E5-T1b` (màn hình S-07) vào E5 | 2026-08-20 | `Accepted` | Kế hoạch E5, màn hình Quy định bữa ăn |
 
 
 ---
@@ -753,9 +757,81 @@ interaction Route Handler's response time, not initial page render).
 
 ---
 
+# DEC-040 — SystemTag Moves to shared/domain; Schema Follows Tech Spec §3.1 Verbatim
+
+- **Ngày:** 2026-08-20
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E5-S1
+
+## Quyết định
+
+1. `SystemTag`, `SYSTEM_TAGS`, `isSystemTag` chuyển từ `features/dish/domain/system-tag.ts`
+   sang `shared/domain/system-tag.ts`. `features/dish/domain/system-tag.ts` giữ nguyên đường
+   dẫn, giữ `readSystemTags`/`toSystemTags`/`SystemTagError`, và re-export ba tên đã chuyển.
+2. Bảng `group_rules` chép đủ 6 cột của Tech Spec §3.1 kể cả `rule_type` và `overridable`,
+   trong khi `GroupRuleDraft` ở `domain/` chỉ có `systemTag` + `minimumCount`.
+
+## Rationale
+
+1. Ba feature cần `SystemTag`: `dish` (gán), `rule` (đặt chỉ tiêu), `meal` (đối chiếu lúc
+   chốt). `ALLOWED_CROSS_FEATURE` không cho `rule → dish` cũng như `meal → dish`. Nới bảng
+   cross-feature hai chiều để lấy một union 5 phần tử là đổi hợp đồng kiến trúc (Tech Spec
+   §2.3) nhằm tránh một lần chuyển file. Khai bản sao trong `rule/domain` sẽ thành bản sao
+   thứ ba của cùng một union.
+2. Nguyên tắc "không thêm trường chưa ai đọc" (DEC-036, `ranking.ts`) áp cho KIỂU TS, không
+   áp cho SCHEMA. Thêm một trường vào kiểu ở v1.1 là một dòng diff; thêm một cột vào bảng
+   đang có dữ liệu là một migration cộng một lần backfill cộng một cửa sổ mà code cũ chạy
+   trên schema mới. Ngoài ra `rule_type` bắt buộc phải có ngay vì ràng buộc
+   `unique(group_id, rule_type, system_tag)` mà E5-T2 đòi không viết được nếu thiếu nó.
+
+## Consequence
+
+- `shared/domain/` là thư mục mới; mọi kiến thức miền dùng chung từ nay đặt ở đó.
+- `session_rules` (S2) KHÔNG có `overridable` — theo đúng Tech Spec §3.1 dòng 165.
+- v1.1 bật Preferred Rule chỉ cần ghi giá trị `'PREFERRED'`, không cần migration.
+
+## Affected Documents
+
+- Tech Spec §2.2 — thêm `shared/domain/` vào mô tả cây thư mục.
+
+---
+
+# DEC-041 — E5 Adds Subtask E5-T1b: the Group Rules Screen
+
+- **Ngày:** 2026-08-20
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E5-S1
+
+## Quyết định
+
+Thêm `E5-T1b` "Màn hình S-07 Quy định bữa ăn" (2 giờ) vào Master Plan §7, nằm trong Slice S1
+cùng `E5-T1` và `E5-T2`.
+
+## Rationale
+
+Master Plan v1.3 giao `E5-T1` đúng tầng `application` và không có subtask UI nào cho màn
+"Quy định bữa ăn" — trong khi thư mục thiết kế đã có sẵn `s07-01-quy-dinh.png` và
+`s07-02-sheet-them-quy-dinh.png`. Không có màn hình thì Admin không có đường nào đặt rule,
+`group_rules` vĩnh viễn rỗng, và toàn bộ E5-T3→E5-T9 chạy trên một bảng không bao giờ có dữ
+liệu. Checkpoint §12 của Master Plan hỏi *"Nếu phải dừng dự án ngay ngày mai, phần đã làm có
+dùng được không?"* — không có S-07 thì câu trả lời cho E5 là KHÔNG.
+
+## Consequence
+
+- E5 lên 10 subtask, 23 giờ cơ sở (từ 9 subtask, 21 giờ).
+- Màn hình chỉ dựng nhóm "Bắt buộc"; nhóm "Nên có" trong mockup là F22 (v1.1).
+
+## Affected Documents
+
+- Master Plan §1 (giờ của E5), §7 (thêm dòng `E5-T1b`).
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
+| :---: | :---: | :--- |
+| `3.0` | 2026-08-20 | Bổ sung `DEC-040` (`SystemTag` chuyển sang `shared/domain`) và `DEC-041` (Bổ sung `E5-T1b` S-07) cho E5-S1 |
 | :---: | :---: | :--- |
 | `2.9` | 2026-08-19 | Bổ sung `DEC-039` (list-deck Reads Eating History on Every Call) cho E4-S4 |
 | `2.8` | 2026-08-19 | Bổ sung `DEC-038` (Interaction Ordering Uses Client-Reported Timestamp) cho E4-S3 |

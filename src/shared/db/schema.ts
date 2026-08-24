@@ -1,8 +1,10 @@
 import { sql } from 'drizzle-orm'
 import {
   boolean,
+  check,
   date,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -190,6 +192,54 @@ export const groupDishTags = pgTable(
 )
 
 export type GroupDishTag = typeof groupDishTags.$inferSelect
+
+/**
+ * BR-012 — `rule_type` phân biệt Required (chặn Finalize) với Preferred (chỉ
+ * cảnh báo). v1.0 CHỈ ghi `REQUIRED`; `PREFERRED` là F22, v1.1.
+ *
+ * Cột vẫn có mặt ngay từ migration đầu vì ràng buộc `unique(group_id,
+ * rule_type, system_tag)` của Tech Spec §3.1 không viết được nếu thiếu nó —
+ * và vì cột DB đắt hơn kiểu TS rất nhiều khi phải thêm sau (Guide §1.2).
+ */
+export const groupRuleType = pgEnum('group_rule_type', ['REQUIRED', 'PREFERRED'])
+
+/**
+ * Tech Spec §3.1 dòng 159–161, chép đủ 6 cột.
+ *
+ * `overridable` là cột thứ hai chưa ai đọc ở v1.0 (BR-017 Override là F35,
+ * v1.2). `session_rules` ở S2 CỐ Ý KHÔNG có cột này — Tech Spec §3.1 dòng 165
+ * bỏ nó, và đúng: một quy định đã snapshot thì "có cho phép override hay
+ * không" là câu hỏi của bản gốc, không phải của bản sao.
+ *
+ * `unique` + `check` là ràng buộc THẬT trong DB, không phải chỉ ở `readGroupRules`:
+ * DoD của E5-T2. Hàm thuần bắt lỗi để báo cho người dùng tử tế; DB bắt lỗi để
+ * dữ liệu không bao giờ sai kể cả khi có đường ghi khác (script seed, sửa tay).
+ */
+export const groupRules = pgTable(
+  'group_rules',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    groupId: uuid('group_id')
+      .notNull()
+      .references(() => groups.id),
+    systemTag: systemTag('system_tag').notNull(),
+    minimumCount: integer('minimum_count').notNull(),
+    ruleType: groupRuleType('rule_type').notNull().default('REQUIRED'),
+    overridable: boolean('overridable').notNull().default(true),
+  },
+  (table) => [
+    uniqueIndex('group_rules_group_type_tag_unique').on(
+      table.groupId,
+      table.ruleType,
+      table.systemTag,
+    ),
+    check('group_rules_minimum_count_positive', sql`${table.minimumCount} >= 1`),
+  ],
+)
+
+export type GroupRule = typeof groupRules.$inferSelect
 
 /**
  * SDD §2.2. `INVALID` nằm trong enum để máy trạng thái đầy đủ nhưng không tới
