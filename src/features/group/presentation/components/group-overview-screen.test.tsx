@@ -70,4 +70,25 @@ describe('GroupOverviewScreen (S-04)', () => {
     render(<GroupOverviewScreen {...BASE_PROPS} activeSession={null} currentUserId="me" />)
     expect(screen.queryByText('Phiên đang mở')).toBeNull()
   })
+
+  it('activeSession có summaryHref: hiện thêm link "Xem tổng hợp"', () => {
+    const activeSession = {
+      id: 's1',
+      summaryHref: '/sessions/s1/summary',
+      participants: [
+        {
+          userId: 'me',
+          displayName: 'Bạn',
+          state: 'ACTIVE' as const,
+          statusLabel: 'Chưa xong',
+        },
+      ],
+    }
+
+    render(<GroupOverviewScreen {...BASE_PROPS} activeSession={activeSession} currentUserId="me" />)
+
+    const summaryLink = screen.getByRole('link', { name: 'Xem tổng hợp' })
+    expect(summaryLink).toBeDefined()
+    expect(summaryLink.getAttribute('href')).toBe('/sessions/s1/summary')
+  })
 })

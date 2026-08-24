@@ -60,6 +60,7 @@
 | [`DEC-043`](#dec-043--session--rule-is-the-fifth-cross-feature-edge-what-crosses-is-an-unexecuted-statement) | session → rule là chiều cross-feature thứ 5; Statement chưa chạy | 2026-08-20 | `Accepted` | Ranh giới kiến trúc, `db.batch()` |
 | [`DEC-044`](#dec-044--session_rules-has-no-surrogate-id) | `session_rules` không có Surrogate ID, dùng Composite PK | 2026-08-20 | `Accepted` | Schema DB, `INSERT … SELECT` |
 | [`DEC-045`](#dec-045--session-score-drops-the-cannot-eat-term-and-defines-its-own-tie-break) | Session Score bỏ số hạng Cannot-Eat và tự định nghĩa Tie-break | 2026-08-20 | `Accepted` | Thuật toán điểm đồng thuận, thứ tự xếp hạng S-10 |
+| [`DEC-046`](#dec-046--the-finalize-screen-lives-entirely-in-featuresmeal-app-maps-the-ranking) | Màn S-10 sống trọn trong features/meal; app/ ánh xạ ranking | 2026-08-20 | `Accepted` | Cấu trúc UI S-10, ranh giới cross-feature meal/selection |
 
 
 ---
@@ -967,10 +968,49 @@ Dự án đã có ba bảng cùng dạng: `group_dish_tags`, `final_meal_items`,
 
 ---
 
+# DEC-046 — The Finalize Screen Lives Entirely in features/meal; app/ Maps the Ranking
+
+- **Ngày:** 2026-08-20
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E5-S4
+
+## Quyết định
+
+Toàn bộ màn S-10 (bảng xếp hạng + khay chọn + nút chốt) đặt ở
+`features/meal/presentation/`, lệch chỉ định của Master Plan cho E5-T7
+(`features/selection/presentation/**`). `app/sessions/[sessionId]/summary/page.tsx` gọi
+`listSessionRanking` của `selection` rồi ánh xạ kết quả sang props do `meal/presentation` tự
+khai. KHÔNG thêm chiều `meal → selection`.
+
+## Rationale
+
+E5-T7, E5-T8, E5-T9 là một màn hình duy nhất chia sẻ một state duy nhất: danh sách món đang
+chọn. BR-051 đòi khay, dòng "Còn thiếu" và nút chốt đổi ngay khi bấm Chọn, không round-trip —
+nên chúng không tách được thành hai component ở hai feature. Cả hai chiều import đều bị
+ALLOWED_CROSS_FEATURE chặn.
+
+Đặt ở `meal` vì màn này LÀ màn chốt bữa (SPEC-015 + SPEC-016, cả hai thuộc `meal`); bảng xếp
+hạng là dữ liệu nó hiển thị, không phải việc nó làm. `selection` vẫn giữ trọn phần của mình:
+`rankSession` ở domain, `listSessionRanking` ở application. Ánh xạ ở `app/` — đúng nơi dự án
+đã đặt mọi việc lắp ráp xuyên feature — rẻ hơn một chiều cross-feature vĩnh viễn chỉ để mượn
+một kiểu dữ liệu.
+
+## Consequence
+
+- Master Plan E5-T7 cột "File tác động" đổi sang `src/features/meal/presentation/**`.
+- `countInteractionsByDish` (S3) phải trả thêm `systemTags` để client đánh giá rule được.
+
+## Affected Documents
+
+- Master Plan §7 — cột "File tác động" của E5-T7.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.3` | 2026-08-20 | Bổ sung `DEC-046` (Màn S-10 sống trọn trong features/meal; app/ ánh xạ ranking) cho E5-S4 (Cột mốc M5) |
 | `3.2` | 2026-08-20 | Bổ sung `DEC-045` (Session Score Drops the Cannot-Eat Term and Defines Its Own Tie-Break) cho E5-S3 |
 | `3.1` | 2026-08-20 | Bổ sung `DEC-042` (Snapshot lúc Start), `DEC-043` (session → rule cross-feature statement), và `DEC-044` (session_rules composite PK) cho E5-S2 |
 | `3.0` | 2026-08-20 | Bổ sung `DEC-040` (`SystemTag` chuyển sang `shared/domain`) và `DEC-041` (Bổ sung `E5-T1b` S-07) cho E5-S1 |

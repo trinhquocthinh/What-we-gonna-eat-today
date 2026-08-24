@@ -39,7 +39,7 @@
 | **E2** | Group và Dish hoàn chỉnh | 7 | 16 | `[x]` ✅ Xong |
 | **E3** | Phiên và người tham gia | 6 | 14 | `[x]` ✅ Xong — Cột mốc M3 |
 | **E4** | Deck vuốt và thuật toán Ranking | 9 | 21 | `[x]` ✅ Xong — Cột mốc M4 |
-| **E5** | Rule engine và chốt bữa (Final Meal) | 10 | 23 | `[ ]` ⬜ ⏳ Đang làm (3/10) |
+| **E5** | Rule engine và chốt bữa (Final Meal) | 10 | 23 | `[x]` ✅ Xong — Cột mốc M5 |
 | **E6** | Hoàn thiện UX, Coverage & NFRs | 6 | 15 | `[ ]` ⬜ Chưa bắt đầu |
 
 > [!TIP]
@@ -225,9 +225,9 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 | `[x] E5-T4` | Snapshot Session Rule trong transaction Start | [SPEC-022](what-we-gonna-eat-today_sdd_v0_1.md), `TC-091→094` | 2 | `E5-T2`, `E3-T1` | `TC-035` pass: Start thất bại thì không có Session Rule nào được tạo | `src/features/rule/infrastructure/drizzle-rule-repository.ts` |
 | `[x] E5-T5` | Finalize revalidate đầy đủ trong transaction | [SPEC-016](what-we-gonna-eat-today_sdd_v0_1.md), `TC-067→075` | 4 | `E5-T3`, `E5-T4`, `E1-T11` | `TC-074` và `TC-075` pass: Rule theo snapshot, System Tag theo hiện tại | `src/features/meal/application/finalize-session.ts` |
 | `[x] E5-T6` | `computeSessionScore` chuẩn hoá theo $T$ | [SPEC-014](what-we-gonna-eat-today_sdd_v0_1.md), `TC-058→062`, `TC-111` | 2.5 | `E4-T5` | `TC-111` pass: $T = 1$ không chia cho 0 | `src/features/selection/domain/ranking.ts` |
-| `E5-T7` | Màn hình tổng hợp kèm số đếm thô | `S-10`, [Design §4](designs/README.md) | 2.5 | `E5-T6` | Dùng `tabular-nums`; số 0 hiện mờ chứ không ẩn | `src/features/meal/presentation/**` (đổi khỏi `selection` — [DEC-046](what-we-gonna-eat-today_decision-log_v1.1.md)) |
-| `E5-T8` | Khay chọn món và dựng Final Meal | [SPEC-015](what-we-gonna-eat-today_sdd_v0_1.md), `S-10`, `TC-063→066` | 2 | `E5-T7` | Chọn được cả món trong mục "Chưa ai chọn" | `src/features/meal/presentation/**` |
-| `E5-T9` | Hiện Required Rule chưa đạt ngay trên nút chốt | `S-10`, `TC-072` | 1 | `E5-T5`, `E5-T8` | Ghi rõ `Còn thiếu: 1 món Canh`, không dùng modal — **Cột mốc M5** | Như trên |
+| `[x] E5-T7` | Màn hình tổng hợp kèm số đếm thô | `S-10`, [Design §4](designs/README.md) | 2.5 | `E5-T6` | Dùng `tabular-nums`; số 0 hiện mờ chứ không ẩn | `src/features/meal/presentation/**` (đổi khỏi `selection` — [DEC-046](what-we-gonna-eat-today_decision-log_v1.1.md)) |
+| `[x] E5-T8` | Khay chọn món và dựng Final Meal | [SPEC-015](what-we-gonna-eat-today_sdd_v0_1.md), `S-10`, `TC-063→066` | 2 | `E5-T7` | Chọn được cả món trong mục "Chưa ai chọn" | `src/features/meal/presentation/**` |
+| `[x] E5-T9` | Hiện Required Rule chưa đạt ngay trên nút chốt | `S-10`, `TC-072` | 1 | `E5-T5`, `E5-T8` | Ghi rõ `Còn thiếu: 1 món Canh`, không dùng modal — **Cột mốc M5** | Như trên |
 
 ---
 
@@ -348,6 +348,7 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.7` | 2026-08-20 | §1, §7 | Hoàn tất thi công toàn bộ Epic E5 (S1→S4, E5-T1 đến E5-T9: Rule engine, Snapshot lúc Start, Màn tổng hợp S-10 & Chốt bữa) — Đạt cột mốc M5 | Quyết định DEC-040 đến DEC-046 |
 | `1.6` | 2026-08-20 | §1, §7 | Chốt kế hoạch thi công E5: chia 4 slice kèm 4 Implementation Guide; bổ sung subtask `E5-T1b` (màn hình S-07 Quy định bữa ăn); đổi File tác động của `E5-T7` sang `features/meal`; đồng bộ bảng tiến độ §1 với thực tế E2/E3/E4 đã xong | Quyết định DEC-040 đến DEC-046 |
 | `1.5` | 2026-08-20 | §6 | Hoàn tất thi công toàn bộ Epic E4 (S1→S4, E4-T1 đến E4-T9: Deck vuốt & Thuật toán Ranking cá nhân) — Đạt cột mốc M4 | Quyết định DEC-036 đến DEC-039 |
 | `1.4` | 2026-08-19 | §5 | Hoàn tất thi công Slice S3 của Epic E3 (E3-T5, E3-T6: Completed & Màn hình Creator) — Đạt cột mốc M3 | Quyết định DEC-035 |

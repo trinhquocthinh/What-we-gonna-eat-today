@@ -1,11 +1,11 @@
 import type { Result } from '@/shared/result'
 import { err, ok } from '@/shared/result'
 
-import { SYSTEM_TAGS, isSystemTag, type SystemTag } from '@/shared/domain/system-tag'
+import { SYSTEM_TAGS, isSystemTag, toSystemTags, type SystemTag } from '@/shared/domain/system-tag'
 
 // Giữ đường import cũ còn hiệu lực cho 12 chỗ trong `features/dish/**` —
 // chuyển nhà một kiểu dữ liệu không đáng làm bẩn 12 file diff.
-export { SYSTEM_TAGS, isSystemTag }
+export { SYSTEM_TAGS, isSystemTag, toSystemTags }
 export type { SystemTag }
 
 export type SystemTagError = 'INVALID_SYSTEM_TAG'
@@ -33,14 +33,4 @@ export function readSystemTags(values: readonly string[]): Result<SystemTag[], S
   }
 
   return ok(SYSTEM_TAGS.filter((tag) => seen.has(tag)))
-}
-
-/**
- * KHOAN DUNG — dùng cho dữ liệu ĐỌC TỪ DB, nơi `json_agg` trả về `string[]`
- * mà TypeScript không kiểm được (xem §10.3). Bỏ qua giá trị lạ thay vì ném:
- * một hàng hỏng không được làm sập cả trang danh mục món.
- */
-export function toSystemTags(values: readonly string[]): SystemTag[] {
-  const seen = new Set(values)
-  return SYSTEM_TAGS.filter((tag) => seen.has(tag))
 }

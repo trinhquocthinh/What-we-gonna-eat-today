@@ -30,3 +30,13 @@ export const SYSTEM_TAGS = [
 export function isSystemTag(value: string): value is SystemTag {
   return (SYSTEM_TAGS as readonly string[]).includes(value)
 }
+
+/**
+ * KHOAN DUNG — dùng cho dữ liệu ĐỌC TỪ DB, nơi `json_agg` trả về `string[]`
+ * mà TypeScript không kiểm được. Bỏ qua giá trị lạ thay vì ném:
+ * một hàng hỏng không được làm sập cả trang danh mục món hay bảng xếp hạng.
+ */
+export function toSystemTags(values: readonly string[]): SystemTag[] {
+  const seen = new Set(values)
+  return SYSTEM_TAGS.filter((tag) => seen.has(tag))
+}

@@ -316,11 +316,13 @@ describe('SPEC-014 — ranking methods (integration)', () => {
     expect(typeof dish1Count?.proposedCount).toBe('number')
     expect(dish1Count?.proposedCount).toBe(1) // chỉ tính participant ACTIVE, bỏ qua REMOVED
     expect(dish1Count?.rejectedCount).toBe(0)
+    expect(Array.isArray(dish1Count?.systemTags)).toBe(true)
 
     const dish2Count = counts.find((c) => c.groupDishId === groupDish2Id)
     expect(dish2Count).toBeDefined()
     expect(dish2Count?.proposedCount).toBe(0)
     expect(dish2Count?.rejectedCount).toBe(0)
+    expect(Array.isArray(dish2Count?.systemTags)).toBe(true)
 
     // Cleanup extra records
     await db.delete(interactions).where(eq(interactions.sessionId, seed.sessionId))

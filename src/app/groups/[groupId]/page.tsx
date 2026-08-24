@@ -29,10 +29,15 @@ export default async function GroupPage({ params }: GroupPageProps) {
     groupId,
     decisionDate,
   )
-  const activeSessionOverview =
+  const [activeSessionOverview, sessionForStart] =
     blockingSession !== null && blockingSession.state === 'ACTIVE'
-      ? await drizzleSessionRepository.findSessionOverview(blockingSession.id)
-      : null
+      ? await Promise.all([
+          drizzleSessionRepository.findSessionOverview(blockingSession.id),
+          drizzleSessionRepository.findForStart(blockingSession.id),
+        ])
+      : [null, null]
+
+  const isCreator = sessionForStart !== null && sessionForStart.creatorUserId === user.id
 
   return (
     <GroupOverviewScreen
@@ -49,6 +54,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
           ? null
           : {
               id: blockingSession!.id,
+              ...(isCreator ? { summaryHref: `/sessions/${blockingSession!.id}/summary` } : {}),
               participants: activeSessionOverview.participants.map((p) => ({
                 ...p,
                 statusLabel: describeParticipantRow(p, p.userId === user.id),

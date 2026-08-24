@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { HistoryRepository } from '@/features/history/application/history-repository'
+import type { SystemTag } from '@/shared/domain/system-tag'
 
 import { listSessionRanking } from './list-session-ranking'
 import type { SelectionRepository } from './selection-repository'
@@ -11,6 +12,7 @@ function makeFakeSelectionRepository(options: {
     groupDishId: string
     globalDishId: string
     name: string
+    systemTags?: readonly SystemTag[]
     proposedCount: number
     rejectedCount: number
   }[]
@@ -47,11 +49,15 @@ function makeFakeSelectionRepository(options: {
     async countInteractionsByDish(sessionId) {
       options.countInteractionsCalls?.push(sessionId)
       return (
-        options.dishes ?? [
+        options.dishes?.map((d) => ({
+          systemTags: d.systemTags ?? [],
+          ...d,
+        })) ?? [
           {
             groupDishId: 'gd-1',
             globalDishId: 'g-1',
             name: 'Món 1',
+            systemTags: [],
             proposedCount: 3,
             rejectedCount: 0,
           },
@@ -59,6 +65,7 @@ function makeFakeSelectionRepository(options: {
             groupDishId: 'gd-2',
             globalDishId: 'g-2',
             name: 'Món 2',
+            systemTags: [],
             proposedCount: 0,
             rejectedCount: 0,
           },

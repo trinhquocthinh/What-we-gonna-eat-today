@@ -118,6 +118,7 @@ describe('stableHash', () => {
 const makeSessionDish = (over: Partial<SessionDishInput> = {}): SessionDishInput => ({
   dishId: 'd1',
   name: 'Cá kho',
+  systemTags: [],
   proposedCount: 0,
   rejectedCount: 0,
   recentEaterCount: 0,

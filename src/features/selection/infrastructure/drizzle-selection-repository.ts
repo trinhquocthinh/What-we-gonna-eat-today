@@ -5,12 +5,14 @@ import { getDb } from '@/shared/db/client'
 import {
   globalDishes,
   groupDishes,
+  groupDishTags,
   interactionEvents,
   interactions,
   participants,
   selectionSessions,
   sessionDecks,
 } from '@/shared/db/schema'
+import { toSystemTags, type SystemTag } from '@/shared/domain/system-tag'
 
 import type { InteractionAction, InteractionType } from '../domain/interaction'
 import type {
@@ -270,6 +272,7 @@ async function countInteractionsByDish(sessionId: string): Promise<
     groupDishId: string
     globalDishId: string
     name: string
+    systemTags: readonly SystemTag[]
     proposedCount: number
     rejectedCount: number
   }[]
@@ -279,8 +282,11 @@ async function countInteractionsByDish(sessionId: string): Promise<
       groupDishId: groupDishes.id,
       globalDishId: groupDishes.globalDishId,
       name: globalDishes.name,
-      proposedCount: sql<string>`COUNT(*) FILTER (WHERE ${interactions.type} = 'SWIPE_RIGHT' AND ${participants.id} IS NOT NULL)`,
-      rejectedCount: sql<string>`COUNT(*) FILTER (WHERE ${interactions.type} = 'SWIPE_LEFT' AND ${participants.id} IS NOT NULL)`,
+      systemTags: sql<
+        string[]
+      >`coalesce(json_agg(distinct ${groupDishTags.systemTag}) filter (where ${groupDishTags.systemTag} is not null), '[]'::json)`,
+      proposedCount: sql<string>`COUNT(DISTINCT ${interactions.id}) FILTER (WHERE ${interactions.type} = 'SWIPE_RIGHT' AND ${participants.id} IS NOT NULL)`,
+      rejectedCount: sql<string>`COUNT(DISTINCT ${interactions.id}) FILTER (WHERE ${interactions.type} = 'SWIPE_LEFT' AND ${participants.id} IS NOT NULL)`,
     })
     .from(selectionSessions)
     .innerJoin(
@@ -288,6 +294,7 @@ async function countInteractionsByDish(sessionId: string): Promise<
       and(eq(groupDishes.groupId, selectionSessions.groupId), eq(groupDishes.state, 'ACTIVE')),
     )
     .innerJoin(globalDishes, eq(globalDishes.id, groupDishes.globalDishId))
+    .leftJoin(groupDishTags, eq(groupDishTags.groupDishId, groupDishes.id))
     .leftJoin(
       interactions,
       and(
@@ -307,6 +314,7 @@ async function countInteractionsByDish(sessionId: string): Promise<
     groupDishId: row.groupDishId,
     globalDishId: row.globalDishId,
     name: row.name,
+    systemTags: toSystemTags(row.systemTags),
     proposedCount: Number(row.proposedCount),
     rejectedCount: Number(row.rejectedCount),
   }))

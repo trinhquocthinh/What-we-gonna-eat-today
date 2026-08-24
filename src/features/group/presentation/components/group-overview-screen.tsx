@@ -19,7 +19,11 @@ export type GroupOverviewScreenProps = {
   dishesHref: string
   inviteHref: string
   openSessionHref: string
-  activeSession: { id: string; participants: readonly GroupOverviewParticipant[] } | null
+  activeSession: {
+    id: string
+    participants: readonly GroupOverviewParticipant[]
+    summaryHref?: string | undefined
+  } | null
   currentUserId: string
   rulesHref: string
   ruleCount: number
@@ -87,12 +91,22 @@ export function GroupOverviewScreen({
               ))}
             </ul>
 
-            <Link
-              href={`/sessions/${activeSession.id}`}
-              className="flex min-h-14 w-full items-center justify-center rounded-control bg-accent px-6 text-subtitle font-semibold text-on-accent shadow-button transition-transform duration-100 hover:bg-accent-hover active:scale-[0.98] active:bg-accent-active"
-            >
-              Vào lượt của bạn
-            </Link>
+            <div className="flex flex-col gap-2">
+              <Link
+                href={`/sessions/${activeSession.id}`}
+                className="flex min-h-14 w-full items-center justify-center rounded-control bg-accent px-6 text-subtitle font-semibold text-on-accent shadow-button transition-transform duration-100 hover:bg-accent-hover active:scale-[0.98] active:bg-accent-active"
+              >
+                Vào lượt của bạn
+              </Link>
+              {activeSession.summaryHref ? (
+                <Link
+                  href={activeSession.summaryHref}
+                  className="flex min-h-14 w-full items-center justify-center rounded-control border border-border bg-surface-raised px-6 text-subtitle font-semibold text-ink shadow-button transition-transform duration-100 hover:border-border-strong active:scale-[0.98] active:bg-surface-sunken"
+                >
+                  Xem tổng hợp
+                </Link>
+              ) : null}
+            </div>
           </div>
         )}
 

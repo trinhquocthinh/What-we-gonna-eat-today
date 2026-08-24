@@ -64,6 +64,7 @@ export async function listSessionRanking(
         dishes: counts.map((row) => ({
           dishId: row.groupDishId,
           name: row.name,
+          systemTags: row.systemTags,
           proposedCount: row.proposedCount,
           rejectedCount: row.rejectedCount,
           recentEaterCount: recentEaters.get(row.globalDishId) ?? 0,

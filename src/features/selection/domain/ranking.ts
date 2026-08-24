@@ -1,3 +1,5 @@
+import type { SystemTag } from '@/shared/domain/system-tag'
+
 import type { RankingConfig } from './ranking-config'
 
 /**
@@ -156,6 +158,7 @@ export type SessionDishInput = SessionScoreInput & {
   /** `group_dishes.id`. */
   readonly dishId: string
   readonly name: string
+  readonly systemTags: readonly SystemTag[]
 }
 
 export type RankedDish = SessionDishInput & {

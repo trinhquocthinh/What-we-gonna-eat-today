@@ -1,3 +1,5 @@
+import type { SystemTag } from '@/shared/domain/system-tag'
+
 import type { DishCard } from '../domain/dish-card'
 import type { InteractionAction, InteractionType } from '../domain/interaction'
 
@@ -84,6 +86,7 @@ export interface SelectionRepository {
       groupDishId: string
       globalDishId: string
       name: string
+      systemTags: readonly SystemTag[]
       proposedCount: number
       rejectedCount: number
     }[]
