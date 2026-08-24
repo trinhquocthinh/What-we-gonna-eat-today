@@ -28,9 +28,8 @@ export type StartSessionDeps = {
  * SPEC-008 — 4 bước revalidate, theo đúng thứ tự, dừng ở lỗi đầu tiên.
  *
  * Bước 5 (snapshot Group Rule → Session Rule) KHÔNG thuộc phạm vi hàm này —
- * bảng `group_rules`/`session_rules` chưa tồn tại (tạo ở E5-T1, sau cả E3).
- * `E5-T4` sẽ chèn bước snapshot vào ĐÚNG giao dịch `startDraft` bên dưới khi
- * bảng đã có. Xem Implementation Guide §1 cho phần đính chính đầy đủ.
+ * nó nằm trọn vẹn trong giao dịch `startDraft` ở tầng infrastructure (`E5-T4`).
+ * `start-session.ts` không cần biết gì về rule hay snapshot (xem DEC-043).
  *
  * Bước 3 ("Creator vẫn Member") và bước 4 ("mọi Participant vẫn Member") gộp
  * thành MỘT lệnh gọi `findInvalidParticipants` trên toàn bộ

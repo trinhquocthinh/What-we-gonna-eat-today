@@ -214,8 +214,11 @@ System Tag + minimum_count (≥ 1) + rule_type (Required | Preferred) + overrida
 
 ## 5.1 Draft Editing — `BR-016`
 
-- Khi tạo phiên (`Draft`), Group Rules được tự động **Snapshot** sang `Session Rules`.
-- Chỉ Creator có quyền điều chỉnh Session Rules và **chỉ được chỉnh trong giai đoạn DRAFT**.
+> [!NOTE]
+> **Đánh dấu v1.0 (DEC-042):** *Một phần; vế Draft Editing thuộc v1.2*. Ở v1.0, snapshot `group_rules → session_rules` diễn ra tại thời điểm `Start` (`DRAFT → ACTIVE`, SPEC-022) thay vì lúc tạo Draft. Vế "Creator điều chỉnh Session Rules trong Draft" là tính năng F35 (Override Session Rule) thuộc **v1.2**. Ở v1.0, tạo ra và đóng băng là cùng một khoảnh khắc.
+
+- Khi tạo phiên (`Draft`), Group Rules được tự động **Snapshot** sang `Session Rules` *(ở v1.0 thực hiện lúc `Start` — xem DEC-042)*.
+- Chỉ Creator có quyền điều chỉnh Session Rules và **chỉ được chỉnh trong giai đoạn DRAFT** *(v1.2 — F35)*.
 - Khi phiên bấm `Start` ($\to$ `ACTIVE`), Session Rules bị đóng băng hoàn toàn.
 
 ## 5.2 Inherited Rule và Override — `BR-017`

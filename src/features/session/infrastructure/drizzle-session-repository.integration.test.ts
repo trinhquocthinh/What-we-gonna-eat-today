@@ -6,10 +6,12 @@ import {
   globalDishes,
   groupDishes,
   groupMembers,
+  groupRules,
   groups,
   interactions,
   participants,
   selectionSessions,
+  sessionRules,
   users,
 } from '@/shared/db/schema'
 
@@ -52,10 +54,12 @@ async function cleanupGroupAndUser(groupId: string, userIds: string | string[]) 
     .where(eq(selectionSessions.groupId, groupId))
 
   for (const s of sessionRows) {
+    await db.delete(sessionRules).where(eq(sessionRules.sessionId, s.id))
     await db.delete(interactions).where(eq(interactions.sessionId, s.id))
     await db.delete(participants).where(eq(participants.sessionId, s.id))
   }
   await db.delete(selectionSessions).where(eq(selectionSessions.groupId, groupId))
+  await db.delete(groupRules).where(eq(groupRules.groupId, groupId))
   await db.delete(groupDishes).where(eq(groupDishes.groupId, groupId))
   await db.delete(globalDishes).where(eq(globalDishes.createdFromGroupId, groupId))
   for (const uid of ids) {
@@ -400,5 +404,162 @@ describe('E3-T6 — findSessionOverview (integration)', () => {
     expect(secondProgress?.proposedCount).toBe(0)
     expect(secondProgress?.totalInteractions).toBe(0)
     expect(secondProgress?.displayName).toBe('Second User')
+  })
+})
+
+async function seedGroupWithRules(
+  rules: readonly {
+    systemTag: 'STAPLE' | 'MAIN' | 'SIDE' | 'SOUP' | 'DESSERT'
+    minimumCount: number
+  }[],
+) {
+  const { userId, groupId } = await seedGroupAndUser()
+  cleanupQueue.push(() => cleanupGroupAndUser(groupId, userId))
+  const db = getDb()
+
+  if (rules.length > 0) {
+    await db.insert(groupRules).values(
+      rules.map((r) => ({
+        groupId,
+        systemTag: r.systemTag,
+        minimumCount: r.minimumCount,
+        ruleType: 'REQUIRED' as const,
+      })),
+    )
+  }
+
+  return { userId, groupId, decisionDate: '2026-08-20' }
+}
+
+async function createDraft(input: {
+  groupId: string
+  decisionDate: string
+  creatorUserId?: string
+}) {
+  const db = getDb()
+  const sessionId = crypto.randomUUID()
+  const userId = input.creatorUserId ?? crypto.randomUUID()
+
+  await db.insert(selectionSessions).values({
+    id: sessionId,
+    groupId: input.groupId,
+    decisionDate: input.decisionDate,
+    creatorUserId: userId,
+    state: 'DRAFT',
+  })
+
+  return sessionId
+}
+
+describe('SPEC-022 / E5-T4 — Snapshot Session Rules lúc Start (integration)', () => {
+  it('TC-091: Group có 2 rule -> startDraft -> session_rules có đúng 2 dòng', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([
+      { systemTag: 'MAIN', minimumCount: 1 },
+      { systemTag: 'SOUP', minimumCount: 1 },
+    ])
+
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const outcome = await drizzleSessionRepository.startDraft(draft)
+
+    expect(outcome.outcome).toBe('STARTED')
+
+    const rules = await getDb()
+      .select({ systemTag: sessionRules.systemTag, minimumCount: sessionRules.minimumCount })
+      .from(sessionRules)
+      .where(eq(sessionRules.sessionId, draft))
+
+    expect(rules).toHaveLength(2)
+    expect(rules).toEqual(
+      expect.arrayContaining([
+        { systemTag: 'MAIN', minimumCount: 1 },
+        { systemTag: 'SOUP', minimumCount: 1 },
+      ]),
+    )
+  })
+
+  it('TC-092: Group 0 rule -> startDraft -> STARTED và session_rules 0 dòng', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([])
+
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const outcome = await drizzleSessionRepository.startDraft(draft)
+
+    expect(outcome.outcome).toBe('STARTED')
+
+    const rules = await getDb().select().from(sessionRules).where(eq(sessionRules.sessionId, draft))
+
+    expect(rules).toEqual([])
+  })
+
+  it('TC-094: Start lần hai -> NOT_DRAFT và session_rules vẫn nguyên 2 dòng', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([
+      { systemTag: 'MAIN', minimumCount: 1 },
+      { systemTag: 'SOUP', minimumCount: 1 },
+    ])
+
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const first = await drizzleSessionRepository.startDraft(draft)
+    expect(first.outcome).toBe('STARTED')
+
+    const second = await drizzleSessionRepository.startDraft(draft)
+    expect(second.outcome).toBe('NOT_DRAFT')
+
+    const rules = await getDb().select().from(sessionRules).where(eq(sessionRules.sessionId, draft))
+
+    expect(rules).toHaveLength(2)
+  })
+
+  it('TC-090, TC-093: Admin đổi Group Rule sau khi Start -> session_rules của phiên không đổi', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([
+      { systemTag: 'MAIN', minimumCount: 1 },
+      { systemTag: 'SOUP', minimumCount: 1 },
+    ])
+
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const outcome = await drizzleSessionRepository.startDraft(draft)
+    expect(outcome.outcome).toBe('STARTED')
+
+    // Admin sửa Group Rule
+    const db = getDb()
+    await db.delete(groupRules).where(eq(groupRules.groupId, groupId))
+    await db.insert(groupRules).values({
+      groupId,
+      systemTag: 'SIDE',
+      minimumCount: 2,
+      ruleType: 'REQUIRED',
+    })
+
+    const sessionRulesRows = await db
+      .select({ systemTag: sessionRules.systemTag, minimumCount: sessionRules.minimumCount })
+      .from(sessionRules)
+      .where(eq(sessionRules.sessionId, draft))
+
+    expect(sessionRulesRows).toHaveLength(2)
+    expect(sessionRulesRows).toEqual(
+      expect.arrayContaining([
+        { systemTag: 'MAIN', minimumCount: 1 },
+        { systemTag: 'SOUP', minimumCount: 1 },
+      ]),
+    )
+  })
+
+  it('TC-035 — Start thất bại thì không có Session Rule nào được tạo', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([
+      { systemTag: 'MAIN', minimumCount: 1 },
+      { systemTag: 'SOUP', minimumCount: 1 },
+    ])
+
+    const first = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const second = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+
+    expect((await drizzleSessionRepository.startDraft(first)).outcome).toBe('STARTED')
+
+    const outcome = await drizzleSessionRepository.startDraft(second)
+    expect(outcome.outcome).toBe('ALREADY_EXISTS_TODAY')
+
+    const orphaned = await getDb()
+      .select()
+      .from(sessionRules)
+      .where(eq(sessionRules.sessionId, second))
+    expect(orphaned).toEqual([])
   })
 })

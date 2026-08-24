@@ -13,7 +13,7 @@ import next from 'eslint-config-next'
 const FEATURES = ['auth', 'group', 'dish', 'rule', 'session', 'selection', 'meal', 'history']
 
 /**
- * §2.3 — đúng bốn chiều được phép, tất cả đi qua application port.
+ * §2.3 — đúng năm chiều được phép (DEC-043).
  * Mọi chiều khác bị cấm, kể cả những chiều "hiển nhiên tiện".
  *
  * Guard phân quyền (SPEC-019) KHÔNG nằm ở đây: nó được lắp ở `app/` trước khi
@@ -24,6 +24,7 @@ const FEATURES = ['auth', 'group', 'dish', 'rule', 'session', 'selection', 'meal
 const ALLOWED_CROSS_FEATURE = {
   selection: ['history', 'dish'],
   meal: ['rule', 'history'],
+  session: ['rule'],
 }
 
 /**
@@ -73,7 +74,7 @@ const CROSS_FEATURE_ZONES = FEATURES.map((feature) => ({
   target: `./src/features/${feature}`,
   from: './src/features',
   except: [feature, ...(ALLOWED_CROSS_FEATURE[feature] ?? [])].map((allowed) => `./${allowed}`),
-  message: `Feature "${feature}" không được import feature này. Bốn chiều hợp lệ ghi ở Tech Spec §2.3.`,
+  message: `Feature "${feature}" không được import feature này. Năm chiều hợp lệ ghi ở Tech Spec §2.3.`,
 }))
 
 export default tseslint.config(

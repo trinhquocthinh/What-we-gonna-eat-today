@@ -827,10 +827,113 @@ dùng được không?"* — không có S-07 thì câu trả lời cho E5 là KH
 
 ---
 
+# DEC-042 — Session Rules Snapshot at Start, Not at Draft Creation
+
+- **Ngày:** 2026-08-20
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E5-S2
+
+## Quyết định
+
+Snapshot `group_rules → session_rules` xảy ra bên trong giao dịch Start (`DRAFT → ACTIVE`),
+theo SPEC-022, chứ không lúc tạo Draft như BR-016 mô tả.
+
+## Rationale
+
+BR-016 gắn snapshot-lúc-Draft với quyền "Creator chỉnh Session Rules trong giai đoạn DRAFT".
+Quyền đó là F35 Override Session Rule — v1.2. Không có màn hình nào sửa Session Rule ở v1.0,
+nên snapshot sớm chỉ tạo thêm một trạng thái phải bảo trì: một Draft mang bản sao rule mà
+không ai đọc, và phải làm mới nếu Admin đổi Group Rule trong lúc Draft còn treo. Snapshot lúc
+Start khớp đúng BR-015 ("khi bấm Start, Session Rules bị đóng băng hoàn toàn") — ở v1.0, tạo
+ra và đóng băng là cùng một khoảnh khắc.
+
+## Consequence
+
+- `TC-091`→`TC-094` viết trên đường đi của `startDraft`, không của `createDraftWithCreatorParticipant`.
+- Khi F35 vào v1.2, snapshot dời về lúc tạo Draft và cần thêm bước "làm mới lúc Start" cho
+  phần rule chưa bị override.
+
+## Affected Documents
+
+- Business Rules §5.1 (`BR-016`) — đánh dấu "một phần; vế Draft Editing thuộc v1.2".
+
+---
+
+# DEC-043 — session → rule Is the Fifth Cross-Feature Edge; What Crosses Is an Unexecuted Statement
+
+- **Ngày:** 2026-08-20
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E5-S2
+
+## Quyết định
+
+Thêm `session: ['rule']` vào `ALLOWED_CROSS_FEATURE`. `rule/infrastructure` export
+`buildSnapshotStatement(db, sessionId)` trả về một `BatchItem` CHƯA thực thi;
+`session/infrastructure.startDraft` bỏ nó vào `db.batch()` của mình.
+
+## Rationale
+
+E5-T4 đòi snapshot nguyên tử với Start (TC-035), nên hai câu phải nằm trong cùng một giao
+dịch, mà giao dịch đó do `startDraft` sở hữu. Viết thẳng SQL của `session_rules` vào
+`drizzle-session-repository.ts` sẽ để feature `session` sở hữu một mẩu schema của feature
+`rule`. Gọi snapshot như một use case rời sau `startDraft` phá TC-035.
+
+Điểm khiến chiều thứ năm này chấp nhận được: thứ đi qua ranh giới không phải dữ liệu và cũng
+không phải một query đã chạy, mà là mô tả việc cần làm. `rule` giữ quyền sở hữu SQL của bảng
+mình; `session` giữ quyền quyết định giao dịch của mình. Không có đối tượng `tx` nào bị
+truyền qua ranh giới — driver HTTP cũng không có `tx`.
+
+## Consequence
+
+- Tech Spec §2.3 chuyển từ "đúng bốn chiều" sang năm chiều.
+- Mẫu "export câu lệnh, không export kết quả" là tiền lệ cho mọi lần sau cần ghi chéo feature
+  trong một giao dịch.
+
+## Affected Documents
+
+- Tech Spec §2.3 — bảng chiều cross-feature.
+- `src/shared/db/client.ts` — ghi chú "E5-T4 cần driver WebSocket" đã sai, sửa lại.
+
+---
+
+# DEC-044 — session_rules Has No Surrogate id
+
+- **Ngày:** 2026-08-20
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E5-S2
+
+## Quyết định
+
+`session_rules` không có cột `id`; khoá chính là `(session_id, rule_type, system_tag)` —
+lệch Tech Spec §3.1 dòng 165.
+
+## Rationale
+
+Snapshot là một câu `INSERT … SELECT` chạy trọn trong Postgres (điều kiện để `db.batch()` đủ
+dùng, xem DEC-043). Câu đó không gọi được `uuidv7()` của JavaScript, nên giữ cột `id` buộc
+phải chọn một trong hai: dùng `gen_random_uuid()` — phá quy ước "UUID v7 sinh ở tầng ứng dụng"
+ghi ở đầu `schema.ts`; hoặc đọc `group_rules` về Node rồi ghi — mất tính tự chứa và kéo theo
+nhu cầu driver WebSocket.
+
+Bỏ `id` không mất gì: `unique(session_id, rule_type, system_tag)` mà chính Tech Spec đòi đã là
+khoá tự nhiên, một dòng `session_rules` không có định danh riêng và không bảng nào trỏ tới nó.
+Dự án đã có ba bảng cùng dạng: `group_dish_tags`, `final_meal_items`, `session_decks`.
+
+## Consequence
+
+- `group_rules` vẫn giữ `id` — bản gốc, người dùng sửa từng dòng, không đi qua `INSERT … SELECT`.
+
+## Affected Documents
+
+- Tech Spec §3.1 dòng 165 — bỏ `id` khỏi mô tả `session_rules`.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.1` | 2026-08-20 | Bổ sung `DEC-042` (Snapshot lúc Start), `DEC-043` (session → rule cross-feature statement), và `DEC-044` (session_rules composite PK) cho E5-S2 |
 | `3.0` | 2026-08-20 | Bổ sung `DEC-040` (`SystemTag` chuyển sang `shared/domain`) và `DEC-041` (Bổ sung `E5-T1b` S-07) cho E5-S1 |
 | :---: | :---: | :--- |
 | `2.9` | 2026-08-19 | Bổ sung `DEC-039` (list-deck Reads Eating History on Every Call) cho E4-S4 |

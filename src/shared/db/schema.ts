@@ -321,6 +321,41 @@ export type SelectionSession = typeof selectionSessions.$inferSelect
 export type Participant = typeof participants.$inferSelect
 
 /**
+ * Tech Spec §3.1 dòng 165–167 — bản sao đông cứng của `group_rules` tại thời
+ * điểm Start (SPEC-022).
+ *
+ * KHÔNG có `overridable`: Tech Spec bỏ cột đó ở bảng này, và đúng — "có cho
+ * phép Creator override không" là thuộc tính của quy định GỐC, không phải của
+ * bản sao đã đóng băng.
+ *
+ * KHÔNG có `id` — lệch Tech Spec §3.1 có chủ ý, xem DEC-044: câu snapshot là
+ * `INSERT … SELECT` chạy trọn trong Postgres nên không sinh được UUID v7 ở
+ * tầng ứng dụng, mà bộ ba `(session_id, rule_type, system_tag)` vốn đã là khoá
+ * tự nhiên. Cùng khuôn `group_dish_tags`, `final_meal_items`, `session_decks`.
+ *
+ * Dùng LẠI `groupRuleType` chứ không khai enum thứ hai: hai bảng nói về đúng
+ * cùng một khái niệm, và một `pgEnum` trùng nội dung là hai kiểu Postgres phải
+ * cast qua lại trong chính câu `INSERT … SELECT` của snapshot.
+ */
+export const sessionRules = pgTable(
+  'session_rules',
+  {
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => selectionSessions.id),
+    ruleType: groupRuleType('rule_type').notNull(),
+    systemTag: systemTag('system_tag').notNull(),
+    minimumCount: integer('minimum_count').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.sessionId, table.ruleType, table.systemTag] }),
+    check('session_rules_minimum_count_positive', sql`${table.minimumCount} >= 1`),
+  ],
+)
+
+export type SessionRule = typeof sessionRules.$inferSelect
+
+/**
  * SDD §2.2. Không có giá trị `NONE` — "None" = không tồn tại row (xem
  * `features/selection/domain/interaction.ts`).
  */

@@ -11,6 +11,7 @@ function fakeRepository() {
   const repository: RuleRepository = {
     listGroupRules: async () => [],
     replaceGroupRules,
+    listSessionRules: async () => [],
   }
   return { repository, replaceGroupRules }
 }

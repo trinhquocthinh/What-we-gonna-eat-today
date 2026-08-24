@@ -103,13 +103,14 @@ Ranh giới này được kiểm soát tự động bởi ESLint (`import/no-res
 
 ## 2.3 Quan hệ phụ thuộc giữa các Feature
 
-Chỉ có đúng **4 chiều quan hệ** được phép (tất cả đều đi qua Application Port, không import chéo Domain):
+Chỉ có đúng **5 chiều quan hệ** được phép (tất cả đều đi qua Application Port hoặc unexecuted statement builder, không import chéo Domain):
 
 ```text
 selection ────► history    (Lấy dữ liệu tính Recency Penalty)
 selection ────► dish       (Lấy tập món hợp lệ của nhóm)
 meal      ────► rule       (Thực thi Rule Validation khi finalize)
 meal      ────► history    (Tự động sinh Default Eating History)
+session   ────► rule       (Dựng BatchItem snapshot Group Rule sang Session Rule lúc Start — DEC-043)
 ```
 
 *(Mọi chiều import chéo khác đều bị cấm hoàn toàn).*
@@ -162,8 +163,8 @@ group_rules(id, group_id, system_tag, minimum_count, rule_type, overridable)
 
 selection_sessions(id, group_id, decision_date, creator_user_id, state, created_at, started_at, finalized_at)
 
-session_rules(id, session_id, system_tag, minimum_count, rule_type)
-  unique(session_id, rule_type, system_tag)
+session_rules(session_id, rule_type, system_tag, minimum_count)
+  primary key(session_id, rule_type, system_tag)
   check(minimum_count >= 1)
 
 participants(id, session_id, user_id, state, joined_at)

@@ -1,6 +1,7 @@
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
+import { buildSnapshotStatement } from '@/features/rule/infrastructure/drizzle-rule-repository'
 import { getDb } from '@/shared/db/client'
 import { interactions, participants, selectionSessions, users } from '@/shared/db/schema'
 
@@ -97,31 +98,52 @@ async function createDraftWithCreatorParticipant(input: NewSessionDraft): Promis
   return { id: sessionId, groupId: input.groupId, decisionDate: input.decisionDate, state: 'DRAFT' }
 }
 
+/**
+ * SPEC-008 + SPEC-022. HAI câu, MỘT giao dịch, THỨ TỰ CỐ ĐỊNH:
+ *
+ *   1. Snapshot Group Rule → Session Rule, guard `state = 'DRAFT'`.
+ *   2. UPDATE state → ACTIVE, guard `state = 'DRAFT'`.
+ *
+ * Câu 1 PHẢI đứng trước câu 2: nó dựa vào việc state chưa đổi để phân biệt
+ * "vừa start ngay bây giờ" với "đã ACTIVE từ trước". Đảo thứ tự làm TC-090 và
+ * TC-093 hỏng — xem Implementation Guide E5-S2 §1.3.
+ *
+ * `db.batch()` của neon-http LÀ transaction Postgres thật (verify từ E4-S2,
+ * `commitFinalize` đang dựa vào cho TC-109). Cả hai câu tự chứa nên KHÔNG cần
+ * interactive transaction, tức KHÔNG cần driver WebSocket — ghi chú cũ ở
+ * `client.ts` dự đoán ngược, đã sửa lại.
+ *
+ * Khối `catch` giữ NGUYÊN vai trò từ E1-T7: UPDATE vi phạm partial unique
+ * index khi commit (TC-107). Điểm mới là batch rollback kéo theo cả snapshot —
+ * đó chính là TC-035.
+ */
 async function startDraft(sessionId: string): Promise<StartDraftOutcome> {
+  const db = getDb()
+
   try {
-    const rows = await getDb()
-      .update(selectionSessions)
-      .set({ state: 'ACTIVE', startedAt: new Date() })
-      .where(and(eq(selectionSessions.id, sessionId), eq(selectionSessions.state, 'DRAFT')))
-      .returning({
-        id: selectionSessions.id,
-        groupId: selectionSessions.groupId,
-        decisionDate: selectionSessions.decisionDate,
-      })
+    const [, rows] = await db.batch([
+      buildSnapshotStatement(db, sessionId),
+      db
+        .update(selectionSessions)
+        .set({ state: 'ACTIVE', startedAt: new Date() })
+        .where(and(eq(selectionSessions.id, sessionId), eq(selectionSessions.state, 'DRAFT')))
+        .returning({
+          id: selectionSessions.id,
+          groupId: selectionSessions.groupId,
+          decisionDate: selectionSessions.decisionDate,
+        }),
+    ])
 
     const updated = rows[0]
     if (updated === undefined) {
-      // WHERE không khớp: session không tồn tại HOẶC không còn DRAFT. Không
-      // phân biệt hai trường hợp — cả hai đều là "không start được từ đây".
+      // WHERE không khớp: session không tồn tại HOẶC không còn DRAFT. Câu
+      // snapshot ở trên cũng không khớp vì cùng điều kiện — không có dòng
+      // session_rules mồ côi nào được tạo.
       return { outcome: 'NOT_DRAFT' }
     }
 
     return { outcome: 'STARTED', session: { ...updated, state: 'ACTIVE' } }
   } catch (error) {
-    // Hai Start đồng thời cho hai Draft khác nhau, cùng group+date: một UPDATE
-    // thắng, cái kia vi phạm partial unique index khi commit (TC-107). Đây là
-    // CHỖ DUY NHẤT trong feature này bắt lỗi Postgres thô — không để
-    // DatabaseError rò rỉ qua khỏi hàm này (SDD §2.3).
     if (isUniqueViolation(error, SESSION_UNIQUENESS_CONSTRAINT)) {
       return { outcome: 'ALREADY_EXISTS_TODAY' }
     }

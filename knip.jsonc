@@ -53,6 +53,9 @@
 
     // GỠ Ở E5-T9 (S4): ruleShortfallPhrase dùng cho dòng "Còn thiếu: …" trên nút chốt bữa.
     "src/features/rule/presentation/components/rule-sentence.ts",
+
+    // GỠ Ở E5-T5 (S3): evaluateRequired được tạo ở E5-T3, E5-S3 (Finalize) sẽ import và sử dụng.
+    "src/features/rule/domain/evaluate.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

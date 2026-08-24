@@ -1,5 +1,7 @@
 import type { SystemTag } from '@/shared/domain/system-tag'
 
+import type { RequiredRule } from '../domain/evaluate'
+
 export type GroupRuleRecord = {
   readonly id: string
   readonly systemTag: SystemTag
@@ -20,4 +22,12 @@ export interface RuleRepository {
     groupId: string,
     rules: readonly { systemTag: SystemTag; minimumCount: number }[],
   ): Promise<void>
+
+  /**
+   * SPEC-022 phía đọc. Chỉ trả rule `REQUIRED` — v1.0 không có Preferred
+   * (F22, v1.1), và người gọi (`finalizeSession`, S3) chỉ biết đánh giá
+   * Required. Lọc ở SQL chứ không ở caller: đây là kiến thức của feature
+   * `rule` về chính bảng của mình.
+   */
+  listSessionRules(sessionId: string): Promise<RequiredRule[]>
 }
