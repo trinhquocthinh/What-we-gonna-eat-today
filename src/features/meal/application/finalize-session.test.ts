@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
+import type { RuleRepository } from '@/features/rule/application/rule-repository'
+import type { RequiredRule } from '@/features/rule/domain/evaluate'
+import type { SystemTag } from '@/shared/domain/system-tag'
+
 import type { MealRepository, SessionForMeal } from './meal-repository'
 import { finalizeSession } from './finalize-session'
 
@@ -8,6 +12,8 @@ function makeFakeMealRepository(options: {
   draft?: { finalMealId: string; groupDishIds: string[] } | null
   inactiveDishIds?: string[]
   participantUserIds?: string[]
+  tagsByDish?: Map<string, SystemTag[]>
+  findTagsCalls?: string[][]
 }) {
   const commitCalls: Array<{ sessionId: string; eatingHistoryRows: readonly unknown[] }> = []
 
@@ -33,6 +39,10 @@ function makeFakeMealRepository(options: {
         ? { finalMealId: 'final-meal-1', groupDishIds: ['d1', 'd2'] }
         : options.draft
     },
+    async findSystemTagsByGroupDish(groupDishIds) {
+      options.findTagsCalls?.push([...groupDishIds])
+      return options.tagsByDish ?? new Map(groupDishIds.map((id) => [id, ['MAIN'] as SystemTag[]]))
+    },
     async listActiveParticipantUserIds() {
       return options.participantUserIds ?? ['u1', 'u2']
     },
@@ -47,31 +57,55 @@ function makeFakeMealRepository(options: {
   return { repository, commitCalls }
 }
 
+function makeFakeRuleRepository(
+  options: {
+    rules?: RequiredRule[]
+    listSessionRulesCalls?: string[]
+  } = {},
+) {
+  const repository: RuleRepository = {
+    async listGroupRules(): Promise<never> {
+      throw new Error('không dùng trong finalize')
+    },
+    async replaceGroupRules(): Promise<never> {
+      throw new Error('không dùng trong finalize')
+    },
+    async listSessionRules(sessionId: string) {
+      options.listSessionRulesCalls?.push(sessionId)
+      return options.rules ?? []
+    },
+  }
+
+  return repository
+}
+
 const INPUT = { sessionId: 's1', userId: 'creator-1' } as const
 
-describe('SPEC-016 rút gọn — Finalize', () => {
+describe('SPEC-016 — Finalize', () => {
   it('SPEC-016: nháp hợp lệ thì finalize thành công và gọi commitFinalize đúng một lần', async () => {
-    const fake = makeFakeMealRepository({})
+    const fakeMeal = makeFakeMealRepository({})
+    const fakeRules = makeFakeRuleRepository()
 
-    const result = await finalizeSession({ meal: fake.repository }, INPUT)
+    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
 
     expect(result.ok).toBe(true)
-    expect(fake.commitCalls).toHaveLength(1)
+    expect(fakeMeal.commitCalls).toHaveLength(1)
     // 2 dish × 2 participant = 4 dòng eating_history.
-    expect(fake.commitCalls[0]?.eatingHistoryRows).toHaveLength(4)
+    expect(fakeMeal.commitCalls[0]?.eatingHistoryRows).toHaveLength(4)
   })
 
   it('TC-068: nháp rỗng thì ERR_EMPTY_FINAL_MEAL, không gọi commitFinalize', async () => {
-    const fake = makeFakeMealRepository({ draft: null })
+    const fakeMeal = makeFakeMealRepository({ draft: null })
+    const fakeRules = makeFakeRuleRepository()
 
-    const result = await finalizeSession({ meal: fake.repository }, INPUT)
+    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
 
     expect(result.ok === false && result.error.code).toBe('ERR_EMPTY_FINAL_MEAL')
-    expect(fake.commitCalls).toHaveLength(0)
+    expect(fakeMeal.commitCalls).toHaveLength(0)
   })
 
   it('TC-070: Session đã FINALIZED thì ERR_SESSION_NOT_ACTIVE', async () => {
-    const fake = makeFakeMealRepository({
+    const fakeMeal = makeFakeMealRepository({
       session: {
         id: 's1',
         creatorUserId: 'creator-1',
@@ -79,15 +113,16 @@ describe('SPEC-016 rút gọn — Finalize', () => {
         decisionDate: '2026-08-14',
       },
     })
+    const fakeRules = makeFakeRuleRepository()
 
-    const result = await finalizeSession({ meal: fake.repository }, INPUT)
+    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
 
     expect(result.ok === false && result.error.code).toBe('ERR_SESSION_NOT_ACTIVE')
-    expect(fake.commitCalls).toHaveLength(0)
+    expect(fakeMeal.commitCalls).toHaveLength(0)
   })
 
   it('SPEC-016: người gọi không phải Creator thì ERR_NOT_SESSION_CREATOR', async () => {
-    const fake = makeFakeMealRepository({
+    const fakeMeal = makeFakeMealRepository({
       session: {
         id: 's1',
         creatorUserId: 'someone-else',
@@ -95,18 +130,114 @@ describe('SPEC-016 rút gọn — Finalize', () => {
         decisionDate: '2026-08-14',
       },
     })
+    const fakeRules = makeFakeRuleRepository()
 
-    const result = await finalizeSession({ meal: fake.repository }, INPUT)
+    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
 
     expect(result.ok === false && result.error.code).toBe('ERR_NOT_SESSION_CREATOR')
   })
 
   it('SPEC-016 bước 4: Dish bị gỡ khỏi pool sau khi lưu nháp thì ERR_DISH_NOT_IN_POOL, không gọi commitFinalize', async () => {
-    const fake = makeFakeMealRepository({ inactiveDishIds: ['d1'] })
+    const fakeMeal = makeFakeMealRepository({ inactiveDishIds: ['d1'] })
+    const fakeRules = makeFakeRuleRepository()
 
-    const result = await finalizeSession({ meal: fake.repository }, INPUT)
+    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
 
     expect(result.ok === false && result.error.code).toBe('ERR_DISH_NOT_IN_POOL')
-    expect(fake.commitCalls).toHaveLength(0)
+    expect(fakeMeal.commitCalls).toHaveLength(0)
+  })
+
+  // TC-110: Rule rỗng
+  it('TC-110: Rule rỗng, nháp 1 món → chốt thành công', async () => {
+    const fakeMeal = makeFakeMealRepository({
+      draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1'] },
+      tagsByDish: new Map([['d1', ['MAIN']]]),
+    })
+    const fakeRules = makeFakeRuleRepository({ rules: [] })
+
+    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+
+    expect(result.ok).toBe(true)
+    expect(fakeMeal.commitCalls).toHaveLength(1)
+  })
+
+  // TC-072: Thiếu canh
+  it('TC-072: Rule SOUP>=1, nháp toàn MAIN → ERR_REQUIRED_RULE_FAILED, commitFinalize không được gọi', async () => {
+    const fakeMeal = makeFakeMealRepository({
+      draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1', 'd2'] },
+      tagsByDish: new Map([
+        ['d1', ['MAIN']],
+        ['d2', ['MAIN']],
+      ]),
+    })
+    const fakeRules = makeFakeRuleRepository({
+      rules: [{ systemTag: 'SOUP', minimumCount: 1 }],
+    })
+
+    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error.code).toBe('ERR_REQUIRED_RULE_FAILED')
+      expect(result.error.details?.shortfalls).toEqual([
+        { systemTag: 'SOUP', minimumCount: 1, actual: 0, missing: 1 },
+      ])
+    }
+    expect(fakeMeal.commitCalls).toHaveLength(0)
+  })
+
+  // TC-073: Món hai tag
+  it('TC-073: Rule MAIN>=1 + SOUP>=1, một món [MAIN, SOUP] → thành công', async () => {
+    const fakeMeal = makeFakeMealRepository({
+      draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1'] },
+      tagsByDish: new Map([['d1', ['MAIN', 'SOUP']]]),
+    })
+    const fakeRules = makeFakeRuleRepository({
+      rules: [
+        { systemTag: 'MAIN', minimumCount: 1 },
+        { systemTag: 'SOUP', minimumCount: 1 },
+      ],
+    })
+
+    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+
+    expect(result.ok).toBe(true)
+    expect(fakeMeal.commitCalls).toHaveLength(1)
+  })
+
+  // TC-074: Rule đọc từ snapshot
+  it('TC-074: listSessionRules được gọi với đúng sessionId', async () => {
+    const listSessionRulesCalls: string[] = []
+    const fakeMeal = makeFakeMealRepository({
+      draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1'] },
+      tagsByDish: new Map([['d1', ['MAIN']]]),
+    })
+    const fakeRules = makeFakeRuleRepository({
+      rules: [{ systemTag: 'MAIN', minimumCount: 1 }],
+      listSessionRulesCalls,
+    })
+
+    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+
+    expect(result.ok).toBe(true)
+    expect(listSessionRulesCalls).toEqual(['s1'])
+  })
+
+  // TC-075: Tag đọc lúc chốt
+  it('TC-075: findSystemTagsByGroupDish được gọi và kết quả quyết định tính hợp lệ', async () => {
+    const findTagsCalls: string[][] = []
+    const fakeMeal = makeFakeMealRepository({
+      draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1'] },
+      tagsByDish: new Map([['d1', ['SOUP']]]),
+      findTagsCalls,
+    })
+    const fakeRules = makeFakeRuleRepository({
+      rules: [{ systemTag: 'SOUP', minimumCount: 1 }],
+    })
+
+    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+
+    expect(result.ok).toBe(true)
+    expect(findTagsCalls).toEqual([['d1']])
   })
 })

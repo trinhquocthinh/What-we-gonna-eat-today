@@ -1,6 +1,7 @@
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { drizzleRuleRepository } from '@/features/rule/infrastructure/drizzle-rule-repository'
 import { getDb } from '@/shared/db/client'
 import {
   eatingHistory,
@@ -8,10 +9,13 @@ import {
   finalMeals,
   globalDishes,
   groupDishes,
+  groupDishTags,
   groupMembers,
+  groupRules,
   groups,
   participants,
   selectionSessions,
+  sessionRules,
   users,
 } from '@/shared/db/schema'
 
@@ -90,6 +94,18 @@ type Seed = Awaited<ReturnType<typeof seedActiveSessionWithTwoDishes>>
 async function cleanup(seed: Seed) {
   const db = getDb()
   await db
+    .delete(sessionRules)
+    .where(eq(sessionRules.sessionId, seed.sessionId))
+    .catch(() => {})
+  await db
+    .delete(groupRules)
+    .where(eq(groupRules.groupId, seed.groupId))
+    .catch(() => {})
+  await db
+    .delete(groupDishTags)
+    .where(inArray(groupDishTags.groupDishId, [seed.dish1.groupDishId, seed.dish2.groupDishId]))
+    .catch(() => {})
+  await db
     .delete(eatingHistory)
     .where(eq(eatingHistory.sourceFinalMealId, seed.sessionId))
     .catch(() => {})
@@ -153,7 +169,7 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
     expect(draft.ok).toBe(true)
 
     const finalize = await finalizeSession(
-      { meal: drizzleMealRepository },
+      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
       { sessionId: seed.sessionId, userId: seed.creatorId },
     )
     expect(finalize.ok).toBe(true)
@@ -186,7 +202,7 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
       .where(eq(groupDishes.id, seed.dish1.groupDishId))
 
     const finalize = await finalizeSession(
-      { meal: drizzleMealRepository },
+      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
       { sessionId: seed.sessionId, userId: seed.creatorId },
     )
 
@@ -237,6 +253,92 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
       .from(eatingHistory)
       .where(eq(eatingHistory.sourceFinalMealId, draft.value.finalMealId))
     expect(historyRows).toHaveLength(2)
+  })
+
+  it('TC-074: Rule đọc từ snapshot lúc Start — đổi group_rules sau đó không ảnh hưởng Finalize', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // Snapshot SOUP >= 1 vào session_rules
+    await db.insert(sessionRules).values({
+      sessionId: seed.sessionId,
+      ruleType: 'REQUIRED',
+      systemTag: 'SOUP',
+      minimumCount: 1,
+    })
+
+    // Xoá hoặc sửa group_rules
+    await db.delete(groupRules).where(eq(groupRules.groupId, seed.groupId))
+
+    // Gắn tag MAIN cho dish1 (không có SOUP)
+    await db.insert(groupDishTags).values({
+      groupDishId: seed.dish1.groupDishId,
+      systemTag: 'MAIN',
+    })
+
+    // Lưu nháp dish1
+    await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId, dishIds: [seed.dish1.groupDishId] },
+    )
+
+    // Finalize phải FAIL vì session_rules vẫn đòi SOUP >= 1 (dù group_rules đã xoá)
+    const finalize = await finalizeSession(
+      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId },
+    )
+
+    expect(finalize.ok).toBe(false)
+    if (!finalize.ok) {
+      expect(finalize.error.code).toBe('ERR_REQUIRED_RULE_FAILED')
+    }
+  })
+
+  it('TC-075: System Tag đọc tại thời điểm chốt bữa — đổi tag sau khi lưu nháp làm thay đổi kết quả', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // Snapshot SOUP >= 1 vào session_rules
+    await db.insert(sessionRules).values({
+      sessionId: seed.sessionId,
+      ruleType: 'REQUIRED',
+      systemTag: 'SOUP',
+      minimumCount: 1,
+    })
+
+    // Gắn nhãn MAIN ban đầu cho dish1
+    await db.insert(groupDishTags).values({
+      groupDishId: seed.dish1.groupDishId,
+      systemTag: 'MAIN',
+    })
+
+    // Lưu nháp dish1
+    await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId, dishIds: [seed.dish1.groupDishId] },
+    )
+
+    // Chốt lần 1: FAIL vì thiếu canh
+    const finalize1 = await finalizeSession(
+      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId },
+    )
+    expect(finalize1.ok).toBe(false)
+
+    // Admin gắn thêm nhãn SOUP cho dish1
+    await db.insert(groupDishTags).values({
+      groupDishId: seed.dish1.groupDishId,
+      systemTag: 'SOUP',
+    })
+
+    // Chốt lần 2: THÀNH CÔNG vì đọc System Tag hiện tại lúc chốt
+    const finalize2 = await finalizeSession(
+      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+      { sessionId: seed.sessionId, userId: seed.creatorId },
+    )
+    expect(finalize2.ok).toBe(true)
   })
 })
 

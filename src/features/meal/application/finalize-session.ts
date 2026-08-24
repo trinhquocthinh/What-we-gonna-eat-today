@@ -1,4 +1,6 @@
 import { buildDefaultEatingHistory } from '@/features/history/domain/default-eating-history'
+import type { RuleRepository } from '@/features/rule/application/rule-repository'
+import { evaluateRequired } from '@/features/rule/domain/evaluate'
 import type { Failure } from '@/shared/errors'
 import { failure } from '@/shared/errors'
 import type { Result } from '@/shared/result'
@@ -8,6 +10,9 @@ import type { MealRepository } from './meal-repository'
 
 export type FinalizeSessionDeps = {
   readonly meal: MealRepository
+  /** `meal → rule` đã nằm sẵn trong `ALLOWED_CROSS_FEATURE` từ E0-T2 —
+   *  chiều này được dự trù đúng cho khoảnh khắc này. */
+  readonly rules: RuleRepository
 }
 
 export type FinalizeSessionInput = {
@@ -16,10 +21,7 @@ export type FinalizeSessionInput = {
 }
 
 /**
- * SPEC-016 RÚT GỌN — Finalize. Chạy đúng bước 1-4 và 7 nguyên văn SDD; **CỐ Ý
- * BỎ bước 5-6** (đánh giá Required Rule trên Session Rule đã snapshot) — Group
- * Rule/Session Rule chưa tồn tại (E5). Khi E5 landed, chèn bước rule evaluation
- * vào ĐÚNG GIỮA bước 4 và bước ghi cuối, không viết lại hàm này từ đầu.
+ * SPEC-016 — Finalize. Chạy đủ 7 bước nguyên văn SDD.
  *
  * Bước 7 (tạo Final Meal, chuyển FINALIZED, sinh Eating History "trong cùng
  * transaction") = gọi `commitFinalize` — nguyên tử, xem `meal-repository.ts`.
@@ -54,7 +56,34 @@ export async function finalizeSession(
     return err(failure('ERR_DISH_NOT_IN_POOL', { groupDishIds: inactiveDishIds }))
   }
 
-  // BỎ bước 5-6 ở đây (E5-T3 chèn vào).
+  // Bước 5 — Session Rule ĐÃ SNAPSHOT lúc Start (TC-074). KHÔNG đọc
+  // `group_rules`: Admin đổi quy định sau khi phiên chạy không được đổi luật
+  // của phiên đang chạy (BR-015).
+  const rules = await deps.rules.listSessionRules(input.sessionId)
+
+  // Bước 6 — System Tag HIỆN TẠI của món (TC-075, BR-052). KHÁC bước 5 về
+  // thời điểm một cách CÓ CHỦ Ý: "nhà này đòi mâm cơm có gì" đã chốt lúc Start;
+  // "món này là món gì" thì sự thật mới nhất là sự thật đúng.
+  const tagsByDish = await deps.meal.findSystemTagsByGroupDish(draft.groupDishIds)
+  const evaluation = evaluateRequired({
+    rules,
+    dishes: draft.groupDishIds.map((groupDishId) => ({
+      systemTags: tagsByDish.get(groupDishId) ?? [],
+    })),
+  })
+  if (!evaluation.satisfied) {
+    // TC-072 — phiên GIỮ NGUYÊN `ACTIVE`. Không có lệnh ghi nào đã chạy tới
+    // đây, nên "giữ nguyên" là hệ quả của thứ tự bước, không phải của một lệnh
+    // rollback nào.
+    return err(
+      failure('ERR_REQUIRED_RULE_FAILED', {
+        sessionId: input.sessionId,
+        // E5-T9 in "Còn thiếu: 1 món canh" ngay trên nút chốt — chi tiết phải
+        // đi kèm mã lỗi, không phải để presentation tự tra lại.
+        shortfalls: evaluation.shortfalls,
+      }),
+    )
+  }
 
   // Bước 7 — chuẩn bị dữ liệu TRƯỚC transaction, đúng nguyên tắc "đọc trước,
   // ghi nguyên tử sau" đã dùng xuyên suốt S2-S5.

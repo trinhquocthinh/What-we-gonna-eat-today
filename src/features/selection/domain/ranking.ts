@@ -102,3 +102,112 @@ export function buildDeck(input: BuildDeckInput, config: RankingConfig): string[
     })
     .map((dish) => dish.dishId)
 }
+
+/**
+ * SPEC-014 — số đếm thô của MỘT món trong MỘT phiên.
+ *
+ * KHÔNG có `cannotEatCount` ($X$): F15 là v1.1, mọi giá trị đều sẽ là 0 —
+ * cùng lý lẽ đã áp cho `RankingInput` ở đầu file. Trọng số `cCannotEat` vẫn
+ * nằm trong RANKING_CONFIG vì hằng số tập trung nói về nơi ĐỊNH NGHĨA
+ * (Ranking Spec §1 nguyên tắc 4).
+ *
+ * `recentEaterCount` ($H$) là SỐ NGƯỜI trong phiên đã ăn món này trong cửa sổ
+ * cooldown — KHÁC hẳn `recencyPenalty` của SPEC-020 ($R \in [0,1]$ của MỘT
+ * người cho MỘT món). Hai số hạng cùng nói về "vừa ăn gần đây" nhưng ở hai
+ * đơn vị và hai phạm vi khác nhau; nhầm chúng là lỗi khó thấy nhất ở slice này.
+ */
+export type SessionScoreInput = {
+  readonly proposedCount: number
+  readonly rejectedCount: number
+  readonly recentEaterCount: number
+}
+
+/**
+ * $$\text{Score} = \frac{a P - b N - d H}{T}$$
+ *
+ * Chuẩn hoá theo $T$ để điểm so sánh được giữa các phiên có số người khác nhau
+ * (TC-060: thêm người thứ 5 thì cùng $P=3$ phải cho điểm thấp hơn).
+ *
+ * $T \le 0$ trả 0 chứ không `NaN`. Trên thực tế không tới được — Creator luôn
+ * là Participant (BR-020) và v1.0 chưa có F25 Gỡ Participant — nhưng một `NaN`
+ * lọt qua đây sẽ hiện lên màn hình S-10 cạnh tên món, và không test nào ở
+ * tầng trên bắt kịp. TC-111 giữ nhánh $T = 1$.
+ */
+export function computeSessionScore(
+  input: SessionScoreInput,
+  participantCount: number,
+  config: RankingConfig,
+): number {
+  if (participantCount <= 0) {
+    return 0
+  }
+
+  const { aSwipeRight, bSwipeLeft, dRecent } = config.sessionRanking
+
+  return (
+    (aSwipeRight * input.proposedCount -
+      bSwipeLeft * input.rejectedCount -
+      dRecent * input.recentEaterCount) /
+    participantCount
+  )
+}
+
+export type SessionDishInput = SessionScoreInput & {
+  /** `group_dishes.id`. */
+  readonly dishId: string
+  readonly name: string
+}
+
+export type RankedDish = SessionDishInput & {
+  readonly score: number
+}
+
+export type SessionRankingResult = {
+  readonly ranked: readonly RankedDish[]
+  /** TC-061 — món CHƯA AI tương tác. Không có điểm, không nằm trong `ranked`. */
+  readonly untouched: readonly SessionDishInput[]
+}
+
+/**
+ * SPEC-014 — tách bảng xếp hạng thành hai mục đúng như đầu ra spec mô tả:
+ * `{ ranked, untouched }`.
+ *
+ * "Chưa ai tương tác" xét trên $P$ và $N$, KHÔNG xét $H$: một món cả nhà vừa
+ * ăn hôm qua mà chưa ai vuốt vẫn là món chưa ai tương tác (TC-061). Cho nó một
+ * điểm âm rồi xếp cuối bảng `ranked` là nói dối — người dùng sẽ đọc thành "cả
+ * nhà không thích món này".
+ *
+ * Tie-break hai tầng (SPEC-014 không quy định, Guide §1.6): `score` giảm dần →
+ * $P$ giảm dần → `dishId` tăng dần. KHÔNG dùng `stableHash` như `buildDeck`:
+ * hash ở đó để hai người thấy thứ tự KHÁC nhau, ở đây cả nhà phải nhìn cùng
+ * một bảng.
+ *
+ * `untouched` giữ nguyên thứ tự đầu vào (`group_dishes.id`) — không có tín
+ * hiệu nào để sắp, và bịa ra một thứ tự là ngụ ý một thứ hạng không tồn tại.
+ */
+export function rankSession(
+  input: {
+    readonly dishes: readonly SessionDishInput[]
+    readonly participantCount: number
+  },
+  config: RankingConfig,
+): SessionRankingResult {
+  const untouched = input.dishes.filter(
+    (dish) => dish.proposedCount === 0 && dish.rejectedCount === 0,
+  )
+
+  const ranked = input.dishes
+    .filter((dish) => dish.proposedCount > 0 || dish.rejectedCount > 0)
+    .map((dish) => ({ ...dish, score: computeSessionScore(dish, input.participantCount, config) }))
+    .sort((a, b) => {
+      if (a.score !== b.score) {
+        return b.score - a.score
+      }
+      if (a.proposedCount !== b.proposedCount) {
+        return b.proposedCount - a.proposedCount
+      }
+      return a.dishId < b.dishId ? -1 : a.dishId > b.dishId ? 1 : 0
+    })
+
+  return { ranked, untouched }
+}

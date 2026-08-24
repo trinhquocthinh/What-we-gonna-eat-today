@@ -7,11 +7,45 @@ import {
   finalMealItems,
   finalMeals,
   groupDishes,
+  groupDishTags,
   participants,
   selectionSessions,
 } from '@/shared/db/schema'
+import { SYSTEM_TAGS, type SystemTag } from '@/shared/domain/system-tag'
 
 import type { MealRepository, SessionForMeal } from '../application/meal-repository'
+
+const TAG_ORDER = new Map<SystemTag, number>(SYSTEM_TAGS.map((tag, index) => [tag, index]))
+
+async function findSystemTagsByGroupDish(
+  groupDishIds: readonly string[],
+): Promise<Map<string, SystemTag[]>> {
+  if (groupDishIds.length === 0) return new Map()
+
+  const rows = await getDb()
+    .select({
+      groupDishId: groupDishTags.groupDishId,
+      systemTag: groupDishTags.systemTag,
+    })
+    .from(groupDishTags)
+    .where(inArray(groupDishTags.groupDishId, [...groupDishIds]))
+
+  const map = new Map<string, SystemTag[]>()
+  for (const row of rows) {
+    const list = map.get(row.groupDishId)
+    if (list !== undefined) {
+      list.push(row.systemTag)
+    } else {
+      map.set(row.groupDishId, [row.systemTag])
+    }
+  }
+
+  for (const list of map.values()) {
+    list.sort((a, b) => (TAG_ORDER.get(a) ?? 0) - (TAG_ORDER.get(b) ?? 0))
+  }
+
+  return map
+}
 
 async function findSessionForMeal(sessionId: string): Promise<SessionForMeal | null> {
   const rows = await getDb()
@@ -206,6 +240,7 @@ async function commitFinalize(input: {
 export const drizzleMealRepository: MealRepository = {
   findSessionForMeal,
   findInactiveDishIds,
+  findSystemTagsByGroupDish,
   saveDraft,
   getDraft,
   listActiveParticipantUserIds,

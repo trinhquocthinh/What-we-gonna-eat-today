@@ -56,6 +56,10 @@
 
     // GỠ Ở E5-T5 (S3): evaluateRequired được tạo ở E5-T3, E5-S3 (Finalize) sẽ import và sử dụng.
     "src/features/rule/domain/evaluate.ts",
+
+    // GỠ Ở E5-T7 (S4): listSessionRanking và rankSession tạo ở E5-S3, E5-S4 (màn S-10) sẽ import và sử dụng.
+    "src/features/selection/application/list-session-ranking.ts",
+    "src/features/selection/domain/ranking.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

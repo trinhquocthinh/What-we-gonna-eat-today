@@ -2,8 +2,8 @@
 
 > **Document Metadata**
 >
-> - **Version:** `2.7` | **Status:** `Active`
-> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-19`
+> - **Version:** `3.2` | **Status:** `Active`
+> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-20`
 > - **Supersedes:** `v2.0` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
 >
@@ -56,6 +56,10 @@
 | [`DEC-039`](#dec-039--list-deck-reads-eating-history-on-every-call-not-just-first-materialize) | `list-deck` đọc lịch sử ăn ở mỗi lần gọi | 2026-08-19 | `Accepted` | Nhãn giải thích thẻ món ăn |
 | [`DEC-040`](#dec-040--systemtag-moves-to-shareddomain-schema-follows-tech-spec-31-verbatim) | SystemTag chuyển sang `shared/domain`; Schema đủ 6 cột | 2026-08-20 | `Accepted` | Kiến trúc domain dùng chung, bảng `group_rules` |
 | [`DEC-041`](#dec-041--e5-adds-subtask-e5-t1b-the-group-rules-screen) | Bổ sung subtask `E5-T1b` (màn hình S-07) vào E5 | 2026-08-20 | `Accepted` | Kế hoạch E5, màn hình Quy định bữa ăn |
+| [`DEC-042`](#dec-042--session-rules-snapshot-at-start-not-at-draft-creation) | Session Rules Snapshot lúc Start, không phải lúc tạo Draft | 2026-08-20 | `Accepted` | Khởi động phiên, bất biến quy định |
+| [`DEC-043`](#dec-043--session--rule-is-the-fifth-cross-feature-edge-what-crosses-is-an-unexecuted-statement) | session → rule là chiều cross-feature thứ 5; Statement chưa chạy | 2026-08-20 | `Accepted` | Ranh giới kiến trúc, `db.batch()` |
+| [`DEC-044`](#dec-044--session_rules-has-no-surrogate-id) | `session_rules` không có Surrogate ID, dùng Composite PK | 2026-08-20 | `Accepted` | Schema DB, `INSERT … SELECT` |
+| [`DEC-045`](#dec-045--session-score-drops-the-cannot-eat-term-and-defines-its-own-tie-break) | Session Score bỏ số hạng Cannot-Eat và tự định nghĩa Tie-break | 2026-08-20 | `Accepted` | Thuật toán điểm đồng thuận, thứ tự xếp hạng S-10 |
 
 
 ---
@@ -929,13 +933,49 @@ Dự án đã có ba bảng cùng dạng: `group_dish_tags`, `final_meal_items`,
 
 ---
 
+# DEC-045 — Session Score Drops the Cannot-Eat Term and Defines Its Own Tie-Break
+
+- **Ngày:** 2026-08-20
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E5-S3
+
+## Quyết định
+
+1. `SessionScoreInput` không có `cannotEatCount` ($X$ của SPEC-014).
+2. `rankSession` dùng tie-break hai tầng tự định nghĩa: `score` giảm dần → $P$ giảm dần →
+   `dishId` tăng dần.
+
+## Rationale
+
+1. $X$ cần F15 Cannot Eat — v1.1. Mọi giá trị ở v1.0 đều bằng 0. Trọng số `cCannotEat` vẫn ở
+   lại `RANKING_CONFIG` vì nguyên tắc hằng số tập trung nói về nơi ĐỊNH NGHĨA, không về nơi
+   sử dụng (Ranking Spec §1 nguyên tắc 4, đã áp ở DEC-036).
+2. SPEC-014 không quy định tie-break, nhưng hai món cùng điểm là chuyện thường xuyên ($T=4$
+   chỉ cho 5 mức điểm nếu $N=H=0$). Không xác định thứ tự thì màn S-10 đổi thứ tự giữa hai lần
+   tải trang, và người dùng đọc đó là dữ liệu đang thay đổi. KHÔNG dùng `stableHash` như
+   `buildDeck`: hash ở đó tồn tại để hai người thấy thứ tự khác nhau; ở đây cả nhà nhìn cùng
+   một bảng.
+
+## Consequence
+
+- v1.1 thêm $X$ chỉ cần thêm một trường vào `SessionScoreInput` và một số hạng — trọng số đã có.
+- Tie-break này là hợp đồng của S4: màn S-10 không được sắp lại theo tiêu chí riêng.
+
+## Affected Documents
+
+- SDD `SPEC-014` — ghi chú v1.0 bỏ $X$; bổ sung tie-break.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.2` | 2026-08-20 | Bổ sung `DEC-045` (Session Score Drops the Cannot-Eat Term and Defines Its Own Tie-Break) cho E5-S3 |
 | `3.1` | 2026-08-20 | Bổ sung `DEC-042` (Snapshot lúc Start), `DEC-043` (session → rule cross-feature statement), và `DEC-044` (session_rules composite PK) cho E5-S2 |
 | `3.0` | 2026-08-20 | Bổ sung `DEC-040` (`SystemTag` chuyển sang `shared/domain`) và `DEC-041` (Bổ sung `E5-T1b` S-07) cho E5-S1 |
 | :---: | :---: | :--- |
+
 | `2.9` | 2026-08-19 | Bổ sung `DEC-039` (list-deck Reads Eating History on Every Call) cho E4-S4 |
 | `2.8` | 2026-08-19 | Bổ sung `DEC-038` (Interaction Ordering Uses Client-Reported Timestamp) cho E4-S3 |
 | `2.7` | 2026-08-19 | Bổ sung `DEC-036` (v1.0 Personal Score chỉ có Recency; Tie-break hai tầng) và `DEC-037` (`buildDeck` nhận Input Object) cho E4-S1 |

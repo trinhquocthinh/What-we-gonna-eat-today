@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { getDb } from '@/shared/db/client'
@@ -227,5 +227,148 @@ describe('sessionDecks — materializeDeck / findMaterializedDeck (TC-041)', () 
     expect(
       await drizzleSelectionRepository.findMaterializedDeck(seed.sessionId, seed.userId),
     ).toEqual([])
+  })
+})
+
+describe('SPEC-014 — ranking methods (integration)', () => {
+  it('findSessionForRanking: session ACTIVE trả đúng creatorUserId và decisionDate, session khác ACTIVE trả null', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+
+    const active = await drizzleSelectionRepository.findSessionForRanking(seed.sessionId)
+    expect(active).toEqual({ creatorUserId: seed.userId, decisionDate: '2026-08-17' })
+
+    const notFound = await drizzleSelectionRepository.findSessionForRanking(crypto.randomUUID())
+    expect(notFound).toBeNull()
+
+    await getDb()
+      .update(selectionSessions)
+      .set({ state: 'FINALIZED' })
+      .where(eq(selectionSessions.id, seed.sessionId))
+
+    const finalized = await drizzleSelectionRepository.findSessionForRanking(seed.sessionId)
+    expect(finalized).toBeNull()
+  })
+
+  it('countInteractionsByDish: đếm đúng SWIPE_RIGHT, SWIPE_LEFT, giữ món 0 tương tác, bỏ qua participant REMOVED', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // Thêm món thứ 2 (chưa ai tương tác)
+    const globalDish2Id = crypto.randomUUID()
+    const groupDish2Id = crypto.randomUUID()
+    await db.insert(globalDishes).values({
+      id: globalDish2Id,
+      name: 'Món 2 (untouched)',
+      normalizedName: 'món 2',
+      createdByUserId: seed.userId,
+      createdFromGroupId: seed.groupId,
+    })
+    await db.insert(groupDishes).values({
+      id: groupDish2Id,
+      groupId: seed.groupId,
+      globalDishId: globalDish2Id,
+      state: 'ACTIVE',
+    })
+
+    // Thêm participant 2 (REMOVED)
+    const user2Id = crypto.randomUUID()
+    const participant2Id = crypto.randomUUID()
+    await db.insert(users).values({
+      id: user2Id,
+      provider: 'test',
+      providerSubject: `u2-${user2Id}`,
+      email: `${user2Id}@test.local`,
+      displayName: 'User 2',
+    })
+    await db.insert(participants).values({
+      id: participant2Id,
+      sessionId: seed.sessionId,
+      userId: user2Id,
+      state: 'REMOVED',
+    })
+
+    // Participant 1 (ACTIVE) vuốt phải món 1
+    await db.insert(interactions).values({
+      id: crypto.randomUUID(),
+      sessionId: seed.sessionId,
+      participantId: seed.participantId,
+      groupDishId: seed.groupDishId,
+      type: 'SWIPE_RIGHT',
+    })
+
+    // Participant 2 (REMOVED) vuốt phải món 1 (không được tính)
+    await db.insert(interactions).values({
+      id: crypto.randomUUID(),
+      sessionId: seed.sessionId,
+      participantId: participant2Id,
+      groupDishId: seed.groupDishId,
+      type: 'SWIPE_RIGHT',
+    })
+
+    const counts = await drizzleSelectionRepository.countInteractionsByDish(seed.sessionId)
+
+    expect(counts).toHaveLength(2)
+
+    const dish1Count = counts.find((c) => c.groupDishId === seed.groupDishId)
+    expect(dish1Count).toBeDefined()
+    expect(typeof dish1Count?.proposedCount).toBe('number')
+    expect(dish1Count?.proposedCount).toBe(1) // chỉ tính participant ACTIVE, bỏ qua REMOVED
+    expect(dish1Count?.rejectedCount).toBe(0)
+
+    const dish2Count = counts.find((c) => c.groupDishId === groupDish2Id)
+    expect(dish2Count).toBeDefined()
+    expect(dish2Count?.proposedCount).toBe(0)
+    expect(dish2Count?.rejectedCount).toBe(0)
+
+    // Cleanup extra records
+    await db.delete(interactions).where(eq(interactions.sessionId, seed.sessionId))
+    await db.delete(groupDishes).where(eq(groupDishes.id, groupDish2Id))
+    await db.delete(globalDishes).where(eq(globalDishes.id, globalDish2Id))
+    await db.delete(participants).where(eq(participants.id, participant2Id))
+    await db.delete(users).where(eq(users.id, user2Id))
+  })
+
+  it('listRankingParticipantUserIds: trả danh sách ACTIVE và COMPLETED, bỏ REMOVED', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    const user2Id = crypto.randomUUID()
+    const participant2Id = crypto.randomUUID()
+    const user3Id = crypto.randomUUID()
+    const participant3Id = crypto.randomUUID()
+
+    await db.insert(users).values([
+      {
+        id: user2Id,
+        provider: 'test',
+        providerSubject: `u2-${user2Id}`,
+        email: `${user2Id}@test.local`,
+        displayName: 'Completed User',
+      },
+      {
+        id: user3Id,
+        provider: 'test',
+        providerSubject: `u3-${user3Id}`,
+        email: `${user3Id}@test.local`,
+        displayName: 'Removed User',
+      },
+    ])
+    await db.insert(participants).values([
+      { id: participant2Id, sessionId: seed.sessionId, userId: user2Id, state: 'COMPLETED' },
+      { id: participant3Id, sessionId: seed.sessionId, userId: user3Id, state: 'REMOVED' },
+    ])
+
+    const userIds = await drizzleSelectionRepository.listRankingParticipantUserIds(seed.sessionId)
+
+    expect(userIds).toContain(seed.userId)
+    expect(userIds).toContain(user2Id)
+    expect(userIds).not.toContain(user3Id)
+    expect(userIds).toHaveLength(2)
+
+    await db.delete(participants).where(eq(participants.sessionId, seed.sessionId))
+    await db.delete(users).where(inArray(users.id, [user2Id, user3Id]))
   })
 })

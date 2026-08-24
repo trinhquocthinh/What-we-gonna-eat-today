@@ -1,3 +1,5 @@
+import type { SystemTag } from '@/shared/domain/system-tag'
+
 export type SessionForMeal = {
   readonly id: string
   readonly creatorUserId: string
@@ -11,6 +13,20 @@ export type DraftDish = {
 
 export interface MealRepository {
   findSessionForMeal(sessionId: string): Promise<SessionForMeal | null>
+
+  /**
+   * SPEC-016 bước 6 / BR-052 — System Tag HIỆN TẠI của các món trong nháp.
+   *
+   * Đọc thẳng `group_dish_tags` mà không import `features/dish`: cùng khuôn
+   * `findInactiveDishIds` ngay trên — tầng infrastructure đang đọc một BẢNG,
+   * không đang mượn KIẾN THỨC MIỀN của feature khác. `ALLOWED_CROSS_FEATURE`
+   * không có `meal → dish` và không cần có.
+   *
+   * Món không có tag nào KHÔNG xuất hiện trong Map. Người gọi dùng `?? []` —
+   * "món chưa gắn nhãn" là trạng thái hợp lệ (E2-T5 cho phép mảng rỗng), không
+   * phải lỗi dữ liệu.
+   */
+  findSystemTagsByGroupDish(groupDishIds: readonly string[]): Promise<Map<string, SystemTag[]>>
 
   /**
    * SPEC-015/016. `groupDishId` nào trong danh sách KHÔNG active — mảng rỗng

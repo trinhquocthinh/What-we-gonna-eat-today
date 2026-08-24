@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
 import { getDb } from '@/shared/db/client'
@@ -244,6 +244,88 @@ async function materializeDeck(
   }
 }
 
+async function findSessionForRanking(
+  sessionId: string,
+): Promise<{ creatorUserId: string; decisionDate: string } | null> {
+  const rows = await getDb()
+    .select({
+      creatorUserId: selectionSessions.creatorUserId,
+      decisionDate: selectionSessions.decisionDate,
+      state: selectionSessions.state,
+    })
+    .from(selectionSessions)
+    .where(eq(selectionSessions.id, sessionId))
+    .limit(1)
+
+  const row = rows[0]
+  if (row === undefined || row.state !== 'ACTIVE') {
+    return null
+  }
+
+  return { creatorUserId: row.creatorUserId, decisionDate: row.decisionDate }
+}
+
+async function countInteractionsByDish(sessionId: string): Promise<
+  {
+    groupDishId: string
+    globalDishId: string
+    name: string
+    proposedCount: number
+    rejectedCount: number
+  }[]
+> {
+  const rows = await getDb()
+    .select({
+      groupDishId: groupDishes.id,
+      globalDishId: groupDishes.globalDishId,
+      name: globalDishes.name,
+      proposedCount: sql<string>`COUNT(*) FILTER (WHERE ${interactions.type} = 'SWIPE_RIGHT' AND ${participants.id} IS NOT NULL)`,
+      rejectedCount: sql<string>`COUNT(*) FILTER (WHERE ${interactions.type} = 'SWIPE_LEFT' AND ${participants.id} IS NOT NULL)`,
+    })
+    .from(selectionSessions)
+    .innerJoin(
+      groupDishes,
+      and(eq(groupDishes.groupId, selectionSessions.groupId), eq(groupDishes.state, 'ACTIVE')),
+    )
+    .innerJoin(globalDishes, eq(globalDishes.id, groupDishes.globalDishId))
+    .leftJoin(
+      interactions,
+      and(
+        eq(interactions.groupDishId, groupDishes.id),
+        eq(interactions.sessionId, selectionSessions.id),
+      ),
+    )
+    .leftJoin(
+      participants,
+      and(eq(participants.id, interactions.participantId), sql`${participants.state} <> 'REMOVED'`),
+    )
+    .where(eq(selectionSessions.id, sessionId))
+    .groupBy(groupDishes.id, groupDishes.globalDishId, globalDishes.name)
+    .orderBy(groupDishes.id)
+
+  return rows.map((row) => ({
+    groupDishId: row.groupDishId,
+    globalDishId: row.globalDishId,
+    name: row.name,
+    proposedCount: Number(row.proposedCount),
+    rejectedCount: Number(row.rejectedCount),
+  }))
+}
+
+async function listRankingParticipantUserIds(sessionId: string): Promise<string[]> {
+  const rows = await getDb()
+    .select({ userId: participants.userId })
+    .from(participants)
+    .where(
+      and(
+        eq(participants.sessionId, sessionId),
+        inArray(participants.state, ['ACTIVE', 'COMPLETED']),
+      ),
+    )
+
+  return rows.map((row) => row.userId)
+}
+
 export const drizzleSelectionRepository: SelectionRepository = {
   findParticipant,
   listEligibleDishCards,
@@ -252,4 +334,7 @@ export const drizzleSelectionRepository: SelectionRepository = {
   applyInteraction,
   findMaterializedDeck,
   materializeDeck,
+  findSessionForRanking,
+  countInteractionsByDish,
+  listRankingParticipantUserIds,
 }

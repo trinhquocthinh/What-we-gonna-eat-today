@@ -27,6 +27,9 @@ function makeFakeMealRepository(options: {
       savedDrafts.push({ sessionId, groupDishIds })
       return { finalMealId: 'final-meal-1' }
     },
+    async findSystemTagsByGroupDish(): Promise<never> {
+      throw new Error('không dùng trong test này')
+    },
     async getDraft(): Promise<never> {
       throw new Error('không dùng trong test này')
     },

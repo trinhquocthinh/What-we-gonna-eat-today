@@ -39,6 +39,15 @@ function makeFakeSelectionRepository(options: {
     async materializeDeck(): Promise<never> {
       throw new Error('không dùng trong test này')
     },
+    async findSessionForRanking(): Promise<never> {
+      throw new Error('không dùng trong test này')
+    },
+    async countInteractionsByDish(): Promise<never> {
+      throw new Error('không dùng trong test này')
+    },
+    async listRankingParticipantUserIds(): Promise<never> {
+      throw new Error('không dùng trong test này')
+    },
   }
 
   return {

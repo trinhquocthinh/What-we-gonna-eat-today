@@ -60,4 +60,36 @@ export interface SelectionRepository {
     userId: string,
     orderedDishIds: readonly string[],
   ): Promise<{ readonly outcome: 'MATERIALIZED' | 'ALREADY_MATERIALIZED' }>
+
+  /** SPEC-014. `null` nếu Session không tồn tại. Trả `creatorUserId` để
+   *  `listSessionRanking` kiểm quyền mà không cần import feature `session`. */
+  findSessionForRanking(
+    sessionId: string,
+  ): Promise<{ creatorUserId: string; decisionDate: string } | null>
+
+  /**
+   * SPEC-014 — MỘT câu GROUP BY cho TOÀN BỘ món ACTIVE của phiên, kể cả món
+   * 0 tương tác (LEFT JOIN, không INNER): TC-061 cần chúng để xếp vào
+   * `untouched`, và một câu đếm bỏ sót chúng thì không cách nào phân biệt
+   * "chưa ai vuốt" với "không có trong nhóm".
+   *
+   * Chỉ đọc `interactions` (effective state), KHÔNG đọc `interaction_events` —
+   * Tech Spec §3.2 đã ghi lý do khi tách hai bảng.
+   *
+   * Participant `REMOVED` không được tính (BR-026) — cùng luật với
+   * `listActiveParticipantUserIds` của `meal`.
+   */
+  countInteractionsByDish(sessionId: string): Promise<
+    {
+      groupDishId: string
+      globalDishId: string
+      name: string
+      proposedCount: number
+      rejectedCount: number
+    }[]
+  >
+
+  /** $T$ của SPEC-014 và đồng thời tập người để đếm $H$. ACTIVE hoặc
+   *  COMPLETED — `REMOVED` không tính (BR-026). */
+  listRankingParticipantUserIds(sessionId: string): Promise<string[]>
 }
