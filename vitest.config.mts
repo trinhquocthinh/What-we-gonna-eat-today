@@ -16,17 +16,32 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      // Tech Spec §8.2: chỉ domain/ và application/ có ngưỡng.
-      // infrastructure/ và presentation/ được đo nhưng không đặt ngưỡng.
-      // shared/time thêm ở E1-T4: đúng hồ sơ "sai mà không gây lỗi" của §8.2.
       include: [
         'src/features/*/domain/**/*.ts',
         'src/features/*/application/**/*.ts',
         'src/shared/time/**/*.ts',
       ],
-      // Ngưỡng 80% được CI ép ở E6-T5. Bật sớm sẽ chặn E1 khi mới có vài use
-      // case, nên giai đoạn này chỉ báo cáo.
-      // thresholds: { lines: 80 },
+      /**
+       * Port và file chỉ khai kiểu — biên dịch ra JavaScript RỖNG, nên `tsc`
+       * đã là toàn bộ phép kiểm của chúng. Để trong phép đo thì v8 tính file
+       * không có câu lệnh nào theo cách không nhất quán và làm con số mất
+       * nghĩa. Loại trừ chứ KHÔNG viết test giả cho chúng — xem Guide §1.2.
+       */
+      exclude: [
+        'src/features/*/application/*-repository.ts',
+        'src/features/*/domain/{group-dish,dish-card,interaction,session}.ts',
+      ],
+      /**
+       * HAI ngưỡng RIÊNG, không phải một số gộp: Tech Spec §8.2 đặt ≥80% cho
+       * `domain/` và ≥80% cho `application/` như hai cam kết khác nhau. Gộp lại
+       * thì `domain/` (hàm thuần, phủ rất dày) sẽ kéo con số lên và che một
+       * `application/` yếu — đúng thứ ngưỡng sinh ra để ngăn.
+       */
+      thresholds: {
+        'src/features/*/domain/**': { lines: 80 },
+        'src/features/*/application/**': { lines: 80 },
+        'src/shared/time/**': { lines: 80 },
+      },
     },
   },
 })

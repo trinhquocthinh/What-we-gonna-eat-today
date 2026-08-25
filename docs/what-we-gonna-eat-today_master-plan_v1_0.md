@@ -40,7 +40,7 @@
 | **E3** | Phiên và người tham gia | 6 | 14 | `[x]` ✅ Xong — Cột mốc M3 |
 | **E4** | Deck vuốt và thuật toán Ranking | 9 | 21 | `[x]` ✅ Xong — Cột mốc M4 |
 | **E5** | Rule engine và chốt bữa (Final Meal) | 10 | 23 | `[x]` ✅ Xong — Cột mốc M5 |
-| **E6** | Hoàn thiện UX, Coverage & NFRs | 8 | 20.5 | `⏳ Đang làm (3/8)` |
+| **E6** | Hoàn thiện UX, Coverage & NFRs | 8 | 20.5 | `[x]` ✅ Xong — Cột mốc M6 |
 
 > [!TIP]
 > Cột trạng thái dùng để theo dõi tiến độ. Nếu sau ba tuần chưa có ô nào được tick, vấn đề không nằm ở kế hoạch mà ở nhịp độ thực thi.
@@ -253,10 +253,10 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 | `[x] E6-T8` | Màn S-12 "Lịch sử ăn" | `S-12`, `MS-01` | 2.5 | `E6-T7` | 30 ngày gần đây, nhóm theo ngày | `src/features/history/**` |
 | `[x] E6-T1` | Toàn bộ trạng thái rỗng (Empty States) | [Design Criteria §4](what-we-gonna-eat-today_design-criteria_v0_1.md) | 4 | `E5-T9` | Mỗi trạng thái rỗng nêu **việc cần làm tiếp**, không để trống trơn | Mọi `presentation/` |
 | `[x] E6-T2` | Bảng dịch mã lỗi và lỗi tại chỗ | [SDD §2.5](what-we-gonna-eat-today_sdd_v0_1.md), [Design Criteria §5](what-we-gonna-eat-today_design-criteria_v0_1.md) | 2 | `E6-T1` | Một bảng tra duy nhất; không popup modal cho lỗi form | `src/shared/errors/messages.ts` |
-| `E6-T3` | Đo NFR-01 đến NFR-05 bằng số thật | [Tech §9](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md), `MS-01→05` | 3 | `E6-T2` | Có con số định lượng cho từng NFR | — |
+| `[x] E6-T3` | Đo NFR-01 đến NFR-05 bằng số thật | [Tech §9](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md), `MS-01→05` | 3 | `E6-T2` | Có con số định lượng cho từng NFR | — |
 | `[x] E6-T4` | Chặn mở phiên khi nhóm chưa có món | `S-04`, [Design Criteria §4](what-we-gonna-eat-today_design-criteria_v0_1.md) | 2 | `E6-T1` | Nhóm mới thấy "Thêm món" thay vì "Mở phiên" — **và server cũng từ chối** | `src/features/session/**`, `src/features/group/presentation/**` |
-| `E6-T5` | Rà coverage `domain/` và `application/` đạt 80% | [Tech §8.2](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) | 3 | `E6-T3` | CI ép ngưỡng kiểm thử, không chỉ báo cáo | `vitest.config.mts` |
-| `E6-T6` | Rà khả năng tiếp cận: Tương phản, focus, nhãn | [Design Criteria §8, §10](what-we-gonna-eat-today_design-criteria_v0_1.md) | 1 | `E6-T4` | Không thông tin nào chỉ truyền tải bằng màu sắc — **Cột mốc M6** | Mọi `presentation/` |
+| `[x] E6-T5` | Rà coverage `domain/` và `application/` đạt 80% | [Tech §8.2](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) | 3 | `E6-T3` | CI ép ngưỡng kiểm thử, không chỉ báo cáo | `vitest.config.mts` |
+| `[x] E6-T6` | Rà khả năng tiếp cận: Tương phản, focus, nhãn | [Design Criteria §8, §10](what-we-gonna-eat-today_design-criteria_v0_1.md) | 1 | `E6-T4` | Không thông tin nào chỉ truyền tải bằng màu sắc — **Cột mốc M6** | Mọi `presentation/` |
 
 ---
 
@@ -364,6 +364,7 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.9` | 2026-08-21 | §1, §8 | Hoàn tất thi công Slice S4 của Epic E6 (E6-T5, E6-T6, E6-T3: Coverage, a11y, NFR) — Hoàn tất toàn bộ Epic E6, Đạt cột mốc M6 và sẵn sàng phát hành v1.0 | Quyết định DEC-051 |
 | `1.8` | 2026-08-21 | §1, §8 | Hoàn tất thi công Slice S3 của Epic E6 (E6-T1, E6-T4: Trạng thái rỗng và chặn mở phiên khi nhóm chưa có món) | Quyết định DEC-050 |
 | `1.7` | 2026-08-20 | §1, §7 | Hoàn tất thi công toàn bộ Epic E5 (S1→S4, E5-T1 đến E5-T9: Rule engine, Snapshot lúc Start, Màn tổng hợp S-10 & Chốt bữa) — Đạt cột mốc M5 | Quyết định DEC-040 đến DEC-046 |
 | `1.7` | 2026-08-21 | §1, §8 | Chốt kế hoạch thi công E6: chia 4 slice kèm 4 Implementation Guide; bổ sung `E6-T7` (màn S-11 + trạng thái "đã chốt" của S-04) và `E6-T8` (màn S-12 Lịch sử ăn) — không có chúng thì `MS-01` không pass được; sửa 4 tham chiếu Design trỏ sai file sang `design-criteria_v0_1.md` | Quyết định DEC-047 đến DEC-051 |

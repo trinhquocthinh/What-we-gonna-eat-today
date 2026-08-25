@@ -27,15 +27,18 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   secondary:
     'border border-border bg-surface-raised text-ink hover:border-border-strong hover:bg-surface active:bg-surface-sunken',
   quiet: 'bg-transparent text-ink-muted hover:bg-surface-sunken active:bg-border',
-  quietAccent: 'bg-transparent text-accent hover:bg-surface-sunken active:bg-border',
+  quietAccent:
+    'bg-transparent text-accent hover:bg-surface hover:text-accent-hover active:bg-border',
   yes: 'bg-yes text-on-accent shadow-button hover:bg-yes-hover active:bg-yes',
   no: 'border border-border-strong bg-surface-raised text-no hover:border-no hover:text-ink active:bg-no-soft',
 }
 
-// Design Criteria: "Nút không được đổi kích thước khi chuyển sang trạng thái
-// đang xử lý." Chỉ màu đổi.
+// Design Criteria §8 / E6-T6:
+// PENDING_CLASSES và MUTED_CLASSES dùng `text-ink-muted` (5.17:1 trên surface-sunken,
+// đạt chuẩn WCAG AA >= 4.5:1). `muted` là nút VẪN BẤM ĐƯỢC để báo lỗi validation (không
+// được miễn trừ như disabled), nên không được dùng `--ink-faint` (2.67:1).
 const PENDING_CLASSES = 'bg-surface-sunken text-ink-muted'
-const MUTED_CLASSES = 'bg-surface-sunken text-ink-faint'
+const MUTED_CLASSES = 'bg-surface-sunken text-ink-muted'
 
 function toneClasses(variant: ButtonVariant, pending: boolean, muted: boolean): string {
   if (pending) return PENDING_CLASSES

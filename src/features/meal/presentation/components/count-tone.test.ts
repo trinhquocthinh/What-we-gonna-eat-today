@@ -3,9 +3,14 @@ import { describe, expect, it } from 'vitest'
 import { countTone } from './count-tone'
 
 describe('countTone (E5-T7 DoD: số 0 hiện mờ chứ không ẩn)', () => {
-  it('0 → mờ: trả về text-ink-faint bất kể tone', () => {
-    expect(countTone(0, 'yes')).toContain('text-ink-faint')
-    expect(countTone(0, 'neutral')).toContain('text-ink-faint')
+  it('0 → mờ: trả về text-ink-muted bất kể tone', () => {
+    expect(countTone(0, 'yes')).toBe('text-ink-muted')
+    expect(countTone(0, 'neutral')).toBe('text-ink-muted')
+  })
+
+  it('số 0 KHÔNG dùng ink-faint — trượt chuẩn tương phản §8', () => {
+    expect(countTone(0, 'yes')).not.toContain('ink-faint')
+    expect(countTone(0, 'neutral')).not.toContain('ink-faint')
   })
 
   it('≠0: tone="yes" trả về text-yes font-medium, tone="neutral" trả về text-ink', () => {

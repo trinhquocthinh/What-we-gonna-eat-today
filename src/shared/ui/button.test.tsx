@@ -36,8 +36,22 @@ describe('Button', () => {
     expect(screen.getByRole('button')).not.toHaveClass('w-full')
   })
 
-  it('muted vẫn bấm được — để bấm ra lỗi validation', () => {
+  it('muted vẫn bấm được và dùng text-ink-muted (đạt chuẩn tương phản §8, không dùng ink-faint)', () => {
     render(<Button muted>Tạo nhóm</Button>)
-    expect(screen.getByRole('button')).toBeEnabled()
+    const button = screen.getByRole('button')
+    expect(button).toBeEnabled()
+    expect(button).toHaveClass('text-ink-muted')
+    expect(button).not.toHaveClass('text-ink-faint')
+  })
+
+  it('quietAccent có hover compliant với nền surface (không đặt text-accent trên surface-sunken)', () => {
+    render(
+      <Button variant="quietAccent" size="sm">
+        Đổi
+      </Button>,
+    )
+    const button = screen.getByRole('button')
+    expect(button).toHaveClass('hover:bg-surface')
+    expect(button).toHaveClass('hover:text-accent-hover')
   })
 })

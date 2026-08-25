@@ -1163,10 +1163,66 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-051 — Coverage Thresholds Are Per-Layer and Exclude Type-Only Files; NFR-04 Is Quantified by Test Count; Contrast Remediations
+
+- **Ngày:** 2026-08-21
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E6-S4
+
+## Quyết định
+
+1. Ngưỡng coverage đặt RIÊNG cho `domain/`, `application/` và `shared/time/` bằng glob, không
+   phải một con số gộp.
+2. Port (`*-repository.ts`) và file chỉ khai kiểu được đưa vào `coverage.exclude`, không viết
+   test cho chúng. Mọi file logic application thực tế (kể cả pass-through như `list-group-rules.ts`
+   và `view-final-meal.ts`) đều có unit test tương ứng.
+3. `yarn test:coverage` là bước CI RIÊNG, không nằm trong `yarn verify`.
+4. `NFR-04` được định lượng bằng danh sách test đang canh, không bằng một đơn vị đo.
+5. `count-tone.ts` và `Button` variant `muted` đổi `--ink-faint` sang `--ink-muted` cho số 0 và
+   nút chưa đủ điều kiện (đạt tương phản $\ge 5.17:1$, loại bỏ triệt để `--ink-faint` khỏi thông tin
+   thật và điều khiển có thể tương tác).
+6. `Button` variant `quietAccent` đổi từ `hover:bg-surface-sunken` sang `hover:bg-surface hover:text-accent-hover`,
+   loại bỏ cặp trượt tương phản `--accent` trên `--surface-sunken` (4.33:1) thành $\ge 6.02:1$ ✅;
+   cặp `--warning` trên sunken được xác nhận không xuất hiện trong bất kỳ component nào.
+
+## Rationale
+
+1. Tech Spec §8.2 đặt ≥80% cho `domain/` và ≥80% cho `application/` như hai cam kết khác nhau.
+   Con số gộp để `domain/` (hàm thuần, phủ dày) che một `application/` yếu.
+2. 12 trong 16 file không có test cạnh bên biên dịch ra JavaScript rỗng — `tsc` đã là toàn bộ
+   phép kiểm của chúng. Để trong phép đo làm con số mất nghĩa; viết test cho chúng là viết
+   test cho chính trình biên dịch. Các use-case pass-through thật được test nhằm giữ vững hợp đồng
+   gọi repository.
+3. `yarn verify` chạy ở pre-commit qua husky. Bắt mỗi commit đợi coverage là cách người ta bắt
+   đầu dùng `--no-verify`.
+4. Tenant Isolation không có milli giây hay phần trăm. Cố tìm một con số cho nó sẽ làm E6-T3
+   mắc kẹt. Đếm bằng chứng tự động là định lượng thật và kiểm lại được.
+5. `--ink-faint` cho tương phản 2.91:1 trên `--surface` và 2.67:1 trên `--surface-sunken`, trượt chuẩn 4.5:1
+   của Design Criteria §8. `Button` variant `muted` là nút VẪN BẤM ĐƯỢC để báo lỗi validation (không
+   được miễn trừ như disabled thật). Chuyển sang `--ink-muted` (5.17:1 trên sunken, 5.64:1 trên surface)
+   giúp người dùng đọc rõ ràng mà vẫn giữ phân cấp thị giác.
+6. `--accent` trên `--surface-sunken` chỉ đạt 4.33:1 (dưới 4.5:1). Chuyển hover của `quietAccent` sang
+   `hover:bg-surface hover:text-accent-hover` (6.02:1) đảm bảo WCAG AA trên mọi trạng thái tương tác.
+
+## Consequence
+
+- Thêm một file `domain/` hay `application/` không test sẽ làm CI đỏ ngay, không đợi ai để ý.
+- `--ink-faint` từ nay chỉ còn dùng duy nhất cho placeholder text input và ví dụ món trang trí ở S-05.
+- Bảng đo NFR ở Setup & Ops Guide §5.5 là tài liệu phát hành v1.0.
+
+## Affected Documents
+
+- Tech Spec §8.2 — ghi rõ ngưỡng đặt theo glob từng tầng.
+- Design Criteria §3.1, §8 — ghi chú `--ink-faint` không dùng cho button/text mang thông tin; chuẩn hoá hover quietAccent.
+- Setup & Ops Guide — thêm §5.5.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.7` | 2026-08-21 | Bổ sung `DEC-051` (Ngưỡng coverage từng tầng qua glob, loại trừ type-only, CI test:coverage riêng, NFR-04 định lượng bằng test count, count-tone đổi sang ink-muted) cho E6-S4 (Cột mốc M6) |
 | `3.6` | 2026-08-21 | Bổ sung `DEC-050` (S-04 4 trạng thái loại trừ, "Dùng link mời" thành chú thích, chặn mở phiên nhóm 0 món) cho E6-S3 |
 | `3.5` | 2026-08-21 | Bổ sung `DEC-049` (Bảng dịch mã lỗi messageFor, Validation Fields named by Subject, InlineError component) cho E6-S2 |
 | `3.4` | 2026-08-21 | Bổ sung `DEC-047` (Bổ sung E6-T7/E6-T8 cho MS-01) và `DEC-048` (SYSTEM_TAG_LABELS chuyển sang shared/ui; Eating History query theo User) cho E6-S1 |

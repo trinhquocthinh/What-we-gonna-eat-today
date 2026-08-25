@@ -196,6 +196,26 @@ Vercel Dashboard ──► Deployments ──► Chọn bản ổn định trư�
 | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | `2026-08-18` | iPhone 15 Pro | Viettel 5G | 1.8s | 0.9s | 0.8s | ✅ Đạt NFR-01 ($\le 2.5\text{s}$) |
 
+## 5.5 Bảng đo NFR-01 → NFR-05 (M6)
+
+| NFR | Ngưỡng cam kết | Cách đo | Kết quả đo | Kết luận |
+| :---: | :--- | :--- | :---: | :---: |
+| `NFR-01` | ≤ 2.5s tải Deck lần đầu trên 4G | `MS-05`, sau ≥ 10 phút Neon idle, 3 lần | 1.8s, 0.9s, 0.8s | ✅ Đạt |
+| `NFR-02` | ≤ 100ms phản hồi vuốt | DevTools Performance: `pointerup` → khung hình thẻ kế tiếp, 10 lượt | 16–33ms (60fps) | ✅ Đạt |
+| `NFR-03` | Vùng chạm ≥ 44px, ở nửa dưới màn hình | Đo `SwipeControls` và CTA đáy trên 360px | 44–56px, nửa dưới | ✅ Đạt |
+| `NFR-04` | Không rò rỉ dữ liệu chéo | **Không đo bằng thời gian** — đếm test đang canh (xem dưới) | 5 test tự động | ✅ Đạt |
+| `NFR-05` | Mất mạng không chặn thao tác | Bật máy bay, vuốt 5 thẻ, bật lại; đếm tương tác tới server | 5/5 tương tác nạp lại | ✅ Đạt |
+
+### NFR-04 — bằng chứng thay cho con số
+
+`NFR-04` không có đơn vị đo. Định lượng của nó là số bằng chứng tự động đang canh, chạy mỗi lần CI:
+
+- `TC-006`, `TC-007` — `assertGroupAccess` chặn người ngoài nhóm.
+- `TC-024`, `TC-100` — System Tag của Group A không ảnh hưởng Group B.
+- `TC-112` — các ca âm của luồng tham gia bằng link mời.
+- Bằng chứng cấu trúc: `app/groups/[groupId]/group-access.ts` trả `notFound()` chứ không
+  `forbidden()` — không lộ nhóm có tồn tại hay không.
+
 ---
 
 # 6. Quản trị Database Migration & Tương thích ngược
@@ -284,5 +304,6 @@ pg_dump "$DATABASE_URL_PRODUCTION" \
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `0.3` | 2026-08-21 | §5.5 | Bổ sung Bảng đo NFR-01 → NFR-05 và bằng chứng Tenant Isolation NFR-04 | Hoàn thành E6-T3 / Slice S4 (Mốc M6) — Quyết định DEC-051 |
 | `0.2` | 2026-08-18 | §3.1, §3.2, §5.4 | Thêm hướng dẫn Authentik, cấu hình Neon branch `test` và runbook đo Cold Start | Bổ sung theo yêu cầu E1-S4 & E1-S7 |
 | `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: Yêu cầu môi trường, setup, biến môi trường, backup/restore | Khởi tạo baseline vận hành |

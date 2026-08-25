@@ -34,6 +34,12 @@ jobs:
       - name: Verify
         run: yarn verify
 
+      # Tech Spec §8.2 — ngưỡng 80% cho domain/ và application/. Bước RIÊNG chứ
+      # không nhét vào `yarn verify`: coverage chậm hơn hẳn `vitest run`, và
+      # tách ra thì log CI chỉ đúng chỗ nào hỏng.
+      - name: Ngưỡng coverage
+        run: yarn test:coverage
+
       # Luật tầng §2.2–2.3 im lặng khi cấu hình hỏng, nên phải kiểm bằng file vi
       # phạm cố ý chứ không tin vào việc `yarn lint` xanh.
       - name: Kiểm luật kiến trúc
