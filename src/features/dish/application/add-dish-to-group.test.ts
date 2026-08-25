@@ -150,6 +150,22 @@ describe('addDishToGroup', () => {
     expect(deps.dishes.createGlobalDishAndAddToPool).not.toHaveBeenCalled()
   })
 
+  it('tên trống: ERR_VALIDATION với field=dishName', async () => {
+    const deps = makeDeps()
+
+    const result = await addDishToGroup(deps, {
+      groupId: 'g1',
+      creatorUserId: 'u1',
+      name: '   ',
+      systemTags: [],
+    })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('unreachable')
+    expect(result.error.code).toBe('ERR_VALIDATION')
+    expect(result.error.details?.['field']).toBe('dishName')
+  })
+
   it('TC-097 (hồi quy) — tên 120 ký tự vẫn được chấp nhận', async () => {
     const deps = makeDeps()
     const longName = 'a'.repeat(120)

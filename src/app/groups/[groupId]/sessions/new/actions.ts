@@ -8,20 +8,9 @@ import { resolveDecisionDate } from '@/features/session/domain/decision-date'
 import { drizzleSessionRepository } from '@/features/session/infrastructure/drizzle-session-repository'
 import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
 import type { StartSessionFormState } from '@/features/session/presentation/components/start-session-screen'
-import type { Failure } from '@/shared/errors'
+import { messageFor } from '@/shared/errors'
 
 import { requireGroupContext } from '../../group-access'
-
-function toVietnameseBlockText(error: Failure): string | null {
-  if (error.code === 'ERR_PARTICIPANT_NOT_MEMBER') {
-    // Banner tổng — hàng lỗi riêng đã hiện tên cụ thể (xem screen component).
-    return 'Bỏ những người đã rời nhóm ra trước khi bắt đầu.'
-  }
-  if (error.code === 'ERR_NOT_SESSION_CREATOR') {
-    return 'Chỉ người mở phiên mới bắt đầu được.'
-  }
-  return 'Không mở được phiên. Thử lại giúp mình.'
-}
 
 export async function openSessionAction(
   groupId: string,
@@ -51,7 +40,7 @@ export async function openSessionAction(
       if (blocking !== null) {
         redirect(`/sessions/${blocking.id}`)
       }
-      return { blockText: 'Không mở được phiên. Thử lại giúp mình.', invalidParticipantIds: [] }
+      return { blockText: messageFor(created.error), invalidParticipantIds: [] }
     }
 
     sessionId = created.value.id
@@ -75,7 +64,7 @@ export async function openSessionAction(
           ) ?? [])
         : []
 
-    return { blockText: toVietnameseBlockText(result.error), invalidParticipantIds }
+    return { blockText: messageFor(result.error), invalidParticipantIds }
   }
 
   redirect(`/sessions/${sessionId}`)

@@ -5,6 +5,7 @@ import { useActionState } from 'react'
 
 import { Banner } from '@/shared/ui/banner'
 import { Button } from '@/shared/ui/button'
+import { InlineError } from '@/shared/ui/inline-error'
 
 export type ParticipantRow = {
   readonly userId: string
@@ -75,7 +76,9 @@ export function StartSessionScreen({
                   </span>
                 </div>
                 {row.error === null ? null : (
-                  <span className="pl-1 text-caption font-medium text-danger">{row.error}</span>
+                  <span className="pl-1">
+                    <InlineError message={row.error} />
+                  </span>
                 )}
               </li>
             ))}

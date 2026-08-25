@@ -1,6 +1,8 @@
 import type { ReactElement } from 'react'
 import { useId } from 'react'
 
+import { InlineError } from './inline-error'
+
 export type TextFieldProps = {
   label: string
   name: string
@@ -44,11 +46,7 @@ export function TextField({
       />
 
       {/* Design Criteria: lỗi nằm ngay cạnh thứ gây ra lỗi, không dùng dialog. */}
-      {error === null ? null : (
-        <span id={errorId} className="text-caption font-medium text-danger">
-          {error}
-        </span>
-      )}
+      <InlineError id={errorId} message={error} />
     </div>
   )
 }

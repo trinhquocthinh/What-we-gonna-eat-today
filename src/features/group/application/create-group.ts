@@ -20,8 +20,8 @@ export type CreateGroupInput = {
 /** `field` là thứ presentation cần để đặt lỗi NGAY DƯỚI đúng input
  *  (Design Criteria: lỗi nằm cạnh thứ gây ra lỗi, không dùng dialog). */
 const FAILURE_DETAILS: Record<GroupDraftError, { field: string; reason: string }> = {
-  NAME_EMPTY: { field: 'name', reason: 'Tên nhóm không được để trống' },
-  NAME_TOO_LONG: { field: 'name', reason: 'Tên nhóm tối đa 60 ký tự' },
+  NAME_EMPTY: { field: 'groupName', reason: 'Tên nhóm không được để trống' },
+  NAME_TOO_LONG: { field: 'groupName', reason: 'Tên nhóm tối đa 60 ký tự' },
   TIMEZONE_INVALID: { field: 'timezone', reason: 'Múi giờ không phải IANA hợp lệ' },
 }
 

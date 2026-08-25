@@ -24,8 +24,8 @@ export type AddDishOutcome =
 
 /** `field` để presentation đặt lỗi NGAY DƯỚI đúng input (Design Criteria §12). */
 const FAILURE_FOR: Record<DishDraftError, { code: ErrorCode; field: string; reason: string }> = {
-  NAME_EMPTY: { code: 'ERR_VALIDATION', field: 'name', reason: 'Tên món không được để trống' },
-  NAME_TOO_LONG: { code: 'ERR_VALIDATION', field: 'name', reason: 'Tên món tối đa 120 ký tự' },
+  NAME_EMPTY: { code: 'ERR_VALIDATION', field: 'dishName', reason: 'Tên món không được để trống' },
+  NAME_TOO_LONG: { code: 'ERR_VALIDATION', field: 'dishName', reason: 'Tên món tối đa 120 ký tự' },
   // TC-021 — mã riêng, KHÔNG gộp vào ERR_VALIDATION.
   INVALID_SYSTEM_TAG: {
     code: 'ERR_INVALID_SYSTEM_TAG',

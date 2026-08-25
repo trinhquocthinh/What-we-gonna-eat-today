@@ -4,16 +4,9 @@ import { createInvite } from '@/features/group/application/create-invite'
 import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
 import { drizzleInviteRepository } from '@/features/group/infrastructure/drizzle-invite-repository'
 import type { InviteFormState } from '@/features/group/presentation/components/invite-screen'
-import type { Failure } from '@/shared/errors'
+import { messageFor } from '@/shared/errors'
 
 import { requireGroupAdminContext } from '../group-access'
-
-function toVietnameseMessage(error: Failure): string {
-  if (error.code === 'ERR_NOT_GROUP_ADMIN') {
-    return 'Chỉ Admin mới tạo được link mời.'
-  }
-  return 'Không tạo được link mời. Thử lại giúp mình.'
-}
 
 export async function createInviteAction(
   groupId: string,
@@ -27,7 +20,7 @@ export async function createInviteAction(
   )
 
   if (!result.ok) {
-    return { token: null, expiresAt: null, error: toVietnameseMessage(result.error) }
+    return { token: null, expiresAt: null, error: messageFor(result.error) }
   }
 
   return {

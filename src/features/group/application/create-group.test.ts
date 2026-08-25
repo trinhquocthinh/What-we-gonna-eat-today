@@ -76,7 +76,7 @@ describe('SPEC-002 — Tạo Group', () => {
     )
 
     expect(result.ok === false && result.error.code).toBe('ERR_VALIDATION')
-    expect(result.ok === false && result.error.details?.['field']).toBe('name')
+    expect(result.ok === false && result.error.details?.['field']).toBe('groupName')
     expect(fake.rows).toHaveLength(0)
   })
 })

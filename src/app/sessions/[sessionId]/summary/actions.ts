@@ -8,34 +8,8 @@ import { finalizeSession } from '@/features/meal/application/finalize-session'
 import { saveFinalMealDraft } from '@/features/meal/application/save-final-meal-draft'
 import { drizzleMealRepository } from '@/features/meal/infrastructure/drizzle-meal-repository'
 import type { FinalizeFormState } from '@/features/meal/presentation/components/finalize-meal-screen'
-import { ruleShortfallPhrase } from '@/features/rule/presentation/components/rule-sentence'
 import { drizzleRuleRepository } from '@/features/rule/infrastructure/drizzle-rule-repository'
-import type { SystemTag } from '@/shared/domain/system-tag'
-import type { Failure } from '@/shared/errors'
-
-function toVietnameseMessage(error: Failure): string {
-  switch (error.code) {
-    case 'ERR_EMPTY_FINAL_MEAL':
-      return 'Chọn ít nhất một món trước đã.'
-    case 'ERR_REQUIRED_RULE_FAILED': {
-      const shortfalls = error.details?.shortfalls as
-        readonly { systemTag: SystemTag; missing: number }[] | undefined
-      if (shortfalls && shortfalls.length > 0) {
-        const missingText = shortfalls.map((s) => ruleShortfallPhrase(s)).join(', ')
-        return `Còn thiếu ${missingText}.`
-      }
-      return 'Chưa đạt đủ các quy định mâm cơm.'
-    }
-    case 'ERR_DISH_NOT_IN_POOL':
-      return 'Có món vừa bị gỡ khỏi nhóm. Chọn lại giúp mình.'
-    case 'ERR_SESSION_NOT_ACTIVE':
-      return 'Bữa này chốt rồi.'
-    case 'ERR_NOT_SESSION_CREATOR':
-      return 'Chỉ người mở phiên mới chốt được bữa.'
-    default:
-      return 'Không chốt được bữa. Thử lại giúp mình.'
-  }
-}
+import { messageFor } from '@/shared/errors'
 
 /**
  * MỘT action, phân nhánh theo `intent` — cùng khuôn `addDishAction` (E2-S4).
@@ -62,7 +36,7 @@ export async function finalizeMealAction(
     { sessionId, userId: user.id, dishIds },
   )
   if (!saved.ok) {
-    return { error: toVietnameseMessage(saved.error), finalized: false }
+    return { error: messageFor(saved.error), finalized: false }
   }
 
   const finalized = await finalizeSession(
@@ -70,7 +44,7 @@ export async function finalizeMealAction(
     { sessionId, userId: user.id },
   )
   if (!finalized.ok) {
-    return { error: toVietnameseMessage(finalized.error), finalized: false }
+    return { error: messageFor(finalized.error), finalized: false }
   }
 
   revalidatePath(`/sessions/${sessionId}`)

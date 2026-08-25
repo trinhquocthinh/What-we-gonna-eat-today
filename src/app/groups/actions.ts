@@ -7,16 +7,7 @@ import { getCurrentUser } from '@/features/auth/infrastructure/session'
 import { createGroup } from '@/features/group/application/create-group'
 import { drizzleGroupRepository } from '@/features/group/infrastructure/drizzle-group-repository'
 import type { CreateGroupFormState } from '@/features/group/presentation/components/create-group-form'
-import type { Failure } from '@/shared/errors'
-
-// E6-T2 chuyển bảng này sang `shared/errors/messages.ts`. Ở đây chỉ có đúng
-// những câu S-03 cần.
-function toVietnameseMessage(error: Failure): string {
-  if (error.details?.['field'] === 'name') {
-    return 'Đặt tên để cả nhà nhận ra nhóm.'
-  }
-  return 'Không tạo được nhóm. Thử lại giúp mình.'
-}
+import { messageFor } from '@/shared/errors'
 
 /**
  * Lắp ráp cho SPEC-002 — không chứa business logic.
@@ -45,7 +36,7 @@ export async function createGroupAction(
   )
 
   if (!result.ok) {
-    return { nameError: toVietnameseMessage(result.error) }
+    return { nameError: messageFor(result.error) }
   }
 
   // `/groups` là dynamic nên không dính Full Route Cache, nhưng client Router

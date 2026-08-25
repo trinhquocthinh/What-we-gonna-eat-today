@@ -42,3 +42,5 @@ export type Failure = {
 export function failure(code: ErrorCode, details?: Record<string, unknown>): Failure {
   return details === undefined ? { code } : { code, details }
 }
+
+export { messageFor } from './messages'

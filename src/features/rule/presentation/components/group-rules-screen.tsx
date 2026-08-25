@@ -5,6 +5,7 @@ import { useActionState, useState, type ReactElement } from 'react'
 import type { SystemTag } from '@/shared/domain/system-tag'
 import { Button } from '@/shared/ui/button'
 import { EmptyStateCard } from '@/shared/ui/empty-state-card'
+import { InlineError } from '@/shared/ui/inline-error'
 
 import { AddRuleSheet } from './add-rule-sheet'
 import { ruleSentence } from './rule-sentence'
@@ -82,11 +83,7 @@ export function GroupRulesScreen({
           Quy định chỉ kiểm tra lúc chốt bữa, không chặn ai vuốt.
         </p>
 
-        {state.error === null ? null : (
-          <p role="alert" className="text-body text-no">
-            {state.error}
-          </p>
-        )}
+        <InlineError message={state.error} size="body" />
 
         {canEdit ? (
           <div className="mt-auto flex flex-col gap-3 pb-6 pt-3">

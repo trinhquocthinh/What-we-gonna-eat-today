@@ -8,6 +8,7 @@ import {
   ruleShortfallPhrase,
 } from '@/features/rule/presentation/components/rule-sentence'
 import { Button } from '@/shared/ui/button'
+import { InlineError } from '@/shared/ui/inline-error'
 import type { SystemTag } from '@/shared/domain/system-tag'
 
 export type FinalizeBarProps = {
@@ -72,11 +73,7 @@ export function FinalizeBar({
         </ul>
       )}
 
-      {error === null ? null : (
-        <p role="alert" className="text-body text-no">
-          {error}
-        </p>
-      )}
+      <InlineError message={error} size="body" />
 
       {/* `muted` chứ KHÔNG `disabled`: nút chưa đủ điều kiện vẫn bấm được để
           bấm ra lỗi — Design Criteria §5, và `Button` đã có sẵn prop này. Một

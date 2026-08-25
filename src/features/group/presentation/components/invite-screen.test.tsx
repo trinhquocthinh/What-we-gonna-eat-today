@@ -37,7 +37,7 @@ describe('InviteScreen (S-13)', () => {
     const action = vi.fn(async (): Promise<InviteFormState> => ({
       token: null,
       expiresAt: null,
-      error: 'Chỉ Admin mới tạo được link mời.',
+      error: 'Chỉ người quản lý nhóm mới làm được việc này.',
     }))
 
     const user = userEvent.setup()
@@ -45,6 +45,6 @@ describe('InviteScreen (S-13)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Tạo link mời' }))
 
-    expect(await screen.findByText('Chỉ Admin mới tạo được link mời.')).toBeDefined()
+    expect(await screen.findByText('Chỉ người quản lý nhóm mới làm được việc này.')).toBeDefined()
   })
 })

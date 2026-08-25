@@ -12,22 +12,9 @@ import type {
 } from '@/features/dish/presentation/components/dish-catalog-screen'
 import { assertGroupAccess } from '@/features/group/application/assert-group-access'
 import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
-import type { Failure } from '@/shared/errors'
+import { messageFor } from '@/shared/errors'
 
 import { requireGroupAdminContext, requireGroupContext } from '../group-access'
-
-function toVietnameseMessage(error: Failure): string {
-  if (error.code === 'ERR_DISH_ALREADY_IN_POOL') {
-    return 'Món này đã có trong danh mục rồi.'
-  }
-  if (error.code === 'ERR_VALIDATION' && error.details?.['field'] === 'name') {
-    return 'Nhập tên món trước đã.'
-  }
-  if (error.code === 'ERR_INVALID_SYSTEM_TAG') {
-    return 'Chọn một nhãn để quy định bữa ăn kiểm tra được.'
-  }
-  return 'Không thêm được món. Thử lại giúp mình.'
-}
 
 const EMPTY: AddDishFormState = {
   nameError: null,
@@ -87,7 +74,7 @@ export async function addDishAction(
   )
 
   if (!result.ok) {
-    const message = toVietnameseMessage(result.error)
+    const message = messageFor(result.error)
     return result.error.code === 'ERR_INVALID_SYSTEM_TAG'
       ? { ...EMPTY, systemTagError: message }
       : { ...EMPTY, nameError: message }
@@ -131,7 +118,7 @@ export async function setSystemTagsAction(
   )
 
   if (!result.ok) {
-    return { error: 'Không lưu được nhãn. Thử lại giúp mình.', savedAt: null }
+    return { error: messageFor(result.error), savedAt: null }
   }
 
   revalidatePath(`/groups/${groupId}/dishes`)

@@ -2,8 +2,8 @@
 
 > **Document Metadata**
 >
-> - **Version:** `3.2` | **Status:** `Active`
-> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-20`
+> - **Version:** `3.5` | **Status:** `Active`
+> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-21`
 > - **Supersedes:** `v2.0` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
 >
@@ -61,8 +61,9 @@
 | [`DEC-044`](#dec-044--session_rules-has-no-surrogate-id) | `session_rules` không có Surrogate ID, dùng Composite PK | 2026-08-20 | `Accepted` | Schema DB, `INSERT … SELECT` |
 | [`DEC-045`](#dec-045--session-score-drops-the-cannot-eat-term-and-defines-its-own-tie-break) | Session Score bỏ số hạng Cannot-Eat và tự định nghĩa Tie-break | 2026-08-20 | `Accepted` | Thuật toán điểm đồng thuận, thứ tự xếp hạng S-10 |
 | [`DEC-046`](#dec-046--the-finalize-screen-lives-entirely-in-featuresmeal-app-maps-the-ranking) | Màn S-10 sống trọn trong features/meal; app/ ánh xạ ranking | 2026-08-20 | `Accepted` | Cấu trúc UI S-10, ranh giới cross-feature meal/selection |
-
-
+| [`DEC-047`](#dec-047--e6-adds-e6-t7-and-e6-t8-the-two-read-only-screens-ms-01-requires) | Bổ sung E6-T7 và E6-T8 cho MS-01 | 2026-08-21 | `Accepted` | Kế hoạch E6, màn S-11 và S-12 |
+| [`DEC-048`](#dec-048--system_tag_labels-moves-to-sharedui-eating-history-is-queried-by-user-routed-by-group) | SYSTEM_TAG_LABELS chuyển sang shared/ui; Eating History query theo User | 2026-08-21 | `Accepted` | Chia sẻ nhãn tag UI, truy vấn lịch sử ăn |
+| [`DEC-049`](#dec-049--one-messageforfailure-not-a-flat-table-validation-fields-are-named-by-subject) | Bảng dịch mã lỗi messageFor, đổi field validation theo chủ thể, component InlineError | 2026-08-21 | `Accepted` | Bảng dịch mã lỗi, component InlineError |
 ---
 
 # DEC-001 — Selection Session Lifecycle
@@ -1081,10 +1082,49 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-049 — One messageFor(failure), Not a Flat Table; Validation Fields Are Named by Subject
+
+- **Ngày:** 2026-08-21
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E6-S2
+
+## Quyết định
+
+1. Bảng dịch mã lỗi có chữ ký `messageFor(failure: Failure): string` — nhận cả `Failure`, không
+   chỉ `code`. Bảng phẳng bên trong được ép đầy đủ bằng `satisfies Record<ErrorCode, string>`.
+2. `details.field` của `ERR_VALIDATION` đổi từ `'name'` sang `'dishName'` / `'groupName'` tại
+   nơi ném.
+3. Thêm `shared/ui/inline-error.tsx`; lỗi dùng token `--danger`, `--no` chỉ dành cho vuốt trái.
+
+## Rationale
+
+1. `ERR_REQUIRED_RULE_FAILED` mang `details.shortfalls` (E5-S3) đúng để câu lỗi nói được "Còn
+   thiếu 1 món canh" thay vì một câu chung. Bảng phẳng vứt bỏ dữ liệu đó.
+2. `add-dish-to-group` và `create-group` cùng ném `ERR_VALIDATION` với `field: 'name'` nhưng
+   cần hai câu khác nhau. Việc đó chỉ chạy được khi mỗi màn có bảng riêng. Sửa tại nguồn cho
+   failure tự mô tả chính xác, thay vì thêm tham số `context` mà caller có thể truyền sai.
+3. Sau E5 có hai chỗ hiện lỗi bằng `--no` và bốn chỗ bằng `--danger`. `--no` là nâu đất trung
+   tính của vuốt trái ("tôi không muốn món này"); dùng cho lỗi làm thất bại trông như một lựa
+   chọn. Một component chung là cách duy nhất để ranh giới này không trôi lần nữa.
+
+## Consequence
+
+- Thêm mã lỗi mới mà quên dịch → `tsc` đỏ, không phải người dùng phát hiện.
+- Ba câu đổi chữ khi gom (rõ nhất: bỏ chữ "Admin" khỏi câu hiện cho người dùng).
+- `banner.tsx` KHÔNG gộp vào `InlineError` — dải thông báo toàn màn là thứ khác.
+
+## Affected Documents
+
+- SDD §2.5 — ghi chú bảng dịch nay ở `shared/errors/messages.ts`, chữ ký nhận `Failure`.
+- Design Criteria §5 — `InlineError` nay là component thật.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.5` | 2026-08-21 | Bổ sung `DEC-049` (Bảng dịch mã lỗi messageFor, Validation Fields named by Subject, InlineError component) cho E6-S2 |
 | `3.4` | 2026-08-21 | Bổ sung `DEC-047` (Bổ sung E6-T7/E6-T8 cho MS-01) và `DEC-048` (SYSTEM_TAG_LABELS chuyển sang shared/ui; Eating History query theo User) cho E6-S1 |
 | `3.3` | 2026-08-20 | Bổ sung `DEC-046` (Màn S-10 sống trọn trong features/meal; app/ ánh xạ ranking) cho E5-S4 (Cột mốc M5) |
 | `3.2` | 2026-08-20 | Bổ sung `DEC-045` (Session Score Drops the Cannot-Eat Term and Defines Its Own Tie-Break) cho E5-S3 |

@@ -4,6 +4,7 @@ import type { ReactElement } from 'react'
 
 import { SYSTEM_TAGS, type SystemTag } from '../../domain/system-tag'
 import { SYSTEM_TAG_LABELS } from './system-tag-label'
+import { InlineError } from '@/shared/ui/inline-error'
 
 export type SystemTagFieldProps = {
   value: SystemTag | null
@@ -54,11 +55,7 @@ export function SystemTagField({ value, error, onChange }: SystemTagFieldProps):
         })}
       </div>
 
-      {error === null ? null : (
-        <span role="alert" className="text-caption font-medium text-danger">
-          {error}
-        </span>
-      )}
+      <InlineError message={error} />
     </fieldset>
   )
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { failure } from './errors'
+import { failure } from './index'
 
 describe('failure', () => {
   it('không gắn key `details` khi không truyền — exactOptionalPropertyTypes', () => {

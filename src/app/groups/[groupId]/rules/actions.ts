@@ -7,22 +7,9 @@ import { drizzleMembershipRepository } from '@/features/group/infrastructure/dri
 import { setGroupRules } from '@/features/rule/application/set-group-rules'
 import { drizzleRuleRepository } from '@/features/rule/infrastructure/drizzle-rule-repository'
 import type { RuleFormState } from '@/features/rule/presentation/components/group-rules-screen'
-import type { Failure } from '@/shared/errors'
+import { messageFor } from '@/shared/errors'
 
 import { requireGroupAdminContext } from '../group-access'
-
-function toVietnameseMessage(error: Failure): string {
-  if (error.code === 'ERR_INVALID_MINIMUM_COUNT') {
-    return 'Số lượng phải từ 1 trở lên.'
-  }
-  if (error.code === 'ERR_DUPLICATE_RULE') {
-    return 'Mỗi nhãn chỉ đặt được một quy định.'
-  }
-  if (error.code === 'ERR_NOT_GROUP_ADMIN') {
-    return 'Chỉ người quản lý nhóm mới sửa được quy định.'
-  }
-  return 'Không lưu được quy định. Thử lại giúp mình.'
-}
 
 export async function setGroupRulesAction(
   groupId: string,
@@ -56,7 +43,7 @@ export async function setGroupRulesAction(
   )
 
   if (!result.ok) {
-    return { error: toVietnameseMessage(result.error), savedAt: null }
+    return { error: messageFor(result.error), savedAt: null }
   }
 
   revalidatePath(`/groups/${groupId}/rules`)
