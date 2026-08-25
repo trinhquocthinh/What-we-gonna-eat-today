@@ -40,6 +40,25 @@ export interface DishRepository {
     normalizedName: string,
   ): Promise<GroupDishLookup | null>
   findGlobalCandidatesByNormalizedName(normalizedName: string): Promise<GlobalDishCandidate[]>
+
+  /**
+   * Gợi ý món từ catalog CHUNG trong lúc người dùng đang gõ (SPEC-023).
+   *
+   * Khác `findGlobalCandidatesByNormalizedName` ở hai điểm quyết định:
+   * - khớp CHUỖI CON, không phải bằng nhau — gõ "chả" phải ra "Bún chả", vì
+   *   tên món Việt hiếm khi bắt đầu bằng chữ mà người ta nhớ ra trước;
+   * - LOẠI món nhóm đang có (ACTIVE) ngay trong SQL. Lọc ở client thì `LIMIT`
+   *   chạy TRƯỚC phép lọc: nhóm đã sở hữu 5 kết quả đầu là panel rỗng oan,
+   *   trong khi ứng viên mới nằm ngay dưới ngưỡng.
+   *
+   * Món đang INACTIVE trong nhóm thì VẪN hiện — chọn lại chính là cách thêm
+   * lại nó, và `addExistingGlobalDishToGroup` đã tự lật về ACTIVE.
+   */
+  searchGlobalDishes(input: {
+    readonly groupId: string
+    readonly needle: string
+    readonly limit: number
+  }): Promise<GlobalDishCandidate[]>
   createGlobalDishAndAddToPool(input: NewDishInGroup): Promise<GroupDishSummary>
   reactivateGroupDish(groupDishId: string): Promise<void>
   addExistingGlobalDishToGroup(input: {

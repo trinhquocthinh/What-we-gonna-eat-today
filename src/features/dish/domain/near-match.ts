@@ -1,8 +1,11 @@
 import { normalizeDishName } from './normalize-name'
 
 /** Cổng độ dài của mockup (`nd.length > 2`): gõ "cá" chưa đủ để bới cả danh
- *  mục lên. Đếm trên chuỗi ĐÃ chuẩn hoá, đúng như mockup. */
-const MIN_QUERY_LENGTH = 3
+ *  mục lên. Đếm trên chuỗi ĐÃ chuẩn hoá, đúng như mockup.
+ *
+ *  Export vì tra catalog chung (`dish-search-query.ts`) dùng CHUNG ngưỡng này:
+ *  hai ô gợi ý nằm cạnh nhau mà bật ở hai độ dài khác nhau thì trông như lỗi. */
+export const MIN_QUERY_LENGTH = 3
 
 /** Mockup `.slice(0, 3)`. Thiết kế chỉ chừa chỗ cho ba thẻ. */
 const MAX_CANDIDATES = 3

@@ -2,9 +2,9 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.7` | **Status:** `Active (In Progress)` | **Release:** `R1`
-> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-21`
-> - **Supersedes:** `v1.6` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
+> - **Version:** `2.0` | **Status:** `Active (Maintenance)` | **Release:** `R1`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-25`
+> - **Supersedes:** `v1.9` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 >
 > 📌 *Tài liệu này là cẩm nang thực thi hằng ngày: 56 subtask, 121 giờ cơ sở, 157 giờ gồm 30% dự phòng. Mỗi subtask được thiết kế để hoàn thành trong một buổi ngồi (1 đến 4 giờ).*
 
@@ -20,6 +20,7 @@
 6. [E4 — Deck và Ranking](#6-e4--deck-và-ranking)
 7. [E5 — Rule và chốt bữa](#7-e5--rule-và-chốt-bữa)
 8. [E6 — Hoàn thiện](#8-e6--hoàn-thiện)
+8b. [M1 — Bảo trì sau v1.0: Danh mục món](#8b-m1--bảo-trì-sau-v10-danh-mục-món)
 9. [Đường găng (Critical Path)](#9-đường-găng-critical-path)
 10. [Lịch theo quỹ giờ (Workload Scenarios)](#10-lịch-theo-quỹ-giờ-workload-scenarios)
 11. [Bảng rủi ro & Phương án xử lý](#11-bảng-rủi-ro--phương-án-xử-lý)
@@ -41,6 +42,7 @@
 | **E4** | Deck vuốt và thuật toán Ranking | 9 | 21 | `[x]` ✅ Xong — Cột mốc M4 |
 | **E5** | Rule engine và chốt bữa (Final Meal) | 10 | 23 | `[x]` ✅ Xong — Cột mốc M5 |
 | **E6** | Hoàn thiện UX, Coverage & NFRs | 8 | 20.5 | `[x]` ✅ Xong — Cột mốc M6 |
+| **M1** | Bảo trì sau v1.0 — Danh mục món | 5 | 9 | `[x]` ✅ Xong |
 
 > [!TIP]
 > Cột trạng thái dùng để theo dõi tiến độ. Nếu sau ba tuần chưa có ô nào được tick, vấn đề không nằm ở kế hoạch mà ở nhịp độ thực thi.
@@ -260,6 +262,35 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 
 ---
 
+# 8b. M1 — Bảo trì sau v1.0: Danh mục món
+
+> [!NOTE]
+> Slice này KHÔNG thuộc v1.0 (đã phát hành, mốc M6) và cũng không thuộc v1.1. Nó phát sinh
+> từ ba nghi vấn khi dùng thật, trong đó **hai nghi vấn có tiền đề sai** nhưng vẫn lộ ra
+> lỗi thật:
+>
+> - *"Check trùng chỉ trong nhóm"* — **sai**, `findGlobalCandidatesByNormalizedName` vốn đã
+>   ở phạm vi toàn cục. Nhưng nó chỉ khớp tên **chính xác** và chỉ chạy **sau khi bấm lưu**,
+>   nên trên thực tế không ai tìm thấy món của catalog chung. Đây là khoảng trống thật.
+> - *"Chưa có cách thêm món vào global"* — **sai**, mọi món mới đều tạo một Global Dish kèm
+>   provenance từ E2. Chỉ là không có lối vào nhìn thấy được.
+> - *"Bún bị tag là cơm"* — **không phải lỗi phân loại**: `BR-003` ghi rõ `STAPLE` =
+>   *"Món tinh bột / Cơm, bún"*. Lỗi nằm ở **nhãn hiển thị** trái với chính `BR-003`.
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] M1-T1` | Sửa nhãn `STAPLE` và hợp đồng dấu nối | [DEC-052](what-we-gonna-eat-today_decision-log_v1.1.md), `BR-003` | 1 | Nhãn hiện "Cơm · Bún · Phở"; xoá bảng nhãn trùng ở `finalize-meal-screen`; có test canh bất biến dấu nối | `src/shared/ui/system-tag-label.ts` |
+| `[x] M1-T2` | Dùng lại món phải ghi tag đã chọn | [DEC-053](what-we-gonna-eat-today_decision-log_v1.1.md) | 1 | Chọn nhãn rồi "Dùng món này" → món vào pool **kèm nhãn**, không rơi vào "Chưa phân nhãn" | `src/features/dish/application/add-existing-dish-to-group.ts` |
+| `[x] M1-T3` | Sheet thêm món cho chọn nhiều nhãn | [DEC-054](what-we-gonna-eat-today_decision-log_v1.1.md), `BR-012` | 1.5 | "Bún chả" gán được `STAPLE`+`MAIN` ngay lúc tạo; hai sheet dùng chung `SystemTagField` | `src/features/dish/presentation/components/**` |
+| `[x] M1-T4` | Sửa 2 lỗi phân loại của `inferSystemTag` | [DEC-052](what-we-gonna-eat-today_decision-log_v1.1.md) | 1.5 | "Cà pháo"→`SIDE`, "Canh gà"→`SOUP`; hàm chuyển sang `domain/` để nằm trong phạm vi coverage; có script `retag:dishes` | `src/features/dish/domain/infer-system-tag.ts`, `scripts/retag-dishes.ts` |
+| `[x] M1-T5` | Gợi ý món từ catalog chung khi đang gõ | [SPEC-023](what-we-gonna-eat-today_sdd_v0_1.md), [DEC-055](what-we-gonna-eat-today_decision-log_v1.1.md) | 4 | Nhóm 0 món gõ "bún" thấy ngay gợi ý từ catalog đã seed; chọn một gợi ý không tạo Global Dish mới | `src/app/api/groups/[groupId]/dishes/search/route.ts` |
+
+> [!IMPORTANT]
+> `M1-T5` là khoản trả trước cho `F29` ("UI phát hiện trùng", v1.1/E10) — nhưng KHÔNG thay
+> thế nó: `F29` là polish panel trùng lặp *phản ứng*, còn đây là ô gợi ý *chủ động*.
+
+---
+
 # 9. Đường găng (Critical Path)
 
 Chuỗi subtask dài nhất quyết định ngày hoàn thành toàn bộ v1.0:
@@ -364,6 +395,7 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `2.0` | 2026-08-25 | §8b | Bổ sung slice bảo trì sau v1.0 (`M1-T1`→`M1-T5`): sửa nhãn `STAPLE`, dùng lại món giữ tag, sheet thêm đa nhãn, sửa 2 lỗi `inferSystemTag`, gợi ý catalog chung (SPEC-023) | Quyết định DEC-052 đến DEC-055 |
 | `1.9` | 2026-08-21 | §1, §8 | Hoàn tất thi công Slice S4 của Epic E6 (E6-T5, E6-T6, E6-T3: Coverage, a11y, NFR) — Hoàn tất toàn bộ Epic E6, Đạt cột mốc M6 và sẵn sàng phát hành v1.0 | Quyết định DEC-051 |
 | `1.8` | 2026-08-21 | §1, §8 | Hoàn tất thi công Slice S3 của Epic E6 (E6-T1, E6-T4: Trạng thái rỗng và chặn mở phiên khi nhóm chưa có món) | Quyết định DEC-050 |
 | `1.7` | 2026-08-20 | §1, §7 | Hoàn tất thi công toàn bộ Epic E5 (S1→S4, E5-T1 đến E5-T9: Rule engine, Snapshot lúc Start, Màn tổng hợp S-10 & Chốt bữa) — Đạt cột mốc M5 | Quyết định DEC-040 đến DEC-046 |

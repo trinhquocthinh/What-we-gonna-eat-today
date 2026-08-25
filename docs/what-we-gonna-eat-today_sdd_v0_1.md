@@ -7,7 +7,7 @@
 > - **Upstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md) • [Ranking Spec](what-we-gonna-eat-today_ranking-specification_v0_1.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases](what-we-gonna-eat-today_test-cases-specification_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
 >
-> 📌 *Tài liệu đặc tả chi tiết 22 module kỹ thuật (`SPEC-001` đến `SPEC-022`) cho 17 tính năng cốt lõi của v1.0. Mỗi kịch bản (Scenario) trong tài liệu này ánh xạ 1–1 thành một Test Case tự động.*
+> 📌 *Tài liệu đặc tả chi tiết 23 module kỹ thuật (`SPEC-001` đến `SPEC-023`) cho 17 tính năng cốt lõi của v1.0 và phần bảo trì sau phát hành. Mỗi kịch bản (Scenario) trong tài liệu này ánh xạ 1–1 thành một Test Case tự động.*
 
 ---
 
@@ -42,6 +42,7 @@
    - [SPEC-020: Tính toán Recency Penalty](#spec-020--tính-toán-recency-penalty)
    - [SPEC-021: Cấu hình Group Required Rules](#spec-021--cấu-hình-group-required-rules)
    - [SPEC-022: Snapshot Session Rules](#spec-022--snapshot-session-rules)
+   - [SPEC-023: Gợi ý món từ Global Dish Pool](#spec-023--gợi-ý-món-từ-global-dish-pool-catalog-search)
 8. [Các điểm lưu ý kiến trúc](#8-các-điểm-lưu-ý-kiến-trúc)
 9. [Lịch sử thay đổi (Change History)](#9-lịch-sử-thay-đổi-change-history)
 
@@ -216,6 +217,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 - **Đầu vào:** `{ groupId, name: string (1..120), systemTags: SystemTag[] (0..5), forceCreate?: boolean }`
 - **Đầu ra:** `GroupDish` | `{ existingCandidates: GlobalDish[] }` | `Failure`
 - **Quy tắc:** Chuẩn hóa tên (cắt khoảng trắng thừa, chuyển chữ thường, bỏ dấu tiếng Việt) thành `normalized_name`. Nếu tìm thấy món trùng, trả về danh sách gợi ý; nếu có cờ `forceCreate = true`, tạo Global Dish mới kèm provenance.
+- **Ghi chú (DEC-053):** Nhánh "dùng lại món có sẵn" (`addExistingDishToGroup`, ngoài hợp đồng này — xem `DEC-029`) nay cũng nhận `systemTags` và ghi đè toàn bộ tag của món trong Group.
 
 ### SPEC-006 — Gán System Tag cho Dish trong Group
 
@@ -344,6 +346,19 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 - **Nguồn:** `F21`, [BR-015](what-we-gonna-eat-today_business-rules_v1.4.md), `BR-016`
 - **Đầu vào:** `{ sessionId }`
 - **Quy tắc:** Đóng băng bản sao các quy định mâm cơm của Group tại thời điểm Start. Admin chỉnh sửa Group Rule sau đó sẽ không làm đổi luật của phiên đang chạy.
+
+### SPEC-023 — Gợi ý món từ Global Dish Pool (Catalog Search)
+
+- **Nguồn:** `US-002`, [BR-001](what-we-gonna-eat-today_business-rules_v1.4.md), [DEC-055](what-we-gonna-eat-today_decision-log_v1.1.md)
+- **Giao thức:** `GET /api/groups/{groupId}/dishes/search?q={query}` — **Route Handler**, không phải Server Action (Tech Spec §4.1: Server Action bị serialise, mà typeahead bắn theo từng phím).
+- **Quyền:** Đăng nhập **và** là Member của `groupId`. Kiểm tư cách thành viên là BẮT BUỘC — kết quả đã loại món nhóm đang có, nên dò `groupId` bất kỳ sẽ suy ra được danh mục của nhóm đó.
+- **Đầu vào:** `q` — chuỗi thô người dùng gõ.
+- **Đầu ra:** `{ suggestions: { id, name }[] }` — `id` là **`global_dishes.id`**, KHÔNG phải `group_dishes.id`.
+- **Quy tắc:**
+  - Chuẩn hoá `q` qua `normalizeDishName`, lọc bỏ `%`, `_`, `\` (chống ký tự đại diện của `LIKE`).
+  - Dưới 3 ký tự sau chuẩn hoá → trả `{ suggestions: [] }` kèm **200**, không phải 400: gõ dở một chữ không phải lỗi client.
+  - Khớp **chuỗi con** trên `normalized_name`; loại món nhóm đang `ACTIVE` ngay trong SQL; món `INACTIVE` **vẫn** hiện (chọn lại là cách thêm lại).
+  - Sắp xếp: khớp từ đầu tên trước → tên ngắn hơn → `created_at`. Giới hạn 5.
 
 ---
 

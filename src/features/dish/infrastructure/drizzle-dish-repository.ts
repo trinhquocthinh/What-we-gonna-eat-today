@@ -57,6 +57,52 @@ async function findGlobalCandidatesByNormalizedName(
 }
 
 /**
+ * SPEC-023 — gợi ý lúc đang gõ. Xem hợp đồng ở `dish-repository.ts`.
+ *
+ * `needle` PHẢI đã đi qua `readDishSearchQuery` (đã chuẩn hoá và đã lọc `%`,
+ * `_`, `\`) — câu này nội suy nó vào `LIKE`, nên truyền chuỗi thô là mở đường
+ * cho một dấu `%` khớp sạch catalog.
+ *
+ * Index btree `global_dishes_normalized_name_idx` KHÔNG phục vụ `LIKE '%…%'`
+ * (mà dưới collation không phải `C` thì nó cũng chẳng phục vụ `LIKE 'q%'`).
+ * Vài nghìn dòng thì seq scan không đáng kể; khi catalog lớn hẳn, lối thoát là
+ * một index GIN `pg_trgm` — đúng thứ tăng tốc `LIKE '%…%'`, không phải viết
+ * lại câu truy vấn.
+ */
+async function searchGlobalDishes(input: {
+  groupId: string
+  needle: string
+  limit: number
+}): Promise<GlobalDishCandidate[]> {
+  const pattern = `%${input.needle}%`
+
+  return (
+    getDb()
+      .select({ id: globalDishes.id, name: globalDishes.name })
+      .from(globalDishes)
+      .where(
+        and(
+          sql`${globalDishes.normalizedName} LIKE ${pattern}`,
+          sql`NOT EXISTS (
+          SELECT 1 FROM ${groupDishes}
+          WHERE ${groupDishes.globalDishId} = ${globalDishes.id}
+            AND ${groupDishes.groupId} = ${input.groupId}
+            AND ${groupDishes.state} = 'ACTIVE'
+        )`,
+        ),
+      )
+      // Khớp từ đầu tên nổi lên trước, rồi tên ngắn ("Bún chả" trước "Bún chả
+      // giò cuốn tôm thịt"), cuối cùng `created_at` để thứ tự luôn xác định.
+      .orderBy(
+        sql`position(${input.needle} in ${globalDishes.normalizedName})`,
+        sql`length(${globalDishes.name})`,
+        asc(globalDishes.createdAt),
+      )
+      .limit(input.limit)
+  )
+}
+
+/**
  * `db.batch([...])` của driver neon-http LÀ một transaction Postgres thật —
  * `neon-http/session.js` gọi `client.transaction(builtQueries)`. (Còn
  * `db.transaction()` thì ném "No transactions support in neon-http driver".)
@@ -236,6 +282,7 @@ async function countActiveInGroup(groupId: string): Promise<number> {
 export const drizzleDishRepository: DishRepository = {
   findInGroupByNormalizedName,
   findGlobalCandidatesByNormalizedName,
+  searchGlobalDishes,
   createGlobalDishAndAddToPool,
   reactivateGroupDish,
   addExistingGlobalDishToGroup,

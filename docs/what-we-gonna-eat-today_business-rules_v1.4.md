@@ -85,16 +85,29 @@ System Tag được sử dụng trong: Recommendation, Ranking, Group Rule, Sess
 
 Tập 5 System Tag cố định trong phiên bản v1:
 
-- `MAIN` (Món mặn / Món chính)
-- `SIDE` (Món phụ / Rau xào)
-- `SOUP` (Món canh)
-- `STAPLE` (Món tinh bột / Cơm, bún)
-- `DESSERT` (Món tráng miệng / Hoa quả)
+| Tag | Nhãn hiển thị | Nghĩa | Ví dụ | Không phải |
+| :--- | :--- | :--- | :--- | :--- |
+| `STAPLE` | Cơm · Bún · Phở | Món **tinh bột** làm nền bữa ăn | Cơm trắng, bún chả, phở bò, xôi, cháo, bánh mì, bánh cuốn | Không riêng cơm — **bún, phở, mì đều là `STAPLE`** |
+| `MAIN` | Món mặn | Món **đạm** mặn, thường ăn kèm cơm | Thịt kho, cá kho, gà rang, trứng chiên, tôm rim | Không gồm rau xào (đó là `SIDE`) |
+| `SIDE` | Món phụ | **Rau, củ**, món xào/luộc, đồ chua, đồ chấm | Rau muống xào tỏi, dưa cải, cà pháo, kho quẹt | Không gồm canh (đó là `SOUP`) |
+| `SOUP` | Canh | Món **chan nước** ăn cùng cơm | Canh chua, canh rau ngót, lẩu, súp | Bún/phở chan nước là `STAPLE`, không phải `SOUP` |
+| `DESSERT` | Tráng miệng | Món **ngọt**, hoa quả, đồ uống | Chè, bánh flan, hoa quả, nước mía | — |
 
 > [!IMPORTANT]
 >
-> - Một món có thể mang **nhiều System Tag cùng lúc**.
-> - Nhóm kế thừa System Tag mặc định từ Global Dish nhưng có thể tùy chỉnh riêng trong nhóm mà không làm ảnh hưởng nhóm khác.
+> - Một món có thể mang **nhiều System Tag cùng lúc**. Món ghép phải gán đủ:
+>   *"Bún chả"* là `STAPLE` **và** `MAIN`; *"Cơm tấm sườn bì chả"* là `STAPLE` **và** `MAIN`.
+>   Đây là điều kiện để Independent Tag Counting (`BR-012`) đếm đúng lúc chốt bữa.
+> - Quy tắc phân xử khi lưỡng lự: hỏi **"món này đóng vai gì trong mâm cơm?"**,
+>   không hỏi nguyên liệu chính là gì. *"Canh gà"* là `SOUP` (chan nước), còn
+>   *"Cánh gà nướng"* là `MAIN` (đạm mặn) — cùng nguyên liệu, khác vai.
+
+> [!WARNING]
+> **Câu "Nhóm kế thừa System Tag mặc định từ Global Dish" CHƯA được thi công ở v1.0**,
+> và schema hiện tại không thể thực hiện nó: `global_dishes` **không có cột tag**.
+> Tag nằm ở `group_dish_tags`, khoá theo `group_dish_id` — chính cấu trúc đó là
+> cơ sở của việc cách ly tag giữa các nhóm (`TC-024`). Thay vào đó người dùng
+> chọn tag ngay lúc thêm hoặc lúc dùng lại món. Xem `DEC-055`.
 
 ---
 

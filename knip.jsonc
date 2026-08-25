@@ -54,6 +54,13 @@
     // GỠ Ở E5-T9 (S4): ruleShortfallPhrase dùng cho dòng "Còn thiếu: …" trên nút chốt bữa.
     "src/features/rule/presentation/components/rule-sentence.ts",
 
+    // KHÔNG phải mã chết: `yarn seed:dishes` và `yarn retag:dishes` dùng nó.
+    // `scripts/**` nằm trong danh sách ignore ngay trên nên knip không tính đó
+    // là nơi sử dụng. Đặt hàm ở `domain/` thay vì trong `scripts/` là có chủ ý —
+    // chỉ ở đây nó mới nằm trong phạm vi đo coverage, và chính việc nằm ngoài
+    // phạm vi đó là lý do hai lỗi phân loại sống sót mà không ai viết test.
+    "src/features/dish/domain/infer-system-tag.ts",
+
     // GỠ Ở E5-T5 (S3): evaluateRequired được tạo ở E5-T3, E5-S3 (Finalize) sẽ import và sử dụng.
     "src/features/rule/domain/evaluate.ts",
 

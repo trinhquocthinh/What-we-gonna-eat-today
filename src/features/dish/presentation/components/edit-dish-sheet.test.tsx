@@ -21,7 +21,9 @@ describe('EditDishSheet (E2-T6)', () => {
     expect(screen.getByText('Nhãn — chọn bao nhiêu cũng được')).toBeDefined()
 
     const soupCheckbox = screen.getByRole('checkbox', { name: 'Canh' }) as HTMLInputElement
-    const stapleCheckbox = screen.getByRole('checkbox', { name: 'Cơm' }) as HTMLInputElement
+    const stapleCheckbox = screen.getByRole('checkbox', {
+      name: 'Cơm · Bún · Phở',
+    }) as HTMLInputElement
 
     expect(soupCheckbox.checked).toBe(true)
     expect(stapleCheckbox.checked).toBe(false)

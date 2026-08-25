@@ -317,3 +317,130 @@ describe('drizzleDishRepository — System Tag (E2-T5)', () => {
     expect(stolen).toBeNull()
   })
 })
+
+describe('drizzleDishRepository — searchGlobalDishes (SPEC-023)', () => {
+  /** Dựng một catalog chung do NHÓM KHÁC tạo, rồi tra từ nhóm đang trống. */
+  async function seedCatalog(names: string[]) {
+    const db = getDb()
+    const user = makeUser({ id: uuidv7(), email: `test-${uuidv7()}@example.com` })
+    const owner = makeGroup({ id: uuidv7(), name: 'Nhà chủ catalog', creatorUserId: user.id })
+    const mine = makeGroup({ id: uuidv7(), name: 'Nhà tôi', creatorUserId: user.id })
+
+    cleanupQueue.push(() => cleanupEntities({ userIds: [user.id], groupIds: [owner.id, mine.id] }))
+
+    await db.insert(users).values({ ...user, provider: 'test', providerSubject: `test-${user.id}` })
+    await db.insert(groups).values([owner, mine])
+
+    for (const name of names) {
+      await drizzleDishRepository.createGlobalDishAndAddToPool({
+        groupId: owner.id,
+        name,
+        normalizedName: normalizeDishName(name),
+        creatorUserId: user.id,
+        systemTags: [],
+      })
+    }
+
+    return { user, owner, mine }
+  }
+
+  it('khớp CHUỖI CON, không chỉ tiền tố — gõ "cha" ra "Bún chả"', async () => {
+    const { mine } = await seedCatalog(['Bún chả', 'Canh chua cá lóc'])
+
+    const found = await drizzleDishRepository.searchGlobalDishes({
+      groupId: mine.id,
+      needle: 'cha',
+      limit: 5,
+    })
+
+    expect(found.map((d) => d.name)).toContain('Bún chả')
+  })
+
+  it('bỏ dấu — gõ "bun cha" ra "Bún chả"', async () => {
+    const { mine } = await seedCatalog(['Bún chả'])
+
+    const found = await drizzleDishRepository.searchGlobalDishes({
+      groupId: mine.id,
+      needle: 'bun cha',
+      limit: 5,
+    })
+
+    expect(found.map((d) => d.name)).toEqual(['Bún chả'])
+  })
+
+  it('LOẠI món nhóm đang có (ACTIVE) — không gợi ý thứ đã nằm trong danh mục', async () => {
+    const { user, mine } = await seedCatalog(['Bún chả'])
+
+    const [globalDish] = await getDb()
+      .select({ id: globalDishes.id })
+      .from(globalDishes)
+      .where(eq(globalDishes.normalizedName, 'bun cha'))
+      .limit(1)
+
+    await drizzleDishRepository.addExistingGlobalDishToGroup({
+      groupId: mine.id,
+      globalDishId: globalDish!.id,
+    })
+
+    const found = await drizzleDishRepository.searchGlobalDishes({
+      groupId: mine.id,
+      needle: 'bun',
+      limit: 5,
+    })
+
+    expect(found).toEqual([])
+    expect(user).toBeDefined()
+  })
+
+  it('VẪN gợi ý món nhóm đã gỡ (INACTIVE) — chọn lại chính là cách thêm lại', async () => {
+    const { mine } = await seedCatalog(['Bún chả'])
+
+    const [globalDish] = await getDb()
+      .select({ id: globalDishes.id })
+      .from(globalDishes)
+      .where(eq(globalDishes.normalizedName, 'bun cha'))
+      .limit(1)
+
+    const added = await drizzleDishRepository.addExistingGlobalDishToGroup({
+      groupId: mine.id,
+      globalDishId: globalDish!.id,
+    })
+    await getDb().update(groupDishes).set({ state: 'INACTIVE' }).where(eq(groupDishes.id, added.id))
+
+    const found = await drizzleDishRepository.searchGlobalDishes({
+      groupId: mine.id,
+      needle: 'bun',
+      limit: 5,
+    })
+
+    expect(found.map((d) => d.name)).toEqual(['Bún chả'])
+  })
+
+  it('khớp từ ĐẦU tên nổi lên trước, rồi tên ngắn hơn', async () => {
+    const { mine } = await seedCatalog(['Miến trộn bún tàu', 'Bún chả giò cuốn tôm', 'Bún chả'])
+
+    const found = await drizzleDishRepository.searchGlobalDishes({
+      groupId: mine.id,
+      needle: 'bun',
+      limit: 5,
+    })
+
+    expect(found.map((d) => d.name)).toEqual([
+      'Bún chả',
+      'Bún chả giò cuốn tôm',
+      'Miến trộn bún tàu',
+    ])
+  })
+
+  it('tôn trọng limit', async () => {
+    const { mine } = await seedCatalog(['Bún chả', 'Bún bò Huế', 'Bún riêu cua', 'Bún thịt nướng'])
+
+    const found = await drizzleDishRepository.searchGlobalDishes({
+      groupId: mine.id,
+      needle: 'bun',
+      limit: 2,
+    })
+
+    expect(found).toHaveLength(2)
+  })
+})

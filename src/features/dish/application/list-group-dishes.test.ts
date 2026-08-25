@@ -11,6 +11,9 @@ function makeThrowingRepo(overrides: Partial<DishRepository> = {}): DishReposito
     async findGlobalCandidatesByNormalizedName() {
       throw new Error('không dùng trong test này')
     },
+    async searchGlobalDishes() {
+      throw new Error('không dùng trong test này')
+    },
     async createGlobalDishAndAddToPool() {
       throw new Error('không dùng trong test này')
     },

@@ -13,7 +13,7 @@ const DISHES: { id: string; name: string; systemTags: readonly SystemTag[] }[] =
 
 describe('DishCatalogScreen (S-05)', () => {
   it('rỗng: có "Chưa có món nào.", mô tả, 3 ví dụ, nút "Thêm món đầu tiên", không caption, số đếm trống, không có ô tìm', () => {
-    render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={[]} action={vi.fn()} />)
+    render(<DishCatalogScreen groupId="g1" groupName="Nhà Bảy Hiền" dishes={[]} action={vi.fn()} />)
 
     expect(screen.getByText('Nhà Bảy Hiền')).toBeDefined()
     expect(screen.getByRole('heading', { level: 1, name: 'Danh mục món' })).toBeDefined()
@@ -36,13 +36,15 @@ describe('DishCatalogScreen (S-05)', () => {
       { id: '3', name: 'Canh chua cá lóc', systemTags: ['SOUP'] },
       { id: '4', name: 'Món chưa nhãn', systemTags: [] },
     ]
-    render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={dishes} action={vi.fn()} />)
+    render(
+      <DishCatalogScreen groupId="g1" groupName="Nhà Bảy Hiền" dishes={dishes} action={vi.fn()} />,
+    )
 
     expect(screen.getByText('4 món')).toBeDefined()
     expect(screen.getByRole('searchbox', { name: 'Tìm món trong nhà' })).toBeDefined()
 
-    // Thứ tự nhóm: Cơm -> Canh -> Tráng miệng -> Chưa phân nhãn
-    expect(screen.getByText('Cơm')).toBeDefined()
+    // Thứ tự nhóm: Cơm · Bún · Phở -> Canh -> Tráng miệng -> Chưa phân nhãn
+    expect(screen.getByText('Cơm · Bún · Phở')).toBeDefined()
     expect(screen.getByText('Cơm tấm')).toBeDefined()
     expect(screen.getByText('Canh')).toBeDefined()
     expect(screen.getByText('Canh chua cá lóc')).toBeDefined()
@@ -56,7 +58,9 @@ describe('DishCatalogScreen (S-05)', () => {
   })
 
   it('gõ vào ô tìm thì lọc danh sách ngay (hỗ trợ bỏ dấu)', async () => {
-    render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={DISHES} action={vi.fn()} />)
+    render(
+      <DishCatalogScreen groupId="g1" groupName="Nhà Bảy Hiền" dishes={DISHES} action={vi.fn()} />,
+    )
 
     await userEvent.type(screen.getByRole('searchbox', { name: 'Tìm món trong nhà' }), 'ca loc')
 
@@ -66,7 +70,9 @@ describe('DishCatalogScreen (S-05)', () => {
   })
 
   it('tìm không ra thì hiện thẻ không khớp, đúng nháy cong', async () => {
-    render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={DISHES} action={vi.fn()} />)
+    render(
+      <DishCatalogScreen groupId="g1" groupName="Nhà Bảy Hiền" dishes={DISHES} action={vi.fn()} />,
+    )
 
     await userEvent.type(screen.getByRole('searchbox', { name: 'Tìm món trong nhà' }), 'phở')
 
@@ -75,7 +81,9 @@ describe('DishCatalogScreen (S-05)', () => {
   })
 
   it('ô tìm prefill vào sheet khi mở', async () => {
-    render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={DISHES} action={vi.fn()} />)
+    render(
+      <DishCatalogScreen groupId="g1" groupName="Nhà Bảy Hiền" dishes={DISHES} action={vi.fn()} />,
+    )
 
     await userEvent.type(screen.getByRole('searchbox', { name: 'Tìm món trong nhà' }), 'Bún bò')
     await userEvent.click(screen.getByRole('button', { name: 'Thêm món' }))
@@ -86,7 +94,9 @@ describe('DishCatalogScreen (S-05)', () => {
   })
 
   it('bấm một hàng món mở sheet sửa nhãn', async () => {
-    render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={DISHES} action={vi.fn()} />)
+    render(
+      <DishCatalogScreen groupId="g1" groupName="Nhà Bảy Hiền" dishes={DISHES} action={vi.fn()} />,
+    )
 
     await userEvent.click(screen.getByRole('button', { name: 'Canh chua cá lóc' }))
 
@@ -105,7 +115,14 @@ describe('DishCatalogScreen (S-05)', () => {
       }
     }
 
-    render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={DISHES} action={successAction} />)
+    render(
+      <DishCatalogScreen
+        groupId="g1"
+        groupName="Nhà Bảy Hiền"
+        dishes={DISHES}
+        action={successAction}
+      />,
+    )
 
     await userEvent.type(screen.getByRole('searchbox', { name: 'Tìm món trong nhà' }), 'Cá basa')
     await userEvent.click(screen.getByRole('button', { name: 'Thêm món' }))
@@ -132,7 +149,14 @@ describe('DishCatalogScreen (S-05)', () => {
       }
     }
 
-    render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={DISHES} action={reuseAction} />)
+    render(
+      <DishCatalogScreen
+        groupId="g1"
+        groupName="Nhà Bảy Hiền"
+        dishes={DISHES}
+        action={reuseAction}
+      />,
+    )
 
     await userEvent.click(screen.getByRole('button', { name: 'Thêm món' }))
     await userEvent.click(screen.getByRole('button', { name: 'Thêm vào danh mục' }))
@@ -142,7 +166,9 @@ describe('DishCatalogScreen (S-05)', () => {
   })
 
   it('inGroup reuse: bấm Dùng món này từ panel trùng lặp đóng sheet và hiện toast với dấu em-dash', async () => {
-    render(<DishCatalogScreen groupName="Nhà Bảy Hiền" dishes={DISHES} action={vi.fn()} />)
+    render(
+      <DishCatalogScreen groupId="g1" groupName="Nhà Bảy Hiền" dishes={DISHES} action={vi.fn()} />,
+    )
 
     await userEvent.click(screen.getByRole('button', { name: 'Thêm món' }))
     await userEvent.type(screen.getByLabelText('Tên món'), 'canh chua')

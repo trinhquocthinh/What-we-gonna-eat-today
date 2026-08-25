@@ -2,8 +2,8 @@
 
 > **Document Metadata**
 >
-> - **Version:** `3.5` | **Status:** `Active`
-> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-21`
+> - **Version:** `3.8` | **Status:** `Active`
+> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-25`
 > - **Supersedes:** `v2.0` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
 >
@@ -45,7 +45,7 @@
 | [`DEC-028`](#dec-028--invite-tokens-nodecrypto-sha-256-no-bcrypt) | Token mời: `node:crypto`, SHA-256, không dùng Bcrypt | 2026-08-18 | `Accepted` | Sinh token ≥192-bit, lưu băm SHA-256 trong DB |
 | [`DEC-029`](#dec-029--reusing-a-duplicate-candidate-is-a-separate-use-case-outside-spec-005) | Dùng lại món trùng lặp là Use Case riêng biệt ngoài SPEC-005 | 2026-08-18 | `Accepted` | `addExistingDishToGroup`, nút "Dùng món này" S-06 |
 | [`DEC-030`](#dec-030--tc-021-system-tag-validation-deferred-to-e2-t5) | Hoãn kiểm tra System Tag (TC-021) sang E2-T5 | 2026-08-18 | `Accepted` | Điều chỉnh phạm vi validation tag sang E2-T5 |
-| [`DEC-031`](#dec-031--system-tag-model-accepts-05-add-dish-sheet-enforces-exactly-one) | System Tag: Model nhận 0..5, Sheet S-06 chọn đúng một nhãn | 2026-08-18 | `Accepted` | Định dạng SystemTag, SPEC-006, UX Sheet S-06 |
+| [`DEC-031`](#dec-031--system-tag-model-accepts-05-add-dish-sheet-enforces-exactly-one) | System Tag: Model nhận 0..5, Sheet S-06 chọn đúng một nhãn | 2026-08-18 | `Superseded by DEC-054` | Định dạng SystemTag, SPEC-006, UX Sheet S-06 |
 | [`DEC-032`](#dec-032--duplicate-candidates-come-from-two-sources-with-different-actions) | Ứng viên trùng lặp từ hai nguồn với hai hành động khác nhau | 2026-08-18 | `Accepted` | Phát hiện trùng client vs server, E2-T6/E2-T7, S-06 |
 | [`DEC-033`](#dec-033--e3-t1-does-not-need-the-websocket-driver-the-rule-snapshot-belongs-to-e5-t4) | E3-T1 không cần WebSocket; Snapshot Rule thuộc về E5-T4 | 2026-08-19 | `Accepted` | Cơ chế Start, driver DB, phân định phạm vi E3/E5 |
 | [`DEC-034`](#dec-034--e3-t3e3-t4-ship-as-one-function-draftactive-are-illustrative-labels) | E3-T3/E3-T4 gộp làm một hàm; "Draft"/"Active" là nhãn minh hoạ | 2026-08-19 | `Accepted` | Use case `addParticipant`, SPEC-009 |
@@ -65,6 +65,10 @@
 | [`DEC-048`](#dec-048--system_tag_labels-moves-to-sharedui-eating-history-is-queried-by-user-routed-by-group) | SYSTEM_TAG_LABELS chuyển sang shared/ui; Eating History query theo User | 2026-08-21 | `Accepted` | Chia sẻ nhãn tag UI, truy vấn lịch sử ăn |
 | [`DEC-049`](#dec-049--one-messageforfailure-not-a-flat-table-validation-fields-are-named-by-subject) | Bảng dịch mã lỗi messageFor, đổi field validation theo chủ thể, component InlineError | 2026-08-21 | `Accepted` | Bảng dịch mã lỗi, component InlineError |
 | [`DEC-050`](#dec-050--s-04-has-four-mutually-exclusive-states-dùng-link-mời-becomes-a-caption-not-a-button) | S-04 có 4 trạng thái loại trừ; "Dùng link mời" thành chú thích | 2026-08-21 | `Accepted` | Bốn trạng thái Hub S-04, chú thích link mời S-02, chặn mở phiên nhóm 0 món |
+| [`DEC-052`](#dec-052--nhãn-staple-là-cơm--bún--phở-nhãn-không-được-chứa-dấu-nối-của-chính-nó) | Nhãn `STAPLE` là "Cơm · Bún · Phở"; nhãn không chứa dấu nối của chính nó | 2026-08-25 | `Accepted` | SYSTEM_TAG_LABELS, TAG_IN_SENTENCE, BR-003, PRD US-003 |
+| [`DEC-053`](#dec-053--dùng-lại-món-từ-catalog-chung-phải-ghi-tag-người-dùng-đã-chọn) | Dùng lại món từ catalog chung phải ghi tag đã chọn | 2026-08-25 | `Accepted` | addExistingDishToGroup, addDishAction nhánh 1 |
+| [`DEC-054`](#dec-054--sheet-thêm-món-chuyển-sang-đa-chọn-nhãn-thay-thế-dec-031) | Sheet thêm món chuyển sang đa chọn nhãn | 2026-08-25 | `Accepted` | SystemTagField dùng chung, thay thế `DEC-031` |
+| [`DEC-055`](#dec-055--gợi-ý-món-từ-catalog-chung-trong-lúc-gõ-spec-023) | Gợi ý món từ catalog chung trong lúc gõ (SPEC-023) | 2026-08-25 | `Accepted` | Route Handler search, khớp chuỗi con, lọc trong SQL, bổ sung `DEC-032` |
 ---
 
 # DEC-001 — Selection Session Lifecycle
@@ -443,7 +447,13 @@ Type `SystemTag` và bảng lưu trữ `group_dish_tags` chỉ xuất hiện t�
 
 # DEC-031 — System Tag: Model Accepts 0..5, Add-Dish Sheet Enforces Exactly One
 
-- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Accepted`
+- **Ngày quyết định:** `2026-08-18` | **Trạng thái:** `Superseded by DEC-054`
+
+> [!WARNING]
+> **Đã bị thay thế bởi [`DEC-054`](#dec-054--sheet-thêm-món-chuyển-sang-đa-chọn-nhãn-thay-thế-dec-031)**
+> (2026-08-25): sheet Thêm món nay cho chọn 0..5 nhãn. Lý do: món ghép như "Bún chả"
+> phải mang cả `STAPLE` lẫn `MAIN` ngay lúc tạo, và Independent Tag Counting (`BR-012`)
+> dựa hẳn vào việc một món mang nhiều tag. Giữ lại mục này để lưu vết lý do ban đầu.
 
 ### Quyết định (Decision)
 
@@ -1218,10 +1228,169 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-052 — Nhãn `STAPLE` Là "Cơm · Bún · Phở"; Nhãn Không Được Chứa Dấu Nối Của Chính Nó
+
+- **Ngày:** 2026-08-25
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Bảo trì sau v1.0
+
+## Quyết định
+
+1. `SYSTEM_TAG_LABELS.STAPLE` đổi từ `'Cơm'` sang `'Cơm · Bún · Phở'`; `TAG_IN_SENTENCE.STAPLE`
+   đổi từ `'món cơm'` sang `'món cơm/bún'`.
+2. Hai chỗ ghép nhiều nhãn (`add-dish-sheet.tsx`, `finalize-meal-screen.tsx`) đổi dấu nối
+   từ `' · '` sang `' + '`.
+3. Bảng `TAG_LABELS` cục bộ trong `finalize-meal-screen.tsx` bị xoá, dùng `SYSTEM_TAG_LABELS`
+   dùng chung.
+4. Thêm `system-tag-label.test.ts` canh hai bất biến: nhãn không chứa `' + '`, và nhãn
+   trong câu không chứa dấu phẩy.
+
+## Rationale
+
+1. **`BR-003` luôn đúng, chỉ nhãn sai.** BR-003 định nghĩa `STAPLE` = *"Món tinh bột / Cơm,
+   bún"*, và PRD §9.2 ghi *"Staple (Cơm/Bún/Phở)"*. Gắn "Bún chả" là `STAPLE` là ĐÚNG chuẩn
+   — nhưng giao diện hiện chữ "Cơm" nên nó trông như bị gán sai. Nguồn sai lệch là PRD
+   US-003 viết *"hay Cơm"* chỗ BR-003 viết *"tinh bột"*.
+2. Chọn liệt kê ví dụ thay vì dùng chữ "tinh bột": đây là app cho người nhà đọc lúc 6 giờ
+   chiều, không phải bảng phân loại dinh dưỡng.
+3. Nhãn mới tự nó chứa dấu `·`, nên ghép nhiều nhãn bằng `·` cho ra chuỗi không tách được
+   ("Cơm · Bún · Phở · Món mặn"). Dấu `+` vừa hết nhập nhằng vừa nói đúng ý "mang CẢ HAI nhãn".
+4. `TAG_IN_SENTENCE` không được chứa dấu phẩy vì `messages.ts` ghép các mảnh thiếu bằng
+   `join(', ')` rồi ` và `. Dùng `'món cơm/bún'` nên câu vẫn đọc được:
+   *"Còn thiếu 1 món cơm/bún và 1 món canh."*
+5. Hợp đồng vô hình giữa hai file đã hỏng một lần rồi; test rẻ hơn hẳn việc phát hiện lại.
+
+## Consequence
+
+- Thêm một nhãn mới có chứa `' + '` hoặc `','` sẽ làm CI đỏ ngay.
+- Nhãn `SOUP` ở màn chốt bữa đổi từ "Món canh" sang "Canh" (hệ quả của việc xoá bảng cục bộ) —
+  thống nhất với phần còn lại của app, đúng tinh thần `DEC-048`.
+
+## Affected Documents
+
+- `BR-003` — thay 5 dòng chú thích bằng bảng chuẩn phân loại đầy đủ.
+- PRD US-003 — sửa câu chữ và ghi chú nguồn sai lệch.
+
+---
+
+# DEC-053 — Dùng Lại Món Từ Catalog Chung Phải Ghi Tag Người Dùng Đã Chọn
+
+- **Ngày:** 2026-08-25
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Bảo trì sau v1.0
+
+## Quyết định
+
+`addExistingDishToGroup` nhận thêm `systemTags: readonly string[]`, validate bằng
+`readSystemTags`, và GHI ĐÈ TOÀN BỘ tag sau khi upsert xong.
+
+## Rationale
+
+1. Bản đầu chỉ nhận `{groupId, globalDishId}`. Form có gửi `systemTag` lên nhưng nhánh
+   "Dùng món này" của `addDishAction` không đọc, nên tag người dùng vừa tick **rơi im lặng**
+   và món dùng lại luôn nằm ở mục "Chưa phân nhãn" — dù sheet có bắt chọn nhãn.
+2. Ghi đè vô điều kiện (kể cả mảng rỗng) để khớp đúng nhánh khôi phục món INACTIVE trong
+   `add-dish-to-group.ts`. Một luật, một lời giải thích.
+3. Validate TRƯỚC khi ghi: tag lạ trả `ERR_INVALID_SYSTEM_TAG` mà không đụng vào pool.
+
+## Consequence
+
+- Hai lượt đi DB (upsert rồi ghi tag), KHÔNG nguyên tử: `neon-http` batch là non-interactive
+  nên không lấy được `groupDishId` ở giữa batch. Hỏng giữa chừng thì món nằm trong pool mà
+  chưa có nhãn — người dùng sửa được ở sheet Sửa nhãn. **Đừng "sửa" thành batch, nó không chạy.**
+- Đụng nhẹ `BR-005` (*"phục hồi metadata riêng của nhóm"* khi thêm lại món): ghi đè vô điều
+  kiện không phục hồi tag cũ. Đây là đánh đổi đã có sẵn từ trước; `F46` vốn ngoài phạm vi.
+
+---
+
+# DEC-054 — Sheet Thêm Món Chuyển Sang Đa Chọn Nhãn (Thay Thế DEC-031)
+
+- **Ngày:** 2026-08-25
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Bảo trì sau v1.0
+
+## Quyết định
+
+1. `SystemTagField` đổi từ `radio` (chọn một) sang `checkbox` (chọn 0..5).
+2. `EditDishSheet` dùng chung chính `SystemTagField` đó, xoá khối chip trùng lặp.
+3. `addDishAction` đọc `formData.getAll('systemTag')` thay cho `.get()`.
+
+## Rationale
+
+1. `DEC-031` chốt "sheet thêm chọn đúng một nhãn" để nhập cho nhanh. Nhưng món ghép là
+   chuyện thường ngày của mâm cơm Việt: *"Bún chả"* phải là `STAPLE` + `MAIN`, *"Cơm tấm
+   sườn"* cũng vậy. Ép một nhãn buộc người dùng thêm xong rồi mở sheet khác sửa lại.
+2. Independent Tag Counting (`BR-012`, SDD §8) dựa hẳn vào việc một món mang nhiều tag —
+   ép một tag là bóp mô hình ở đúng chỗ nó cần rộng nhất.
+3. Mô hình (`group_dish_tags`, `setSystemTags`, `addDishToGroup`) vốn đã nhận 0..5 từ đầu;
+   chỉ riêng sheet thêm là hẹp.
+4. Gộp hai hàng chip: trước đây hai bản markup gần y hệt, chỉ khác `radio`/`checkbox` —
+   đúng loại trùng lặp sinh ra sai lệch mà `DEC-052` vừa phải đi sửa.
+
+## Consequence
+
+- `DEC-031` chuyển trạng thái `Superseded by DEC-054`.
+- Nút "Thêm vào danh mục" hạ tông khi `tags.length === 0` — vẫn là nhắc nhở phía client,
+  KHÔNG phải luật server. Không thêm luật "ít nhất 1 nhãn" ở server: nó trái `BR-003`,
+  `TC-023` (0 tag) và hợp đồng "mảng rỗng = xoá sạch" của `setSystemTags`.
+
+---
+
+# DEC-055 — Gợi Ý Món Từ Catalog Chung Trong Lúc Gõ (SPEC-023)
+
+- **Ngày:** 2026-08-25
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Bảo trì sau v1.0
+
+## Quyết định
+
+1. Thêm `GET /api/groups/[groupId]/dishes/search?q=` — **Route Handler**, không phải Server Action.
+2. Khớp **chuỗi con** `LIKE '%q%'` trên `normalized_name`, ngưỡng 3 ký tự, `LIMIT 5`.
+3. **Loại món nhóm đang ACTIVE ngay trong SQL** bằng `NOT EXISTS`.
+4. Chọn một gợi ý thì mang thẳng `global_dishes.id` đi qua `reuseGlobalDishId` — đúng cơ chế
+   nút submit đã có của `duplicate-sheet.tsx`.
+5. `DuplicateCandidate.kind` **giữ nguyên hai giá trị**; gợi ý catalog là component riêng.
+
+## Rationale
+
+1. **Route Handler**: React serialise các Server Action liên tiếp — đúng thứ Tech Spec §4.1 đã
+   tránh cho đường vuốt thẻ, và một typeahead bắn theo từng phím là ca tệ nhất của nó. Thêm
+   nữa `fetch` huỷ được bằng `AbortController`, và đây là phép ĐỌC nên không có cớ dựng lại cây RSC.
+2. **Chuỗi con chứ không tiền tố**: tên món Việt hiếm khi bắt đầu bằng chữ người ta nhớ ra
+   trước — gõ "chả" phải ra "Bún chả". Đính chính một hiểu lầm dễ mắc: index btree hiện có
+   **không** phục vụ `LIKE 'q%'` dưới collation khác `C`, nên "tiền tố thì tận dụng được
+   index" là sai — cả hai đều seq scan. Vài nghìn dòng thì không đáng kể; lối thoát khi
+   catalog lớn hẳn là index GIN `pg_trgm`, không phải viết lại câu truy vấn.
+3. **Lọc trong SQL**: `LIMIT` chạy SAU phép lọc. Lọc ở client thì nhóm đã sở hữu 5 kết quả
+   đầu sẽ cho panel rỗng oan trong khi ứng viên mới nằm ngay dưới ngưỡng. Đây là lỗi đúng-sai,
+   không phải chuyện hiệu năng. Chỉ loại `ACTIVE` — món đã gỡ (`INACTIVE`) vẫn hiện, và chọn
+   lại chính là cách thêm lại nó.
+4. **Mang `id` đi thay vì chỉ điền tên**: `global_dishes.normalized_name` **không unique**
+   (chủ ý, để `forceCreate` tạo được món trùng tên). Tra lại theo tên có thể ra một dòng KHÁC
+   dòng người dùng vừa bấm — người ta chọn món X mà lặng lẽ nhận món Y.
+5. **Bắt buộc kiểm tư cách thành viên**, không chỉ đăng nhập: kết quả đã loại món nhóm đang
+   có, nên dò `groupId` bất kỳ sẽ suy ra được danh mục của nhóm đó qua chính những món bị
+   thiếu. Phép lọc mới là thứ làm rò, không phải dữ liệu `global_dishes` vốn dùng chung.
+6. **Không thêm `kind` thứ ba**: `DEC-032` định nghĩa `kind` là thứ phân biệt KHÔNG GIAN ID
+   (`group_dishes.id` vs `global_dishes.id`) — đó là bẫy lỗi khoá ngoại. Gợi ý catalog cùng
+   không gian id và cùng hành động với `global`, nên thêm giá trị thứ ba là một switch ba
+   nhánh có hai nhánh giống hệt nhau: lời mời gọi đúng con bug mà trường đó sinh ra để ngăn.
+
+## Consequence
+
+- `DEC-032` được bổ sung: panel trùng lặp (CẢNH BÁO) được ưu tiên hiện trước gợi ý catalog
+  (KHÁM PHÁ). Hai danh sách không bao giờ chứa cùng một món, vì câu tra đã loại tập ACTIVE
+  mà `findNearMatches` chạy trên đúng tập đó.
+- `requireApiUser` tách ra `src/app/api/api-auth.ts` cho mọi Route Handler dùng chung.
+- `BR-003` mất câu "kế thừa tag từ Global Dish" trên thực tế — ghi rõ là chưa thi công.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.8` | 2026-08-25 | Bổ sung `DEC-052` (nhãn STAPLE và hợp đồng dấu nối), `DEC-053` (dùng lại món phải ghi tag), `DEC-054` (sheet thêm đa chọn nhãn — thay thế `DEC-031`), `DEC-055` (gợi ý catalog chung, SPEC-023) — bảo trì sau v1.0 |
 | `3.7` | 2026-08-21 | Bổ sung `DEC-051` (Ngưỡng coverage từng tầng qua glob, loại trừ type-only, CI test:coverage riêng, NFR-04 định lượng bằng test count, count-tone đổi sang ink-muted) cho E6-S4 (Cột mốc M6) |
 | `3.6` | 2026-08-21 | Bổ sung `DEC-050` (S-04 4 trạng thái loại trừ, "Dùng link mời" thành chú thích, chặn mở phiên nhóm 0 món) cho E6-S3 |
 | `3.5` | 2026-08-21 | Bổ sung `DEC-049` (Bảng dịch mã lỗi messageFor, Validation Fields named by Subject, InlineError component) cho E6-S2 |

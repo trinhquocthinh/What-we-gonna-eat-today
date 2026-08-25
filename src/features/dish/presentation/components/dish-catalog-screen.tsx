@@ -51,6 +51,9 @@ async function defaultEditAction(): Promise<EditDishFormState> {
 
 export type DishCatalogScreenProps = {
   groupName: string
+  /** Chuyển tiếp cho `AddDishSheet` — ô gợi ý catalog chung tra theo nhóm để
+   *  loại những món nhóm đang có (SPEC-023). */
+  groupId: string
   dishes: { id: string; name: string; systemTags: readonly SystemTag[] }[]
   action: (state: AddDishFormState, formData: FormData) => Promise<AddDishFormState>
   editAction?: (state: EditDishFormState, formData: FormData) => Promise<EditDishFormState>
@@ -65,6 +68,7 @@ export type DishCatalogScreenProps = {
  */
 export function DishCatalogScreen({
   groupName,
+  groupId,
   dishes,
   action,
   editAction = defaultEditAction,
@@ -220,6 +224,7 @@ export function DishCatalogScreen({
 
       {isSheetOpen ? (
         <AddDishSheet
+          groupId={groupId}
           formAction={formAction}
           nameError={state.nameError}
           systemTagError={state.systemTagError}
