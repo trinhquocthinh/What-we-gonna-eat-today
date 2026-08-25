@@ -97,11 +97,17 @@
 
 ### US-003 — Gán System Tag cho món
 >
-> *Là **P1**, tôi muốn đánh dấu món là Mặn, Canh, Xào hay Cơm, để hệ thống kiểm tra cơ cấu bữa ăn đủ chất.*  
+> *Là **P1**, tôi muốn đánh dấu món là Mặn, Canh, Món phụ hay Cơm/Bún/Phở, để hệ thống kiểm tra cơ cấu bữa ăn đủ chất.*  
 > **Quy tắc liên quan:** `BR-003`, `BR-008`
 
 - **Given** tôi là Group Admin, **When** tôi gán System Tag cho một Dish trong Group, **Then** thay đổi chỉ áp dụng riêng cho Group này.
 - **Given** một Dish mang nhiều System Tag, **When** rule đếm món theo Tag, **Then** Dish được tính độc lập cho từng Tag tương ứng.
+- **Given** tôi thêm một món ghép như *"Bún chả"*, **When** tôi chọn nhãn, **Then** tôi gán được **nhiều nhãn cùng lúc** (`STAPLE` + `MAIN`) ngay ở bước thêm.
+
+> [!NOTE]
+> Bản đầu của user story này viết *"hay Cơm"*, trong khi `BR-003` định nghĩa
+> `STAPLE` là *"Món tinh bột / Cơm, bún"*. Sai lệch câu chữ đó đã lan vào nhãn
+> giao diện, khiến "Bún chả" mang nhãn đúng nhưng hiện ra chữ "Cơm". Xem `DEC-052`.
 
 ### US-004 — Gỡ Dish khỏi Group Dish Pool
 >

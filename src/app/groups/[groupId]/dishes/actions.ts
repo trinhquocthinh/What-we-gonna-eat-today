@@ -31,16 +31,27 @@ export async function addDishAction(
 ): Promise<AddDishFormState> {
   const { user } = await requireGroupContext(groupId)
 
+  // `getAll`, KHÔNG `get`: hàng chip là đa chọn (0..5) từ khi `SystemTagField`
+  // đổi sang checkbox — "Bún chả" cần cả STAPLE lẫn MAIN. `readSystemTags`
+  // trong use case mới là chỗ validate, ở đây chỉ gom chuỗi thô.
+  const rawTags = formData.getAll('systemTag').map(String)
+
   // Nhánh 1 — "Dùng món này" trên một ứng viên `global`. Giá trị tới từ
   // name/value của chính nút submit trong duplicate-sheet.tsx.
   const reuseId = formData.get('reuseGlobalDishId')
   if (typeof reuseId === 'string' && reuseId !== '') {
+    // Truyền `systemTags` xuống: trước đây nhánh này bỏ qua hoàn toàn tag người
+    // dùng vừa tick, nên món dùng lại luôn rơi vào mục "Chưa phân nhãn" dù
+    // sheet có bắt chọn nhãn.
     const reused = await addExistingDishToGroup(
       { dishes: drizzleDishRepository },
-      { groupId, globalDishId: reuseId },
+      { groupId, globalDishId: reuseId, systemTags: rawTags },
     )
     if (!reused.ok) {
-      return { ...EMPTY, nameError: 'Không dùng lại được món này. Thử lại giúp mình.' }
+      const message = messageFor(reused.error)
+      return reused.error.code === 'ERR_INVALID_SYSTEM_TAG'
+        ? { ...EMPTY, systemTagError: message }
+        : { ...EMPTY, nameError: 'Không dùng lại được món này. Thử lại giúp mình.' }
     }
     revalidatePath(`/groups/${groupId}`)
     refresh()
@@ -61,14 +72,13 @@ export async function addDishAction(
   }
 
   // Nhánh 3 — thêm bình thường.
-  const rawTag = formData.get('systemTag')
   const result = await addDishToGroup(
     { dishes: drizzleDishRepository },
     {
       groupId,
       creatorUserId: user.id,
       name: String(formData.get('name') ?? ''),
-      systemTags: typeof rawTag === 'string' && rawTag !== '' ? [rawTag] : [],
+      systemTags: rawTags,
       forceCreate,
     },
   )

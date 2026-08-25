@@ -7,6 +7,7 @@ import { useActionState, useMemo, useState } from 'react'
 import type { RequiredRule } from '@/features/rule/domain/evaluate'
 import type { SystemTag } from '@/shared/domain/system-tag'
 import { EmptyStateCard } from '@/shared/ui/empty-state-card'
+import { SYSTEM_TAG_LABELS } from '@/shared/ui/system-tag-label'
 
 import { DishScoreRow } from './dish-score-row'
 import { FinalizeBar } from './finalize-bar'
@@ -39,17 +40,14 @@ export type FinalizeMealScreenProps = {
 
 const INITIAL_STATE: FinalizeFormState = { error: null }
 
-const TAG_LABELS: Record<SystemTag, string> = {
-  STAPLE: 'Món cơm',
-  MAIN: 'Món mặn',
-  SIDE: 'Món phụ',
-  SOUP: 'Món canh',
-  DESSERT: 'Tráng miệng',
-}
-
+/**
+ * Nối bằng ` + `, KHÔNG phải ` · `: nhãn của `STAPLE` tự nó đã chứa dấu `·`
+ * ("Cơm · Bún · Phở"), nên nối bằng `·` thì món hai tag đọc thành một chuỗi
+ * không phân tách được. Dấu `+` cũng nói đúng ý "mang CẢ HAI nhãn".
+ */
 function formatTags(tags: readonly SystemTag[]): string {
   if (tags.length === 0) return 'Chưa gán nhãn'
-  return tags.map((t) => TAG_LABELS[t]).join(' · ')
+  return tags.map((t) => SYSTEM_TAG_LABELS[t]).join(' + ')
 }
 
 /**

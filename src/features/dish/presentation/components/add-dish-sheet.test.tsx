@@ -8,6 +8,7 @@ describe('AddDishSheet', () => {
   it('nút "Thêm vào danh mục" enabled khi tên trống', () => {
     render(
       <AddDishSheet
+        groupId="g1"
         formAction={vi.fn()}
         nameError={null}
         systemTagError={null}
@@ -24,6 +25,7 @@ describe('AddDishSheet', () => {
   it('nameError "Nhập tên món trước đã." hiện dưới input và nối bằng aria-describedby', () => {
     render(
       <AddDishSheet
+        groupId="g1"
         formAction={vi.fn()}
         nameError="Nhập tên món trước đã."
         systemTagError={null}
@@ -42,6 +44,7 @@ describe('AddDishSheet', () => {
   it('nameError "Món này đã có trong danh mục rồi." hiện dưới input', () => {
     render(
       <AddDishSheet
+        groupId="g1"
         formAction={vi.fn()}
         nameError="Món này đã có trong danh mục rồi."
         systemTagError={null}
@@ -57,6 +60,7 @@ describe('AddDishSheet', () => {
   it('systemTagError hiện dưới hàng chip nhãn', () => {
     render(
       <AddDishSheet
+        groupId="g1"
         formAction={vi.fn()}
         nameError={null}
         systemTagError="Chọn một nhãn để quy định bữa ăn kiểm tra được."
@@ -72,6 +76,7 @@ describe('AddDishSheet', () => {
   it('initialName điền sẵn vào ô tên món', () => {
     render(
       <AddDishSheet
+        groupId="g1"
         formAction={vi.fn()}
         nameError={null}
         systemTagError={null}
@@ -92,6 +97,7 @@ describe('AddDishSheet', () => {
 
     render(
       <AddDishSheet
+        groupId="g1"
         formAction={vi.fn()}
         nameError={null}
         systemTagError={null}
@@ -116,6 +122,7 @@ describe('AddDishSheet', () => {
 
     render(
       <AddDishSheet
+        groupId="g1"
         formAction={vi.fn()}
         nameError={null}
         systemTagError={null}
@@ -135,6 +142,7 @@ describe('AddDishSheet', () => {
   it('server trả về candidates (global) thì hiện khối trùng với nút submit reuseGlobalDishId', () => {
     render(
       <AddDishSheet
+        groupId="g1"
         formAction={vi.fn()}
         nameError={null}
         systemTagError={null}

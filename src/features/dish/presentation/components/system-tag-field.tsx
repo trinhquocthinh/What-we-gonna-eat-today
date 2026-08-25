@@ -7,29 +7,48 @@ import { SYSTEM_TAG_LABELS } from './system-tag-label'
 import { InlineError } from '@/shared/ui/inline-error'
 
 export type SystemTagFieldProps = {
-  value: SystemTag | null
-  error: string | null
-  onChange: (tag: SystemTag) => void
+  value: readonly SystemTag[]
+  error?: string | null
+  onChange: (tags: readonly SystemTag[]) => void
+  /** Chữ trên `<legend>`. Hai sheet nói hai câu khác nhau nhưng dùng chung
+   *  hàng chip này. */
+  legend?: string
 }
 
 /**
- * S-06 — hàng chip "Nhãn — chọn một".
+ * Hàng chip chọn nhãn — DÙNG CHUNG cho sheet Thêm món (S-06) và sheet Sửa nhãn.
  *
- * CHỌN MỘT là quyết định của riêng màn này (mockup dòng 130/222/232), KHÔNG
- * phải giới hạn của mô hình: `group_dish_tags` và `setSystemTags` nhận 0..5
- * (BR-003, TC-022, TC-100). Màn sửa tag đa chọn là E2-T6. Đừng "sửa cho nhất
- * quán" bằng cách bóp mô hình xuống một tag.
+ * ĐA CHỌN 0..5, đúng mô hình `group_dish_tags` và SPEC-006. Bản cũ ép chọn MỘT
+ * (radio, DEC-031), khiến món ghép như "Bún chả" không thể mang cả `STAPLE` lẫn
+ * `MAIN` ngay lúc tạo — phải thêm xong rồi mở sheet sửa mới gán được tag thứ
+ * hai. Mà Independent Tag Counting (BR-012, SDD §8) lại dựa hẳn vào việc một
+ * món mang nhiều tag, nên ép một tag là bóp mô hình ở đúng chỗ nó cần rộng.
+ *
+ * `checkbox` chứ không `radio`, cùng `name="systemTag"` → `formData.getAll('systemTag')`
+ * trả về đúng mảng đã tick.
+ *
+ * `sr-only` chứ không `hidden`: input vẫn nhận được focus bàn phím và vẫn nằm
+ * trong FormData. `hidden` thì mất cả hai.
  *
  * Chiều cao 44px lấy từ mockup — cũng vừa đúng ngưỡng vùng chạm tối thiểu.
  */
-export function SystemTagField({ value, error, onChange }: SystemTagFieldProps): ReactElement {
+export function SystemTagField({
+  value,
+  error = null,
+  onChange,
+  legend = 'Nhãn — chọn bao nhiêu cũng được',
+}: SystemTagFieldProps): ReactElement {
+  function toggle(tag: SystemTag): void {
+    onChange(value.includes(tag) ? value.filter((t) => t !== tag) : [...value, tag])
+  }
+
   return (
     <fieldset className="flex flex-col gap-2 border-0 p-0">
-      <legend className="text-caption font-medium text-ink-muted">Nhãn — chọn một</legend>
+      <legend className="text-caption font-medium text-ink-muted">{legend}</legend>
 
       <div className="flex flex-wrap gap-2">
         {SYSTEM_TAGS.map((tag) => {
-          const selected = value === tag
+          const selected = value.includes(tag)
           return (
             <label
               key={tag}
@@ -39,14 +58,12 @@ export function SystemTagField({ value, error, onChange }: SystemTagFieldProps):
                   : 'border border-border bg-surface-raised text-ink hover:border-border-strong'
               }`}
             >
-              {/* `sr-only` chứ không `hidden`: input vẫn nhận được focus bàn
-                  phím và vẫn nằm trong FormData. `hidden` thì mất cả hai. */}
               <input
-                type="radio"
+                type="checkbox"
                 name="systemTag"
                 value={tag}
                 checked={selected}
-                onChange={() => onChange(tag)}
+                onChange={() => toggle(tag)}
                 className="sr-only"
               />
               {SYSTEM_TAG_LABELS[tag]}

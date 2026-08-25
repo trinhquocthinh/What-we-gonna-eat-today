@@ -12,6 +12,7 @@ function makeDeps(
   const dishes: DishRepository = {
     findInGroupByNormalizedName: vi.fn(async () => overrides.existing ?? null),
     findGlobalCandidatesByNormalizedName: vi.fn(async () => overrides.candidates ?? []),
+    searchGlobalDishes: vi.fn(async () => []),
     createGlobalDishAndAddToPool: vi.fn(async (input) => ({ id: 'new-dish', name: input.name })),
     reactivateGroupDish: vi.fn(async () => undefined),
     addExistingGlobalDishToGroup: vi.fn(async () => ({ id: 'reused', name: 'x' })),

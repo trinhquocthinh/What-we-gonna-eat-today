@@ -20,6 +20,7 @@ export default async function DishesPage({ params }: DishesPageProps) {
   return (
     <DishCatalogScreen
       groupName={group.name}
+      groupId={groupId}
       dishes={dishes}
       action={addDishAction.bind(null, groupId)}
       editAction={setSystemTagsAction.bind(null, groupId)}

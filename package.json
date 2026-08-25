@@ -28,6 +28,7 @@
     "seed:dishes": "tsx scripts/scrape-and-seed-dishes.ts",
     "session:start": "tsx scripts/create-test-session.ts",
     "backfill:normalized-name": "tsx scripts/backfill-normalized-name.ts",
+    "retag:dishes": "tsx scripts/retag-dishes.ts",
     "prepare": "husky"
   },
   "dependenciesMeta": {
