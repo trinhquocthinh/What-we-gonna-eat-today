@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#EDE8E1;font-family:"Be Vietnam Pro",Inter,system-ui,sans-serif;color:#1C1917;-webkit-font-smoothing:antialiased}
+a{color:#B4531F;text-decoration:none}
+a:hover{color:#9A4419}
+button:focus-visible{outline:2px solid #B4531F;outline-offset:2px}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px 16px 48px">
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:560px">
+    <sc-for list="{{ views }}" as="v" hint-placeholder-count="3">
+      <button type="button" onClick="{{ v.go }}" style="min-height:36px;padding:8px 14px;background:{{ v.bg }};color:{{ v.fg }};border:1px solid {{ v.bd }};border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif;cursor:pointer">{{ v.label }}</button>
+    </sc-for>
+  </div>
+  <span style="font:400 12px/18px 'Be Vietnam Pro',sans-serif;color:rgba(28,25,23,.5);text-align:center;max-width:420px;text-wrap:pretty">Hàng nút trên là công cụ xem trạng thái. Chọn món trong danh sách để thấy quy định kiểm tra ngay tại nút chốt.</span>
+
+  <div style="width:390px;height:844px;background:#FBF8F4;border:1px solid #D2C7B8;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10)">
+
+    <div style="padding:24px 16px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #E7E0D6">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">{{ subhead }}</span>
+        <h1 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Chốt bữa tối nay</h1>
+      </div>
+      <button type="button" style="min-height:44px;padding:12px;margin-right:-12px;background:transparent;border:none;border-radius:12px;font:600 15px/20px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer" style-hover="background:#F3EEE7">Đóng</button>
+    </div>
+
+    <div style="flex:1;overflow:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:24px;min-height:0">
+
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px">
+          <h2 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">Chưa có ai chọn xong.</h2>
+          <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Bạn vẫn chốt được ngay bây giờ — chọn món từ danh mục đầy đủ bên dưới.</p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasRanked }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;padding-left:4px">Cả nhà nghiêng về</span>
+          <sc-for list="{{ ranked }}" as="d" hint-placeholder-count="4">
+            <button type="button" onClick="{{ d.toggle }}" style="display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:16px;background:{{ d.bg }};border:1px solid {{ d.border }};border-radius:12px;cursor:pointer;text-align:left" style-active="background:#F3EEE7">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#1C1917">{{ d.name }}</span>
+                <span style="flex:none;font:600 13px/18px 'Be Vietnam Pro',sans-serif;color:{{ d.pickFg }}">{{ d.pick }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-variant-numeric:tabular-nums">
+                <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:{{ d.pFg }}">{{ d.p }} đề xuất</span>
+                <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:{{ d.nFg }}">{{ d.n }} không muốn</span>
+                <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:{{ d.xFg }}">{{ d.x }} không ăn được</span>
+                <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:{{ d.hFg }}">{{ d.h }} vừa ăn</span>
+              </div>
+              <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">{{ d.tag }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;padding-left:4px">Chưa ai chọn</span>
+        <sc-for list="{{ rest }}" as="d" hint-placeholder-count="3">
+          <button type="button" onClick="{{ d.toggle }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:16px;background:{{ d.bg }};border:1px solid {{ d.border }};border-radius:12px;cursor:pointer;text-align:left" style-active="background:#F3EEE7">
+            <span style="display:flex;flex-direction:column;gap:2px">
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#1C1917">{{ d.name }}</span>
+              <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">{{ d.tag }}</span>
+            </span>
+            <span style="flex:none;font:600 13px/18px 'Be Vietnam Pro',sans-serif;color:{{ d.pickFg }}">{{ d.pick }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid #E7E0D6;background:#FFFFFF;padding:16px 16px 32px;display:flex;flex-direction:column;gap:12px;box-shadow:0 -2px 4px rgba(28,25,23,.04)">
+
+      <sc-if value="{{ trayFilled }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <sc-for list="{{ tray }}" as="t" hint-placeholder-count="2">
+            <button type="button" onClick="{{ t.remove }}" aria-label="{{ t.aria }}" style="min-height:44px;padding:12px 14px;background:#FBEDE4;color:#B4531F;border:1px solid #FBEDE4;border-radius:8px;font:500 15px/20px 'Be Vietnam Pro',sans-serif;cursor:pointer" style-hover="border-color:#B4531F">{{ t.name }} ✕</button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ trayEmpty }}" hint-placeholder-val="{{ true }}">
+        <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259">Chưa chọn món nào cho bữa tối nay.</span>
+      </sc-if>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ ruleRows }}" as="r" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:3px;height:16px;flex:none;background:{{ r.mark }};border-radius:999px"></span>
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:{{ r.fg }};text-wrap:pretty">{{ r.text }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ blockText }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:12px;background:#FBE9E7;border-radius:12px">
+          <span style="width:3px;align-self:stretch;background:#A3261C;border-radius:999px"></span>
+          <span style="font:500 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">{{ blockText }}</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ confirming }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:12px;padding:16px;background:#FBF3DC;border-radius:12px">
+          <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif">Chốt bữa với cảnh báo?</span>
+          <sc-for list="{{ warnings }}" as="w" hint-placeholder-count="2">
+            <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">{{ w }}</span>
+          </sc-for>
+          <div style="display:flex;gap:12px">
+            <button type="button" onClick="{{ onCancel }}" style="flex:1;min-height:48px;background:#FFFFFF;color:#1C1917;border:1px solid #D2C7B8;border-radius:12px;font:600 15px/22px 'Be Vietnam Pro',sans-serif;cursor:pointer" style-active="background:#F3EEE7">Xem lại</button>
+            <button type="button" onClick="{{ onConfirm }}" style="flex:1;min-height:48px;background:#B4531F;color:#FFFFFF;border:none;border-radius:12px;font:600 15px/22px 'Be Vietnam Pro',sans-serif;cursor:pointer" style-active="background:#8C3E17">Vẫn chốt</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ finalized }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:12px;background:#E9F0E7;border-radius:12px">
+          <span style="width:3px;align-self:stretch;background:#3F6B3F;border-radius:999px"></span>
+          <span style="font:500 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">Đã chốt. Cả nhà thấy bữa tối nay ngay bây giờ.</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showCta }}" hint-placeholder-val="{{ true }}">
+        <button type="button" onClick="{{ onFinalize }}" style="width:100%;min-height:56px;background:{{ ctaBg }};color:{{ ctaFg }};border:1px solid {{ ctaBd }};border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;cursor:pointer;transition:transform .1s ease" style-active="transform:scale(.98)">{{ ctaText }}</button>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:980}}">
+class Component extends DCLogic {
+  state = { view: "ranked", sel: [], confirming: false, finalized: false, tried: false };
+  all = [
+    { name: "Cá basa kho tiêu", tag: "Món mặn", p: 3, n: 0, x: 1, h: 0, ranked: true },
+    { name: "Canh chua cá lóc", tag: "Canh", p: 3, n: 1, x: 0, h: 2, ranked: true },
+    { name: "Gà chiên nước mắm", tag: "Món mặn", p: 2, n: 0, x: 0, h: 0, ranked: true },
+    { name: "Rau lang luộc chấm chao", tag: "Món phụ", p: 1, n: 2, x: 0, h: 0, ranked: true },
+    { name: "Thịt ba rọi rang cháy cạnh", tag: "Món mặn", p: 0, n: 0, x: 0, h: 4, ranked: false },
+    { name: "Canh cải nấu tôm khô", tag: "Canh", p: 0, n: 0, x: 0, h: 0, ranked: false },
+    { name: "Đậu hũ chiên sả", tag: "Món phụ", p: 0, n: 0, x: 0, h: 0, ranked: false }
+  ];
+  toggle(name) {
+    return () => this.setState(s => ({
+      sel: s.sel.indexOf(name) < 0 ? s.sel.concat(name) : s.sel.filter(n => n !== name),
+      confirming: false, finalized: false
+    }));
+  }
+  row(d) {
+    const on = this.state.sel.indexOf(d.name) >= 0;
+    const faint = "#6B6259";
+    return {
+      name: d.name, tag: d.tag, toggle: this.toggle(d.name),
+      bg: on ? "#FBEDE4" : "#FFFFFF",
+      border: on ? "#B4531F" : "#E7E0D6",
+      pick: on ? "Đã chọn" : "Chọn",
+      pickFg: on ? "#B4531F" : "#6B6259",
+      p: d.p, n: d.n, x: d.x, h: d.h,
+      pFg: d.p ? "#3F6B3F" : faint,
+      nFg: d.n ? "#1C1917" : faint,
+      xFg: d.x ? "#8A6A18" : faint,
+      hFg: d.h ? "#1C1917" : faint
+    };
+  }
+  renderVals() {
+    const s = this.state;
+    const empty = s.view === "empty";
+    const sel = this.all.filter(d => s.sel.indexOf(d.name) >= 0);
+    const count = t => sel.filter(d => d.tag === t).length;
+    const missing = [];
+    if (count("Món mặn") < 1) missing.push("1 món mặn");
+    if (count("Canh") < 1) missing.push("1 món canh");
+    const warnings = [];
+    if (count("Món phụ") < 1) warnings.push("Chưa có món phụ — quy định này là nên có, không bắt buộc.");
+    if (sel.length && sel.length < 3) warnings.push("Nhà bạn thường ăn 3 món, bữa này có " + sel.length + ".");
+    sel.forEach(d => { if (d.x) warnings.push("Bố không ăn được " + d.name + "."); });
+    sel.forEach(d => { if (d.h >= 3) warnings.push("Cả nhà vừa ăn " + d.name + " trong tuần này."); });
+    const ruleRows = [
+      { ok: count("Món mặn") >= 1, text: "Phải có ít nhất 1 món mặn" },
+      { ok: count("Canh") >= 1, text: "Phải có ít nhất 1 món canh" },
+      { ok: count("Món phụ") >= 1, soft: true, text: "Nên có ít nhất 1 món phụ" }
+    ].map(r => ({
+      text: r.text + (r.ok ? " · đủ" : r.soft ? " · chưa có" : " · còn thiếu"),
+      mark: r.ok ? "#3F6B3F" : r.soft ? "#8A6A18" : "#D2C7B8",
+      fg: r.ok ? "#6B6259" : "#1C1917"
+    }));
+    const defs = [["ranked", "Có tổng hợp"], ["empty", "Chưa ai vuốt"]];
+    return {
+      views: defs.map(([id, label]) => ({
+        label, go: () => this.setState({ view: id, sel: [], confirming: false, finalized: false, tried: false }),
+        bg: s.view === id ? "#1C1917" : "#FBF8F4",
+        fg: s.view === id ? "#FFFFFF" : "#6B6259",
+        bd: s.view === id ? "#1C1917" : "#D2C7B8"
+      })),
+      isEmpty: empty,
+      hasRanked: !empty,
+      subhead: empty ? "Chưa ai chọn xong · 4 người" : "3 trong 4 người đã xong",
+      ranked: empty ? [] : this.all.filter(d => d.ranked).map(d => this.row(d)),
+      rest: this.all.filter(d => empty || !d.ranked).map(d => this.row(d)),
+      tray: sel.map(d => ({ name: d.name, aria: "Bỏ " + d.name + " khỏi bữa tối nay", remove: this.toggle(d.name) })),
+      trayFilled: sel.length > 0,
+      trayEmpty: sel.length === 0,
+      ruleRows,
+      blockText: s.tried && missing.length ? "Còn thiếu: " + missing.join(" và ") + "." : "",
+      confirming: s.confirming,
+      warnings,
+      finalized: s.finalized,
+      showCta: !s.confirming,
+      ctaText: s.finalized ? "Sửa lại bữa đã chốt" : sel.length ? "Chốt " + sel.length + " món cho tối nay" : "Chọn món để chốt",
+      ctaBg: s.finalized ? "#FFFFFF" : sel.length ? "#B4531F" : "#F3EEE7",
+      ctaFg: s.finalized ? "#1C1917" : sel.length ? "#FFFFFF" : "#9C9187",
+      ctaBd: s.finalized ? "#D2C7B8" : sel.length ? "#B4531F" : "#E7E0D6",
+      onFinalize: () => {
+        if (s.finalized) return this.setState({ finalized: false });
+        if (!sel.length) return this.setState({ tried: true });
+        if (missing.length) return this.setState({ tried: true, confirming: false });
+        if (warnings.length) return this.setState({ confirming: true, tried: false });
+        this.setState({ finalized: true, tried: false });
+      },
+      onConfirm: () => this.setState({ confirming: false, finalized: true }),
+      onCancel: () => this.setState({ confirming: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

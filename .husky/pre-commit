@@ -1,2 +1,5 @@
-npx lint-staged
-vitest related --run $(git diff --name-only --cached)
+. "$(dirname "$0")/common.sh"
+
+# Tech Spec §8.1: ESLint qua lint-staged, Prettier. Chỉ chạm file đang stage nên
+# nhanh — phần nặng để ở pre-push.
+yarn lint-staged

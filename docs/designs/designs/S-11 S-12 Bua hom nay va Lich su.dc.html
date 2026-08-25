@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#EDE8E1;font-family:"Be Vietnam Pro",Inter,system-ui,sans-serif;color:#1C1917;-webkit-font-smoothing:antialiased}
+a{color:#B4531F;text-decoration:none}
+a:hover{color:#9A4419}
+button:focus-visible{outline:2px solid #B4531F;outline-offset:2px}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px 16px 48px">
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:560px">
+    <sc-for list="{{ views }}" as="v" hint-placeholder-count="4">
+      <button type="button" onClick="{{ v.go }}" style="min-height:36px;padding:8px 14px;background:{{ v.bg }};color:{{ v.fg }};border:1px solid {{ v.bd }};border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif;cursor:pointer">{{ v.label }}</button>
+    </sc-for>
+  </div>
+  <span style="font:400 12px/18px 'Be Vietnam Pro',sans-serif;color:rgba(28,25,23,.5);text-align:center;max-width:440px;text-wrap:pretty">Hàng nút trên là công cụ xem trạng thái. Ở S-11, bấm “Tôi không ăn món này” để sửa lịch sử của riêng bạn.</span>
+
+  <div style="width:390px;height:844px;background:#FBF8F4;border:1px solid #D2C7B8;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10)">
+
+    <div style="padding:24px 16px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">{{ subhead }}</span>
+        <h1 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">{{ heading }}</h1>
+      </div>
+      <button type="button" style="min-height:44px;padding:12px;margin-right:-12px;background:transparent;border:none;border-radius:12px;font:600 15px/20px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer" style-hover="background:#F3EEE7">Đóng</button>
+    </div>
+
+    <div style="flex:1;overflow:auto;padding:4px 16px 8px;display:flex;flex-direction:column;gap:24px;min-height:0">
+
+      <sc-if value="{{ isMeal }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Mẹ chốt lúc 17:42</span>
+          <sc-for list="{{ meal }}" as="d" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:16px;border-bottom:1px solid #E7E0D6">
+              <span style="font:700 28px/34px 'Be Vietnam Pro',sans-serif;color:{{ d.fg }};text-decoration:{{ d.deco }};text-wrap:pretty">{{ d.name }}</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">{{ d.tag }}</span>
+                <button type="button" onClick="{{ d.toggle }}" aria-label="{{ d.aria }}" style="flex:none;min-height:44px;padding:12px 0;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:{{ d.actionFg }};cursor:pointer">{{ d.action }}</button>
+              </div>
+              <sc-if value="{{ d.note }}" hint-placeholder-val="{{ false }}">
+                <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">{{ d.note }}</span>
+              </sc-if>
+            </div>
+          </sc-for>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Bốn người tham gia chọn</span>
+            <span style="font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#1C1917">Bạn · Mẹ · Bố · Em Trâm</span>
+          </div>
+        </div>
+
+        <div style="padding:16px;background:#FBF3DC;border-radius:12px;display:flex;align-items:flex-start;gap:8px">
+          <span style="width:3px;align-self:stretch;background:#8A6A18;border-radius:999px"></span>
+          <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">Bố không ăn được cá basa. Mẹ đã thấy cảnh báo này và vẫn chốt.</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isMealError }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:16px;background:#FBE9E7;border-radius:12px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span style="width:3px;align-self:stretch;background:#A3261C;border-radius:999px"></span>
+            <span style="font:500 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">Không tải được bữa hôm nay.</span>
+          </div>
+          <button type="button" onClick="{{ retry }}" style="align-self:flex-start;min-height:48px;padding:12px 24px;background:#FFFFFF;color:#1C1917;border:1px solid #D2C7B8;border-radius:12px;font:600 15px/22px 'Be Vietnam Pro',sans-serif;cursor:pointer" style-active="background:#F3EEE7">Thử lại</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isHistory }}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{ days }}" as="day" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;padding:0 4px">
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif">{{ day.label }}</span>
+              <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">{{ day.meta }}</span>
+            </div>
+            <div style="padding:16px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:12px;display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ day.dishes }}" as="n" hint-placeholder-count="3">
+                <span style="font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#1C1917">{{ n }}</span>
+              </sc-for>
+              <sc-if value="{{ day.note }}" hint-placeholder-val="{{ false }}">
+                <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;padding-top:8px;border-top:1px solid #E7E0D6;text-wrap:pretty">{{ day.note }}</span>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <sc-if value="{{ isHistoryEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px">
+          <h2 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Chưa có gì ở đây.</h2>
+          <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Sau bữa đầu tiên bạn sẽ thấy lịch sử ở đây, và app sẽ tránh gợi ý lại món cả nhà vừa ăn trong bảy ngày.</p>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="padding:16px 16px 32px;display:flex;flex-direction:column;gap:12px;border-top:1px solid #E7E0D6;background:#FBF8F4">
+      <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:12px;background:#F3EEE7;border-radius:12px">
+          <span style="width:3px;align-self:stretch;background:#7A6A5C;border-radius:999px"></span>
+          <span style="font:500 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">{{ toast }}</span>
+        </div>
+      </sc-if>
+      <button type="button" style="width:100%;min-height:56px;background:{{ ctaBg }};color:{{ ctaFg }};border:1px solid {{ ctaBd }};border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;cursor:pointer;transition:transform .1s ease" style-active="transform:scale(.98)">{{ ctaText }}</button>
+      <span style="align-self:center;font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-align:center;text-wrap:pretty">{{ ctaHint }}</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:980}}">
+class Component extends DCLogic {
+  state = { view: "meal", skipped: [], toast: "" };
+  meal = [
+    { name: "Cá basa kho tiêu", tag: "Món mặn" },
+    { name: "Canh chua cá lóc", tag: "Canh" },
+    { name: "Rau lang luộc chấm chao", tag: "Món phụ" }
+  ];
+  days = [
+    { label: "Hôm qua · Thứ Hai 15/8", meta: "2 món", dishes: ["Thịt ba rọi rang cháy cạnh", "Canh cải nấu tôm khô"], note: "" },
+    { label: "Chủ Nhật 14/8", meta: "3 món", dishes: ["Gà chiên nước mắm", "Canh khoai mỡ nấu tôm khô", "Cơm trắng"], note: "Bạn đã bỏ Gà chiên nước mắm khỏi lịch sử của mình." },
+    { label: "Thứ Bảy 13/8", meta: "2 món", dishes: ["Bò xào bông cải", "Canh chua cá lóc"], note: "" },
+    { label: "Thứ Sáu 12/8", meta: "3 món", dishes: ["Cá basa kho tiêu", "Đậu hũ chiên sả", "Cơm trắng"], note: "" }
+  ];
+  renderVals() {
+    const s = this.state;
+    const defs = [["meal", "S-11 Bữa hôm nay"], ["mealError", "S-11 lỗi tải"], ["history", "S-12 Lịch sử"], ["historyEmpty", "S-12 rỗng"]];
+    const isMeal = s.view === "meal";
+    const isHistory = s.view === "history";
+    return {
+      views: defs.map(([id, label]) => ({
+        label, go: () => this.setState({ view: id, skipped: [], toast: "" }),
+        bg: s.view === id ? "#1C1917" : "#FBF8F4",
+        fg: s.view === id ? "#FFFFFF" : "#6B6259",
+        bd: s.view === id ? "#1C1917" : "#D2C7B8"
+      })),
+      isMeal, isMealError: s.view === "mealError", isHistory, isHistoryEmpty: s.view === "historyEmpty",
+      heading: isMeal || s.view === "mealError" ? "Bữa tối nay" : "Lịch sử ăn",
+      subhead: isMeal || s.view === "mealError" ? "Thứ Ba · 16 tháng 8" : "Nhà Bảy Hiền · 30 ngày gần đây",
+      meal: this.meal.map(d => {
+        const off = s.skipped.indexOf(d.name) >= 0;
+        return {
+          name: d.name, tag: d.tag,
+          fg: off ? "#6B6259" : "#1C1917",
+          deco: off ? "line-through" : "none",
+          action: off ? "Tôi có ăn mà" : "Tôi không ăn món này",
+          actionFg: off ? "#B4531F" : "#6B6259",
+          aria: off ? "Ghi lại là bạn có ăn " + d.name : "Ghi lại là bạn không ăn " + d.name,
+          note: off ? "Đã bỏ khỏi lịch sử của riêng bạn. Món này vẫn thuộc bữa của cả nhà." : "",
+          toggle: () => this.setState(st => ({
+            skipped: off ? st.skipped.filter(n => n !== d.name) : st.skipped.concat(d.name),
+            toast: off ? "" : "Gợi ý những ngày tới sẽ tính theo bản sửa của bạn."
+          }))
+        };
+      }),
+      days: isHistory ? this.days : [],
+      toast: s.toast,
+      retry: () => this.setState({ view: "meal", toast: "" }),
+      ctaText: isMeal || s.view === "mealError" ? "Sửa món đã chốt" : isHistory ? "Xem bữa hôm nay" : "Mở phiên cho tối nay",
+      ctaBg: isHistory || isMeal || s.view === "mealError" ? "#FFFFFF" : "#B4531F",
+      ctaFg: isHistory || isMeal || s.view === "mealError" ? "#1C1917" : "#FFFFFF",
+      ctaBd: isHistory || isMeal || s.view === "mealError" ? "#D2C7B8" : "#B4531F",
+      ctaHint: isMeal || s.view === "mealError"
+        ? "Chỉ Mẹ sửa được món của cả nhà — bạn sửa được phần của mình ở trên"
+        : isHistory ? "Chỉ sửa được lịch sử của ngày hôm nay" : "Lịch sử bắt đầu từ bữa đầu tiên"
+    };
+  }
+}
+</script>
+</body>
+</html>
