@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#EDE8E1;font-family:"Be Vietnam Pro",Inter,system-ui,sans-serif;color:#1C1917}
+a{color:#B4531F;text-decoration:none}
+a:hover{color:#9A4419}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(28,25,23,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1C1917;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 'Be Vietnam Pro',sans-serif;color:#1C1917}
+.dv-opts{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px;max-width:390px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(28,25,23,.08);color:#1C1917;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.4 'Be Vietnam Pro',sans-serif;color:rgba(28,25,23,.55)}
+.dv-note{margin:2px 0 0;font:400 12px/1.6 'Be Vietnam Pro',sans-serif;color:rgba(28,25,23,.5);text-wrap:pretty}
+.dv-opt:target .dv-oid{background:#B4531F;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 'Be Vietnam Pro',sans-serif;color:rgba(28,25,23,.5)}
+.ph{width:390px;height:844px;background:#FBF8F4;border:1px solid #D2C7B8;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(28,25,23,.06),0 4px 12px rgba(28,25,23,.05)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">S-09 Deck vuốt — ba hướng cho thẻ chỉ-có-chữ</span></div>
+<div class="dv-opts">
+
+  <div class="dv-opt" id="1a">
+    <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Thẻ đơn, lý do dẫn đầu — bấm thử được</div>
+    <div class="ph">
+      <div style="padding:16px 16px 12px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between">
+          <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Bữa tối · Thứ Ba</span>
+          <span style="font:600 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">{{ progress }}</span>
+        </div>
+        <div style="height:4px;background:#F3EEE7;border-radius:999px;overflow:hidden">
+          <div style="height:100%;background:#B4531F;border-radius:999px;width:{{ pct }}"></div>
+        </div>
+      </div>
+
+      <div style="flex:1;padding:0 16px;display:flex;flex-direction:column;min-height:0">
+        <sc-if value="{{ hasCard }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;background:#FFFFFF;border-radius:20px;box-shadow:0 1px 2px rgba(28,25,23,.06),0 4px 12px rgba(28,25,23,.05);padding:24px;display:flex;flex-direction:column;gap:16px">
+            <span style="align-self:flex-start;padding:6px 12px;background:#FBEDE4;color:#B4531F;border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif">{{ reason }}</span>
+            <h2 style="margin:0;font:700 28px/34px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">{{ name }}</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ tags }}" as="tag" hint-placeholder-count="2">
+                <span style="padding:6px 12px;background:#F3EEE7;color:#6B6259;border-radius:999px;font:500 13px/18px 'Be Vietnam Pro',sans-serif">{{ tag }}</span>
+              </sc-for>
+            </div>
+            <div style="flex:1"></div>
+            <div style="display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid #E7E0D6">
+              <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">{{ last }}</span>
+              <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">{{ detail }}</span>
+              <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Kế tiếp · {{ nextName }}</span>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:24px 8px">
+            <h2 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Bạn đã xem hết.</h2>
+            <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Đã đề xuất {{ yesCount }} món. Xong lượt của mình chứ?</p>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="padding:24px 16px 32px;display:flex;flex-direction:column;gap:16px">
+        <sc-if value="{{ hasCard }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:12px;align-items:stretch">
+            <button type="button" onClick="{{ onNo }}" style="flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#FFFFFF;border:1px solid #D2C7B8;border-radius:12px;cursor:pointer" style-active="background:#EFEAE4">
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#7A6A5C">Không hôm nay</span>
+            </button>
+            <button type="button" onClick="{{ onYes }}" style="flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#3F6B3F;border:none;border-radius:12px;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10);cursor:pointer" style-active="background:#365B36">
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#FFFFFF">Đề xuất</span>
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <button type="button" onClick="{{ onUndo }}" style="min-height:44px;padding:12px 16px;margin-left:-16px;background:transparent;border:none;border-radius:12px;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:{{ undoColor }};cursor:pointer">Hoàn tác</button>
+            <button type="button" onClick="{{ onDone }}" style="min-height:44px;padding:12px 16px;margin-right:-16px;background:transparent;border:none;border-radius:12px;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">Tôi chọn xong</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ onDone }}" style="width:100%;min-height:56px;background:#B4531F;color:#FFFFFF;border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;box-shadow:0 1px 2px rgba(28,25,23,.06);cursor:pointer" style-active="background:#9A4419">Tôi chọn xong</button>
+          <button type="button" onClick="{{ onReset }}" style="align-self:center;min-height:44px;padding:12px 16px;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">Xem lại từ đầu</button>
+        </sc-if>
+      </div>
+    </div>
+    <p class="dv-note">Lý do (reason code) đứng trên tên món, nên món “lạ” từ explore lane không bị hiểu là lỗi. Một dòng “Kế tiếp” cho biết còn gì phía trước — thay cho chồng thẻ.</p>
+  </div>
+
+  <div class="dv-opt" id="1b">
+    <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Chồng thẻ, hé món kế tiếp</div>
+    <div class="ph">
+      <div style="padding:16px 16px 12px;display:flex;align-items:baseline;justify-content:space-between">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Bữa tối · Thứ Ba</span>
+        <span style="font:600 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">4 / 20</span>
+      </div>
+      <div style="padding:0 16px;display:flex;gap:4px">
+        <span style="flex:1;height:4px;border-radius:999px;background:#B4531F"></span>
+        <span style="flex:1;height:4px;border-radius:999px;background:#B4531F"></span>
+        <span style="flex:1;height:4px;border-radius:999px;background:#B4531F"></span>
+        <span style="flex:1;height:4px;border-radius:999px;background:#F3EEE7"></span>
+        <span style="flex:1;height:4px;border-radius:999px;background:#F3EEE7"></span>
+      </div>
+
+      <div style="flex:1;position:relative;padding:20px 16px 0;min-height:0">
+        <div style="position:absolute;left:32px;right:32px;top:8px;height:120px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px"></div>
+        <div style="position:absolute;left:24px;right:24px;top:14px;height:120px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px"></div>
+        <div style="position:relative;height:100%;background:#E9F0E7;border:1px solid #3F6B3F;border-radius:20px;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10);padding:24px;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#4E5C4A">Cả nhà chưa ăn món này 4 tuần</span>
+            <span style="flex:none;padding:6px 12px;background:#3F6B3F;color:#FFFFFF;border-radius:8px;font:600 13px/18px 'Be Vietnam Pro',sans-serif">Đề xuất</span>
+          </div>
+          <h2 style="margin:12px 0 0;font:700 28px/34px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">Cá basa kho tiêu</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">
+            <span style="padding:6px 12px;background:#F3EEE7;color:#6B6259;border-radius:999px;font:500 13px/18px 'Be Vietnam Pro',sans-serif">Món mặn</span>
+            <span style="padding:6px 12px;background:#F3EEE7;color:#6B6259;border-radius:999px;font:500 13px/18px 'Be Vietnam Pro',sans-serif">Có nơi mua</span>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="width:24px;height:1px;background:#D2C7B8"></span>
+              <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#9C9187">Trong chồng</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#6B6259">Canh chua cá lóc</span>
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#6B6259">Gà chiên nước mắm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:24px 16px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+        <button type="button" aria-label="Không muốn ăn Cá basa kho tiêu hôm nay" style="width:64px;height:64px;flex:none;background:#FFFFFF;border:1px solid #D2C7B8;border-radius:999px;font:600 13px/16px 'Be Vietnam Pro',sans-serif;color:#7A6A5C;cursor:pointer">Không</button>
+        <button type="button" style="min-height:44px;padding:12px 16px;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">Hoàn tác</button>
+        <button type="button" aria-label="Đề xuất Cá basa kho tiêu" style="width:64px;height:64px;flex:none;background:#3F6B3F;border:none;border-radius:999px;font:600 13px/16px 'Be Vietnam Pro',sans-serif;color:#FFFFFF;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10);cursor:pointer">Đề xuất</button>
+      </div>
+    </div>
+    <p class="dv-note">Chồng thẻ + hai tên kế tiếp làm rõ “còn bao nhiêu nữa”. Đang minh hoạ trạng thái kéo sang phải: nền thẻ đổi sang <code>--yes-soft</code> kèm viền <code>--yes</code> và nhãn chữ “Đề xuất” — chữ trên thẻ vẫn đọc được, không có lớp phủ mờ.</p>
+  </div>
+
+  <div class="dv-opt" id="1c">
+    <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Không thẻ — chữ đứng trên giấy</div>
+    <div class="ph">
+      <div style="padding:16px;display:flex;align-items:baseline;justify-content:space-between">
+        <button type="button" style="min-height:44px;padding:12px 16px;margin-left:-16px;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">Thoát</button>
+        <span style="font:600 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">Món 4 / 20</span>
+      </div>
+
+      <div style="flex:1;padding:32px 24px 0;display:flex;flex-direction:column;min-height:0">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#B4531F">Lâu chưa ăn</span>
+        <h2 style="margin:16px 0 0;font:700 34px/42px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">Cá basa kho tiêu</h2>
+        <div style="margin-top:24px;display:flex;flex-direction:column">
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid #E7E0D6;font:400 15px/22px 'Be Vietnam Pro',sans-serif"><span style="color:#6B6259">Nhãn</span><span>Món mặn</span></div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid #E7E0D6;font:400 15px/22px 'Be Vietnam Pro',sans-serif;font-variant-numeric:tabular-nums"><span style="color:#6B6259">Lần cuối ăn</span><span>31 ngày trước</span></div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid #E7E0D6;border-bottom:1px solid #E7E0D6;font:400 15px/22px 'Be Vietnam Pro',sans-serif"><span style="color:#6B6259">Nơi mua</span><span>Chợ Bà Chiểu</span></div>
+        </div>
+        <div style="flex:1"></div>
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;padding-bottom:8px">Vuốt hoặc bấm — cả hai đều được</span>
+      </div>
+
+      <div style="padding:16px 24px 32px;display:flex;flex-direction:column;gap:12px;background:#F3EEE7;border-top:1px solid #E7E0D6">
+        <button type="button" style="width:100%;min-height:56px;background:#3F6B3F;color:#FFFFFF;border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10);cursor:pointer">Đề xuất món này</button>
+        <button type="button" style="width:100%;min-height:56px;background:#FFFFFF;color:#7A6A5C;border:1px solid #D2C7B8;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;cursor:pointer">Không muốn hôm nay</button>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <button type="button" style="min-height:44px;padding:12px 0;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">Hoàn tác</button>
+          <button type="button" style="min-height:44px;padding:12px 0;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">Tôi không ăn được món này</button>
+        </div>
+      </div>
+    </div>
+    <p class="dv-note">Bỏ hẳn thẻ: không có ảnh thì thẻ chỉ là một viền thừa. Hai nút xếp dọc — ngón cái không phải đi ngang. Cần bạn cho thêm bậc chữ <code>hero 34/42</code> vào thang.</p>
+  </div>
+
+</div>
+<p class="dv-next">Thử tiếp: “lấy chồng thẻ của <a class="dv-oid" href="#1b">1b</a> ghép vào <a class="dv-oid" href="#1a">1a</a>” · “<a class="dv-oid" href="#1c">1c</a> nhưng tên món to hơn nữa” · “vẽ S-04 rỗng”</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { i: 0, marks: [] };
+  dishes = [
+    { name: "Cá basa kho tiêu", reason: "Lâu chưa ăn", tags: ["Món mặn", "Có nơi mua"], detail: "Chưa ai trong nhà ăn món này trong bốn tuần gần đây.", last: "Lần cuối ăn · 31 ngày trước" },
+    { name: "Canh chua cá lóc", reason: "Bạn thích món này", tags: ["Canh"], detail: "Bạn đã đánh dấu thích món này.", last: "Lần cuối ăn · 12 ngày trước" },
+    { name: "Gà chiên nước mắm", reason: "Mới với bạn", tags: ["Món mặn", "Món chiên"], detail: "Món này chưa từng xuất hiện trong bữa của bạn.", last: "Chưa từng ăn" },
+    { name: "Thịt ba rọi rang cháy cạnh", reason: "Vừa ăn hôm qua", tags: ["Món mặn"], detail: "Cả nhà ăn hôm qua, nên món này bị xếp thấp.", last: "Lần cuối ăn · 1 ngày trước" },
+    { name: "Rau lang luộc chấm chao", reason: "Có nơi mua", tags: ["Món phụ"], detail: "Còn đủ nguyên liệu theo lần mua gần nhất.", last: "Lần cuối ăn · 9 ngày trước" }
+  ];
+  total = 20;
+  mark(v) { this.setState(s => ({ i: s.i + 1, marks: s.marks.concat(v) })); }
+  renderVals() {
+    const { i, marks } = this.state;
+    const d = this.dishes[i];
+    const next = this.dishes[i + 1];
+    return {
+      hasCard: !!d,
+      isEmpty: !d,
+      name: d ? d.name : "",
+      reason: d ? d.reason : "",
+      tags: d ? d.tags : [],
+      detail: d ? d.detail : "",
+      last: d ? d.last : "",
+      nextName: next ? next.name : "món cuối trong lượt này",
+      progress: Math.min(i + 1, this.dishes.length) + " / " + this.total,
+      pct: Math.round((i / this.dishes.length) * 100) + "%",
+      yesCount: marks.filter(m => m === "yes").length,
+      undoColor: i > 0 ? "#6B6259" : "#9C9187",
+      onYes: () => this.mark("yes"),
+      onNo: () => this.mark("no"),
+      onUndo: () => this.setState(s => s.i > 0 ? { i: s.i - 1, marks: s.marks.slice(0, -1) } : null),
+      onDone: () => {},
+      onReset: () => this.setState({ i: 0, marks: [] })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+. "$(dirname "$0")/common.sh"
+
+# Tech Spec §8.1: tsc, jscpd, knip, vitest chạy ở pre-push.
+# ESLint và Prettier đã chạy ở pre-commit nên không lặp lại.
+yarn typecheck
+yarn dup
+yarn knip
+yarn test

@@ -1,0 +1,135 @@
+@import 'tailwindcss';
+
+/* Design Handoff `docs/designs/README.md` §Design Tokens. Không hardcode hex
+   trong component — mọi màu đi qua đây. Chỉ light mode ở v1.0; token đặt tên
+   theo vai trò để thêm dark mode sau mà không phải sửa component. */
+@theme {
+  --color-surface: #fbf8f4;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #f3eee7;
+
+  --color-ink: #1c1917;
+  --color-ink-muted: #6b6259;
+  --color-ink-faint: #9c9187; /* CHỈ placeholder và disabled */
+
+  --color-border: #e7e0d6;
+  --color-border-strong: #d2c7b8;
+
+  /* Màu nhấn duy nhất */
+  --color-accent: #b4531f;
+  --color-accent-hover: #9a4419;
+  --color-accent-active: #8c3e17;
+  --color-accent-soft: #fbede4;
+  --color-on-accent: #ffffff;
+
+  /* Ngữ nghĩa vuốt — `no` TRUNG TÍNH, không bao giờ đỏ */
+  --color-yes: #3f6b3f;
+  --color-yes-hover: #365b36;
+  --color-yes-soft: #e9f0e7;
+  --color-no: #7a6a5c;
+  --color-no-soft: #efeae4;
+
+  --color-warning: #8a6a18;
+  --color-warning-soft: #fbf3dc;
+  --color-danger: #a3261c; /* CHỈ lỗi thật */
+  --color-danger-soft: #fbe9e7;
+
+  /* Thang chữ. Line-height rộng hơn thông thường ở mọi cấp — bắt buộc, do dấu
+     tiếng Việt nằm cả trên lẫn dưới. Weight viết tường minh tại chỗ dùng. */
+  --text-hero: 34px;
+  --text-hero--line-height: 42px;
+  --text-display: 28px;
+  --text-display--line-height: 34px;
+  --text-title: 22px;
+  --text-title--line-height: 28px;
+  --text-subtitle: 17px;
+  --text-subtitle--line-height: 24px;
+  --text-body-lg: 17px;
+  --text-body-lg--line-height: 26px;
+  --text-body: 15px;
+  --text-body--line-height: 22px;
+  --text-caption: 13px;
+  --text-caption--line-height: 18px;
+
+  --tracking-eyebrow: 0.08em;
+
+  --radius-chip: 8px; /* chip, input */
+  --radius-control: 12px; /* nút, hàng danh sách */
+  --radius-card: 20px; /* thẻ món, sheet */
+
+  --spacing-hairline: 3px; /* thanh dọc của Banner */
+
+  --shadow-button: 0 1px 2px rgba(28, 25, 23, 0.06);
+  --shadow-card: 0 1px 2px rgba(28, 25, 23, 0.06), 0 4px 12px rgba(28, 25, 23, 0.05);
+  --shadow-lift: 0 2px 4px rgba(28, 25, 23, 0.08), 0 12px 28px rgba(28, 25, 23, 0.1);
+
+  --container-app: 35rem; /* 560px — nội dung căn giữa ở ≥768px */
+
+  --color-scrim: rgba(28, 25, 23, 0.28); /* nền mờ sau sheet */
+
+  /* Design Handoff: khối --surface-sunken, opacity .55↔1, chu kỳ 1.4s. Không vòng quay. */
+  --animate-skeleton: skeleton 1.4s ease-in-out infinite;
+  --animate-sheet-slide-up: sheet-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-sheet-slide-down: sheet-slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-scrim-fade-in: scrim-fade-in 0.2s ease-out;
+  --animate-scrim-fade-out: scrim-fade-out 0.2s ease-out forwards;
+
+  @keyframes skeleton {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes sheet-slide-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes sheet-slide-down {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes scrim-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scrim-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+}
+
+/* `inline` là bắt buộc khi trỏ tới biến do next/font sinh: giá trị được nội suy
+   thay vì để var() lồng var() rồi hỏng cascade. */
+@theme inline {
+  --font-sans: var(--font-be-vietnam-pro), Inter, system-ui, sans-serif;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}

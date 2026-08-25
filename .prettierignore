@@ -1,0 +1,9 @@
+.next/
+.yarn/
+node_modules/
+coverage/
+report/
+next-env.d.ts
+yarn.lock
+src/shared/db/migrations/
+docs/

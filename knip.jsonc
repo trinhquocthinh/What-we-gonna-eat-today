@@ -1,0 +1,81 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+
+  "entry": [
+    // Hậu tố `!` = entry thuộc production. `yarn knip` chạy `--production`, và ở
+    // chế độ đó knip BỎ QUA mọi entry không có `!` — thiếu dấu này thì cả hai
+    // file dưới coi như không tồn tại, kéo theo drizzle-orm, uuidv7 và
+    // @neondatabase/serverless bị báo là dependency thừa.
+    //
+    // Cả hai là entry thật chứ không phải mã chết: `schema.ts` do drizzle-kit
+    // đọc để sinh migration, `client.ts` là điểm vào duy nhất tới database.
+    "src/shared/db/schema.ts!",
+    "src/shared/db/client.ts!",
+    "src/features/auth/presentation/containers/auth-actions.ts!",
+
+    // Chỉ dùng lúc phát triển nên không có `!`.
+    "drizzle.config.ts",
+  ],
+
+  "ignore": [
+    "src/shared/db/migrations/**",
+
+    // Tài liệu và mã đi kèm tài liệu, không thuộc source của app.
+    "docs/**",
+    "scripts/**",
+
+    // `--production` loại test ra khỏi phạm vi, nên file setup của Vitest luôn
+    // trông như mồ côi. Nó được nạp qua `setupFiles` trong vitest.config.mts.
+    "src/tests/**",
+
+    // Cùng lý do với `src/tests/**`: `--production` không tính test là nơi sử
+    // dụng, nên factory dữ liệu test luôn trông như mồ côi.
+    "src/shared/testing/**",
+
+    // GỠ Ở E1-T8 (S5): Session use cases và repository ở S4 chưa có route trong app/.
+    // S5 (trang deck) sẽ import và sử dụng chúng.
+    "src/features/session/application/**",
+    "src/features/session/domain/session.ts",
+    "src/features/session/infrastructure/**",
+
+    // GỠ Ở E5-T7/T8/T9: Meal use cases, domain và repository ở S6 chưa có route trong app/.
+    // E5 (màn hình chốt bữa S-10) sẽ import và sử dụng chúng.
+    "src/features/meal/**",
+
+    // GỠ Ở E5-T5: default-eating-history tạo ở E1-T11, E5 (Finalize) sẽ dùng khi ghi nhận Eating History.
+    "src/features/history/domain/default-eating-history.ts",
+
+    // GỠ Ở E2-T7 (S4): addExistingDishToGroup use case được tạo ở E2-S2, S4 sẽ nối dây UI.
+    "src/features/dish/application/add-existing-dish-to-group.ts",
+
+    // GỠ Ở E2-T6 (S4): setSystemTags use case được tạo ở E2-S3, S4 sẽ nối dây UI sửa tag.
+    "src/features/dish/application/set-system-tags.ts",
+
+    // GỠ Ở E5-T9 (S4): ruleShortfallPhrase dùng cho dòng "Còn thiếu: …" trên nút chốt bữa.
+    "src/features/rule/presentation/components/rule-sentence.ts",
+
+    // GỠ Ở E5-T5 (S3): evaluateRequired được tạo ở E5-T3, E5-S3 (Finalize) sẽ import và sử dụng.
+    "src/features/rule/domain/evaluate.ts",
+
+    // GỠ Ở E5-T7 (S4): listSessionRanking và rankSession tạo ở E5-S3, E5-S4 (màn S-10) sẽ import và sử dụng.
+    "src/features/selection/application/list-session-ranking.ts",
+    "src/features/selection/domain/ranking.ts",
+  ],
+
+  // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu
+  // DATABASE_URL. Hệ quả: `yarn knip` chết ở máy chưa tạo .env.local, tức
+  // pre-push chặn commit vì một lý do chẳng liên quan gì tới chất lượng mã.
+  // Ở đây không cần plugin: schema đã khai báo thẳng trong "entry".
+  "drizzle": false,
+
+  "ignoreDependencies": [
+    // Chỉ dùng qua `declare module '@auth/core/types'` / `'@auth/core/jwt'` ở
+    // `auth.ts` — knip không tính module augmentation là usage. Ghim trực tiếp
+    // (thay vì để transitive) vì augmentation phụ thuộc đúng bản `next-auth`
+    // kéo về; nâng cấp `next-auth` mà quên đồng bộ số này thì augmentation im
+    // lặng ngừng merge.
+    "@auth/core",
+  ],
+
+  "ignoreExportsUsedInFile": true,
+}

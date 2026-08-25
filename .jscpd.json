@@ -1,0 +1,15 @@
+{
+  "threshold": 3,
+  "minTokens": 50,
+  "reporters": ["consoleFull"],
+  "absolute": true,
+  "gitignore": true,
+  "ignore": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/coverage/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/src/shared/db/migrations/**"
+  ]
+}

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#EDE8E1;font-family:"Be Vietnam Pro",Inter,system-ui,sans-serif;color:#1C1917;-webkit-font-smoothing:antialiased}
+a{color:#B4531F;text-decoration:none}
+a:hover{color:#9A4419}
+@keyframes sk{0%,100%{opacity:.55}50%{opacity:1}}
+button:focus-visible{outline:2px solid #B4531F;outline-offset:2px}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px 16px 48px">
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:560px">
+    <sc-for list="{{ views }}" as="v" hint-placeholder-count="5">
+      <button type="button" onClick="{{ v.go }}" style="min-height:36px;padding:8px 14px;background:{{ v.bg }};color:{{ v.fg }};border:1px solid {{ v.bd }};border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif;cursor:pointer">{{ v.label }}</button>
+    </sc-for>
+  </div>
+  <span style="font:400 12px/18px 'Be Vietnam Pro',sans-serif;color:rgba(28,25,23,.5);text-align:center;max-width:420px;text-wrap:pretty">Hàng nút trên là công cụ xem trạng thái, không thuộc thiết kế. Trong khung: kéo thẻ bằng chuột hoặc ngón tay, hoặc bấm hai nút dưới.</span>
+
+  <div style="width:390px;height:844px;background:#FBF8F4;border:1px solid #D2C7B8;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10)">
+
+    <sc-if value="{{ showOffline }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:8px 16px;background:#FBF3DC;border-bottom:1px solid #E7E0D6;display:flex;align-items:center;gap:8px">
+        <span style="width:3px;height:16px;background:#8A6A18;border-radius:999px"></span>
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#1C1917">Đang thử gửi lại · bạn vuốt tiếp được</span>
+      </div>
+    </sc-if>
+
+    <div style="padding:16px 16px 12px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:24px">
+        <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Bữa tối · Thứ Ba 16/8</span>
+        <span style="font:600 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">{{ progress }}</span>
+      </div>
+      <div style="height:4px;background:#F3EEE7;border-radius:999px;overflow:hidden">
+        <div style="height:100%;background:#B4531F;border-radius:999px;transition:width .2s ease;width:{{ pct }}"></div>
+      </div>
+    </div>
+
+    <div style="flex:1;position:relative;padding:8px 16px 0;min-height:0">
+
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+        <div style="height:100%;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+          <span style="width:104px;height:30px;border-radius:8px;background:#F3EEE7;animation:sk 1.4s ease-in-out infinite"></span>
+          <span style="width:80%;height:34px;border-radius:8px;background:#F3EEE7;animation:sk 1.4s ease-in-out .1s infinite"></span>
+          <span style="width:55%;height:34px;border-radius:8px;background:#F3EEE7;animation:sk 1.4s ease-in-out .2s infinite"></span>
+          <div style="display:flex;gap:8px">
+            <span style="width:88px;height:30px;border-radius:999px;background:#F3EEE7;animation:sk 1.4s ease-in-out .3s infinite"></span>
+            <span style="width:112px;height:30px;border-radius:999px;background:#F3EEE7;animation:sk 1.4s ease-in-out .35s infinite"></span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+        <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:16px;padding:24px 8px">
+          <h2 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Xong lượt của bạn.</h2>
+          <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Bạn đã đề xuất {{ yesCount }} món và bỏ qua {{ noCount }} món. Mẹ đang chờ hai người nữa.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:#F3EEE7;border-radius:20px">
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Bạn đã đề xuất</span>
+            <sc-for list="{{ yesList }}" as="n" hint-placeholder-count="2">
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif">{{ n }}</span>
+            </sc-for>
+            <sc-if value="{{ noYes }}" hint-placeholder-val="{{ false }}">
+              <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259">Chưa đề xuất món nào — vẫn ổn, Mẹ sẽ chốt theo cả nhà.</span>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:24px 8px">
+          <h2 style="margin:0;font:600 22px/28px 'Be Vietnam Pro',sans-serif">Bạn đã xem hết {{ seenCount }} món.</h2>
+          <p style="margin:0;font:400 17px/26px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">Đã đề xuất {{ yesCount }} món. Xong lượt của mình chứ?</p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasCard }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;left:40px;right:40px;top:0;height:140px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px"></div>
+        <div style="position:absolute;left:30px;right:30px;top:5px;height:140px;background:#FFFFFF;border:1px solid #E7E0D6;border-radius:20px"></div>
+        <div onPointerDown="{{ onDown }}" onPointerMove="{{ onMove }}" onPointerUp="{{ onUp }}" onPointerCancel="{{ onUp }}" style="position:relative;height:100%;touch-action:none;user-select:none;cursor:grab;background:{{ cardBg }};border:1px solid {{ cardBorder }};border-radius:20px;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10);padding:24px;display:flex;flex-direction:column;gap:16px;transform:{{ cardTransform }};transition:{{ cardTransition }};opacity:{{ cardOpacity }}">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-height:30px">
+            <span style="padding:6px 12px;background:{{ reasonBg }};color:{{ reasonFg }};border-radius:8px;font:500 13px/18px 'Be Vietnam Pro',sans-serif">{{ reason }}</span>
+            <sc-if value="{{ dragLabel }}" hint-placeholder-val="{{ false }}">
+              <span style="flex:none;padding:6px 12px;background:{{ dragBg }};color:#FFFFFF;border-radius:8px;font:600 13px/18px 'Be Vietnam Pro',sans-serif">{{ dragLabel }}</span>
+            </sc-if>
+          </div>
+          <h2 style="margin:0;font:700 28px/34px 'Be Vietnam Pro',sans-serif;text-wrap:pretty">{{ name }}</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ tags }}" as="tag" hint-placeholder-count="2">
+              <span style="padding:6px 12px;background:#F3EEE7;color:#6B6259;border-radius:999px;font:500 13px/18px 'Be Vietnam Pro',sans-serif">{{ tag }}</span>
+            </sc-for>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid #E7E0D6">
+            <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259;font-variant-numeric:tabular-nums">{{ last }}</span>
+            <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;text-wrap:pretty">{{ detail }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="width:24px;height:1px;background:#D2C7B8"></span>
+              <span style="font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Trong chồng</span>
+            </div>
+            <sc-for list="{{ stack }}" as="n" hint-placeholder-count="2">
+              <span style="font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#6B6259">{{ n }}</span>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="padding:24px 16px 32px;display:flex;flex-direction:column;gap:12px">
+      <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;padding:12px;background:#F3EEE7;border-radius:12px">
+          <span style="width:3px;align-self:stretch;background:#7A6A5C;border-radius:999px"></span>
+          <span style="font:400 15px/22px 'Be Vietnam Pro',sans-serif;color:#1C1917;text-wrap:pretty">{{ toast }}</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showControls }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:12px">
+          <button type="button" aria-label="{{ ariaNo }}" onClick="{{ onNo }}" style="flex:1;min-height:56px;background:#FFFFFF;border:1px solid #D2C7B8;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#7A6A5C;cursor:pointer;transition:transform .1s ease" style-hover="border-color:#7A6A5C;color:#1C1917" style-active="background:#EFEAE4;transform:scale(.98)">Không hôm nay</button>
+          <button type="button" aria-label="{{ ariaYes }}" onClick="{{ onYes }}" style="flex:1;min-height:56px;background:#3F6B3F;border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;color:#FFFFFF;box-shadow:0 2px 4px rgba(28,25,23,.08),0 12px 28px rgba(28,25,23,.10);cursor:pointer;transition:transform .1s ease" style-hover="background:#365B36" style-active="background:#2F502F;transform:scale(.98);box-shadow:none">Đề xuất</button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <button type="button" onClick="{{ onUndo }}" disabled="{{ undoOff }}" style="min-height:44px;padding:12px 16px;margin-left:-16px;background:transparent;border:none;border-radius:12px;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:{{ undoColor }};cursor:pointer">Hoàn tác</button>
+          <button type="button" onClick="{{ onCannot }}" style="min-height:44px;padding:12px 16px;margin-right:-16px;background:transparent;border:none;border-radius:12px;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">Tôi không ăn được món này</button>
+        </div>
+        <button type="button" onClick="{{ onFinish }}" style="align-self:center;min-height:44px;padding:12px 16px;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">Tôi chọn xong</button>
+      </sc-if>
+
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{ onFinish }}" style="width:100%;min-height:56px;background:#B4531F;color:#FFFFFF;border:none;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;box-shadow:0 1px 2px rgba(28,25,23,.06);cursor:pointer" style-hover="background:#9A4419" style-active="background:#8C3E17;transform:scale(.98)">Tôi chọn xong</button>
+        <button type="button" onClick="{{ onReset }}" style="align-self:center;min-height:44px;padding:12px 16px;background:transparent;border:none;font:600 15px/22px 'Be Vietnam Pro',sans-serif;color:#6B6259;cursor:pointer">Xem lại từ đầu</button>
+      </sc-if>
+
+      <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{ onReopen }}" style="width:100%;min-height:56px;background:#FFFFFF;color:#1C1917;border:1px solid #D2C7B8;border-radius:12px;font:600 17px/24px 'Be Vietnam Pro',sans-serif;cursor:pointer" style-hover="border-color:#7A6A5C" style-active="background:#F3EEE7;transform:scale(.98)">Mở lại lượt chọn</button>
+        <span style="align-self:center;font:500 13px/18px 'Be Vietnam Pro',sans-serif;color:#6B6259">Sửa được cho tới khi Mẹ chốt bữa</span>
+      </sc-if>
+
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:12px">
+          <span style="flex:1;height:56px;border-radius:12px;background:#F3EEE7;animation:sk 1.4s ease-in-out infinite"></span>
+          <span style="flex:1;height:56px;border-radius:12px;background:#F3EEE7;animation:sk 1.4s ease-in-out .15s infinite"></span>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:980}}">
+class Component extends DCLogic {
+  state = { i: 0, marks: [], dx: 0, dragging: false, flying: 0, view: "deck", toast: "", removed: [] };
+  dishes = [
+    { name: "Cá basa kho tiêu", reason: "Lâu chưa ăn", explore: true, tags: ["Món mặn", "Có nơi mua"], last: "Lần cuối ăn · 31 ngày trước", detail: "Chưa ai trong nhà ăn món này trong bốn tuần gần đây." },
+    { name: "Canh khoai mỡ nấu tôm khô rau ngổ", reason: "Bạn thích món này", tags: ["Canh", "Có nơi mua", "Nấu nhanh", "Ít dầu"], last: "Lần cuối ăn · 12 ngày trước", detail: "Bạn đã đánh dấu thích món này nên nó lên sớm hơn." },
+    { name: "Gà chiên nước mắm", reason: "Mới với bạn", explore: true, tags: ["Món mặn", "Món chiên"], last: "Chưa từng ăn", detail: "Món này chưa từng xuất hiện trong bữa của bạn." },
+    { name: "Thịt ba rọi rang cháy cạnh", reason: "Vừa ăn hôm qua", tags: ["Món mặn"], last: "Lần cuối ăn · 1 ngày trước", detail: "Cả nhà ăn hôm qua, nên món này bị xếp thấp." },
+    { name: "Rau lang luộc chấm chao", reason: "Có nơi mua", tags: ["Món phụ"], last: "Lần cuối ăn · 9 ngày trước", detail: "Chợ Bà Chiểu — theo lần mua gần nhất của nhà." },
+    { name: "Bò xào bông cải", reason: "Bạn thường chọn món này", tags: ["Món mặn"], last: "Lần cuối ăn · 21 ngày trước", detail: "Bạn đã đề xuất món này 4 trong 6 lần gần đây." }
+  ];
+  total = 20;
+  live() { return this.dishes.filter(d => this.state.removed.indexOf(d.name) < 0); }
+  commit(dir) {
+    const d = this.live()[this.state.i];
+    if (!d) return;
+    this.setState({ flying: dir, dragging: false, dx: dir * 120, toast: "" });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState(s => ({
+      i: s.i + 1, marks: s.marks.concat(dir > 0 ? "yes" : "no"), dx: 0, flying: 0
+    })), 180);
+  }
+  onDown = e => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    this._x0 = e.clientX;
+    this.setState({ dragging: true, toast: "" });
+  };
+  onMove = e => { if (this.state.dragging) this.setState({ dx: e.clientX - this._x0 }); };
+  onUp = () => {
+    const dx = this.state.dx;
+    if (dx > 90) this.commit(1);
+    else if (dx < -90) this.commit(-1);
+    else this.setState({ dragging: false, dx: 0 });
+  };
+  go(view) {
+    return () => {
+      clearTimeout(this._t);
+      if (view === "deck") this.setState({ view, i: 0, marks: [], dx: 0, flying: 0, toast: "", removed: [] });
+      else if (view === "empty") this.setState({ view: "deck", i: this.live().length, marks: ["yes", "no", "yes", "no", "yes"], dx: 0, flying: 0, toast: "" });
+      else if (view === "done") this.setState({ view: "done", i: 3, marks: ["yes", "no", "yes"], dx: 0, flying: 0, toast: "" });
+      else this.setState({ view, dx: 0, flying: 0, toast: "" });
+    };
+  }
+  renderVals() {
+    const s = this.state;
+    const list = this.live();
+    const d = list[s.i];
+    const loading = s.view === "loading";
+    const done = s.view === "done";
+    const empty = !loading && !done && !d;
+    const card = !loading && !done && !!d;
+    const dx = s.dx;
+    const dir = dx > 40 ? 1 : dx < -40 ? -1 : 0;
+    const yes = s.marks.filter(m => m === "yes").length;
+    const yesNames = [];
+    s.marks.forEach((m, k) => { if (m === "yes" && list[k]) yesNames.push(list[k].name); });
+    const viewDefs = [
+      ["deck", "Deck"], ["loading", "Đang tải"], ["empty", "Hết món"],
+      ["offline", "Mất mạng"], ["done", "Đã xong lượt"]
+    ];
+    return {
+      views: viewDefs.map(([id, label]) => {
+        const on = id === "empty" ? (s.view === "deck" && empty) : (s.view === id && !(id === "deck" && empty));
+        return {
+          label, go: this.go(id),
+          bg: on ? "#1C1917" : "#FBF8F4", fg: on ? "#FFFFFF" : "#6B6259",
+          bd: on ? "#1C1917" : "#D2C7B8"
+        };
+      }),
+      isLoading: loading, isDone: done, isEmpty: empty, hasCard: card,
+      showControls: card, showOffline: s.view === "offline",
+      name: d ? d.name : "",
+      reason: d ? d.reason : "",
+      reasonBg: d && d.explore ? "#FBEDE4" : "#F3EEE7",
+      reasonFg: d && d.explore ? "#B4531F" : "#6B6259",
+      tags: d ? d.tags : [],
+      last: d ? d.last : "",
+      detail: d ? d.detail : "",
+      stack: list.slice(s.i + 1, s.i + 3).map(x => x.name),
+      progress: Math.min(s.i + 1, list.length) + " / " + this.total,
+      pct: Math.round((Math.min(s.i, list.length) / list.length) * 100) + "%",
+      seenCount: list.length,
+      yesCount: yes,
+      noCount: s.marks.length - yes,
+      yesList: yesNames,
+      noYes: yesNames.length === 0,
+      cardTransform: "translateX(" + (s.flying ? s.flying * 460 : dx) + "px) rotate(" + Math.max(-8, Math.min(8, dx / 18)) + "deg)",
+      cardTransition: s.dragging ? "none" : "transform .18s ease, opacity .18s ease, background .12s linear",
+      cardOpacity: s.flying ? "0" : "1",
+      cardBg: dir > 0 ? "#E9F0E7" : dir < 0 ? "#EFEAE4" : "#FFFFFF",
+      cardBorder: dir > 0 ? "#3F6B3F" : dir < 0 ? "#7A6A5C" : "#E7E0D6",
+      dragLabel: dir > 0 ? "Đề xuất" : dir < 0 ? "Không hôm nay" : "",
+      dragBg: dir > 0 ? "#3F6B3F" : "#7A6A5C",
+      ariaYes: d ? "Đề xuất " + d.name : "Đề xuất",
+      ariaNo: d ? "Không muốn ăn " + d.name + " hôm nay" : "Không muốn hôm nay",
+      undoColor: s.i > 0 ? "#6B6259" : "#9C9187",
+      undoOff: s.i === 0,
+      toast: s.toast,
+      onYes: () => this.commit(1),
+      onNo: () => this.commit(-1),
+      onDown: this.onDown, onMove: this.onMove, onUp: this.onUp,
+      onUndo: () => this.setState(st => st.i > 0 ? { i: st.i - 1, marks: st.marks.slice(0, -1), toast: "" } : null),
+      onCannot: () => d && this.setState(st => ({
+        removed: st.removed.concat(d.name),
+        toast: "Đã ghi nhận bạn không ăn được " + d.name + ". Món này sẽ không xuất hiện lại."
+      })),
+      onFinish: () => this.setState({ view: "done" }),
+      onReopen: () => this.setState({ view: "deck", toast: "" }),
+      onReset: () => this.setState({ i: 0, marks: [], toast: "", removed: [] })
+    };
+  }
+}
+</script>
+</body>
+</html>
