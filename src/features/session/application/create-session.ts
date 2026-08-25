@@ -7,6 +7,9 @@ import type { SessionRepository, SessionSummary } from './session-repository'
 
 export type CreateSessionDeps = {
   readonly sessions: SessionRepository
+  /** Truyền từ `app/` — `session` không được import `dish`. Cùng khuôn
+   *  `findInvalidParticipants` của `startSession`. */
+  readonly countActiveDishes: (groupId: string) => Promise<number>
 }
 
 export type CreateSessionInput = {
@@ -31,6 +34,18 @@ export async function createSession(
   deps: CreateSessionDeps,
   input: CreateSessionInput,
 ): Promise<Result<SessionSummary, Failure>> {
+  // BR/SPEC-007 — nhóm rỗng không mở phiên được. Kiểm TRƯỚC
+  // `findBlockingSessionToday`: "nhà chưa có món nào" là lỗi cơ bản hơn "hôm
+  // nay đã có phiên rồi", và trả đúng lỗi cơ bản nhất là cách người dùng biết
+  // phải làm gì tiếp.
+  //
+  // Rào ở UI đã có từ E1 (nút đổi thành "Thêm món đầu tiên"), nhưng đó là rào
+  // giao diện: gõ tay `/groups/<id>/sessions/new` vẫn đi qua được. E6-T4 đóng
+  // nốt đường đó.
+  if ((await deps.countActiveDishes(input.groupId)) === 0) {
+    return err(failure('ERR_GROUP_HAS_NO_DISH', { groupId: input.groupId }))
+  }
+
   const blocking = await deps.sessions.findBlockingSessionToday(input.groupId, input.decisionDate)
 
   if (blocking !== null) {

@@ -78,7 +78,7 @@ describe('GroupRulesScreen (S-07)', () => {
     expect(screen.getByText('Chưa có quy định nào')).toBeDefined()
     expect(
       screen.getByText(
-        'Thêm quy định để lúc chốt bữa hệ thống nhắc bạn nếu mâm cơm còn thiếu món.',
+        'Chưa có quy định nào. Lúc chốt bữa sẽ không có gì được kiểm tra — thiếu canh hay thiếu món mặn cũng chốt được.',
       ),
     ).toBeDefined()
     expect(screen.queryByText(/Nên có/)).toBeNull()

@@ -75,7 +75,7 @@ export function GroupRulesScreen({
         {rules.length === 0 ? (
           <EmptyStateCard
             title="Chưa có quy định nào"
-            description="Thêm quy định để lúc chốt bữa hệ thống nhắc bạn nếu mâm cơm còn thiếu món."
+            description="Chưa có quy định nào. Lúc chốt bữa sẽ không có gì được kiểm tra — thiếu canh hay thiếu món mặn cũng chốt được."
           />
         ) : null}
 

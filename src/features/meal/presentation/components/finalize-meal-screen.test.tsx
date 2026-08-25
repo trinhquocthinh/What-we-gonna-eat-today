@@ -138,4 +138,23 @@ describe('FinalizeMealScreen (S-10 Màn tổng hợp và chốt bữa — E5-T7 
     expect(closeLink).toBeDefined()
     expect(closeLink.getAttribute('href')).toBe('/groups/g-1')
   })
+
+  it('khi ranked và untouched đều rỗng: hiện EmptyStateCard nhắc đợi cả nhà vuốt hoặc tự chọn', () => {
+    render(
+      <FinalizeMealScreen
+        dateCaption="Thứ Ba · 20 tháng 8"
+        progressCaption="0 trong 2 người đã xong"
+        ranked={[]}
+        untouched={[]}
+        rules={RULES}
+        closeHref="/groups/g-1"
+        action={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Chưa ai vuốt món nào.')).toBeDefined()
+    expect(
+      screen.getByText('Đợi cả nhà chọn xong rồi quay lại, hoặc tự chọn món ngay bây giờ.'),
+    ).toBeDefined()
+  })
 })

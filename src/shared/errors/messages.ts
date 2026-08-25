@@ -41,6 +41,7 @@ const BASE_MESSAGES = {
   ERR_REQUIRED_RULE_FAILED: 'Mâm cơm còn thiếu món bắt buộc.',
   ERR_DUPLICATE_RULE: 'Mỗi nhãn chỉ đặt được một quy định.',
   ERR_INVALID_MINIMUM_COUNT: 'Số lượng phải từ 1 trở lên.',
+  ERR_GROUP_HAS_NO_DISH: 'Thêm vài món vào nhóm trước khi mở phiên.',
 } satisfies Record<ErrorCode, string>
 
 /**

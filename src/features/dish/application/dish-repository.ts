@@ -66,4 +66,7 @@ export interface DishRepository {
     readonly groupDishId: string
     readonly systemTags: readonly SystemTag[]
   }): Promise<void>
+
+  /** Đếm số món ACTIVE trong nhóm. Dùng cho guard chặn mở phiên (E6-T4 / SPEC-007). */
+  countActiveInGroup(groupId: string): Promise<number>
 }

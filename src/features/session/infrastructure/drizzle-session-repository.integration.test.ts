@@ -93,7 +93,7 @@ describe('SPEC-007 — Tạo Session (integration)', () => {
     const decisionDate = '2026-08-17'
 
     const first = await createSession(
-      { sessions: drizzleSessionRepository },
+      { sessions: drizzleSessionRepository, countActiveDishes: async () => 1 },
       { groupId, creatorUserId: userId, decisionDate },
     )
     if (!first.ok) throw new Error('setup thất bại: không tạo được Session đầu tiên')
@@ -105,7 +105,7 @@ describe('SPEC-007 — Tạo Session (integration)', () => {
     if (!started.ok) throw new Error('setup thất bại: không Start được Session đầu tiên')
 
     const second = await createSession(
-      { sessions: drizzleSessionRepository },
+      { sessions: drizzleSessionRepository, countActiveDishes: async () => 1 },
       { groupId, creatorUserId: userId, decisionDate },
     )
 
@@ -131,7 +131,7 @@ describe('SPEC-007 — Tạo Session (integration)', () => {
     })
 
     const result = await createSession(
-      { sessions: drizzleSessionRepository },
+      { sessions: drizzleSessionRepository, countActiveDishes: async () => 1 },
       { groupId, creatorUserId: userId, decisionDate },
     )
 
@@ -154,7 +154,7 @@ describe('SPEC-007 — Tạo Session (integration)', () => {
     })
 
     const result = await createSession(
-      { sessions: drizzleSessionRepository },
+      { sessions: drizzleSessionRepository, countActiveDishes: async () => 1 },
       { groupId, creatorUserId: userId, decisionDate },
     )
 
@@ -176,7 +176,7 @@ describe('SPEC-007 — Tạo Session (integration)', () => {
 
     const decisionDate = '2026-08-17'
     const draft = await createSession(
-      { sessions: drizzleSessionRepository },
+      { sessions: drizzleSessionRepository, countActiveDishes: async () => 1 },
       { groupId, creatorUserId: userId, decisionDate },
     )
     if (!draft.ok) throw new Error('setup thất bại')
@@ -201,7 +201,7 @@ describe('SPEC-007 — Tạo Session (integration)', () => {
     const decisionDate = '2026-08-17'
 
     const first = await createSession(
-      { sessions: drizzleSessionRepository },
+      { sessions: drizzleSessionRepository, countActiveDishes: async () => 1 },
       { groupId, creatorUserId: userId, decisionDate },
     )
     if (!first.ok) throw new Error('setup thất bại')
@@ -227,11 +227,11 @@ describe('BR-025 — race condition khi Start (TC-107)', () => {
       // SPEC-007 cho phép nhiều Draft cùng group+date cùng lúc (BR-025: "Draft
       // và Invalid Session không block việc tạo một valid Session mới").
       const first = await createSession(
-        { sessions: drizzleSessionRepository },
+        { sessions: drizzleSessionRepository, countActiveDishes: async () => 1 },
         { groupId, creatorUserId: userId, decisionDate },
       )
       const second = await createSession(
-        { sessions: drizzleSessionRepository },
+        { sessions: drizzleSessionRepository, countActiveDishes: async () => 1 },
         { groupId, creatorUserId: userId, decisionDate },
       )
       if (!first.ok || !second.ok) {

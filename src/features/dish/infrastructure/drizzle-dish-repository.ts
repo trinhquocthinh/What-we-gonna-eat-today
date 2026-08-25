@@ -224,6 +224,15 @@ async function replaceSystemTags(input: {
   await db.batch([remove, ...add])
 }
 
+async function countActiveInGroup(groupId: string): Promise<number> {
+  const rows = await getDb()
+    .select({ count: sql<number>`count(*)::int` })
+    .from(groupDishes)
+    .where(and(eq(groupDishes.groupId, groupId), eq(groupDishes.state, ACTIVE)))
+
+  return Number(rows[0]?.count ?? 0)
+}
+
 export const drizzleDishRepository: DishRepository = {
   findInGroupByNormalizedName,
   findGlobalCandidatesByNormalizedName,
@@ -233,4 +242,5 @@ export const drizzleDishRepository: DishRepository = {
   listActiveInGroup,
   findActiveGroupDish,
   replaceSystemTags,
+  countActiveInGroup,
 }

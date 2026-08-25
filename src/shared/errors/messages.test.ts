@@ -28,6 +28,7 @@ describe('messageFor', () => {
     'ERR_REQUIRED_RULE_FAILED',
     'ERR_DUPLICATE_RULE',
     'ERR_INVALID_MINIMUM_COUNT',
+    'ERR_GROUP_HAS_NO_DISH',
   ] as const)('%s có câu tiếng Việt tử tế', (code) => {
     const message = messageFor({ code })
 

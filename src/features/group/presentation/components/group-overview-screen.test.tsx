@@ -128,4 +128,41 @@ describe('GroupOverviewScreen (S-04)', () => {
     expect(screen.queryByText('Trước tiên hãy thêm vài món nhà bạn hay ăn.')).toBeNull()
     expect(screen.getByRole('link', { name: 'Xem bữa hôm nay' })).toBeDefined()
   })
+
+  it('nhóm CÓ món thì không hiện thẻ "chưa có món" — hồi quy E6-T1', () => {
+    render(<GroupOverviewScreen {...BASE_PROPS} dishCount={32} />)
+
+    expect(screen.queryByText(/Trước tiên hãy thêm vài món/)).toBeNull()
+  })
+
+  it('nhóm có món và đang có phiên thì cũng không hiện thẻ đó', () => {
+    const activeSession = {
+      id: 's1',
+      participants: [
+        {
+          userId: 'me',
+          displayName: 'Bạn',
+          state: 'ACTIVE' as const,
+          statusLabel: 'Chưa xong',
+        },
+      ],
+    }
+    render(<GroupOverviewScreen {...BASE_PROPS} dishCount={32} activeSession={activeSession} />)
+
+    expect(screen.queryByText(/Trước tiên hãy thêm vài món/)).toBeNull()
+    expect(screen.getByText('Phiên đang mở')).toBeDefined()
+  })
+
+  it('nhóm 0 món vẫn hiện thẻ và CTA "Thêm món đầu tiên"', () => {
+    render(<GroupOverviewScreen {...BASE_PROPS} dishCount={0} />)
+
+    expect(screen.getByText(/Trước tiên hãy thêm vài món/)).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Thêm món đầu tiên' })).toBeDefined()
+  })
+
+  it('không còn ví dụ món mẫu ở S-04 — chúng thuộc về S-05', () => {
+    render(<GroupOverviewScreen {...BASE_PROPS} dishCount={0} />)
+
+    expect(screen.queryByText('Cá basa kho tiêu')).toBeNull()
+  })
 })

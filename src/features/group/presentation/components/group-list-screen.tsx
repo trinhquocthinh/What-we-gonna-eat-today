@@ -43,7 +43,9 @@ export function GroupListScreen({ dateCaption, groups }: GroupListScreenProps): 
         >
           Tạo nhóm
         </Link>
-        {/* E2-T2: "Tôi có link mời" bật lên khi SPEC-004 có màn hình. */}
+        <span className="self-center text-caption font-medium text-ink-muted">
+          Được mời rồi? Mở link trong tin nhắn là vào thẳng.
+        </span>
       </div>
     </main>
   )

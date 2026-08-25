@@ -31,6 +31,7 @@ const HTTP_STATUS_BY_ERROR_CODE: Record<ErrorCode, number> = {
   ERR_REQUIRED_RULE_FAILED: 409,
   ERR_DUPLICATE_RULE: 409,
   ERR_INVALID_MINIMUM_COUNT: 400,
+  ERR_GROUP_HAS_NO_DISH: 409,
 }
 
 export function httpStatusForErrorCode(code: ErrorCode): number {

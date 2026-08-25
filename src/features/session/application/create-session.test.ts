@@ -67,11 +67,11 @@ const CREATOR = makeUser().id
 const DECISION_DATE = '2026-08-17'
 
 describe('SPEC-007 — Tạo Session', () => {
-  it('TC-026: chưa có Session hôm nay thì tạo DRAFT, người tạo là Creator kiêm Participant', async () => {
+  it('TC-026: chưa có Session hôm nay và nhóm có món thì tạo DRAFT, người tạo là Creator kiêm Participant', async () => {
     const fake = makeFakeSessionRepository()
 
     const result = await createSession(
-      { sessions: fake.repository },
+      { sessions: fake.repository, countActiveDishes: async () => 5 },
       { groupId: GROUP_ID, creatorUserId: CREATOR, decisionDate: DECISION_DATE },
     )
 
@@ -94,11 +94,43 @@ describe('SPEC-007 — Tạo Session', () => {
     }
 
     const result = await createSession(
-      { sessions: spied },
+      { sessions: spied, countActiveDishes: async () => 5 },
       { groupId: GROUP_ID, creatorUserId: CREATOR, decisionDate: DECISION_DATE },
     )
 
     expect(result.ok === false && result.error.code).toBe('ERR_SESSION_EXISTS_TODAY')
     expect(createCalls).toBe(0)
+  })
+
+  it('E6-T4: nhóm 0 món thì trả ERR_GROUP_HAS_NO_DISH và không gọi findBlockingSessionToday', async () => {
+    const fake = makeFakeSessionRepository()
+    let findBlockingCalls = 0
+    const spied: SessionRepository = {
+      ...fake.repository,
+      async findBlockingSessionToday(groupId, decisionDate) {
+        findBlockingCalls += 1
+        return fake.repository.findBlockingSessionToday(groupId, decisionDate)
+      },
+    }
+
+    const result = await createSession(
+      { sessions: spied, countActiveDishes: async () => 0 },
+      { groupId: GROUP_ID, creatorUserId: CREATOR, decisionDate: DECISION_DATE },
+    )
+
+    expect(result.ok === false && result.error.code).toBe('ERR_GROUP_HAS_NO_DISH')
+    expect(findBlockingCalls).toBe(0)
+    expect(fake.rows).toHaveLength(0)
+  })
+
+  it('E6-T4: nhóm 0 món và đã có session hôm nay -> vẫn trả ERR_GROUP_HAS_NO_DISH (lỗi cơ bản hơn)', async () => {
+    const repository = makeBlockingFakeSessionRepository()
+
+    const result = await createSession(
+      { sessions: repository, countActiveDishes: async () => 0 },
+      { groupId: GROUP_ID, creatorUserId: CREATOR, decisionDate: DECISION_DATE },
+    )
+
+    expect(result.ok === false && result.error.code).toBe('ERR_GROUP_HAS_NO_DISH')
   })
 })

@@ -18,6 +18,7 @@ function makeDeps(
     listActiveInGroup: vi.fn(async () => []),
     findActiveGroupDish: vi.fn(async () => null),
     replaceSystemTags: vi.fn(async () => undefined),
+    countActiveInGroup: vi.fn(async () => 0),
   }
   return { dishes }
 }

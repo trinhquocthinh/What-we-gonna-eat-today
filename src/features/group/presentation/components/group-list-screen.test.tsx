@@ -12,6 +12,9 @@ describe('S-02 Danh sách nhóm', () => {
       screen.getByText('Tạo một nhóm cho nhà mình, rồi mời từng người bằng link.'),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Tạo nhóm' })).toBeInTheDocument()
+    expect(
+      screen.getByText('Được mời rồi? Mở link trong tin nhắn là vào thẳng.'),
+    ).toBeInTheDocument()
   })
 
   it('có nhóm thì hiện thẻ và không còn empty state', () => {

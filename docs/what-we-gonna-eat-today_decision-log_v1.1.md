@@ -64,6 +64,7 @@
 | [`DEC-047`](#dec-047--e6-adds-e6-t7-and-e6-t8-the-two-read-only-screens-ms-01-requires) | Bổ sung E6-T7 và E6-T8 cho MS-01 | 2026-08-21 | `Accepted` | Kế hoạch E6, màn S-11 và S-12 |
 | [`DEC-048`](#dec-048--system_tag_labels-moves-to-sharedui-eating-history-is-queried-by-user-routed-by-group) | SYSTEM_TAG_LABELS chuyển sang shared/ui; Eating History query theo User | 2026-08-21 | `Accepted` | Chia sẻ nhãn tag UI, truy vấn lịch sử ăn |
 | [`DEC-049`](#dec-049--one-messageforfailure-not-a-flat-table-validation-fields-are-named-by-subject) | Bảng dịch mã lỗi messageFor, đổi field validation theo chủ thể, component InlineError | 2026-08-21 | `Accepted` | Bảng dịch mã lỗi, component InlineError |
+| [`DEC-050`](#dec-050--s-04-has-four-mutually-exclusive-states-dùng-link-mời-becomes-a-caption-not-a-button) | S-04 có 4 trạng thái loại trừ; "Dùng link mời" thành chú thích | 2026-08-21 | `Accepted` | Bốn trạng thái Hub S-04, chú thích link mời S-02, chặn mở phiên nhóm 0 món |
 ---
 
 # DEC-001 — Selection Session Lifecycle
@@ -1120,10 +1121,53 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-050 — S-04 Has Four Mutually Exclusive States; "Dùng link mời" Becomes a Caption, Not a Button
+
+- **Ngày:** 2026-08-21
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E6-S3
+
+## Quyết định
+
+1. `GroupOverviewScreen` tính MỘT biến `hubState: 'finalized' | 'active' | 'no-dishes' | 'ready'`
+   dùng cho cả thân màn hình lẫn CTA đáy, thay cho các điều kiện độc lập.
+2. Ví dụ món mẫu (`DISH_EXAMPLES`) chỉ còn ở S-05; S-04 nêu hướng dẫn, không liệt kê ví dụ.
+3. Yêu cầu "nút Dùng link mời" của Design Criteria §4 cho S-02 dựng thành một CÂU CHÚ THÍCH,
+   không phải nút.
+4. `createSession` nhận dep `countActiveDishes` tiêm từ `app/`, trả `ERR_GROUP_HAS_NO_DISH`.
+
+## Rationale
+
+1. Thẻ "chưa có món" từng render vô điều kiện, nên nhóm 32 món vẫn đọc thấy "Trước tiên hãy
+   thêm vài món". Ba điều kiện độc lập là cách trạng thái thứ tư lẻn vào; một biến thì không.
+2. Design Criteria §4 giao ví dụ món cho S-05 ("3 ví dụ món mẫu mờ trực quan") và giao cho
+   S-04 một việc khác ("chặn nút mở phiên, hướng dẫn thêm món"). Ví dụ thuộc về nơi người dùng
+   sắp gõ tên món.
+3. v1.0 không có màn "dán link mời" — luồng tham gia bắt đầu bằng việc mở URL từ tin nhắn. Một
+   nút "Dùng link mời" sẽ không trỏ đi đâu cả. Câu chú thích trả lời đúng câu hỏi ("tôi được
+   mời thì làm gì?") bằng phương tiện đúng với luồng thật.
+4. Rào ở UI đã có từ E1 nhưng chỉ là rào giao diện; gõ tay URL vẫn tạo được phiên trên nhóm
+   rỗng. `session → dish` không nằm trong ALLOWED_CROSS_FEATURE nên phép đếm tiêm từ `app/`,
+   cùng khuôn `assertAdmin` (E2-T5) và `findInvalidParticipants` (E3-T1).
+
+## Consequence
+
+- `ErrorCode` lên 23 mã; `satisfies` của `messages.ts` ép có câu dịch ngay.
+- Câu trạng thái rỗng của S-07 đổi từ nêu lợi ích sang nêu hệ quả, theo đúng chữ của
+  Design Criteria §4.
+
+## Affected Documents
+
+- Master Plan §8 — `E6-T1` và `E6-T6` đang trỏ `designs/README.md` §3/§7; nguồn đúng là
+  `design-criteria_v0_1.md` §4 và §8.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.6` | 2026-08-21 | Bổ sung `DEC-050` (S-04 4 trạng thái loại trừ, "Dùng link mời" thành chú thích, chặn mở phiên nhóm 0 món) cho E6-S3 |
 | `3.5` | 2026-08-21 | Bổ sung `DEC-049` (Bảng dịch mã lỗi messageFor, Validation Fields named by Subject, InlineError component) cho E6-S2 |
 | `3.4` | 2026-08-21 | Bổ sung `DEC-047` (Bổ sung E6-T7/E6-T8 cho MS-01) và `DEC-048` (SYSTEM_TAG_LABELS chuyển sang shared/ui; Eating History query theo User) cho E6-S1 |
 | `3.3` | 2026-08-20 | Bổ sung `DEC-046` (Màn S-10 sống trọn trong features/meal; app/ ánh xạ ranking) cho E5-S4 (Cột mốc M5) |

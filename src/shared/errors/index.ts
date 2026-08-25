@@ -29,6 +29,7 @@ export type ErrorCode =
   | 'ERR_REQUIRED_RULE_FAILED'
   | 'ERR_DUPLICATE_RULE'
   | 'ERR_INVALID_MINIMUM_COUNT'
+  | 'ERR_GROUP_HAS_NO_DISH'
 
 export type Failure = {
   readonly code: ErrorCode

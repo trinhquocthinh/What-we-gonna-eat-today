@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createSession } from '@/features/session/application/create-session'
 import { startSession } from '@/features/session/application/start-session'
 import { resolveDecisionDate } from '@/features/session/domain/decision-date'
+import { drizzleDishRepository } from '@/features/dish/infrastructure/drizzle-dish-repository'
 import { drizzleSessionRepository } from '@/features/session/infrastructure/drizzle-session-repository'
 import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
 import type { StartSessionFormState } from '@/features/session/presentation/components/start-session-screen'
@@ -26,7 +27,10 @@ export async function openSessionAction(
     sessionId = existingDraft.id
   } else {
     const created = await createSession(
-      { sessions: drizzleSessionRepository },
+      {
+        sessions: drizzleSessionRepository,
+        countActiveDishes: (gid) => drizzleDishRepository.countActiveInGroup(gid),
+      },
       { groupId, creatorUserId: user.id, decisionDate },
     )
 

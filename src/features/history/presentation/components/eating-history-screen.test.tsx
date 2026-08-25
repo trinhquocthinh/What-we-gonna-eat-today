@@ -60,9 +60,14 @@ describe('EatingHistoryScreen (S-12)', () => {
     expect(closeLink.getAttribute('href')).toBe('/groups/group-1')
   })
 
-  it('khi chưa có lịch sử (days rỗng): hiện EmptyStateCard hướng dẫn', () => {
+  it('khi chưa có lịch sử (days rỗng): hiện EmptyStateCard giải thích cơ chế tránh lặp món', () => {
     render(<EatingHistoryScreen {...defaultProps} days={[]} />)
 
-    expect(screen.getByText(/Chốt bữa đầu tiên rồi lịch sử sẽ tự hiện ở đây/i)).toBeDefined()
+    expect(screen.getByText('Chưa có lịch sử ăn uống.')).toBeDefined()
+    expect(
+      screen.getByText(
+        'Chốt bữa đầu tiên để bắt đầu lưu lịch sử. Hệ thống sẽ tự động giảm gợi ý những món vừa ăn trong 7 ngày để tránh lặp món.',
+      ),
+    ).toBeDefined()
   })
 })

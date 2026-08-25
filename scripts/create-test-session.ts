@@ -9,6 +9,7 @@ import { createSession } from '../src/features/session/application/create-sessio
 import { startSession } from '../src/features/session/application/start-session'
 import { resolveDecisionDate } from '../src/features/session/domain/decision-date'
 import { drizzleMembershipRepository } from '../src/features/group/infrastructure/drizzle-group-repository'
+import { drizzleDishRepository } from '../src/features/dish/infrastructure/drizzle-dish-repository'
 import { drizzleSessionRepository } from '../src/features/session/infrastructure/drizzle-session-repository'
 import { getDb } from '../src/shared/db/client'
 import {
@@ -98,7 +99,10 @@ async function main() {
     // Tạo session mới
     console.log('\n📝 Đang tạo Session mới dạng DRAFT...')
     const createResult = await createSession(
-      { sessions: drizzleSessionRepository },
+      {
+        sessions: drizzleSessionRepository,
+        countActiveDishes: (gid) => drizzleDishRepository.countActiveInGroup(gid),
+      },
       {
         groupId: targetGroup.id,
         creatorUserId: creator.userId,

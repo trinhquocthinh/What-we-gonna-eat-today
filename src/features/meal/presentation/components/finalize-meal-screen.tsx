@@ -6,6 +6,7 @@ import { useActionState, useMemo, useState } from 'react'
 
 import type { RequiredRule } from '@/features/rule/domain/evaluate'
 import type { SystemTag } from '@/shared/domain/system-tag'
+import { EmptyStateCard } from '@/shared/ui/empty-state-card'
 
 import { DishScoreRow } from './dish-score-row'
 import { FinalizeBar } from './finalize-bar'
@@ -111,6 +112,13 @@ export function FinalizeMealScreen({
 
         {/* jscpd:ignore-start */}
         <div className="flex flex-1 flex-col gap-6 px-4 pt-3 pb-6">
+          {ranked.length === 0 && untouched.length === 0 ? (
+            <EmptyStateCard
+              title="Chưa ai vuốt món nào."
+              description="Đợi cả nhà chọn xong rồi quay lại, hoặc tự chọn món ngay bây giờ."
+            />
+          ) : null}
+
           {ranked.length > 0 && (
             <section className="flex flex-col gap-3">
               <h2 className="text-subtitle font-semibold text-ink">Cả nhà nghiêng về</h2>

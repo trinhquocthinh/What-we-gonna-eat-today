@@ -29,6 +29,9 @@ function makeThrowingRepo(overrides: Partial<DishRepository> = {}): DishReposito
     async replaceSystemTags() {
       throw new Error('không dùng trong test này')
     },
+    async countActiveInGroup() {
+      throw new Error('không dùng trong test này')
+    },
     ...overrides,
   }
 }

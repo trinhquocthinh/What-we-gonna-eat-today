@@ -46,7 +46,7 @@ export function EatingHistoryScreen({
         {days.length === 0 ? (
           <EmptyStateCard
             title="Chưa có lịch sử ăn uống."
-            description="Chốt bữa đầu tiên rồi lịch sử sẽ tự hiện ở đây."
+            description="Chốt bữa đầu tiên để bắt đầu lưu lịch sử. Hệ thống sẽ tự động giảm gợi ý những món vừa ăn trong 7 ngày để tránh lặp món."
           />
         ) : (
           days.map((day) => (
