@@ -17,6 +17,7 @@ function makeDeps(
       overrides.membership === undefined ? makeMembership({ isAdmin: true }) : overrides.membership,
     ),
     findInvalidMembers: vi.fn(async () => []),
+    listActiveMembers: vi.fn(async () => []),
   }
   const invites: InviteRepository = {
     create:

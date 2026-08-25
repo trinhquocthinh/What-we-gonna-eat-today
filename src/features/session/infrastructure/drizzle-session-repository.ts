@@ -234,6 +234,22 @@ async function addParticipant(input: {
   }
 }
 
+async function ensureParticipants(sessionId: string, userIds: readonly string[]): Promise<void> {
+  if (userIds.length === 0) return
+
+  await getDb()
+    .insert(participants)
+    .values(
+      userIds.map((userId) => ({
+        id: uuidv7(),
+        sessionId,
+        userId,
+        state: 'ACTIVE' as const,
+      })),
+    )
+    .onConflictDoNothing({ target: [participants.sessionId, participants.userId] })
+}
+
 async function findParticipantState(
   sessionId: string,
   userId: string,
@@ -310,6 +326,7 @@ export const drizzleSessionRepository: SessionRepository = {
   findDraftToday,
   findForStart,
   addParticipant,
+  ensureParticipants,
   findParticipantState,
   setParticipantState,
   findSessionOverview,

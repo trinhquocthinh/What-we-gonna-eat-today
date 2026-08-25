@@ -1,6 +1,6 @@
 {
   "name": "what-we-gonna-eat-today",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "packageManager": "yarn@4.18.0",
   "engines": {

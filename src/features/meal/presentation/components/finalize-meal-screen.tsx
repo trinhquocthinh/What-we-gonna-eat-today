@@ -24,7 +24,6 @@ export type SummaryDish = {
 
 export type FinalizeFormState = {
   readonly error: string | null
-  readonly finalized: boolean
 }
 
 export type FinalizeMealScreenProps = {
@@ -38,7 +37,7 @@ export type FinalizeMealScreenProps = {
   action: (state: FinalizeFormState, formData: FormData) => Promise<FinalizeFormState>
 }
 
-const INITIAL_STATE: FinalizeFormState = { error: null, finalized: false }
+const INITIAL_STATE: FinalizeFormState = { error: null }
 
 const TAG_LABELS: Record<SystemTag, string> = {
   STAPLE: 'Món cơm',

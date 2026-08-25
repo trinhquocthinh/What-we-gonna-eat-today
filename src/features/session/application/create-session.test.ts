@@ -37,6 +37,9 @@ function makeFakeSessionRepository(seed: Row[] = []) {
     async addParticipant(): Promise<never> {
       throw new Error('không dùng trong test này')
     },
+    async ensureParticipants(): Promise<never> {
+      throw new Error('không dùng trong test này')
+    },
     async findParticipantState() {
       return null
     },

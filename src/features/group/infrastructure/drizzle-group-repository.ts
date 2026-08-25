@@ -120,6 +120,19 @@ async function findInvalidMembers(
   return rows
 }
 
+/** Đối xứng với `listForUser`: `removed_at IS NULL` là câu hỏi "lấy dòng nào".
+ *  Sắp theo `joined_at` để thứ tự hàng ở S-08 ổn định giữa các lần mở. */
+async function listActiveMembers(
+  groupId: string,
+): Promise<{ userId: string; displayName: string }[]> {
+  return getDb()
+    .select({ userId: users.id, displayName: users.displayName })
+    .from(groupMembers)
+    .innerJoin(users, eq(users.id, groupMembers.userId))
+    .where(and(eq(groupMembers.groupId, groupId), isNull(groupMembers.removedAt)))
+    .orderBy(groupMembers.joinedAt)
+}
+
 export const drizzleGroupRepository: GroupRepository = {
   createWithAdmin,
   listForUser,
@@ -129,4 +142,5 @@ export const drizzleGroupRepository: GroupRepository = {
 export const drizzleMembershipRepository: MembershipRepository = {
   findMembership,
   findInvalidMembers,
+  listActiveMembers,
 }

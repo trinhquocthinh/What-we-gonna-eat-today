@@ -23,4 +23,18 @@ export interface MembershipRepository {
     groupId: string,
     userIds: readonly string[],
   ): Promise<{ readonly userId: string; readonly displayName: string }[]>
+
+  /**
+   * Mọi Member CÒN HIỆU LỰC của Group (`removed_at IS NULL`), kèm tên để hiện
+   * ở S-08 "Tối nay ai ăn ở nhà".
+   *
+   * Đây là nguồn danh sách Participant lúc mở phiên: một phiên bữa cơm mặc
+   * định gồm CẢ NHÀ, không phải riêng người bấm nút. Trước khi có hàm này,
+   * `createDraftWithCreatorParticipant` là nơi duy nhất sinh Participant nên
+   * mọi phiên đều chỉ có đúng một người, và Member khác mở deck thì nhận
+   * `ERR_NOT_PARTICIPANT`.
+   */
+  listActiveMembers(
+    groupId: string,
+  ): Promise<{ readonly userId: string; readonly displayName: string }[]>
 }

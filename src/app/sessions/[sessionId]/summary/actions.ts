@@ -1,6 +1,5 @@
 'use server'
 
-import { refresh, revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/features/auth/infrastructure/session'
@@ -36,7 +35,7 @@ export async function finalizeMealAction(
     { sessionId, userId: user.id, dishIds },
   )
   if (!saved.ok) {
-    return { error: messageFor(saved.error), finalized: false }
+    return { error: messageFor(saved.error) }
   }
 
   const finalized = await finalizeSession(
@@ -44,10 +43,11 @@ export async function finalizeMealAction(
     { sessionId, userId: user.id },
   )
   if (!finalized.ok) {
-    return { error: messageFor(finalized.error), finalized: false }
+    return { error: messageFor(finalized.error) }
   }
 
-  revalidatePath(`/sessions/${sessionId}`)
-  refresh()
-  return { error: null, finalized: true }
+  // Session vừa chuyển FINALIZED — trang này (`findSessionForRanking` chỉ
+  // nhận `ACTIVE`) sẽ 404 nếu còn ở lại. Điều hướng thẳng sang mâm cơm đã
+  // chốt thay vì `refresh()` tại chỗ.
+  redirect(`/sessions/${sessionId}/meal`)
 }

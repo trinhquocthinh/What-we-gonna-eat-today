@@ -114,6 +114,21 @@ export interface SessionRepository {
   addParticipant(input: { sessionId: string; userId: string }): Promise<AddParticipantOutcome>
 
   /**
+   * Chèn Participant cho MỌI `userId` chưa có trong phiên, bỏ qua người đã có.
+   *
+   * Khác `addParticipant` ở chỗ đây là thao tác HÀNG LOẠT và IDEMPOTENT: gọi
+   * lại không đổi gì, không lỗi. Cần đúng hai tính chất đó vì `openSessionAction`
+   * gọi nó trên cả Draft mới tạo (Creator đã có sẵn) lẫn Draft dùng lại (có thể
+   * đã đủ người từ lần bấm trước) — xem `ERR_PARTICIPANT_EXISTS` của
+   * `addParticipant` là lỗi ĐÚNG cho thao tác thêm-một-người thủ công, nhưng
+   * sai cho thao tác đồng bộ-cả-nhà này.
+   *
+   * KHÔNG đụng tới người đã `REMOVED`: `onConflictDoNothing` giữ nguyên hàng cũ,
+   * nên phiên không tự kéo lại người mà Creator đã gỡ (F25, v1.1).
+   */
+  ensureParticipants(sessionId: string, userIds: readonly string[]): Promise<void>
+
+  /**
    * MỚI — E3-T5. Dùng ở CẢ HAI nơi: `setParticipantCompleted` (đọc trạng thái
    * hiện tại trước khi ghi) và `app/sessions/[sessionId]/page.tsx` (khởi tạo
    * `view` ban đầu của `DeckScreen` — reload trang phải giữ đúng trạng thái

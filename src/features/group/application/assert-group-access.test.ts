@@ -17,6 +17,9 @@ function makeFakeMembershipRepository(membership: Membership | null) {
     async findInvalidMembers() {
       return []
     },
+    async listActiveMembers() {
+      return []
+    },
   }
 
   return {

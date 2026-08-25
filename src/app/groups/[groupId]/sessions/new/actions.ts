@@ -50,6 +50,15 @@ export async function openSessionAction(
     sessionId = created.value.id
   }
 
+  // CẢ NHÀ vào phiên, không riêng người bấm nút (SPEC-009 / F06). Chạy cho cả
+  // Draft mới lẫn Draft dùng lại, và chạy TRƯỚC `startSession` để bước
+  // revalidate của nó soi đúng tập Participant thật sẽ vuốt.
+  const members = await drizzleMembershipRepository.listActiveMembers(groupId)
+  await drizzleSessionRepository.ensureParticipants(
+    sessionId,
+    members.map((m) => m.userId),
+  )
+
   const result = await startSession(
     {
       sessions: drizzleSessionRepository,

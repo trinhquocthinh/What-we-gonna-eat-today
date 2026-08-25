@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import type { ReactElement } from 'react'
 import { useState } from 'react'
 
@@ -18,6 +19,10 @@ export type DeckScreenProps = {
   dateCaption: string
   dishes: DishCard[]
   initialParticipantState: 'ACTIVE' | 'COMPLETED'
+  /** Group Hub — nơi duy nhất hiện "Xem tổng hợp" (Creator) và "ai xong ai
+   *  chưa" (mọi Member). Màn "Xong lượt của bạn" từng là NGÕ CỤT: không có
+   *  cách nào đi tiếp ngoài nút back của trình duyệt. */
+  groupHref: string
 }
 
 type ViewState = 'deck' | 'done'
@@ -44,6 +49,7 @@ export function DeckScreen({
   dateCaption,
   dishes,
   initialParticipantState,
+  groupHref,
 }: DeckScreenProps): ReactElement {
   const [cursor, setCursor] = useState(0)
   const [marks, setMarks] = useState<Array<'yes' | 'no'>>([])
@@ -211,6 +217,12 @@ export function DeckScreen({
 
         {isDone ? (
           <>
+            <Link
+              href={groupHref}
+              className="flex min-h-14 w-full items-center justify-center rounded-control bg-accent px-6 text-subtitle font-semibold text-on-accent shadow-button transition-transform duration-100 hover:bg-accent-hover active:scale-[0.98] active:bg-accent-active"
+            >
+              Về trang nhóm
+            </Link>
             <Button type="button" variant="secondary" onClick={handleReopen}>
               Mở lại lượt chọn
             </Button>

@@ -24,6 +24,7 @@ describe('S-09 Deck vuốt', () => {
         dateCaption="Thứ Ba 18/8"
         dishes={makeDishes(['Cá basa kho tiêu', 'Canh chua'])}
         initialParticipantState="ACTIVE"
+        groupHref="/groups/g1"
       />,
     )
 
@@ -38,6 +39,7 @@ describe('S-09 Deck vuốt', () => {
         dateCaption="Thứ Ba 18/8"
         dishes={makeDishes(['Cá basa kho tiêu'])}
         initialParticipantState="ACTIVE"
+        groupHref="/groups/g1"
       />,
     )
 
@@ -59,6 +61,7 @@ describe('S-09 Deck vuốt', () => {
         dateCaption="Thứ Ba 18/8"
         dishes={makeDishes(['Cá basa kho tiêu', 'Canh chua'])}
         initialParticipantState="ACTIVE"
+        groupHref="/groups/g1"
       />,
     )
     await userEvent.click(screen.getByRole('button', { name: 'Đề xuất Cá basa kho tiêu' }))
@@ -84,6 +87,7 @@ describe('S-09 Deck vuốt', () => {
         dateCaption="Thứ Ba 18/8"
         dishes={makeDishes(['Cá basa kho tiêu'])}
         initialParticipantState="ACTIVE"
+        groupHref="/groups/g1"
       />,
     )
     await userEvent.click(screen.getByRole('button', { name: 'Đề xuất Cá basa kho tiêu' }))
@@ -101,6 +105,7 @@ describe('S-09 Deck vuốt', () => {
         dateCaption="Thứ Ba 18/8"
         dishes={makeDishes(['Cá basa kho tiêu'])}
         initialParticipantState="ACTIVE"
+        groupHref="/groups/g1"
       />,
     )
 
@@ -119,10 +124,28 @@ describe('S-09 Deck vuốt', () => {
         dateCaption="Thứ Ba · 19 tháng 8"
         dishes={makeDishes(['Cá basa kho tiêu'])}
         initialParticipantState="COMPLETED"
+        groupHref="/groups/g1"
       />,
     )
 
     expect(screen.getByText('Xong lượt của bạn.')).toBeInTheDocument()
+  })
+
+  it('màn "Xong lượt của bạn" có link "Về trang nhóm" trỏ đúng groupHref — trước đây là ngõ cụt', () => {
+    render(
+      <DeckScreen
+        sessionId="s1"
+        dateCaption="Thứ Ba · 19 tháng 8"
+        dishes={makeDishes(['Cá basa kho tiêu'])}
+        initialParticipantState="COMPLETED"
+        groupHref="/groups/g1"
+      />,
+    )
+
+    expect(screen.getByRole('link', { name: 'Về trang nhóm' })).toHaveAttribute(
+      'href',
+      '/groups/g1',
+    )
   })
 
   it('bấm "Tôi chọn xong" gọi đúng endpoint với completed=true', async () => {
@@ -132,7 +155,13 @@ describe('S-09 Deck vuốt', () => {
     vi.stubGlobal('fetch', fetchSpy)
 
     render(
-      <DeckScreen sessionId="s1" dateCaption="..." dishes={[]} initialParticipantState="ACTIVE" />,
+      <DeckScreen
+        sessionId="s1"
+        dateCaption="..."
+        dishes={[]}
+        initialParticipantState="ACTIVE"
+        groupHref="/groups/g1"
+      />,
     )
 
     await userEvent.click(screen.getByRole('button', { name: 'Tôi chọn xong' }))

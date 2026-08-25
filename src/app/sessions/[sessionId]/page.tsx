@@ -72,6 +72,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
       dateCaption={formatVietnameseDateShort(session.decisionDate)}
       dishes={deck.value.items}
       initialParticipantState={participantState}
+      groupHref={`/groups/${session.groupId}`}
     />
   )
 }
