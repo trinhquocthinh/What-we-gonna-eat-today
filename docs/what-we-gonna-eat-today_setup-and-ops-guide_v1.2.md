@@ -2,9 +2,9 @@
 
 > **Document Metadata**
 >
-> - **Version:** `0.2` | **Status:** `Approved`
+> - **Version:** `1.2` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-18`
-> - **Supersedes:** `v0.1` | **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Plan & Scope](what-we-gonna-eat-today_plan-and-scope_v0_1.md)
+> - **Supersedes:** `v1.1` | **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Plan & Scope](what-we-gonna-eat-today_plan-and-scope_v0_1.md)
 > - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • Môi trường triển khai Production & Dev
 >
 > 📌 *Cẩm nang vận hành và hướng dẫn cài đặt hệ thống: Yêu cầu môi trường (Node 24, Yarn 4), cấu hình biến môi trường, chuyển đổi Authentik (Family Hub), quy trình Database Branching, sao lưu/khôi phục và xử lý sự cố.*

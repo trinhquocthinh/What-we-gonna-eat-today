@@ -2,7 +2,7 @@
 
 > **Document Metadata**
 >
-> - **Version:** `0.2` | **Status:** `Approved`
+> - **Version:** `1.2` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
 > - **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v1.1.md)
 > - **Downstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)

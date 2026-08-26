@@ -2,7 +2,7 @@
 
 > **Document Metadata**
 >
-> - **Version:** `0.1` | **Status:** `Approved`
+> - **Version:** `1.0` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
 > - **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
 > - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • Bộ mã kiểm thử tự động Vitest

@@ -2,7 +2,7 @@
 
 > **Document Metadata**
 >
-> - **Version:** `0.1` | **Status:** `Draft` | **Release:** `R1 (v1.0)`
+> - **Version:** `1.0` | **Status:** `Draft` | **Release:** `R1 (v1.0)`
 > - **Created:** `2026-08-25` | **Last Updated:** `2026-08-25`
 > - **Upstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • [Design Criteria](what-we-gonna-eat-today_design-criteria_v0_1.md)
 >

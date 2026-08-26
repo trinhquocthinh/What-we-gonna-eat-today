@@ -2,7 +2,7 @@
 
 > **Document Metadata**
 >
-> - **Version:** `0.4` | **Status:** `Draft — Awaiting review`
+> - **Version:** `1.4` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
 > - **Upstream:** [Problem Definition v1.3](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules v1.4](what-we-gonna-eat-today_business-rules_v1.4.md) • [Ranking Specification v0.1](what-we-gonna-eat-today_ranking-specification_v0_1.md) • [Decision Log v1.1](what-we-gonna-eat-today_decision-log_v1.1.md)
 > - **Downstream:** [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)

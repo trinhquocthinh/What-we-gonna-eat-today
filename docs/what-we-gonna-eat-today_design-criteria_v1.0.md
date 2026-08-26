@@ -2,7 +2,7 @@
 
 > **Document Metadata**
 >
-> - **Version:** `0.1` | **Status:** `Approved`
+> - **Version:** `1.0` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
 > - **Upstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)
 > - **Downstream:** [Design README](designs/README.md) • Giao diện người dùng Web & Mobile
