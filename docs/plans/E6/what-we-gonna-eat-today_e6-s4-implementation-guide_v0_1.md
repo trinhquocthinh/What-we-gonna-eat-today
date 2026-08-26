@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-21`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E6-T5`, `E6-T6`, `E6-T3` — **Cột mốc M6**) • [Tech Spec §8.2](../what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Design Criteria §8, §10](../what-we-gonna-eat-today_design-criteria_v0_1.md) • [PRD `NFR-01`→`NFR-05`](../what-we-gonna-eat-today_prd_v0_1.md) • [Test Cases `MS-01`→`MS-05`](../what-we-gonna-eat-today_test-cases-specification_v0_1.md)
+> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T5`, `E6-T6`, `E6-T3` — **Cột mốc M6**) • [Tech Spec §8.2](../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Design Criteria §8, §10](../what-we-gonna-eat-today_design-criteria_v1.0.md) • [PRD `NFR-01`→`NFR-05`](../what-we-gonna-eat-today_prd_v1.5.md) • [Test Cases `MS-01`→`MS-05`](../what-we-gonna-eat-today_test-cases-specification_v1.1.md)
 > - **Tiền đề:** S1, S2, S3 đã code. `MS-01` chỉ chạy được sau S1.
 >
 > 🚪 *Slice cuối của v1.0. Không thêm màn hình, không thêm tính năng — dựng ba cái cổng và đo bằng số thật. Xong slice này là mốc M6.*
@@ -31,7 +31,7 @@
 
 ## 1.1 Tech Spec đòi HAI ngưỡng, cấu hình hiện tại chỉ cho MỘT số
 
-[Tech Spec §8.2](../what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) đặt ngưỡng theo **từng tầng**:
+[Tech Spec §8.2](../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) đặt ngưỡng theo **từng tầng**:
 
 | Tầng | Ngưỡng |
 | --- | :---: |
@@ -94,7 +94,7 @@ Khoảng trống **thật** sau khi loại trừ chỉ còn hai file, và cả h
 
 ## 1.3 `--ink-faint` trượt chuẩn tương phản, và E5 đang dùng nó cho thông tin thật
 
-[Design Criteria §8](../what-we-gonna-eat-today_design-criteria_v0_1.md) đòi tương phản **≥ 4.5:1**. Tính thật trên bảng token của §3.1:
+[Design Criteria §8](../what-we-gonna-eat-today_design-criteria_v1.0.md) đòi tương phản **≥ 4.5:1**. Tính thật trên bảng token của §3.1:
 
 | Token | trên `--surface` | trên `--surface-raised` | trên `--surface-sunken` |
 | --- | :---: | :---: | :---: |
@@ -121,7 +121,7 @@ Hai ô còn lại (`--accent` và `--warning` trên `--surface-sunken`) là **c�
 
 ## 1.4 Ba trong tám anti-pattern kiểm được bằng máy — viết test thay vì tin mắt
 
-[Design Criteria §10](../what-we-gonna-eat-today_design-criteria_v0_1.md) liệt kê 8 anti-pattern. Ba cái là bài kiểm tra tự động được, và E4-S4 đã dựng sẵn khuôn ở [dish-swipe-card.test.tsx](../../src/features/selection/presentation/components/dish-swipe-card.test.tsx):
+[Design Criteria §10](../what-we-gonna-eat-today_design-criteria_v1.0.md) liệt kê 8 anti-pattern. Ba cái là bài kiểm tra tự động được, và E4-S4 đã dựng sẵn khuôn ở [dish-swipe-card.test.tsx](../../src/features/selection/presentation/components/dish-swipe-card.test.tsx):
 
 ```ts
 describe('DIRECTION_STYLES — bất biến thiết kế', () => {
@@ -184,7 +184,7 @@ src/features/meal/presentation/components/
 src/tests/
   design-invariants.test.ts             + MỚI (§4.2)
 
-docs/what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md
+docs/what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md
                                         ~ SỬA — thêm §5.5 bảng đo NFR (§5)
 ```
 
@@ -370,7 +370,7 @@ Ba việc còn lại của Design Criteria §8, không tự động hoá đượ
 
 Không sinh code. Chạy trên **production**, **điện thoại thật**, **4G/5G** — không phải localhost, không phải Wi-Fi.
 
-Thêm §5.5 vào [Setup & Ops Guide](../what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md), ngay sau bảng đo cold start M2 hiện có ở §5.4 (giữ nguyên bảng đó — nó là số liệu M2, không ghi đè):
+Thêm §5.5 vào [Setup & Ops Guide](../what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md), ngay sau bảng đo cold start M2 hiện có ở §5.4 (giữ nguyên bảng đó — nó là số liệu M2, không ghi đè):
 
 ```markdown
 ## 5.5 Bảng đo NFR-01 → NFR-05 (M6)
@@ -473,7 +473,7 @@ Bảng §5.5 của Setup & Ops Guide điền đủ **5 dòng**, không dòng nà
 
 ---
 
-# 10. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 10. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-051 — Coverage Thresholds Are Per-Layer and Exclude Type-Only Files; NFR-04 Is Quantified by Test Count
@@ -526,7 +526,7 @@ Bảng §5.5 của Setup & Ops Guide điền đủ **5 dòng**, không dòng nà
 
 ```markdown
 | `[x] E6-T5` | Rà coverage `domain/` và `application/` đạt 80% | … |
-| `[x] E6-T6` | Rà khả năng tiếp cận: Tương phản, focus, nhãn | [Design Criteria §8](what-we-gonna-eat-today_design-criteria_v0_1.md) | … — **Cột mốc M6** |
+| `[x] E6-T6` | Rà khả năng tiếp cận: Tương phản, focus, nhãn | [Design Criteria §8](../what-we-gonna-eat-today_design-criteria_v1.0.md) | … — **Cột mốc M6** |
 | `[x] E6-T3` | Đo NFR-01 đến NFR-05 bằng số thật | … |
 ```
 

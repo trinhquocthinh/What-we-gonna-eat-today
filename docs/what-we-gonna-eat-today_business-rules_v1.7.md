@@ -2,12 +2,12 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.6` | **Status:** `Active`
-> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-14`
-> - **Supersedes:** `v1.5` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v1.1.md)
-> - **Downstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md)
+> - **Version:** `1.7` | **Status:** `Active`
+> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-26`
+> - **Supersedes:** `v1.6` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v3.9.md)
+> - **Downstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v1.1.md)
 >
-> 📌 *Tài liệu định nghĩa toàn bộ 61 quy tắc nghiệp vụ bất biến (`BR-001` đến `BR-061`) của hệ thống What We Gonna Eat Today. Mỗi quy tắc có mã định danh bất biến dùng làm tham chiếu chuẩn cho PRD, SDD và Test Cases.*
+> 📌 *Tài liệu định nghĩa toàn bộ 63 quy tắc nghiệp vụ bất biến (`BR-001` đến `BR-063`) của hệ thống What We Gonna Eat Today. Mỗi quy tắc có mã định danh bất biến dùng làm tham chiếu chuẩn cho PRD, SDD và Test Cases.*
 
 ---
 
@@ -34,9 +34,10 @@
 19. [Eating History Rules (`BR-056` → `BR-057`)](#19-eating-history-rules)
 20. [Historical Correction Rules (`BR-058` → `BR-060`)](#20-historical-correction-rules)
 21. [Invalid, Removed and Re-added Interaction Rules (`BR-061`)](#21-invalid-removed-and-re-added-interaction-rules--br-061)
-22. [Core Invariants Summary](#22-core-invariants-summary)
-23. [Rule ID Registry (Bảng tra cứu toàn diện 61 BR)](#23-rule-id-registry)
-24. [Lịch sử thay đổi (Change History)](#24-lịch-sử-thay-đổi-change-history)
+22. [Deck Composition Rules (`BR-062` → `BR-063`)](#22-deck-composition-rules)
+23. [Core Invariants Summary](#23-core-invariants-summary)
+24. [Rule ID Registry (Bảng tra cứu toàn diện 63 BR)](#24-rule-id-registry)
+25. [Lịch sử thay đổi (Change History)](#25-lịch-sử-thay-đổi-change-history)
 
 ---
 
@@ -173,8 +174,8 @@ Member (Cơ bản)
 ## 3.3 Quyền hạn của Group Admin — `BR-008`
 
 - Tất cả quyền của Group Member.
-- Đổi tên nhóm và chỉnh sửa múi giờ nhóm ([SPEC-002](what-we-gonna-eat-today_sdd_v0_1.md)).
-- Tạo link mời tham gia nhóm ([SPEC-003](what-we-gonna-eat-today_sdd_v0_1.md)).
+- Đổi tên nhóm và chỉnh sửa múi giờ nhóm ([SPEC-002](what-we-gonna-eat-today_sdd_v1.3.md)).
+- Tạo link mời tham gia nhóm ([SPEC-003](what-we-gonna-eat-today_sdd_v1.3.md)).
 - Gỡ thành viên ra khỏi nhóm (trừ Creator/Chef của phiên đang chạy).
 - Gán hoặc gỡ vai trò Chef Role của thành viên.
 - Chỉnh sửa System Tag của món trong nhóm.
@@ -464,6 +465,7 @@ Quy định mâm cơm **không tham gia vào thuật toán tính điểm Ranking
 ## 19.1 Default Eating History — `BR-056`
 
 - Khi finalize, hệ thống tự động sinh bản ghi lịch sử ăn uống cho mọi Participant có mặt trong phiên.
+- **Ngoại lệ:** không sinh bản ghi cho Participant đã khai `Cannot Eat` (`BR-034`) với chính món đó. Ghi nhận họ đã ăn rồi trừ điểm Cooldown món ấy cho họ là hệ thống tự bịa ra dữ kiện rồi tin vào nó.
 
 ## 19.2 Personal Eating History Correction — `BR-057`
 
@@ -493,17 +495,40 @@ Quy định mâm cơm **không tham gia vào thuật toán tính điểm Ranking
 
 ---
 
-# 22. Core Invariants Summary
+# 22. Deck Composition Rules
+
+## 22.1 Deck Size Cap — `BR-062`
+
+- Mỗi Participant nhận **tối đa 30 thẻ** trong một phiên. Trần này là hằng số toàn hệ thống, **không cấu hình theo Group**.
+- Trần chia hết cho khối 5 của `BR-047`: đúng **24 thẻ Exploit + 6 thẻ Explore**.
+- **Thứ tự dựng deck là bắt buộc:** lọc ràng buộc cứng → xếp theo Personal Score → trộn Explore theo khối → **cắt trần** → chia chặng.
+- Cắt trần **sau** khi trộn Explore. Cắt trước sẽ xoá sạch tập nguồn của luồng Explore, vì món lâu chưa ăn nằm ở đuôi bảng xếp hạng.
+- Nhóm có nhiều hơn 30 món đủ điều kiện thì phần đuôi danh mục **không xuất hiện trong phiên đó**. Đây là hành vi đúng, không phải lỗi.
+
+## 22.2 Guided Course Mode — `BR-063`
+
+- Phiên có hai chế độ duyệt: `FREE` (mặc định, một danh sách trộn lẫn) và `COURSE` (duyệt lần lượt theo chặng).
+- Creator chọn chế độ **và** sắp thứ tự chặng **lúc mở phiên**. Mỗi chặng ứng với đúng một System Tag.
+- Chế độ và danh sách chặng được **đóng băng vào phiên** cùng lúc với `Session Rule` (`BR-015`). Đổi cấu hình giữa phiên không tác động tới phiên đang chạy.
+- Mọi Participant trong cùng một phiên dùng **chung một chế độ** — nếu không, $P$ và $N$ của `BR-049` đo trên hai mẫu số khác nhau và điểm cộng lại mất nghĩa.
+- **Phân bổ hạn mức:** chia đều trần `BR-062` cho $n$ chặng; chặng nào không đủ món thì phần dư chia lại cho các chặng còn lại.
+- Chặng **chỉ chia deck lúc duyệt**. Việc tổng hợp và chốt bữa không đổi — vẫn một lần duy nhất ở cuối theo `BR-049` và `BR-050`.
+
+---
+
+# 23. Core Invariants Summary
 
 1. **Group Membership:** Creator và Chef của phiên `ACTIVE` không thể bị gỡ khỏi Group.
 2. **Session Uniqueness:** Tối đa 1 phiên `ACTIVE` hoặc `FINALIZED` cho mỗi Group trong 1 ngày.
 3. **Hard Filter First:** Ràng buộc `Cannot Eat`, `Blacklist`, `Inactive` loại món trước khi tính điểm.
 4. **Deck Stability:** Thẻ đã xem qua không bao giờ bị đổi vị trí khi tính lại điểm giữa phiên.
 5. **Atomic Finalize:** Tạo Final Meal, chuyển trạng thái Session và ghi Eating History trong 1 transaction duy nhất.
+6. **Cap After Blend:** Trần số thẻ luôn được cắt SAU khi trộn luồng Explore, không bao giờ trước.
+7. **One Mode Per Session:** Mọi Participant của một phiên duyệt món theo cùng một chế độ.
 
 ---
 
-# 23. Rule ID Registry
+# 24. Rule ID Registry
 
 | Mã BR | Mục | Chủ đề nghiệp vụ chính |
 | :---: | :---: | :--- |
@@ -568,15 +593,18 @@ Quy định mâm cơm **không tham gia vào thuật toán tính điểm Ranking
 | `BR-059` | 20.2 | System Admin điều chỉnh thực đơn ngày cũ |
 | `BR-060` | 20.3 | Tác động điều chỉnh lên Eating History |
 | `BR-061` | 21.0 | Vô hiệu hóa và bảo toàn tương tác cũ |
+| `BR-062` | 22.1 | Trần số thẻ mỗi phiên (30) & thứ tự dựng deck |
+| `BR-063` | 22.2 | Chế độ duyệt theo chặng (Guided Course Mode) |
 
 ---
 
-# 24. Lịch sử thay đổi (Change History)
+# 25. Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.7` | 2026-08-26 | §19.1, §22, §23 | Bổ sung `BR-062` (trần 30 thẻ, thứ tự cắt sau khi trộn Explore) và `BR-063` (chế độ duyệt theo chặng); thêm ngoại lệ `Cannot Eat` cho `BR-056`; hai bất biến mới ở Core Invariants | [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `1.6` | 2026-08-14 | Toàn bộ | Gán mã định danh `BR-ID` ổn định cho tất cả quy tắc nghiệp vụ | Đồng bộ PRD v0.1 |
-| `1.6` | 2026-08-14 | System Tag | Cố định 5 giá trị System Tag cốt lõi | [PRD v0.1](what-we-gonna-eat-today_prd_v0_1.md) |
-| `1.5` | 2026-08-14 | Ranking & Cooldown | Giới hạn Cooldown 7 ngày ở cấp Dish, Explore 20%, Session Ranking evidence-only | [DEC-012](what-we-gonna-eat-today_decision-log_v1.1.md) |
-| `1.4` | 2026-07-29 | Rules & Validation | Quy định cấu trúc Group/Session Rules, snapshot Draft, tách Ranking khỏi Rule Engine | [DEC-010](what-we-gonna-eat-today_decision-log_v1.1.md), [DEC-011](what-we-gonna-eat-today_decision-log_v1.1.md) |
-| `1.3` | 2026-07-23 | Core Concepts | Khởi tạo mô hình Lifecycle, Chef Role, Eating History và Provenance | [DEC-001](what-we-gonna-eat-today_decision-log_v1.1.md) → [DEC-009](what-we-gonna-eat-today_decision-log_v1.1.md) |
+| `1.6` | 2026-08-14 | System Tag | Cố định 5 giá trị System Tag cốt lõi | [PRD v0.1](what-we-gonna-eat-today_prd_v1.5.md) |
+| `1.5` | 2026-08-14 | Ranking & Cooldown | Giới hạn Cooldown 7 ngày ở cấp Dish, Explore 20%, Session Ranking evidence-only | [DEC-012](what-we-gonna-eat-today_decision-log_v3.9.md) |
+| `1.4` | 2026-07-29 | Rules & Validation | Quy định cấu trúc Group/Session Rules, snapshot Draft, tách Ranking khỏi Rule Engine | [DEC-010](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-011](what-we-gonna-eat-today_decision-log_v3.9.md) |
+| `1.3` | 2026-07-23 | Core Concepts | Khởi tạo mô hình Lifecycle, Chef Role, Eating History và Provenance | [DEC-001](what-we-gonna-eat-today_decision-log_v3.9.md) → [DEC-009](what-we-gonna-eat-today_decision-log_v3.9.md) |

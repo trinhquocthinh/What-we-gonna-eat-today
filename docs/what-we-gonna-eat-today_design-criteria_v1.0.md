@@ -4,7 +4,7 @@
 >
 > - **Version:** `1.0` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
-> - **Upstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)
+> - **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)
 > - **Downstream:** [Design README](designs/README.md) • Giao diện người dùng Web & Mobile
 >
 > 📌 *Tài liệu định nghĩa ngôn ngữ thiết kế, Design Tokens (màu sắc, typography, spacing), kiểm kê 13 màn hình giao diện, thư viện components và các nguyên tắc chống mẫu (Anti-patterns).*
@@ -178,7 +178,7 @@ Thang đo bội số 4px:
 
 # 7. Trải nghiệm thao tác trên thiết bị di động
 
-- **Quy tắc nửa dưới màn hình ([NFR-03](what-we-gonna-eat-today_prd_v0_1.md)):** Toàn bộ các nút bấm và thao tác chính đều nằm trong tầm với của ngón cái ở nửa dưới màn hình.
+- **Quy tắc nửa dưới màn hình ([NFR-03](what-we-gonna-eat-today_prd_v1.5.md)):** Toàn bộ các nút bấm và thao tác chính đều nằm trong tầm với của ngón cái ở nửa dưới màn hình.
 - **Vùng chạm tối thiểu:** $44 \times 44\text{px}$, khoảng cách giữa các vùng chạm $\ge 8\text{px}$.
 - **Cập nhật lạc quan (Optimistic UI):** Thao tác vuốt phản hồi tức thì $< 100\text{ms}$.
 

@@ -4,8 +4,8 @@
 >
 > - **Version:** `1.2` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
-> - **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Diagrams](what-we-gonna-eat-today_diagrams_v0_1.md) • [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md) • [Ranking Spec](what-we-gonna-eat-today_ranking-specification_v0_1.md)
-> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • [Test Cases](what-we-gonna-eat-today_test-cases-specification_v0_1.md) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md)
+> - **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Diagrams](what-we-gonna-eat-today_diagrams_v1.1.md) • [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md) • [Ranking Spec](what-we-gonna-eat-today_ranking-specification_v1.3.md)
+> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • [Test Cases](what-we-gonna-eat-today_test-cases-specification_v1.1.md) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md)
 >
 > 📌 *Tài liệu đặc tả kiến trúc kỹ thuật, ranh giới tầng, mô hình dữ liệu, cơ chế API và cổng chất lượng cho 17 tính năng cốt lõi của phiên bản v1.0.*
 
@@ -190,7 +190,7 @@ eating_history(id, user_id, global_dish_id, eating_date, source_final_meal_id, c
 
 ## 3.2 Ba quyết định thiết kế quan trọng
 
-1. **Ràng buộc duy nhất của Session được ép ở tầng DB ([BR-025](what-we-gonna-eat-today_business-rules_v1.4.md)):**
+1. **Ràng buộc duy nhất của Session được ép ở tầng DB ([BR-025](what-we-gonna-eat-today_business-rules_v1.7.md)):**
 
    ```sql
    CREATE UNIQUE INDEX selection_sessions_active_per_group_date
@@ -224,11 +224,11 @@ eating_history(id, user_id, global_dish_id, eating_date, source_final_meal_id, c
 - **Server Actions:** Dùng cho hầu hết các thao tác mutation (Tạo nhóm, mở phiên, thêm món, chốt bữa). Đơn giản, an toàn kiểu dữ liệu end-to-end.
 - **Route Handler riêng (`POST /api/sessions/:id/interactions`):** Dùng riêng cho thao tác vuốt thẻ (Swipe).
   > [!NOTE]
-  > React Server Actions mặc định thực thi tuần tự (serialise). Người dùng vuốt 10 thẻ trong 5 giây sẽ tạo hàng đợi nghẽn mạng. Route Handler cho phép gửi song song với Optimistic UI, đạt độ trễ phản hồi $< 100\text{ms}$ theo [NFR-02](what-we-gonna-eat-today_prd_v0_1.md).
+  > React Server Actions mặc định thực thi tuần tự (serialise). Người dùng vuốt 10 thẻ trong 5 giây sẽ tạo hàng đợi nghẽn mạng. Route Handler cho phép gửi song song với Optimistic UI, đạt độ trễ phản hồi $< 100\text{ms}$ theo [NFR-02](what-we-gonna-eat-today_prd_v1.5.md).
 
 ## 4.2 Chuẩn hóa cấu trúc lỗi (Error Handling)
 
-Tất cả thất bại nghiệp vụ đều trả về dạng dữ liệu chuẩn ([SDD §2.5](what-we-gonna-eat-today_sdd_v0_1.md)):
+Tất cả thất bại nghiệp vụ đều trả về dạng dữ liệu chuẩn ([SDD §2.5](what-we-gonna-eat-today_sdd_v1.3.md)):
 
 ```typescript
 type Failure = {
@@ -246,7 +246,7 @@ Không ném Exception qua ranh giới tầng: `application/` trả về `Result<
 - **Auth.js:** Xác thực Google OAuth, quản lý phiên qua Cookie JWT thời hạn 30 ngày.
 - **Khóa định danh người dùng:** `provider + provider_subject` (không dùng email làm khóa chính).
 - **Phân quyền trong nhóm (RBAC tối giản):** `Member` và `Group Admin`.
-- **Authorization Guard ([SPEC-019](what-we-gonna-eat-today_sdd_v0_1.md)):** Mọi Server Action và Route Handler bắt buộc gọi `assertGroupAccess(userId, groupId, role)` trước khi gọi use case.
+- **Authorization Guard ([SPEC-019](what-we-gonna-eat-today_sdd_v1.3.md)):** Mọi Server Action và Route Handler bắt buộc gọi `assertGroupAccess(userId, groupId, role)` trước khi gọi use case.
 - **Không sử dụng Postgres RLS:** Kiểm soát quyền tại Application Layer để giữ kiến trúc đơn giản và nhất quán.
 
 ---
@@ -301,7 +301,7 @@ yarn verify ──► tsc --noEmit (Kiểm tra kiểu dữ liệu)
 
 | Mã | Rủi ro kỹ thuật | Mức độ | Phương án phòng ngừa & Xử lý |
 | :---: | :--- | :---: | :--- |
-| `R-01` | Neon cold start (0.5–2s) sau 5 phút ngủ ảnh hưởng [NFR-01](what-we-gonna-eat-today_prd_v0_1.md) | **Cao** | Render vỏ shell tĩnh trước, stream dữ liệu sau; đo số liệu thực tế trước khi tối ưu sâu |
+| `R-01` | Neon cold start (0.5–2s) sau 5 phút ngủ ảnh hưởng [NFR-01](what-we-gonna-eat-today_prd_v1.5.md) | **Cao** | Render vỏ shell tĩnh trước, stream dữ liệu sau; đo số liệu thực tế trước khi tối ưu sâu |
 | `R-02` | Deck trong `session_decks` lệch khi Admin gỡ Dish giữa phiên | **Trung bình** | Lọc lại theo `group_dishes.state` lúc đọc trang thay vì tin tưởng tuyệt đối vào deck lưu |
 | `R-03` | Race condition khi 2 người cùng Start phiên | **Trung bình** | Ép khóa `Partial Unique Index` tại Postgres; bắt mã lỗi trả `ERR_SESSION_EXISTS_TODAY` |
 | `R-04` | Vuốt thẻ quá nhanh gây ghi đè sai thứ tự | **Trung bình** | Upsert theo `updated_at` phía server; bỏ qua bản ghi có timestamp cũ hơn |
@@ -313,5 +313,5 @@ yarn verify ──► tsc --noEmit (Kiểm tra kiểu dữ liệu)
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
-| `0.2` | 2026-08-14 | §3 Schema | Đổi tên `sessions` thành `selection_sessions`; loại bỏ `invalid_reason` ở v1.0 | [Diagrams §3.2](what-we-gonna-eat-today_diagrams_v0_1.md) |
+| `0.2` | 2026-08-14 | §3 Schema | Đổi tên `sessions` thành `selection_sessions`; loại bỏ `invalid_reason` ở v1.0 | [Diagrams §3.2](what-we-gonna-eat-today_diagrams_v1.1.md) |
 | `0.1` | 2026-08-14 | Toàn bộ | Bản thảo Tech Spec đầu tiên; xác minh hạn mức Free Tier | Khởi tạo baseline kiến trúc |

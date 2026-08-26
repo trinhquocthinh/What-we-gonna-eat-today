@@ -4,8 +4,8 @@
 >
 > - **Version:** `1.0` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
-> - **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [PRD](what-we-gonna-eat-today_prd_v0_1.md)
-> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md)
+> - **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [PRD](what-we-gonna-eat-today_prd_v1.5.md)
+> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md)
 >
 > 📌 *Kế hoạch phân bổ giai đoạn và định vị ranh giới phạm vi thực thi cho 17 tính năng phiên bản v1.0.*
 
@@ -29,7 +29,7 @@
 Thứ tự các giai đoạn không đi theo tính năng bề nổi mà dựa trên **mức độ rủi ro và quan hệ phụ thuộc kỹ thuật**:
 
 1. **Rủi ro kiến trúc cao nhất làm trước:** Ranh giới tầng (Clean Architecture), quy đổi Decision Date theo múi giờ, và ràng buộc duy nhất của Session ở tầng Database.
-2. **Đo lường hạ tầng thực tế sớm:** Kiểm chứng cold start của Neon Postgres ([R-01](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)) ngay khi có Walking Skeleton để bảo vệ chỉ số [NFR-01](what-we-gonna-eat-today_prd_v0_1.md).
+2. **Đo lường hạ tầng thực tế sớm:** Kiểm chứng cold start của Neon Postgres ([R-01](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)) ngay khi có Walking Skeleton để bảo vệ chỉ số [NFR-01](what-we-gonna-eat-today_prd_v1.5.md).
 3. **Walking Skeleton thông suốt toàn luồng:** Một luồng mỏng chạy thông suốt từ UI đến DB có giá trị thực tế cao hơn nhiều tính năng rời rạc.
 4. **Rule Engine xây dựng sau Deck:** Quy tắc mâm cơm chỉ kiểm tra ở bước cuối (Finalize) nên được làm sau khi trải nghiệm vuốt thẻ đã ổn định.
 

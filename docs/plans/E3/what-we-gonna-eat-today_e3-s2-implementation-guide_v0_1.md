@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E3-T3`, `E3-T4`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-009`) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-026`) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-036→039`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E3-T3`, `E3-T4`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-009`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-026`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-036→039`)
 > - **Tiền đề bắt buộc:** `S1` (`E3-T1`) đã code — slice này tái dùng `findForStart`/`SessionForStart` nguyên vẹn.
 >
 > 👥 *Backend thuần — không có UI ở slice này. Master Plan không gán route/component nào cho E3-T3/T4; màn hình thêm người thật (S-08 picker đa người đã hoãn từ S1) chờ E3-T6 (S3).*
@@ -427,7 +427,7 @@ Integration test ở §5.1 đã assert `rows.toHaveLength(1)`, nhưng đáng nh�
 
 ---
 
-# 12. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 12. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-034 — E3-T3/E3-T4 Ship as One Function; "Draft"/"Active" Are Illustrative Labels

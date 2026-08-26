@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Completed`
 > - **Created:** `2026-08-17` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T10, E1-T11`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-015, 016, 017`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-063→071, TC-076→078, TC-109`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E1-T10, E1-T11`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-015, 016, 017`) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Test Cases Spec](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-063→071, TC-076→078, TC-109`)
 > - **Tiền đề:** `E1-S1` đến `E1-S5` đã hoàn thành.
 >
 > 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S6: Lưu thực đơn nháp, thực thi Finalize nguyên tử qua `db.batch()` và sinh Default Eating History.*

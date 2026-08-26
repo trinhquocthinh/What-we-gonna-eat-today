@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-21`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E6-T7`, `E6-T8`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-016`, `SPEC-017`, `SPEC-018`) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-050`, `BR-056`) • [Design Criteria §4](../what-we-gonna-eat-today_design-criteria_v0_1.md) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`MS-01`)
+> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T7`, `E6-T8`) • [SDD](../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-016`, `SPEC-017`, `SPEC-018`) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-050`, `BR-056`) • [Design Criteria §4](../what-we-gonna-eat-today_design-criteria_v1.0.md) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`MS-01`)
 > - **Ảnh tham chiếu:** [s11-01-bua-hom-nay.png](../designs/screenshots/s11-01-bua-hom-nay.png) • [s12-02-lich-su.png](../designs/screenshots/s12-02-lich-su.png) • [s04-04-da-chot.png](../designs/screenshots/s04-04-da-chot.png)
 > - **Tiền đề:** E5 đã xong trọn (mốc M5) — `finalizeSession` chạy đủ 7 bước, `eating_history` có dữ liệu thật.
 >
@@ -90,7 +90,7 @@ export function formatVietnameseTime(instant: Date, timeZone: string): string
 
 `BR-056` + [schema.ts](../../src/shared/db/schema.ts): `eating_history` trỏ `global_dish_id`, **không** trỏ `group_dish_id`, và không có cột `group_id`. Ghi chú trong schema nói rõ lý do: *"Eating History thuộc về User chứ không thuộc Group… để `F43` multi-group sau này collapse được"*.
 
-Nhưng header trong mockup ghi *"Nhà Bảy Hiền · 30 ngày gần đây"*, và ở v1.0 mỗi User chỉ thuộc một Group ([DEC-004](../what-we-gonna-eat-today_decision-log_v1.1.md)).
+Nhưng header trong mockup ghi *"Nhà Bảy Hiền · 30 ngày gần đây"*, và ở v1.0 mỗi User chỉ thuộc một Group ([DEC-004](../what-we-gonna-eat-today_decision-log_v3.9.md)).
 
 → Route là `/groups/[groupId]/history`; **dữ liệu vẫn truy vấn theo `userId`**, `groupId` chỉ dùng cho guard `assertGroupAccess`, tên nhóm ở header, và đường quay lại. Ghi chú điều này ngay trong `page.tsx`: khi `F43` vào v1.1+, route giữ nguyên còn truy vấn mới phải đổi — và người sửa cần biết hôm nay chúng cố ý không khớp nhau.
 
@@ -625,7 +625,7 @@ Bước 2 là chỗ §1.1 nói tới. Nếu nó vẫn hiện "Mở phiên", slic
 
 ---
 
-# 15. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 15. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-047 — E6 Adds E6-T7 and E6-T8: the Two Read-Only Screens MS-01 Requires

@@ -3,7 +3,7 @@
 > **Document Metadata**
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E4-T7`, `E4-T8`, `E4-T9`) • [Design Criteria](../what-we-gonna-eat-today_design-criteria_v0_1.md) (§5, §7, §8, §10) • [PRD](../what-we-gonna-eat-today_prd_v0_1.md) (`NFR-03`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E4-T7`, `E4-T8`, `E4-T9`) • [Design Criteria](../../what-we-gonna-eat-today_design-criteria_v1.0.md) (§5, §7, §8, §10) • [PRD](../../what-we-gonna-eat-today_prd_v1.5.md) (`NFR-03`)
 > - **Tiền đề bắt buộc:** `S1`, `S2`, `S3` (E4-T1→T6) đã code.
 >
 > 🎴 *Slice cuối của E4 — mốc M4. Phần lớn UI đã đúng từ E1-T8; việc thật ở đây là lấp hai chỗ dữ liệu giả mà S1 đã hẹn, tách một component theo đúng hợp đồng design system, và đóng vài khoảng hở nhỏ.*
@@ -655,7 +655,7 @@ Sau khi §14.1–§14.3 xanh: tick `E4-T7`, `E4-T8`, `E4-T9` ở Master Plan §6
 
 ---
 
-# 15. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 15. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-039 — list-deck Reads Eating History on Every Call, Not Just First Materialize

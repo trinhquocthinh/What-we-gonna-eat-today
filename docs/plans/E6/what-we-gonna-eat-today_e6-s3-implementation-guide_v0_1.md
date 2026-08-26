@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-21`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E6-T1`, `E6-T4`) • [Design Criteria §4](../what-we-gonna-eat-today_design-criteria_v0_1.md) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-007`)
+> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T1`, `E6-T4`) • [Design Criteria §4](../what-we-gonna-eat-today_design-criteria_v1.0.md) • [SDD](../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-007`)
 > - **Tiền đề:** S1 đã code (S-11, S-12 tồn tại để quét tới), S2 đã code (`InlineError`, `messageFor`).
 >
 > 🕳️ *Slice đi tìm những chỗ màn hình không có gì để nói. Bắt đầu bằng một lỗi đang sống: Group Hub bảo mọi nhóm rằng họ chưa có món nào.*
@@ -98,9 +98,9 @@ export type CreateSessionDeps = {
 
 ## 1.4 Design Criteria §4 là đặc tả của `E6-T1`, không phải `designs/README.md` §3
 
-Master Plan `E6-T1` ghi nguồn tham chiếu là `[Design §3](designs/README.md)`. §3 của file đó là **Design Tokens & Typography** — không liên quan.
+Master Plan `E6-T1` ghi nguồn tham chiếu là `[Design §3](../designs/README.md)`. §3 của file đó là **Design Tokens & Typography** — không liên quan.
 
-Đặc tả thật nằm ở [design-criteria_v0_1.md §4](../what-we-gonna-eat-today_design-criteria_v0_1.md), bảng 13 màn hình với cột *"Yêu cầu trạng thái đặc biệt"*. Đó là danh sách kiểm của slice này, chép vào §3 dưới đây.
+Đặc tả thật nằm ở [design-criteria_v0_1.md §4](../what-we-gonna-eat-today_design-criteria_v1.0.md), bảng 13 màn hình với cột *"Yêu cầu trạng thái đặc biệt"*. Đó là danh sách kiểm của slice này, chép vào §3 dưới đây.
 
 Cùng loại trôi tham chiếu đã ghi nhận ở E5-S1 §1.5 (mã màn hình S-07/S-09/S-10 đánh theo tên file ảnh). Không tự sửa Master Plan trong lúc code — §11 ghi dòng cần sửa, làm cùng commit.
 
@@ -369,7 +369,7 @@ Dán bảng §3 vào PR với cột "Việc" đã điền kết luận cho từn
 
 ---
 
-# 10. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 10. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-050 — S-04 Has Four Mutually Exclusive States; "Dùng link mời" Becomes a Caption, Not a Button
@@ -418,8 +418,8 @@ Dán bảng §3 vào PR với cột "Việc" đã điền kết luận cho từn
 # 11. Master Plan
 
 ```markdown
-| `[x] E6-T1` | Toàn bộ trạng thái rỗng (Empty States) | [Design Criteria §4](what-we-gonna-eat-today_design-criteria_v0_1.md) | … |
-| `[x] E6-T4` | Chặn mở phiên khi nhóm chưa có món | `S-04`, [Design Criteria §4](what-we-gonna-eat-today_design-criteria_v0_1.md) | … |
+| `[x] E6-T1` | Toàn bộ trạng thái rỗng (Empty States) | [Design Criteria §4](../what-we-gonna-eat-today_design-criteria_v1.0.md) | … |
+| `[x] E6-T4` | Chặn mở phiên khi nhóm chưa có món | `S-04`, [Design Criteria §4](../what-we-gonna-eat-today_design-criteria_v1.0.md) | … |
 ```
 
-Sửa luôn cột "Nguồn tham chiếu" của `E6-T1` (đang là `[Design §3](designs/README.md)`) và của `E6-T6` (đang là `[Design §7]`) — cả hai trỏ sai file, xem §1.4.
+Sửa luôn cột "Nguồn tham chiếu" của `E6-T1` (đang là `[Design §3](../designs/README.md)`) và của `E6-T6` (đang là `[Design §7]`) — cả hai trỏ sai file, xem §1.4.

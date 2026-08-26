@@ -4,7 +4,7 @@
 >
 > - **Version:** `1.0` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Design Criteria](what-we-gonna-eat-today_design-criteria_v0_1.md) • [UI Design Handoff](README.md)
+> - **Upstream:** [Design Criteria](../what-we-gonna-eat-today_design-criteria_v1.0.md) • [UI Design Handoff](README.md)
 > - **Downstream:** Bộ prototype HTML trong `docs/designs/designs/` • Màn hình S-01 đến S-13
 >
 > 📌 *Bộ câu lệnh (Prompts) chuẩn hóa dùng cho công cụ Claude Design (`claude.ai/design`) nhằm thiết lập Design System và tạo mẫu 13 màn hình giao diện tuân thủ tuyệt đối quy chuẩn sản phẩm.*
@@ -205,5 +205,5 @@ Bên dưới, MỜ HƠN là liên kết "Đây là món khác, vẫn tạo mới
 
 | Version | Ngày | Nội dung cập nhật | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- |
-| `1.0` | 2026-08-18 | Cập nhật cấu trúc tài liệu, chuẩn hóa prompt 4 màn hình cốt lõi | [Design Criteria v0.1](what-we-gonna-eat-today_design-criteria_v0_1.md) |
+| `1.0` | 2026-08-18 | Cập nhật cấu trúc tài liệu, chuẩn hóa prompt 4 màn hình cốt lõi | [Design Criteria v0.1](../what-we-gonna-eat-today_design-criteria_v1.0.md) |
 | `0.1` | 2026-08-14 | Khởi tạo bộ câu lệnh Claude Design ban đầu | Tạo prototype 13 màn hình |

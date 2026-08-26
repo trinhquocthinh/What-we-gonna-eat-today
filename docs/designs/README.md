@@ -4,8 +4,8 @@
 >
 > - **Version:** `1.0` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Design Criteria](what-we-gonna-eat-today_design-criteria_v0_1.md) • [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
-> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • Tầng Presentation (`src/features/*/presentation`)
+> - **Upstream:** [Design Criteria](../what-we-gonna-eat-today_design-criteria_v1.0.md) • [PRD](../what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.7.md)
+> - **Downstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v2.1.md) • Tầng Presentation (`src/features/*/presentation`)
 >
 > 📌 *Cẩm nang bàn giao thiết kế giao diện v1.0: Danh mục 13 màn hình hoàn thiện (`S-01` đến `S-13`), hệ thống Design Tokens màu sắc/typography, các ràng buộc trải nghiệm người dùng (UX) và quy tắc chuyển đổi sang Next.js App Router.*
 
@@ -130,8 +130,8 @@ Khoảng 5–6 giờ chiều, người tổ chức (Creator) mở phiên chọn 
 - Toàn bộ Client và Server Components đặt trong `src/features/<feature>/presentation/`:
   - `containers/`: Server Components hoặc Client Containers bọc state.
   - `components/`: UI components thuần túy, nhận props, không gọi trực tiếp database.
-- Dùng `Sheet` dùng chung (`src/shared/presentation/components/sheet.tsx`) với animation trượt mượt mà ([DEC-023](what-we-gonna-eat-today_decision-log_v1.1.md)).
-- State transitions trong Client Component dùng mẫu **Adjust state during render** thay vì lạm dụng `useEffect` ([DEC-022](what-we-gonna-eat-today_decision-log_v1.1.md)).
+- Dùng `Sheet` dùng chung (`src/shared/presentation/components/sheet.tsx`) với animation trượt mượt mà ([DEC-023](../what-we-gonna-eat-today_decision-log_v3.9.md)).
+- State transitions trong Client Component dùng mẫu **Adjust state during render** thay vì lạm dụng `useEffect` ([DEC-022](../what-we-gonna-eat-today_decision-log_v3.9.md)).
 
 ---
 
@@ -139,5 +139,5 @@ Khoảng 5–6 giờ chiều, người tổ chức (Creator) mở phiên chọn 
 
 | Version | Ngày | Nội dung cập nhật | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- |
-| `1.0` | 2026-08-18 | Cập nhật hoàn thiện 13 màn hình, design tokens và bảng tra cứu Clean Architecture | Đồng bộ [Master Plan v1.0](what-we-gonna-eat-today_master-plan_v1_0.md) |
+| `1.0` | 2026-08-18 | Cập nhật hoàn thiện 13 màn hình, design tokens và bảng tra cứu Clean Architecture | Đồng bộ [Master Plan v1.0](../what-we-gonna-eat-today_master-plan_v2.1.md) |
 | `0.1` | 2026-08-14 | Khởi tạo tài liệu bàn giao thiết kế UI v1.0 | Khởi tạo baseline thiết kế |

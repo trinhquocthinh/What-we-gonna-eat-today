@@ -9,14 +9,14 @@
 
 Toàn bộ tài liệu thiết kế và đặc tả kỹ thuật chi tiết nằm trong thư mục [`docs/`](./docs/):
 
-| Nhóm tài liệu                | Tài liệu chính                                                                                                                                               | Mô tả                                                 |
-| :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------- |
-| **🚀 Khởi đầu & Vận hành**   | [Setup & Ops Guide](./docs/what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md)                                                                              | Hướng dẫn cài đặt, môi trường, DB branch và deploy    |
-| **🗺️ Lộ trình & Kế hoạch**   | [Master Plan](./docs/what-we-gonna-eat-today_master-plan_v1_0.md)                                                                                            | Kế hoạch thực thi theo từng Epic / Subtask            |
-| **🏗️ Kiến trúc & Thiết kế**  | [Tech Spec & Architecture](./docs/what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)                                                                    | Kiến trúc Clean Architecture, luật tầng & chất lượng  |
-| **📐 Thiết kế phần mềm**     | [SDD](./docs/what-we-gonna-eat-today_sdd_v0_1.md) • [Diagrams](./docs/what-we-gonna-eat-today_diagrams_v0_1.md)                                              | Đặc tả module (SPEC-xxx), C4 Context/Container & ERD  |
-| **📋 Yêu cầu & Nghiệp vụ**   | [PRD](./docs/what-we-gonna-eat-today_prd_v0_1.md) • [Business Rules](./docs/what-we-gonna-eat-today_business-rules_v1.4.md)                                  | Persona, User Stories và quy tắc nghiệp vụ (`BR-xxx`) |
-| **🧪 Kiểm thử & Thuật toán** | [Test Cases](./docs/what-we-gonna-eat-today_test-cases-specification_v0_1.md) • [Ranking Spec](./docs/what-we-gonna-eat-today_ranking-specification_v0_1.md) | Bộ kiểm thử (`TC-xxx`) & thuật toán chấm điểm gợi ý   |
+| Nhóm tài liệu                | Tài liệu chính                                                                                                                                               | Mô tả                                                                                                                            |
+| :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| **🚀 Khởi đầu & Vận hành**   | [Setup & Ops Guide](./docs/what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md)                                                                              | Hướng dẫn cài đặt, môi trường, DB branch và deploy                                                                               |
+| **🗺️ Lộ trình & Kế hoạch**   | [Master Plan](./docs/what-we-gonna-eat-today_master-plan_v2.1.md)                                                                                            | Kế hoạch thực thi theo từng Epic / Subtask — v1.0 đã phát hành, [v1.1 ở §16](./docs/what-we-gonna-eat-today_master-plan_v2.1.md) |
+| **🏗️ Kiến trúc & Thiết kế**  | [Tech Spec & Architecture](./docs/what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)                                                                    | Kiến trúc Clean Architecture, luật tầng & chất lượng                                                                             |
+| **📐 Thiết kế phần mềm**     | [SDD](./docs/what-we-gonna-eat-today_sdd_v1.3.md) • [Diagrams](./docs/what-we-gonna-eat-today_diagrams_v1.1.md)                                              | Đặc tả module (SPEC-xxx), C4 Context/Container & ERD                                                                             |
+| **📋 Yêu cầu & Nghiệp vụ**   | [PRD](./docs/what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](./docs/what-we-gonna-eat-today_business-rules_v1.7.md)                                  | Persona, User Stories và quy tắc nghiệp vụ (`BR-xxx`)                                                                            |
+| **🧪 Kiểm thử & Thuật toán** | [Test Cases](./docs/what-we-gonna-eat-today_test-cases-specification_v1.1.md) • [Ranking Spec](./docs/what-we-gonna-eat-today_ranking-specification_v1.3.md) | Bộ kiểm thử (`TC-xxx`) & thuật toán chấm điểm gợi ý                                                                              |
 
 ---
 
@@ -44,15 +44,16 @@ yarn dev                    # Truy cập http://localhost:3000
 
 ## 🛠️ Danh sách lệnh thông dụng (Commands)
 
-| Lệnh                 | Mục đích / Hành động                                                                            |
-| :------------------- | :---------------------------------------------------------------------------------------------- |
-| `yarn dev`           | Khởi chạy máy chủ development cục bộ                                                            |
-| `yarn verify`        | **Cổng kiểm tra chất lượng chính:** `tsc` → `eslint` → `prettier` → `jscpd` → `knip` → `vitest` |
-| `yarn arch:probe`    | Kiểm tra luật ranh giới tầng kiến trúc (Architecture boundary probe)                            |
-| `yarn test`          | Chạy bộ kiểm thử tự động (Unit Tests)                                                           |
-| `yarn test:coverage` | Chạy bộ kiểm thử và xuất báo cáo độ bao phủ mã nguồn (Coverage Report)                          |
-| `yarn db:generate`   | Sinh mã migration Drizzle từ schema                                                             |
-| `yarn db:migrate`    | Áp dụng migration vào cơ sở dữ liệu Postgres (Neon)                                             |
+| Lệnh                 | Mục đích / Hành động                                                                                           |
+| :------------------- | :------------------------------------------------------------------------------------------------------------- |
+| `yarn dev`           | Khởi chạy máy chủ development cục bộ                                                                           |
+| `yarn verify`        | **Cổng kiểm tra chất lượng chính:** `tsc` → `eslint` → `prettier` → `docs:links` → `jscpd` → `knip` → `vitest` |
+| `yarn docs:links`    | Kiểm tra mọi liên kết tương đối trong tài liệu có trỏ tới file thật hay không                                  |
+| `yarn arch:probe`    | Kiểm tra luật ranh giới tầng kiến trúc (Architecture boundary probe)                                           |
+| `yarn test`          | Chạy bộ kiểm thử tự động (Unit Tests)                                                                          |
+| `yarn test:coverage` | Chạy bộ kiểm thử và xuất báo cáo độ bao phủ mã nguồn (Coverage Report)                                         |
+| `yarn db:generate`   | Sinh mã migration Drizzle từ schema                                                                            |
+| `yarn db:migrate`    | Áp dụng migration vào cơ sở dữ liệu Postgres (Neon)                                                            |
 
 > [!TIP]
 > Trước khi tạo pull request hoặc push code lên remote branch, hãy đảm bảo lệnh `yarn verify` chạy xanh hoàn toàn.
@@ -61,7 +62,7 @@ yarn dev                    # Truy cập http://localhost:3000
 
 ## 🏛️ Kiến trúc hệ thống (Architecture)
 
-Dự án áp dụng **Clean Architecture** kết hợp tổ chức theo **Feature-first** ([Tech Spec §2.1](./docs/what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)):
+Dự án áp dụng **Clean Architecture** kết hợp tổ chức theo **Feature-first** ([Tech Spec §2.1](./docs/what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)):
 
 ### 1. Cấu trúc thư mục Feature
 
@@ -87,13 +88,14 @@ infrastructure ───────┘
 ```
 
 - **Container / Presentational:** Container kết nối Application layer; Component chỉ nhận props. ESLint chặn cứng việc `presentation/components/` import từ `application/`.
-- **Ranh giới giữa các Feature:** Chỉ 4 chiều quan hệ được phép ([Tech Spec §2.3](./docs/what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)):
+- **Ranh giới giữa các Feature:** Chỉ 5 chiều quan hệ được phép ([Tech Spec §2.3](./docs/what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)):
   1. `selection → history`
   2. `selection → dish`
   3. `meal → rule`
   4. `meal → history`
+  5. `session → rule`
      _(Mọi chiều import chéo khác đều bị ESLint chặn)._
-- **Authorization Guards ([SPEC-019](./docs/what-we-gonna-eat-today_sdd_v0_1.md)):** Được kiểm tra ở tầng `app/` trước khi gọi Use Case, không tạo thêm phụ thuộc chéo giữa các feature.
+- **Authorization Guards ([SPEC-019](./docs/what-we-gonna-eat-today_sdd_v1.3.md)):** Được kiểm tra ở tầng `app/` trước khi gọi Use Case, không tạo thêm phụ thuộc chéo giữa các feature.
 
 ### 3. Cơ chế kiểm tra ranh giới kiến trúc (`yarn arch:probe`)
 

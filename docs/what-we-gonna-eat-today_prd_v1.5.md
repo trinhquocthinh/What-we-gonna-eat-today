@@ -2,10 +2,10 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.4` | **Status:** `Approved`
-> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
-> - **Upstream:** [Problem Definition v1.3](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules v1.4](what-we-gonna-eat-today_business-rules_v1.4.md) • [Ranking Specification v0.1](what-we-gonna-eat-today_ranking-specification_v0_1.md) • [Decision Log v1.1](what-we-gonna-eat-today_decision-log_v1.1.md)
-> - **Downstream:** [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
+> - **Version:** `1.5` | **Status:** `Approved`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
+> - **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md) • [Ranking Specification](what-we-gonna-eat-today_ranking-specification_v1.3.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v3.9.md)
+> - **Downstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 
 ---
 
@@ -69,7 +69,7 @@
 # 3. Epic và User Stories
 
 > [!NOTE]
-> Mọi quy tắc nghiệp vụ được dẫn chiếu trực tiếp bằng mã định danh ổn định `BR-xxx` từ [Business Rules v1.4](what-we-gonna-eat-today_business-rules_v1.4.md).
+> Mọi quy tắc nghiệp vụ được dẫn chiếu trực tiếp bằng mã định danh ổn định `BR-xxx` từ [Business Rules v1.4](what-we-gonna-eat-today_business-rules_v1.7.md).
 
 ## E1 — Group và thành viên
 
@@ -190,7 +190,7 @@
 ### US-012 — Khám phá món lâu chưa ăn (Explore Lane)
 >
 > *Là **P2**, tôi muốn thi thoảng được gợi ý lại những món lâu rồi chưa ăn để đổi bữa.*  
-> **Quy tắc liên quan:** `BR-047`, [Ranking Spec §2.3](what-we-gonna-eat-today_ranking-specification_v0_1.md)
+> **Quy tắc liên quan:** `BR-047`, [Ranking Spec §2.3](what-we-gonna-eat-today_ranking-specification_v1.3.md)
 
 - **Given** deck có đủ số món hợp lệ, **When** tôi duyệt qua 10 thẻ đầu tiên, **Then** có đúng 2 thẻ đến từ nhánh khám phá (Explore Lane).
 - **Given** món đến từ Explore Lane, **When** hiển thị thẻ, **Then** có kèm lý do trực quan (vd: *"3 tuần chưa ăn"*).
@@ -287,12 +287,17 @@
 | `F26` | Tự động đóng phiên quá hạn | E4 | **Should** | `BR-055` | Timeout cuối ngày |
 | `F27` | Gỡ Dish khỏi Pool | E2 | **Should** | `BR-005` | Chuyển Inactive món |
 | `F28` | Điều chỉnh Eating History hôm nay | E7 | **Should** | `BR-057` | Sửa lịch sử ăn trong ngày |
-| `F29` | Phát hiện trùng tên món (Bỏ dấu) | E2 | **Should** | `BR-001` | Duplicate detection |
-| `F30→42` | Implicit Preference, Chef Mode, v.v. | E9–13 | **Could** | — | Lộ trình v1.2 |
+| `F29` | Phát hiện trùng tên món (Bỏ dấu) | E2 | **Should** | `BR-001` | Duplicate detection — hoãn sang v1.2 ([DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md)) |
+| `F49` | Trần số thẻ mỗi phiên (30 thẻ) | E5 | **Should** | `BR-062` | Deck có điểm dừng; cắt sau khi trộn Explore |
+| `F50` | Chế độ vuốt theo chặng (Course Mode) | E4 | **Should** | `BR-063` | Creator chọn chặng lúc mở phiên; không đụng luồng chốt bữa |
+| `F30→42` | Implicit Preference, Chef Mode, v.v. | E12–14 | **Could** | — | Lộ trình v1.2 |
 | `F43→48` | Multi-group, Admin UI, Auto Merge | — | **Won't** | — | Hoãn sau v1.2 |
 
 > [!NOTE]
-> Tổng số tính năng **Must Have** ở v1.0 là **17/48 (35%)**, tuân thủ nguyên tắc kỷ luật phạm vi dưới 40%.
+> Tổng số tính năng **Must Have** ở v1.0 là **17/50 (34%)**, tuân thủ nguyên tắc kỷ luật phạm vi dưới 40%.
+
+> [!IMPORTANT]
+> `F49` và `F50` được bổ sung ngày 2026-08-26 từ phản hồi dùng thật v1.0, **không** phải từ đợt hoạch định ban đầu — xem [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md). Cùng quyết định đó hoãn `F25`, `F28`, `F29` sang v1.2.
 
 ---
 
@@ -317,15 +322,23 @@
 └────────────────────────────────────┬────────────────────────────────────┘
                                      │
 ┌────────────────────────────────────▼────────────────────────────────────┐
-│ v1.1 — 12 Tính năng Nâng cao (Dữ liệu chuẩn hóa & Khẩu vị cá nhân)       │
-│ └─ Cannot Eat, Like/Dislike, Explore lane 20%, Phát hiện trùng tên     │
+│ v1.1 — 11 Tính năng (Khẩu vị cá nhân & Deck ngắn, có nhịp)              │
+│ └─ Cannot Eat, Like/Dislike, trần 30 thẻ, Explore 20%, vuốt theo chặng, │
+│    cảnh báo mềm lúc chốt bữa                                            │
 └────────────────────────────────────┬────────────────────────────────────┘
                                      │
 ┌────────────────────────────────────▼────────────────────────────────────┐
-│ v1.2 — 13 Tính năng Học hỏi & Thích ứng (Chef Mode & Smart Learning)    │
-│ └─ Chef role, Học sở thích ngầm, Whitelist/Blacklist, Sửa mâm cơm      │
+│ v1.2 — 16 Tính năng Học hỏi & Thích ứng (Chef Mode & Smart Learning)    │
+│ └─ Chef role, Học sở thích ngầm, Whitelist/Blacklist, Sửa mâm cơm,     │
+│    Gỡ Participant, Sửa lịch sử ăn, UI phát hiện trùng                  │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+| Phiên bản | Số tính năng | Mục tiêu | Ước lượng |
+| :---: | :---: | :--- | :---: |
+| `v1.0` | 17 | Chốt được bữa từ đầu tới cuối | Đã phát hành |
+| `v1.1` | 11 | Gợi ý đúng người, deck có điểm dừng | 81h |
+| `v1.2` | 16 | Học hành vi, linh hoạt và sửa dữ liệu | ~89h |
 
 ---
 
@@ -341,8 +354,8 @@
 
 # 8. Ngoài phạm vi (Out of Scope)
 
-- Một tài khoản thuộc nhiều Group cùng lúc trong v1 ([DEC-004](what-we-gonna-eat-today_decision-log_v1.1.md)).
-- Giao diện quản trị hệ thống System Admin ([DEC-005](what-we-gonna-eat-today_decision-log_v1.1.md)).
+- Một tài khoản thuộc nhiều Group cùng lúc trong v1 ([DEC-004](what-we-gonna-eat-today_decision-log_v3.9.md)).
+- Giao diện quản trị hệ thống System Admin ([DEC-005](what-we-gonna-eat-today_decision-log_v3.9.md)).
 - Tự động gộp món trùng mức Global (Logical Merge / Hard Merge).
 - Chỉnh sửa lịch sử ăn của các ngày trong quá khứ (chỉ hỗ trợ ngày hiện tại).
 - Hệ thống cảnh báo dị ứng y tế bắt buộc (Cannot Eat chỉ là sở thích ăn kiêng).
@@ -351,7 +364,7 @@
 
 # 9. Các quyết định kỹ thuật đã chốt
 
-1. **Chuẩn hóa BR-ID:** Toàn bộ PRD, SDD, Code và Test Cases sử dụng thống nhất mã `BR-001` đến `BR-061`.
+1. **Chuẩn hóa BR-ID:** Toàn bộ PRD, SDD, Code và Test Cases sử dụng thống nhất mã `BR-001` đến `BR-063`.
 2. **Bộ 5 System Tag cố định:** Gồm `Staple` (Cơm/Bún/Phở), `Main` (Món mặn/chính), `Side` (Món phụ/rau), `Soup` (Canh), `Dessert` (Tráng miệng).
 3. **Mời thành viên qua Link mã hóa:** Sử dụng token ngẫu nhiên băm SHA-256 có hạn 7 ngày, không cần cơ chế tìm kiếm email/username.
 
@@ -361,6 +374,7 @@
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.5` | 2026-08-26 | §4, §6, §9 | Bổ sung `F49` (trần 30 thẻ) và `F50` (vuốt theo chặng) từ phản hồi dùng thật; hoãn `F25`/`F28`/`F29` sang v1.2; vẽ lại phạm vi 3 giai đoạn kèm ước lượng | [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `0.4` | 2026-08-14 | §4, §6 | Nâng `F17`, `F20`, `F21` lên Must-have; v1.0 chốt 17 tính năng | Thống nhất phạm vi MVP chất lượng cao |
 | `0.3` | 2026-08-14 | §6 | Cấu trúc lại lộ trình 3 giai đoạn v1.0, v1.1, v1.2 | Tối ưu hóa thời gian thực thi |
 | `0.2` | 2026-08-14 | Toàn bộ | Chuyển đổi toàn bộ tham chiếu sang hệ thống mã `BR-ID` | Tránh đứt gãy tham chiếu |

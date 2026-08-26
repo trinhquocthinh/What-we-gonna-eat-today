@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-18`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E2-T5`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-006`, §2.2) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-003`, `BR-008`) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-022→025`, `TC-100`, `TC-101`, + `TC-021` theo DEC-024)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E2-T5`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-006`, §2.2) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-003`, `BR-008`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-022→025`, `TC-100`, `TC-101`, + `TC-021` theo DEC-024)
 > - **Tiền đề:** `E1-T5` đã code xong (đúng phụ thuộc Master Plan ghi cho E2-T5 — **không** phụ thuộc E2-T4).
 >
 > 🏷️ *Gán System Tag cho món trong Group: ghi đè toàn bộ, cách ly theo Group, 5 giá trị cố định.*
@@ -1287,7 +1287,7 @@ Khác E2-T3 (đổi `normalized_name` của dữ liệu đã có nên **bắt bu
 
 ---
 
-# 19. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 19. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-025 — System Tag: Model Accepts 0..5, Add-Dish Sheet Enforces Exactly One

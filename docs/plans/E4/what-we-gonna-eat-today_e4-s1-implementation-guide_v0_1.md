@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E4-T1`, `E4-T2`) • [Ranking Spec](../what-we-gonna-eat-today_ranking-specification_v0_1.md) (§2.2, §2.5, §5) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-020`, `SPEC-010`) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-045`, `BR-046`, `BR-033`) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-079→084`, `TC-042`, `TC-043`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E4-T1`, `E4-T2`) • [Ranking Spec](../../what-we-gonna-eat-today_ranking-specification_v1.3.md) (§2.2, §2.5, §5) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-020`, `SPEC-010`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-045`, `BR-046`, `BR-033`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-079→084`, `TC-042`, `TC-043`)
 > - **Tiền đề:** `E1-T11` đã code (`eating_history` có dữ liệu ghi vào).
 >
 > 🧮 *Slice mở đầu E4 — epic mà Master Plan gọi là "giai đoạn quyết định sản phẩm có khác một danh sách món ăn thông thường hay không". Hai hàm thuần, không DB, không UI, không mock.*
@@ -743,7 +743,7 @@ Chưa có UI để nhìn, nên cách kiểm nhanh ý nghĩa sản phẩm: dựng
 
 ---
 
-# 11. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 11. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-036 — v1.0 Personal Score Uses Only the Recency Term; Two-Level Tie-Break

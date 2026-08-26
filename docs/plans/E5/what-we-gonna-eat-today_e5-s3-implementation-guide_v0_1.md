@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-20`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E5-T5`, `E5-T6`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-014`, `SPEC-016`) • [Ranking Spec](../what-we-gonna-eat-today_ranking-specification_v0_1.md) (§3, §5) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-050`, `BR-052`, `BR-054`) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-058`→`TC-062`, `TC-067`→`TC-075`, `TC-110`, `TC-111`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E5-T5`, `E5-T6`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-014`, `SPEC-016`) • [Ranking Spec](../../what-we-gonna-eat-today_ranking-specification_v1.3.md) (§3, §5) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-050`, `BR-052`, `BR-054`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-058`→`TC-062`, `TC-067`→`TC-075`, `TC-110`, `TC-111`)
 > - **Tiền đề:** S2 đã code (`evaluateRequired`, `session_rules`), `E1-T11` đã code (`finalizeSession` rút gọn + `commitFinalize`), `E4-T5` đã code (`interactions` là effective state).
 >
 > ⚖️ *Slice nối dây. Không có bảng mới, không có UI. Hai việc: cho `finalizeSession` biết luật, và cho màn tổng hợp (S4) một bảng điểm để hiển thị.*
@@ -754,7 +754,7 @@ Bước 3 và bước 4 phải cho hai kết quả **ngược nhau** dù cùng l
 
 ---
 
-# 11. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 11. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-045 — Session Score Drops the Cannot-Eat Term and Defines Its Own Tie-Break

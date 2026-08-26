@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-21`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E6-T2`) • [SDD §2.5](../what-we-gonna-eat-today_sdd_v0_1.md) • [Design Criteria §5, §10](../what-we-gonna-eat-today_design-criteria_v0_1.md)
+> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T2`) • [SDD §2.5](../what-we-gonna-eat-today_sdd_v1.3.md) • [Design Criteria §5, §10](../what-we-gonna-eat-today_design-criteria_v1.0.md)
 > - **Tiền đề:** S1 đã code (`SYSTEM_TAG_LABELS` đã ở `shared/ui/`).
 >
 > 🗣️ *Một bảng tra duy nhất cho 22 mã lỗi, và một component `InlineError` duy nhất để hiện chúng. Không thêm tính năng, chỉ gom.*
@@ -29,7 +29,7 @@
 
 ## 1.1 `shared/errors.ts` phải thành thư mục, và đó là thao tác không mất gì
 
-Master Plan chỉ định `src/shared/errors/messages.ts`, mà hiện tại [errors.ts](../../src/shared/errors.ts) là **file**.
+Master Plan chỉ định `src/shared/errors/messages.ts`, mà hiện tại [errors.ts](../../src/shared/errors/index.ts) là **file**.
 
 ```bash
 git mv src/shared/errors.ts src/shared/errors/index.ts
@@ -461,7 +461,7 @@ Slice này không có `TC-xxx` riêng — SDD §2.5 là quy ước, không phả
 
 ---
 
-# 10. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 10. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-049 — One messageFor(failure), Not a Flat Table; Validation Fields Are Named by Subject

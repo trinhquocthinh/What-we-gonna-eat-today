@@ -2,12 +2,12 @@
 
 > **Document Metadata**
 >
-> - **Version:** `3.8` | **Status:** `Active`
-> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-25`
-> - **Supersedes:** `v2.0` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
-> - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md)
+> - **Version:** `3.9` | **Status:** `Active`
+> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-26`
+> - **Supersedes:** `v3.8` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md)
+> - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 >
-> 📌 *Decision Log ghi lại 37 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
+> 📌 *Decision Log ghi lại 61 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
 
 ---
 
@@ -69,6 +69,12 @@
 | [`DEC-053`](#dec-053--dùng-lại-món-từ-catalog-chung-phải-ghi-tag-người-dùng-đã-chọn) | Dùng lại món từ catalog chung phải ghi tag đã chọn | 2026-08-25 | `Accepted` | addExistingDishToGroup, addDishAction nhánh 1 |
 | [`DEC-054`](#dec-054--sheet-thêm-món-chuyển-sang-đa-chọn-nhãn-thay-thế-dec-031) | Sheet thêm món chuyển sang đa chọn nhãn | 2026-08-25 | `Accepted` | SystemTagField dùng chung, thay thế `DEC-031` |
 | [`DEC-055`](#dec-055--gợi-ý-món-từ-catalog-chung-trong-lúc-gõ-spec-023) | Gợi ý món từ catalog chung trong lúc gõ (SPEC-023) | 2026-08-25 | `Accepted` | Route Handler search, khớp chuỗi con, lọc trong SQL, bổ sung `DEC-032` |
+| [`DEC-056`](#dec-056--re-scope-v11-theo-phản-hồi-dùng-thật-thêm-f49f50-hoãn-f25f28f29) | Re-scope v1.1: thêm `F49`/`F50`, hoãn `F25`/`F28`/`F29` | 2026-08-26 | `Accepted` | Phạm vi v1.1, PRD §4 & §6, Master Plan §16 |
+| [`DEC-057`](#dec-057--tên-tài-liệu-mang-số-phiên-bản-thì-phải-có-cổng-kiểm-link) | Cổng kiểm link tài liệu trong `yarn verify` | 2026-08-26 | `Accepted` | `scripts/check-doc-links.sh`, quy ước bump version |
+| [`DEC-058`](#dec-058--trần-deck-30-thẻ-là-hằng-số-toàn-hệ-thống-không-cấu-hình-theo-nhóm) | Trần deck 30 thẻ, hằng số toàn hệ thống | 2026-08-26 | `Accepted` | `RANKING_CONFIG.deck.maxCards`, thứ tự pipeline deck, `BR-062` |
+| [`DEC-059`](#dec-059--chế-độ-vuốt-theo-chặng-là-cách-chia-deck-không-phải-cách-chốt-bữa) | Chế độ vuốt theo chặng là cách chia deck | 2026-08-26 | `Accepted` | `deck_mode`, `session_courses`, `BR-063`, không đụng `BR-050` |
+| [`DEC-060`](#dec-060--cannot-eat-xoá-tương-tác-cũ-và-tạo-ngoại-lệ-cho-lịch-sử-ăn-mặc-định) | `Cannot Eat` xoá tương tác cũ, ngoại lệ lịch sử ăn | 2026-08-26 | `Accepted` | `BR-034`, ngoại lệ `BR-056`, feature `preference`, rủi ro `R-05` |
+| [`DEC-061`](#dec-061--đánh-số-lại-epic-v12) | Đánh số lại epic v1.2 (`E11`→`E12`…) | 2026-08-26 | `Accepted` | Master Plan §13.2, mã subtask & thư mục `docs/plans/` |
 ---
 
 # DEC-001 — Selection Session Lifecycle
@@ -1386,10 +1392,258 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-056 — Re-scope v1.1 Theo Phản Hồi Dùng Thật: Thêm `F49`/`F50`, Hoãn `F25`/`F28`/`F29`
+
+- **Ngày:** 2026-08-26
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Lập kế hoạch v1.1
+
+## Quyết định
+
+1. Phạm vi v1.1 **không còn là** 12 tính năng của [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) §13.1. Thay bằng 11 tính năng, trong đó **hai tính năng hoàn toàn mới**:
+   - `F49` — **Trần số thẻ mỗi phiên** (xem [`DEC-058`](#dec-058--trần-deck-30-thẻ-là-hằng-số-toàn-hệ-thống-không-cấu-hình-theo-nhóm)).
+   - `F50` — **Chế độ vuốt theo chặng** (xem [`DEC-059`](#dec-059--chế-độ-vuốt-theo-chặng-là-cách-chia-deck-không-phải-cách-chốt-bữa)).
+2. **Hoãn sang v1.2:** `F25` Gỡ Participant, `F28` Sửa lịch sử ăn hôm nay, `F29` UI phát hiện trùng.
+3. Epic v1.1 tổ chức lại thành `E7` → `E11`; v1.2 dời số theo [`DEC-061`](#dec-061--đánh-số-lại-epic-v12).
+4. Thứ tự thi công cố định: `E7` → `E8` → `E9` → `E10` → `E11`.
+
+## Rationale
+
+1. **`F49` và `F50` không phải ý tưởng mới, chúng là lỗi đã có sẵn mà v1.0 không nhìn thấy.**
+   `listDeck` lấy **toàn bộ** món đủ điều kiện của nhóm rồi phân trang 20 thẻ mỗi lần —
+   không có trần. Điều này vô hại khi nhóm có 30 món và trở thành thứ khiến người ta bỏ dở
+   khi nhóm có 150 món. Không tính năng nào trong `F01`→`F48` chạm tới nó, vì lúc viết PRD
+   chưa ai có một danh mục đủ lớn để thấy.
+2. **Hoãn `F29` vì `M1-T5` đã trả trước phần lớn giá trị của nó.** Ô gợi ý chủ động lúc gõ
+   giải quyết đúng cái đau ("không tìm ra món của catalog chung"); panel trùng lặp phản ứng
+   chỉ còn là polish.
+3. **Hoãn `F25` và `F28` vì chúng sửa dữ liệu đã sai, còn `F15` ngăn dữ liệu sai sinh ra.**
+   Cùng một ngân sách giờ, chặn nguồn rẻ hơn dọn hậu quả. `F28` sẽ có ít việc phải sửa hơn
+   sau khi `F15` chạy — làm trước là tự tạo việc cho mình.
+4. **`E7` đứng đầu** đúng như bảng rủi ro [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) §11 đã
+   chỉ định cho `R-05`, và vì nó mở khoá hai số hạng $E$, $X$ đã nằm sẵn trong
+   `RANKING_CONFIG` từ E4 mà chưa hàm nào đọc.
+5. **`E8` trước `E9`** vì phân bổ hạn mức theo chặng cần trần tổng đã tồn tại. Làm ngược lại
+   thì `E9` phải bịa ra một trần tạm rồi vứt đi.
+
+## Consequence
+
+- PRD §4 nhận thêm hai dòng `F49`, `F50` phân loại **Should**; §6 vẽ lại phạm vi ba giai đoạn.
+- Tổng ước lượng v1.1: **81 giờ** (cũ 70 giờ) — chênh lệch là `F49` + `F50` trừ đi ba tính năng hoãn.
+- `F25`/`F28`/`F29` nhập vào Epic v1.2 tương ứng, không rơi vào Out of Scope.
+
+---
+
+# DEC-057 — Tên Tài Liệu Mang Số Phiên Bản Thì Phải Có Cổng Kiểm Link
+
+- **Ngày:** 2026-08-26
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Lập kế hoạch v1.1
+
+## Quyết định
+
+1. Giữ quy ước tên file mang số phiên bản (`..._sdd_v1.2.md`).
+2. Thêm `scripts/check-doc-links.sh`, chạy qua `yarn docs:links`, **nối vào `yarn verify`**.
+3. Script chỉ kiểm tra **đích có tồn tại**, không kiểm tra anchor `#...`.
+4. Mỗi lần bump version một tài liệu, bắt buộc chạy lại phép thay chuỗi trên toàn bộ `docs/`, `README.md` và comment trong `src/` **trong cùng commit**.
+
+## Rationale
+
+1. **Số phiên bản trong tên file là một đánh đổi đã chọn từ đầu** — nó khiến "bản nào đang
+   hiệu lực" nhìn phát biết ngay, mà không cần mở file. Bỏ quy ước này để tránh gãy link là
+   chữa triệu chứng và mất đi thứ đang có giá trị.
+2. **Markdown không có trình biên dịch.** Một link gãy trông y hệt một link tốt cho tới khi
+   có người bấm vào. Đợt bump ngày 2026-08-26 làm gãy **357** link mà không có gì báo — và
+   nó chỉ bị phát hiện tình cờ. Đây đúng là loại lỗi mà một cổng tự động sinh ra để bắt.
+3. **Không kiểm anchor**: anchor sai vẫn mở đúng file, người đọc tự cuộn được. File sai thì
+   không mở được gì. Kiểm anchor tiếng Việt còn kéo theo chuyện chuẩn hoá dấu và ký tự
+   Unicode — chi phí lớn cho một lớp lỗi nhẹ hơn hẳn.
+4. **Nối vào `verify` chứ không phải một script rời**: một cổng phải chạy mà không ai nhớ ra
+   nó thì không phải cổng.
+
+## Consequence
+
+- Cổng mới lộ ra thêm **120 link gãy có từ trước đợt đổi tên** — các implementation guide ở
+  `docs/plans/E1..E5/` lùi thiếu một cấp (`../` đáng ra `../../`), `docs/designs/README.md`
+  thiếu hẳn `../`, Master Plan trỏ `plans/` thay vì `plans/E5/`, một link `file:///Users/...`
+  tuyệt đối, và một link trỏ `src/shared/errors.ts` trong khi file thật là `errors/index.ts`.
+  Tất cả đã sửa.
+- `yarn verify` dài thêm khoảng một giây.
+
+---
+
+# DEC-058 — Trần Deck 30 Thẻ Là Hằng Số Toàn Hệ Thống, Không Cấu Hình Theo Nhóm
+
+- **Ngày:** 2026-08-26
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Lập kế hoạch v1.1 — `F49`, Epic `E8`
+
+## Quyết định
+
+1. `RANKING_CONFIG.deck.maxCards = 30`. Mỗi người, mỗi phiên, tối đa 30 thẻ.
+2. **Không** thêm cột cấu hình theo nhóm.
+3. Thứ tự bắt buộc trong pipeline dựng deck:
+   `lọc Cannot Eat` → `xếp theo Personal Score` → `trộn Explore theo khối 5` → `cắt trần 30` → `chia chặng`.
+4. `deck.pageSize` giữ nguyên 20 — trần và cỡ trang là hai khái niệm khác nhau.
+
+## Rationale
+
+1. **30 chia hết cho khối 5 của `BR-047`**: đúng 24 thẻ Exploit + 6 thẻ Explore, không có
+   khối cụt ở cuối. Chọn 25 hay 35 cũng chia hết, nhưng 30 là chỗ mà thời gian vuốt còn nằm
+   trong ngưỡng "chốt bữa dưới 5 phút" của PRD §7 khi cả nhà 4 người cùng vuốt.
+2. **Không cấu hình theo nhóm**: quy mô sản phẩm là vài nhóm gia đình. Một ô cấu hình ở màn
+   Luật buộc người dùng phải hiểu quan hệ giữa trần thẻ, tỉ lệ Explore và số chặng — ba thứ
+   họ không có lý do gì để nghĩ tới. Nếu về sau cần, thêm cột là chuyện một migration; gỡ
+   một ô cấu hình đã có người dùng thì không.
+3. **Cắt trần SAU khi trộn Explore, đây là điểm dễ sai nhất của cả `E8`.** Thẻ Explore theo
+   định nghĩa là món lâu chưa ăn, tức nằm ở đuôi bảng xếp hạng. Cắt trần trước rồi mới trộn
+   thì tập nguồn của Explore đã bị xoá sạch — deck vẫn chạy, vẫn 30 thẻ, chỉ là không bao
+   giờ có món lạ. Không test nào ở tầng trên bắt được chuyện này; phải có test riêng khẳng
+   định đúng 6/30 thẻ đến từ luồng Explore.
+4. **Trần khác cỡ trang**: `pageSize` là chuyện tải mạng, `maxCards` là chuyện người dùng
+   phải vuốt bao nhiêu lần. Gộp hai thứ vào một hằng số thì mỗi lần chỉnh trải nghiệm lại
+   vô tình chỉnh cả hành vi tải.
+
+## Consequence
+
+- Nhóm có nhiều hơn 30 món thì phần đuôi danh mục **không xuất hiện trong phiên đó** — đây
+  là chủ đích. `BR-062` ghi rõ để không ai đọc thành lỗi.
+- Luồng Explore trở thành thứ duy nhất đưa món ở đuôi bảng lên trước mặt người dùng, nên
+  `F18` không còn là "Should" trên thực tế — nó là điều kiện để `F49` không đóng băng danh mục.
+
+---
+
+# DEC-059 — Chế Độ Vuốt Theo Chặng Là Cách Chia Deck, Không Phải Cách Chốt Bữa
+
+- **Ngày:** 2026-08-26
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Lập kế hoạch v1.1 — `F50`, Epic `E9`
+
+## Quyết định
+
+1. Thêm `deck_mode` trên `selection_sessions`: `FREE` (mặc định, đúng hành vi v1.0) hoặc `COURSE`.
+2. Creator chọn chế độ **và** sắp thứ tự chặng **lúc mở phiên**; lưu vào bảng `session_courses (session_id, position, system_tag)`.
+3. Snapshot chặng nằm **trong cùng giao dịch `startDraft`** với snapshot `session_rules`.
+4. Cả nhà dùng **chung một chế độ** trong một phiên.
+5. **`rankSession`, `finalizeSession`, `BR-049`, `BR-050` không đổi một dòng nào.** Vuốt xong hết các chặng thì vẫn tổng hợp một lần cuối như v1.0.
+6. Chia đều trần 30 thẻ cho $n$ chặng; chặng nào không đủ món thì phần dư trả lại cho các chặng còn lại.
+
+## Rationale
+
+1. **Chế độ đóng băng vào phiên chứ không đọc từ cấu hình nhóm**, cùng lý lẽ `DEC-042` đã áp
+   cho Session Rules: Creator đổi cấu hình giữa chừng không được phép làm hai người vuốt hai
+   tập món khác nhau trong cùng một phiên.
+2. **Creator chọn chặng thay vì suy ra từ Required Rule.** Đã cân nhắc lấy thẳng các tag của
+   Required Rule làm chặng — gọn hơn, không khai báo hai lần. Nhưng Required Rule trả lời câu
+   *"mâm cơm hợp lệ cần gì"*, còn chặng trả lời câu *"tối nay muốn duyệt qua những gì"*. Hai
+   câu này trùng nhau phần lớn thời gian và khác nhau đúng lúc quan trọng: bữa chỉ ăn lẩu.
+   Buộc chúng vào nhau thì muốn đổi cách vuốt một hôm lại phải sửa luật của cả nhóm.
+3. **Chung một chế độ cho cả phiên**: Session Ranking chuẩn hoá theo $T$ (tổng số người). Nếu
+   người A vuốt tự do trên 30 món còn người B vuốt theo chặng chỉ thấy 10 món mặn, thì $P$ và
+   $N$ của hai người đo trên hai mẫu số khác nhau, và điểm cộng lại ở `computeSessionScore`
+   không còn nghĩa. Đây là lý do đúng-sai, không phải chuyện đồng bộ trải nghiệm.
+4. **Không chốt dần từng chặng.** Đã cân nhắc — cảm giác dứt điểm nhanh hơn thật. Nhưng chốt
+   theo chặng buộc cả nhà phải đợi nhau ở mỗi ranh giới chặng, biến một luồng bất đồng bộ
+   thành ba lần đồng bộ; và nó đụng `BR-050`, thứ mà `F50` không có lý do gì phải đụng tới.
+   Chặng chỉ là cách chia màn hình vuốt.
+5. **Trả phần dư**: nhóm cấu hình 3 chặng thì 10 thẻ mỗi chặng; nếu chặng `SOUP` chỉ có 4 món
+   thì 26 thẻ còn lại chia cho hai chặng kia. Không trả dư thì mọi nhóm có một chặng nghèo
+   món sẽ vĩnh viễn dùng chưa hết trần.
+
+## Consequence
+
+- `session_courses` theo đúng khuôn `session_rules` của `DEC-044`: không cột `id`, khoá tự
+  nhiên `(session_id, position)`, `INSERT … SELECT` chạy trọn trong Postgres.
+- `sessionState` và luồng Finalize không đổi ⇒ `TC` của E5/E6 vẫn xanh nguyên, không phải viết lại.
+- Chế độ `FREE` là mặc định, nên phiên tạo bằng đường cũ vẫn chạy y như trước.
+
+---
+
+# DEC-060 — `Cannot Eat` Xoá Tương Tác Cũ Và Tạo Ngoại Lệ Cho Lịch Sử Ăn Mặc Định
+
+- **Ngày:** 2026-08-26
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Lập kế hoạch v1.1 — `F15`, Epic `E7`
+
+## Quyết định
+
+1. Đánh dấu `Cannot Eat` **xoá tương tác Swipe đã có** của người đó với món đó trong phiên đang chạy — đúng `BR-034`.
+2. Món `Cannot Eat` bị **lọc cứng khỏi deck**, không phải hạ điểm.
+3. `Cannot Eat` là ràng buộc **theo `global_dishes.id`**, không theo `group_dishes.id`.
+4. Sinh Default Eating History **bỏ qua** người đã khai `Cannot Eat` với món đó — bổ sung một ngoại lệ vào `BR-056`.
+5. `Dislike` **không** lọc món khỏi deck, chỉ hạ điểm — đúng `BR-037`.
+
+## Rationale
+
+1. **Xoá tương tác cũ chứ không giữ lại**: một `SWIPE_RIGHT` còn sót của món người ta vừa
+   khai là không ăn được sẽ cộng $+1.0$ vào $P$ ở `computeSessionScore` đồng thời với
+   $-1.0$ của $X$. Hai số triệt tiêu nhau và cả nhà thấy một món trung tính, trong khi sự
+   thật là có người không ăn được.
+2. **Lọc cứng chứ không hạ điểm**: đây là ranh giới `BR-043` đã vạch giữa ràng buộc bền vững
+   và tương tác trong phiên. Một món hạ điểm đủ mạnh vẫn có thể nổi lên khi cả nhà đều vuốt
+   phải — với dị ứng thì đó là kết quả không được phép xảy ra.
+3. **Theo `global_dishes.id`**: người dị ứng tôm thì dị ứng ở mọi nhóm. Gắn vào
+   `group_dishes.id` nghĩa là khai lại mỗi lần nhóm gỡ rồi thêm lại món — và `DEC-009` đã
+   nói rõ thêm lại là tạo dòng mới.
+4. **Ngoại lệ cho Default Eating History là mấu chốt của cả `E7`.** `BR-056` sinh lịch sử ăn
+   cho **mọi** Participant của phiên đã chốt. Ai không ăn được món đó vẫn bị ghi là đã ăn,
+   rồi Cooldown 7 ngày trừ điểm món ấy cho chính họ — hệ thống tự bịa ra một dữ kiện rồi tin
+   vào nó. Đây đúng là rủi ro `R-05` mà `Master Plan` §11 đã dự báo, và nó là lý do `F15`
+   được xếp đầu v1.1 chứ không phải vì màn hình dễ làm.
+5. **`Dislike` không lọc**: `Dislike` nói *"tôi không thích lắm"*, `Cannot Eat` nói *"tôi
+   không ăn được"*. Cho `Dislike` quyền lọc thì hai khái niệm chập làm một và người dùng mất
+   cách diễn đạt sắc thái nhẹ.
+
+## Consequence
+
+- `default-eating-history.ts` nhận thêm một tham số là tập người đã khai `Cannot Eat`. Đây là
+  hàm thuần, nên ngoại lệ nằm ở đầu vào chứ không phải một truy vấn giấu bên trong.
+- Feature mới `src/features/preference/` (feature thứ chín), kéo theo **hai** chiều phụ thuộc
+  mới phải khai trong `ALLOWED_CROSS_FEATURE` của `eslint.config.mjs`, bổ sung `yarn arch:probe`
+  và ghi vào Tech Spec §2.3 — hiện mới có đúng 5 chiều được phép:
+  - `selection → preference` (lọc deck và tính $E$),
+  - `meal → preference` (đọc tập `Cannot Eat` để áp ngoại lệ `BR-056` lúc finalize).
+    Chiều này dễ bị bỏ sót vì lịch sử ăn thuộc feature `history`; nhưng vì `defaultEatingHistory`
+    nhận tập ngoại lệ qua tham số, chỗ phải đọc dữ liệu là `meal` chứ không phải `history`.
+- Trọng số `cCannotEat = 1.0` và `wExplicit = 0.3` trong `RANKING_CONFIG` lần đầu có hàm đọc
+  tới, sau khi nằm im từ E4 (`DEC-036`).
+
+---
+
+# DEC-061 — Đánh Số Lại Epic v1.2
+
+- **Ngày:** 2026-08-26
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Lập kế hoạch v1.1
+
+## Quyết định
+
+1. v1.1 chiếm `E7` → `E11`.
+2. v1.2 dời số: `E11` → `E12` (Chef Role), `E12` → `E13` (Học sở thích ngầm), `E13` → `E14` (Linh hoạt & bổ trợ).
+3. `F25`, `F28`, `F29` nhập vào `E14`.
+
+## Rationale
+
+1. v1.1 cần năm epic thay vì bốn, vì `F50` không thuộc epic nào đang có: nó không phải ràng
+   buộc cá nhân, không phải thuật toán deck, không phải luật chốt bữa.
+2. **Dời số v1.2 thay vì chèn `E10b`**: mã epic được tham chiếu bởi tên thư mục
+   (`docs/plans/E5/`) và tiền tố subtask (`E5-T3`). Một mã có hậu tố chữ sẽ phải được xử lý
+   riêng ở mọi chỗ đang sắp xếp theo mã.
+3. Chi phí dời số ở thời điểm này gần bằng không: v1.2 mới chỉ tồn tại dưới dạng ba dòng
+   trong Master Plan §13.2, chưa có subtask, chưa có thư mục, chưa có mã nào trong `src/`.
+
+## Consequence
+
+- Master Plan §13.2 viết lại nhãn epic; không dòng nào khác trong repo tham chiếu `E11`→`E13`.
+- Mọi tham chiếu `E7`→`E10` **trước ngày 2026-08-26** nói về kế hoạch cũ; bảng ánh xạ nằm ở Master Plan §16.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.9` | 2026-08-26 | Bổ sung `DEC-056` (re-scope v1.1: thêm `F49`/`F50`, hoãn `F25`/`F28`/`F29`), `DEC-057` (cổng kiểm link tài liệu), `DEC-058` (trần deck 30 thẻ và thứ tự pipeline), `DEC-059` (chế độ vuốt theo chặng), `DEC-060` (`Cannot Eat` xoá tương tác cũ và ngoại lệ `BR-056`), `DEC-061` (đánh số lại epic v1.2) — lập kế hoạch v1.1 |
 | `3.8` | 2026-08-25 | Bổ sung `DEC-052` (nhãn STAPLE và hợp đồng dấu nối), `DEC-053` (dùng lại món phải ghi tag), `DEC-054` (sheet thêm đa chọn nhãn — thay thế `DEC-031`), `DEC-055` (gợi ý catalog chung, SPEC-023) — bảo trì sau v1.0 |
 | `3.7` | 2026-08-21 | Bổ sung `DEC-051` (Ngưỡng coverage từng tầng qua glob, loại trừ type-only, CI test:coverage riêng, NFR-04 định lượng bằng test count, count-tone đổi sang ink-muted) cho E6-S4 (Cột mốc M6) |
 | `3.6` | 2026-08-21 | Bổ sung `DEC-050` (S-04 4 trạng thái loại trừ, "Dùng link mời" thành chú thích, chặn mở phiên nhóm 0 món) cho E6-S3 |

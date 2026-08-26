@@ -4,8 +4,8 @@
 >
 > - **Version:** `1.2` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-18`
-> - **Supersedes:** `v1.1` | **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Plan & Scope](what-we-gonna-eat-today_plan-and-scope_v0_1.md)
-> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • Môi trường triển khai Production & Dev
+> - **Supersedes:** `v1.1` | **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Plan & Scope](what-we-gonna-eat-today_plan-and-scope_v1.0.md)
+> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • Môi trường triển khai Production & Dev
 >
 > 📌 *Cẩm nang vận hành và hướng dẫn cài đặt hệ thống: Yêu cầu môi trường (Node 24, Yarn 4), cấu hình biến môi trường, chuyển đổi Authentik (Family Hub), quy trình Database Branching, sao lưu/khôi phục và xử lý sự cố.*
 
@@ -108,7 +108,7 @@ yarn dev                         # Truy cập http://localhost:3000
 
 ### 📌 2 Quyết định kiến trúc bất biến
 
-1. **Subject mode bắt buộc chọn UUID:** Cặp `(provider, provider_subject)` là khóa định danh vĩnh viễn ([SPEC-001](what-we-gonna-eat-today_sdd_v0_1.md)). Không dùng email/username làm subject vì chúng có thể thay đổi.
+1. **Subject mode bắt buộc chọn UUID:** Cặp `(provider, provider_subject)` là khóa định danh vĩnh viễn ([SPEC-001](what-we-gonna-eat-today_sdd_v1.3.md)). Không dùng email/username làm subject vì chúng có thể thay đổi.
 2. **Authentik xác thực ("Anh là ai") — App phân quyền ("Anh thuộc nhà nào"):** Quan hệ thành viên `group_members` hoàn toàn do app quản lý nội bộ.
 
 ### Các biến môi trường thay thế
@@ -190,7 +190,7 @@ Vercel Dashboard ──► Deployments ──► Chọn bản ổn định trư�
 
 ## 5.4 Bảng ghi nhận đo lường Cold Start thực tế (M2)
 
-*(Thực hiện đo lường theo [MS-05](what-we-gonna-eat-today_test-cases-specification_v0_1.md) trên điện thoại thật qua mạng 4G/5G sau $\ge 10\text{ phút}$ idle)*
+*(Thực hiện đo lường theo [MS-05](what-we-gonna-eat-today_test-cases-specification_v1.1.md) trên điện thoại thật qua mạng 4G/5G sau $\ge 10\text{ phút}$ idle)*
 
 | Ngày đo | Model thiết bị | Nhà mạng / Kết nối | Lần 1 | Lần 2 | Lần 3 | Kết luận đánh giá |
 | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
@@ -266,7 +266,7 @@ pg_dump "$DATABASE_URL_PRODUCTION" \
 
 | Hiện tượng / Triệu chứng | Nguyên nhân gốc rễ | Hướng dẫn khắc phục |
 | :--- | :--- | :--- |
-| Mở app lần đầu trong ngày mất 3–4 giây | Neon Compute tự ngủ sau 5 phút idle ([R-01](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)) | Hiện tượng bình thường của gói Free. Render skeleton shell trước |
+| Mở app lần đầu trong ngày mất 3–4 giây | Neon Compute tự ngủ sau 5 phút idle ([R-01](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)) | Hiện tượng bình thường của gói Free. Render skeleton shell trước |
 | Báo lỗi `ERR_SESSION_EXISTS_TODAY` dù không thấy phiên | Có phiên `ACTIVE` ngày cũ chưa được đóng | Chuyển `state = 'INVALID'` thủ công trên DB cho phiên cũ |
 | Lỗi đăng nhập Google trên Preview Vercel | Redirect URI chưa được khai báo trên Google Console | Cấu hình Preview URL cố định trên Vercel và thêm vào OAuth Client |
 | Lệnh `yarn install` báo lỗi không tương thích | Node.js sai phiên bản hoặc chưa bật Corepack | Chạy `nvm use` và `corepack enable` |

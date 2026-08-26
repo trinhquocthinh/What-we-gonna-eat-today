@@ -2,12 +2,12 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.0` | **Status:** `Approved`
-> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
-> - **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
-> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • Bộ mã kiểm thử tự động Vitest
+> - **Version:** `1.1` | **Status:** `Approved`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
+> - **Supersedes:** `v1.0` | **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md)
+> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • Bộ mã kiểm thử tự động Vitest
 >
-> 📌 *Tài liệu đặc tả toàn diện 112 ca kiểm thử tự động (`TC-001` đến `TC-112`) và 5 kịch bản kiểm thử khói thủ công (Smoke Tests) cho 17 tính năng cốt lõi của phiên bản v1.0.*
+> 📌 *Tài liệu đặc tả toàn diện 144 ca kiểm thử tự động (`TC-001` đến `TC-144`) và 5 kịch bản kiểm thử khói thủ công (Smoke Tests): 112 ca cho 17 tính năng v1.0, 32 ca cho 11 tính năng v1.1.*
 
 ---
 
@@ -16,6 +16,7 @@
 1. [Quy ước & Kỷ luật kiểm thử (Test Conventions)](#1-quy-ước--kỷ-luật-kiểm-thử-test-conventions)
 2. [Ma trận Test Cases ánh xạ từ SDD (TC-001 → TC-094)](#2-ma-trận-test-cases-ánh-xạ-từ-sdd-tc-001--tc-094)
 3. [Test Cases bổ sung — Biên và Trường hợp âm (TC-095 → TC-112)](#3-test-cases-bổ-sung--biên-và-trường-hợp-âm-tc-095--tc-112)
+3b. [Test Cases v1.1 (TC-113 → TC-144)](#3b-test-cases-v11-tc-113--tc-144)
 4. [Kịch bản kiểm thử khói thủ công trên thiết bị di động (Smoke Tests)](#4-kịch-bản-kiểm-thử-khói-thủ-công-trên-thiết-bị-di-động-smoke-tests)
 5. [Bảng ma trận truy vết (Traceability Matrices)](#5-bảng-ma-trận-truy-vết-traceability-matrices)
 6. [Lịch sử thay đổi (Change History)](#6-lịch-sử-thay-đổi-change-history)
@@ -288,6 +289,73 @@ src/features/selection/
 
 ---
 
+# 3b. Test Cases v1.1 (TC-113 → TC-144)
+
+Ánh xạ 1–1 với `SPEC-024` → `SPEC-035` của [SDD §8](what-we-gonna-eat-today_sdd_v1.3.md).
+
+## 3b.1 E7 — Ràng buộc và sở thích cá nhân
+
+| TC ID | Nguồn | Loại ca | Tầng | Nội dung kiểm thử | Kết quả kỳ vọng |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| `TC-113` | `SPEC-024` | Thuận | `A` | Đánh dấu `Cannot Eat` một món | Món biến khỏi deck ở lần dựng kế tiếp |
+| `TC-114` | `SPEC-024` | **Then chốt** | `I` | Đã `SWIPE_RIGHT` món X rồi mới đánh dấu `Cannot Eat` | Tương tác cũ bị xoá; $P$ của món X giảm đúng 1 |
+| `TC-115` | `SPEC-024` | Biên | `A` | Gỡ `Cannot Eat` sau khi đã xoá tương tác | **KHÔNG** khôi phục tương tác cũ |
+| `TC-116` | `SPEC-024` | Biên | `I` | Cùng món ở hai Group khác nhau | Ràng buộc áp cho **cả hai** (gắn theo `global_dishes.id`) |
+| `TC-117` | `SPEC-024` | Âm | `A` | Đặt ràng buộc thay cho người khác | Trả `ERR_FORBIDDEN` |
+| `TC-118` | `SPEC-025` | Thuận | `D` | `LIKE` / không đặt / `DISLIKE` | $E$ lần lượt bằng $+1$, $0$, $-1$ |
+| `TC-119` | `SPEC-025` | **Then chốt** | `A` | Đặt `DISLIKE` một món | Món **vẫn nằm trong deck**, chỉ tụt hạng |
+| `TC-120` | `SPEC-025` | Biên | `A` | Đặt `preference = null` khi đang là `LIKE` | Xoá dòng, không lưu giá trị enum thứ ba |
+| `TC-121` | `SPEC-014` | Thuận | `D` | Món có $X = 2$, $T = 4$, $P = 2$ | $\text{Score} = (2 - 2) / 4 = 0$ |
+| `TC-122` | `BR-056` | **Then chốt** | `I` | Chốt bữa có món X; người B đã khai `Cannot Eat` món X | **KHÔNG** sinh lịch sử ăn cho B; Cooldown của B không đổi |
+
+## 3b.2 E8 — Deck ngắn và có nhịp
+
+| TC ID | Nguồn | Loại ca | Tầng | Nội dung kiểm thử | Kết quả kỳ vọng |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| `TC-123` | `SPEC-026` | Thuận | `D` | Nhóm có 150 món đủ điều kiện | Deck đúng 30 thẻ |
+| `TC-124` | `SPEC-026` | Biên | `D` | Nhóm có 12 món đủ điều kiện | Deck đúng 12 thẻ, không đệm thêm |
+| `TC-125` | `SPEC-027` | Thuận | `D` | Deck 30 thẻ, cả hai luồng đều dư món | Vị trí `#5, #10, …, #30` là thẻ Explore |
+| `TC-126` | `SPEC-026` | **Then chốt** | `D` | Nhóm 150 món, đếm nguồn của từng thẻ | **Đúng 6/30 thẻ đến từ luồng Explore** — canh thứ tự cắt trần |
+| `TC-127` | `SPEC-027` | Biên | `D` | Luồng Explore cạn (mọi món đều vừa ăn) | Khối lấy trọn từ Exploit, không để trống vị trí |
+| `TC-128` | `SPEC-027` | Biên | `D` | Món $d = 30$ đúng mốc | Đủ điều kiện vào luồng Explore (biên đóng) |
+| `TC-129` | `SPEC-028` | Thuận | `I` | Thêm món mới khi `cursor = 8` | Mọi thẻ `index < 8` giữ nguyên vị trí |
+| `TC-130` | `SPEC-028` | Biên | `I` | Gỡ món nằm ở `index < cursor` | Phần đã xem giữ nguyên, `cursor` không lệch |
+
+## 3b.3 E9 — Chế độ vuốt theo chặng
+
+| TC ID | Nguồn | Loại ca | Tầng | Nội dung kiểm thử | Kết quả kỳ vọng |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| `TC-131` | `SPEC-029` | Thuận | `I` | Start với `deck_mode = COURSE`, 3 chặng | `session_courses` có 3 dòng `position` 0→2, ghi cùng giao dịch với `session_rules` |
+| `TC-132` | `SPEC-029` | Âm | `A` | `deck_mode = COURSE` mà `courses` rỗng | Trả `ERR_VALIDATION` |
+| `TC-133` | `SPEC-029` | Biên | `I` | Đổi cấu hình nhóm sau khi phiên đã `ACTIVE` | Phiên đang chạy **không** đổi chặng |
+| `TC-134` | `SPEC-030` | Thuận | `D` | 3 chặng, mỗi chặng dư món | Mỗi chặng đúng 10 thẻ |
+| `TC-135` | `SPEC-030` | **Then chốt** | `D` | 3 chặng, chặng `SOUP` chỉ có 4 món | 4 + 13 + 13 = 30; phần dư được chia lại |
+| `TC-136` | `SPEC-030` | **Then chốt** | `D` | Món mang cả `STAPLE` và `MAIN`, cả hai đều là chặng | Xuất hiện ở **đúng một** chặng — chặng đầu tiên khớp |
+| `TC-137` | `SPEC-030` | Biên | `D` | `deck_mode = FREE` | Trả đúng một "chặng" chứa toàn bộ deck |
+| `TC-138` | `BR-050` | Hồi quy | `I` | Chốt bữa sau phiên `COURSE` | Luồng Finalize hoạt động y hệt phiên `FREE` |
+
+## 3b.4 E10 & E11
+
+| TC ID | Nguồn | Loại ca | Tầng | Nội dung kiểm thử | Kết quả kỳ vọng |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| `TC-139` | `SPEC-031` | **Then chốt** | `D` | Thiếu 1 `REQUIRED` và 1 `PREFERRED` | `blocking` có 1 phần tử, `warnings` có 1; chỉ `blocking` chặn Finalize |
+| `TC-140` | `SPEC-033` | Biên | `I` | Chốt bữa không có cảnh báo nào | `finalize_warnings` **không** thêm dòng nào |
+| `TC-141` | `SPEC-034` | Thuận | `I` | Phiên `ACTIVE` của hôm qua, mở phiên hôm nay | Phiên cũ chuyển `INVALID`; tương tác cũ được bảo toàn; phiên mới tạo được |
+| `TC-142` | `SPEC-035` | Biên | `I` | Gỡ món rồi thêm lại | Dòng cũ giữ `INACTIVE`, dòng mới **không** kế thừa tag cũ |
+| `TC-143` | `SPEC-032` | Thuận | `D` | `targetCount = 4`, nháp có 6 món | Cảnh báo mềm nêu rõ chiều lệch (thừa 2), **không** chặn Finalize |
+| `TC-144` | `SPEC-032` | Biên | `D` | `targetCount = null` (nhóm chưa đặt) | Không sinh cảnh báo nào |
+
+> [!CAUTION]
+> **5 Test Cases then chốt của v1.1** — mỗi cái canh một lỗi mà không tầng nào phía trên bắt được:
+>
+> - **`TC-126`:** cắt trần trước khi trộn Explore thì deck vẫn đủ 30 thẻ và vẫn chạy, chỉ là vĩnh viễn không có món lạ. Đây là ca duy nhất phát hiện được.
+> - **`TC-136`:** món hai tag lọt vào hai chặng thì người dùng vuốt nó hai lần và $P$ bị đếm trùng — bảng xếp hạng sai mà không có gì báo.
+> - **`TC-114`:** giữ lại `SWIPE_RIGHT` cũ khiến $+1.0$ của $P$ triệt tiêu $-1.0$ của $X$; cả nhà thấy một món trung tính trong khi có người không ăn được.
+> - **`TC-122`:** không có ngoại lệ này thì hệ thống ghi rằng người ta đã ăn món họ không ăn được, rồi tin vào chính dữ kiện đó ở phiên sau (rủi ro `R-05`).
+> - **`TC-135`:** không trả phần dư thì mọi nhóm có một chặng nghèo món sẽ vĩnh viễn dùng chưa hết trần.
+
+---
+
 # 4. Kịch bản kiểm thử khói thủ công trên thiết bị di động (Smoke Tests)
 
 Chạy trước mỗi lần Deploy Production trên **điện thoại thật sử dụng mạng di động 4G/5G**:
@@ -306,8 +374,15 @@ Chạy trước mỗi lần Deploy Production trên **điện thoại thật s�
 
 ### 5.1 Phủ sóng SPEC $\to$ Test Cases
 
-Toàn bộ **22 SPEC** đều có độ bao phủ kiểm thử:
-`SPEC-001` (TC-001→003) • `SPEC-002` (TC-008→010, 095, 096) • `SPEC-003` (TC-011, 012) • `SPEC-004` (TC-013→016, 112) • `SPEC-005` (TC-017→021, 097→099) • `SPEC-006` (TC-022→025, 100, 101) • `SPEC-007` (TC-026→029) • `SPEC-008` (TC-030→035, 107) • `SPEC-009` (TC-036→039) • `SPEC-010` (TC-040→044, 102, 108) • `SPEC-011` (TC-045→047, 103, 104) • `SPEC-012` (TC-048→053, 105, 106) • `SPEC-013` (TC-054→057) • `SPEC-014` (TC-058→062, 111) • `SPEC-015` (TC-063→066) • `SPEC-016` (TC-067→075, 109, 110) • `SPEC-017` (TC-076→078) • `SPEC-018` (TC-004, 005) • `SPEC-019` (TC-006, 007) • `SPEC-020` (TC-079→084) • `SPEC-021` (TC-085→090) • `SPEC-022` (TC-091→094).
+Toàn bộ **22 SPEC** của v1.0 đều có độ bao phủ kiểm thử:
+`SPEC-001` (TC-001→003) • `SPEC-002` (TC-008→010, 095, 096) • `SPEC-003` (TC-011, 012) • `SPEC-004` (TC-013→016, 112) • `SPEC-005` (TC-017→021, 097→099) • `SPEC-006` (TC-022→025, 100, 101) • `SPEC-007` (TC-026→029) • `SPEC-008` (TC-030→035, 107) • `SPEC-009` (TC-036→039) • `SPEC-010` (TC-040→044, 102, 108) • `SPEC-011` (TC-045→047, 103, 104) • `SPEC-012` (TC-048→053, 105, 106) • `SPEC-013` (TC-054→057) • `SPEC-014` (TC-058→062, 111, 121) • `SPEC-015` (TC-063→066) • `SPEC-016` (TC-067→075, 109, 110) • `SPEC-017` (TC-076→078) • `SPEC-018` (TC-004, 005) • `SPEC-019` (TC-006, 007) • `SPEC-020` (TC-079→084) • `SPEC-021` (TC-085→090) • `SPEC-022` (TC-091→094).
+
+### 5.2 Phủ sóng SPEC v1.1 $\to$ Test Cases
+
+Toàn bộ **12 SPEC** của v1.1 đều có độ bao phủ kiểm thử:
+`SPEC-024` (TC-113→117) • `SPEC-025` (TC-118→120) • `SPEC-026` (TC-123, 124, 126) • `SPEC-027` (TC-125, 127, 128) • `SPEC-028` (TC-129, 130) • `SPEC-029` (TC-131→133) • `SPEC-030` (TC-134→137) • `SPEC-031` (TC-139) • `SPEC-032` (TC-143, 144) • `SPEC-033` (TC-140) • `SPEC-034` (TC-141) • `SPEC-035` (TC-142).
+
+`SPEC-023` (gợi ý catalog chung, bảo trì sau v1.0) chưa có TC trong tài liệu này — nợ kiểm thử đã ghi nhận, không thuộc phạm vi v1.1.
 
 ---
 
@@ -315,4 +390,5 @@ Toàn bộ **22 SPEC** đều có độ bao phủ kiểm thử:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.1` | 2026-08-26 | §3b, §5.2 | Bổ sung 32 TC cho v1.1 (`TC-113`→`TC-144`) ánh xạ `SPEC-024`→`SPEC-035`; 5 ca then chốt canh các lỗi im lặng (thứ tự cắt trần, món đa tag hai chặng, tương tác cũ sau Cannot Eat, ngoại lệ lịch sử ăn, chia lại phần dư chặng); ma trận truy vết v1.1 | [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md) → [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: 94 TC từ SDD, 18 TC biên, 5 Smoke Tests | Khởi tạo baseline kiểm thử v1.0 |

@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-18` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E2-T3, E2-T4`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-005`) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-001, BR-002`) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-017→021, TC-097→099, TC-098`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E2-T3, E2-T4`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-005`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-001, BR-002`) • [Test Cases Spec](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-017→021, TC-097→099, TC-098`)
 > - **Tiền đề:** `E2-S1` (Link mời) đã có guide.
 >
 > 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S2 của Epic 2: Chuẩn hoá tên món bỏ dấu tiếng Việt (Level 2), phát hiện trùng lặp món ăn, cờ `forceCreate` và khôi phục Dish Inactive.*
@@ -821,7 +821,7 @@ F27 (gỡ món khỏi pool) chưa được lên lịch ở epic nào, nên **kh�
 
 ---
 
-# 15. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 15. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-023 — Reusing a Duplicate Candidate Is a Separate Use Case, Outside SPEC-005
@@ -891,7 +891,7 @@ validation that gives it meaning.
 
 # 16. Master Plan
 
-Sau khi code xong và `yarn verify`/`yarn arch:probe`/`yarn test:integration` xanh, tick E2-T3 và E2-T4 trong `docs/what-we-gonna-eat-today_master-plan_v1_0.md` §4.
+Sau khi code xong và `yarn verify`/`yarn arch:probe`/`yarn test:integration` xanh, tick E2-T3 và E2-T4 trong `docs/what-we-gonna-eat-today_master-plan_v2.1.md` §4.
 
 ---
 

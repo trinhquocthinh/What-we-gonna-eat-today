@@ -5,7 +5,7 @@
 > - **Version:** `1.4` | **Status:** `Approved`
 > - **Last Updated:** `2026-08-14` | **Supersedes:** `v1.3`
 > - **Upstream:** Khảo sát hành vi & Nhu cầu thực tế
-> - **Downstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md)
+> - **Downstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)
 
 ---
 
@@ -203,6 +203,6 @@ flowchart TD
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
-| `1.4` | 2026-08-14 | Session Ranking | Làm rõ Session Ranking thuần túy dựa trên bằng chứng tương tác; cảnh báo rule mang tính hiển thị | [DEC-011, 012](what-we-gonna-eat-today_decision-log_v1.1.md) |
-| `1.4` | 2026-08-14 | Scope | Bổ sung Recency Cooldown và Explore Lane vào phạm vi Personal Ranking | [DEC-012](what-we-gonna-eat-today_decision-log_v1.1.md) |
-| `1.3` | 2026-07-23 | Toàn bộ | Bổ sung vòng đời phiên, Chef role, Eating history source records và Logical Merge định hướng | [DEC-001→008](what-we-gonna-eat-today_decision-log_v1.1.md) |
+| `1.4` | 2026-08-14 | Session Ranking | Làm rõ Session Ranking thuần túy dựa trên bằng chứng tương tác; cảnh báo rule mang tính hiển thị | [DEC-011, 012](what-we-gonna-eat-today_decision-log_v3.9.md) |
+| `1.4` | 2026-08-14 | Scope | Bổ sung Recency Cooldown và Explore Lane vào phạm vi Personal Ranking | [DEC-012](what-we-gonna-eat-today_decision-log_v3.9.md) |
+| `1.3` | 2026-07-23 | Toàn bộ | Bổ sung vòng đời phiên, Chef role, Eating history source records và Logical Merge định hướng | [DEC-001→008](what-we-gonna-eat-today_decision-log_v3.9.md) |

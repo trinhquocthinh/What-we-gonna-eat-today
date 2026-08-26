@@ -2,12 +2,12 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.0` | **Status:** `Approved`
-> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
-> - **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md)
-> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md)
+> - **Version:** `1.1` | **Status:** `Approved`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
+> - **Supersedes:** `v1.0` | **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md)
+> - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md)
 >
-> 📌 *Tài liệu trực quan hóa toàn diện hệ thống What We Gonna Eat Today: Sơ đồ C4 Context & Container, Sơ đồ thực thể quan hệ ERD (15 bảng), Flowchart vòng đời phiên chọn món và Sequence Diagram luồng Finalize.*
+> 📌 *Tài liệu trực quan hóa toàn diện hệ thống What We Gonna Eat Today: Sơ đồ C4 Context & Container, Sơ đồ thực thể quan hệ ERD (15 bảng v1.0 + 4 bảng v1.1), Flowchart vòng đời phiên chọn món, Sequence Diagram luồng Finalize và chế độ vuốt theo chặng.*
 
 ---
 
@@ -16,10 +16,12 @@
 1. [Sơ đồ C4 — Bối cảnh hệ thống (System Context)](#1-sơ-đồ-c4--bối-cảnh-hệ-thống-system-context)
 2. [Sơ đồ C4 — Vùng chứa & Thành phần (Containers)](#2-sơ-đồ-c4--vùng-chứa--thành-phần-containers)
 3. [Sơ đồ thực thể quan hệ (ERD — Entity Relationship Diagram)](#3-sơ-đồ-thực-thể-quan-hệ-erd--entity-relationship-diagram)
+   - [3.0b Bổ sung schema của v1.1](#30b-bổ-sung-schema-của-v11)
    - [3.1 Bảng phân tích các ràng buộc nghiệp vụ](#31-bảng-phân-tích-các-ràng-buộc-nghiệp-vụ)
    - [3.2 Các quyết định đồng bộ Schema](#32-các-quyết-định-đồng-bộ-schema)
 4. [Lưu đồ vòng đời phiên chọn món (Session Lifecycle Flowchart)](#4-lưu-đồ-vòng-đời-phiên-chọn-món-session-lifecycle-flowchart)
 5. [Sơ đồ tuần tự chốt bữa ăn (Finalize Sequence Diagram)](#5-sơ-đồ-tuần-tự-chốt-bữa-ăn-finalize-sequence-diagram)
+5b. [Sơ đồ tuần tự chế độ vuốt theo chặng (v1.1)](#5b-sơ-đồ-tuần-tự-chế-độ-vuốt-theo-chặng-v11)
 6. [Lịch sử thay đổi (Change History)](#6-lịch-sử-thay-đổi-change-history)
 
 ---
@@ -82,7 +84,7 @@ flowchart TB
 
 > [!IMPORTANT]
 > **Quyết định kiến trúc quan trọng:**  
-> Thao tác vuốt thẻ (Swipe) đi qua **Route Handler riêng**, không qua Server Actions để tránh bị nghẽn hàng đợi (serialisation) của React, đáp ứng chỉ số [NFR-02](what-we-gonna-eat-today_prd_v0_1.md) phản hồi dưới 100ms.
+> Thao tác vuốt thẻ (Swipe) đi qua **Route Handler riêng**, không qua Server Actions để tránh bị nghẽn hàng đợi (serialisation) của React, đáp ứng chỉ số [NFR-02](what-we-gonna-eat-today_prd_v1.5.md) phản hồi dưới 100ms.
 
 ---
 
@@ -238,25 +240,77 @@ erDiagram
     }
 ```
 
+## 3.0b Bổ sung schema của v1.1
+
+Bốn bảng mới và hai cột mới. Chi tiết ở [SDD §8](what-we-gonna-eat-today_sdd_v1.3.md).
+
+```mermaid
+erDiagram
+    USERS ||--o{ USER_DISH_CONSTRAINTS : "khai báo"
+    GLOBAL_DISHES ||--o{ USER_DISH_CONSTRAINTS : "bị ràng buộc"
+    USERS ||--o{ USER_DISH_PREFERENCES : "đặt"
+    GLOBAL_DISHES ||--o{ USER_DISH_PREFERENCES : "được đánh giá"
+    SELECTION_SESSIONS ||--o{ SESSION_COURSES : "đóng băng"
+    SELECTION_SESSIONS ||--o{ FINALIZE_WARNINGS : "lưu vết"
+
+    USER_DISH_CONSTRAINTS {
+        uuid user_id PK, FK
+        uuid global_dish_id PK, FK
+        timestamptz created_at
+    }
+    USER_DISH_PREFERENCES {
+        uuid user_id PK, FK
+        uuid global_dish_id PK, FK
+        enum preference_kind "LIKE | DISLIKE"
+        timestamptz updated_at
+    }
+    SESSION_COURSES {
+        uuid session_id PK, FK
+        int position PK
+        enum system_tag
+    }
+    FINALIZE_WARNINGS {
+        uuid id PK
+        uuid session_id FK
+        text warning_code
+        text detail
+        uuid acknowledged_by FK
+        timestamptz created_at
+    }
+```
+
+| Bảng / cột mới | Thuộc | Ghi chú thiết kế |
+| :--- | :---: | :--- |
+| `user_dish_constraints` | `F15` | Khoá theo `global_dishes.id`, **không** theo `group_dishes.id` — dị ứng thì dị ứng ở mọi nhóm |
+| `user_dish_preferences` | `F16` | Không có giá trị `NEUTRAL`; "Neutral" = không tồn tại dòng, cùng khuôn `interactions` |
+| `session_courses` | `F50` | Không cột `id`, khoá tự nhiên `(session_id, position)` — cùng khuôn `session_rules` theo [DEC-044](what-we-gonna-eat-today_decision-log_v3.9.md) |
+| `finalize_warnings` | `F24` | Chỉ ghi cảnh báo Creator thực sự bỏ qua; chốt bữa sạch thì không có dòng nào |
+| `selection_sessions.deck_mode` | `F50` | Enum `FREE \| COURSE`, mặc định `FREE` — phiên tạo bằng đường cũ chạy y như trước |
+| `group_rules.target_dish_count` | `F23` | Cho phép `NULL` = nhóm chưa đặt, và khi `NULL` thì im lặng chứ không cảnh báo |
+
+> [!NOTE]
+> **Ba enum của v1.1 không cần migration** vì đã khai từ v1.0: `group_rule_type.PREFERRED` (`F22`), `session_state.INVALID` (`F26`), `group_dish_state.INACTIVE` (`F27`). v1.1 chỉ làm cho ba giá trị vốn không tới được trở nên tới được.
+
 ## 3.1 Bảng phân tích các ràng buộc nghiệp vụ
 
 | Ràng buộc toàn vẹn | Nguồn quy tắc | Tầng thực thi |
 | :--- | :--- | :---: |
-| **Partial Unique:** `(group_id, decision_date)` khi `state IN ('ACTIVE', 'FINALIZED')` | [BR-025](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
-| `UNIQUE(group_id, rule_type, system_tag)` | [BR-012](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
-| `CHECK(minimum_count >= 1)` trên cả `group_rules` và `session_rules` | [BR-012](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
-| `UNIQUE(session_id, participant_id, group_dish_id)` trên `interactions` | [BR-040](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
-| `PRIMARY KEY(final_meal_id, group_dish_id)` (Một món xuất hiện 1 lần trong thực đơn) | [BR-050](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
-| `UNIQUE(group_id, global_dish_id)` trên `group_dishes` | [BR-005](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
-| `UNIQUE(session_id)` trên `final_meals` (Tối đa 1 Final Meal cho mỗi Session) | [BR-025](what-we-gonna-eat-today_business-rules_v1.4.md) | **Database** |
-| Participant bắt buộc phải là Group Member | [BR-026](what-we-gonna-eat-today_business-rules_v1.4.md) | **Application** |
-| Mọi Dish trong Final Meal phải Active tại thời điểm finalize | [BR-050](what-we-gonna-eat-today_business-rules_v1.4.md) | **Application** |
+| **Partial Unique:** `(group_id, decision_date)` khi `state IN ('ACTIVE', 'FINALIZED')` | [BR-025](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
+| `UNIQUE(group_id, rule_type, system_tag)` | [BR-012](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
+| `CHECK(minimum_count >= 1)` trên cả `group_rules` và `session_rules` | [BR-012](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
+| `UNIQUE(session_id, participant_id, group_dish_id)` trên `interactions` | [BR-040](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
+| `PRIMARY KEY(final_meal_id, group_dish_id)` (Một món xuất hiện 1 lần trong thực đơn) | [BR-050](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
+| `UNIQUE(group_id, global_dish_id)` trên `group_dishes` | [BR-005](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
+| `UNIQUE(session_id)` trên `final_meals` (Tối đa 1 Final Meal cho mỗi Session) | [BR-025](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
+| Participant bắt buộc phải là Group Member | [BR-026](what-we-gonna-eat-today_business-rules_v1.7.md) | **Application** |
+| Mọi Dish trong Final Meal phải Active tại thời điểm finalize | [BR-050](what-we-gonna-eat-today_business-rules_v1.7.md) | **Application** |
 
 ## 3.2 Các quyết định đồng bộ Schema
 
 1. **Đổi tên `sessions` $\to$ `selection_sessions`:** Tránh xung đột với bảng session của Auth.js / NextAuth.
 2. **Loại bỏ `group_id` và `decision_date` khỏi `final_meals`:** Cả hai trường đều suy ra được qua `session_id`, loại bỏ dữ liệu dư thừa.
 3. **Loại bỏ `invalid_reason` ở v1.0:** Trạng thái `INVALID` chỉ kích hoạt từ v1.1+ (F26 Timeout, F41 Cancel).
+4. **`F26` vào v1.1 vẫn không thêm `invalid_reason`:** ở v1.1 chỉ có đúng một đường dẫn tới `INVALID` (hết hạn cuối ngày, `SPEC-034`), nên một cột lý do sẽ mang đúng một giá trị ở mọi dòng. Cột này chỉ có nghĩa khi `F41` (huỷ phiên thủ công) vào v1.2 và tạo ra đường thứ hai.
 
 ---
 
@@ -410,8 +464,46 @@ sequenceDiagram
 
 ---
 
+# 5b. Sơ đồ tuần tự chế độ vuốt theo chặng (v1.1)
+
+`F50` · [SPEC-029, SPEC-030](what-we-gonna-eat-today_sdd_v1.3.md) · [BR-063](what-we-gonna-eat-today_business-rules_v1.7.md)
+
+```mermaid
+sequenceDiagram
+    actor C as Creator
+    actor M as Thành viên
+    participant App as Next.js App
+    participant DB as Postgres
+
+    C->>App: Mở phiên, chọn "Theo chặng" + sắp Cơm → Canh → Mặn
+    App->>DB: startDraft (MỘT giao dịch)
+    Note over DB: session_rules + session_courses<br/>+ deck_mode = COURSE
+    DB-->>App: Session ACTIVE
+
+    M->>App: Mở deck
+    App->>App: Lọc Cannot Eat → xếp điểm → trộn Explore<br/>→ cắt trần 30 → chia 3 chặng (10/10/10)
+    App-->>M: Chặng 1/3 — Cơm (10 thẻ)
+    M->>App: Vuốt hết chặng 1
+    App-->>M: Chặng 2/3 — Canh (10 thẻ)
+    M->>App: Vuốt hết chặng 2
+    App-->>M: Chặng 3/3 — Mặn (10 thẻ)
+    M->>App: Vuốt hết → "Tôi đã chọn xong"
+
+    C->>App: Xem bảng xếp hạng
+    Note over App,DB: rankSession và finalizeSession<br/>KHÔNG biết gì về chặng — y hệt phiên FREE
+    App-->>C: Bảng xếp hạng tổng hợp một lần duy nhất
+```
+
+> [!IMPORTANT]
+> Ba dòng cuối là điểm chính của cả sơ đồ: chặng **kết thúc** ở tầng dựng deck. `rankSession`,
+> `finalizeSession`, `BR-049` và `BR-050` không hề biết chế độ nào đang bật — xem
+> [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md) mục 4.
+
+---
+
 # 6. Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.1` | 2026-08-26 | §3.0b, §3.2, §5b | ERD bổ sung 4 bảng và 2 cột của v1.1; ghi rõ 3 enum không cần migration; lý do `F26` vẫn không thêm `invalid_reason`; sơ đồ tuần tự chế độ vuốt theo chặng | [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: C4 Context/Container, ERD 15 bảng, Flowchart và Sequence | Khởi tạo baseline thiết kế hệ thống |

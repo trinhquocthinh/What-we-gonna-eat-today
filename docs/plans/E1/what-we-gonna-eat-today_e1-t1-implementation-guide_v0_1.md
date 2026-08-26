@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Completed`
 > - **Created:** `2026-08-16` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T1`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-001`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-001→003`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E1-T1`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-001`) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Test Cases Spec](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-001→003`)
 > - **Scope:** Subtask `E1-T1` — Auth.js Google OAuth, Bảng `users`, Route `/groups`
 >
 > 📌 *Hướng dẫn kỹ thuật thi công TDD cho subtask E1-T1: Tích hợp Auth.js v5 beta, xác thực Google OAuth, xử lý lỗi tại boundary và cấp phát phiên JWT an toàn.*

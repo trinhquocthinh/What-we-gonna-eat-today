@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Completed`
 > - **Created:** `2026-08-17` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T5`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-005`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-001, BR-005`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E1-T5`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-005`) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-001, BR-005`)
 > - **Tiền đề:** `E1-S1` và `E1-S2` đã thi công xong.
 >
 > 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S3: Quản lý Global Dishes, Group Dish Pool, chuẩn hóa tên Level 1 và giao diện thêm món bằng Bottom Sheet.*

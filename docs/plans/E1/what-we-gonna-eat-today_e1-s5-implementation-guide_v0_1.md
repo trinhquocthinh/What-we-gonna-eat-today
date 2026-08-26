@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Completed`
 > - **Created:** `2026-08-17` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T8, E1-T9`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-010, 011, 012`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-045→053, TC-105, TC-106`) • [Design Handoff](file:///Users/thinhquoc/Desktop/Persional/Enterprise/what-we-gonna-eat-today/docs/designs/README.md) (`S-09`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E1-T8, E1-T9`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-010, 011, 012`) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Test Cases Spec](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-045→053, TC-105, TC-106`) • [Design Handoff](../../designs/README.md) (`S-09`)
 > - **Tiền đề:** `E1-S1`, `E1-S2`, `E1-S3`, `E1-S4` đã hoàn thành.
 >
 > 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S5: Materialize Candidate Deck, Route Handler xử lý tương tác vuốt thẻ song song dưới 100ms và Optimistic UI.*

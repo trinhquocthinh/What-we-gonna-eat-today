@@ -4,8 +4,8 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-20`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E5-T7`, `E5-T8`, `E5-T9` — **Cột mốc M5**) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-014`, `SPEC-015`, `SPEC-016`) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-050`, `BR-051`) • [Design](../designs/README.md) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-063`→`TC-066`, `TC-061`, `TC-072`)
-> - **Ảnh tham chiếu:** [s10-01-tong-hop.png](../designs/screenshots/s10-01-tong-hop.png)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E5-T7`, `E5-T8`, `E5-T9` — **Cột mốc M5**) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-014`, `SPEC-015`, `SPEC-016`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-050`, `BR-051`) • [Design](../../designs/README.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-063`→`TC-066`, `TC-061`, `TC-072`)
+> - **Ảnh tham chiếu:** [s10-01-tong-hop.png](../../designs/screenshots/s10-01-tong-hop.png)
 > - **Tiền đề:** S3 đã code (`listSessionRanking`, `finalizeSession` đủ 7 bước).
 >
 > 🍚 *Slice cuối của E5 và là mốc M5. Sau slice này một bữa cơm đi trọn vòng: mở phiên → cả nhà vuốt → Creator nhìn bảng đồng thuận → chốt → lịch sử ăn được ghi.*
@@ -48,7 +48,7 @@ Ghi Decision Log (§9).
 
 ## 1.2 Mockup S-10 có hai thứ v1.0 không có
 
-Đọc kỹ [s10-01-tong-hop.png](../designs/screenshots/s10-01-tong-hop.png), mỗi thẻ món có **bốn** ô đếm:
+Đọc kỹ [s10-01-tong-hop.png](../../designs/screenshots/s10-01-tong-hop.png), mỗi thẻ món có **bốn** ô đếm:
 
 ```
 3 đề xuất          0 không muốn
@@ -595,7 +595,7 @@ Tắt màn hình, dùng screen reader duyệt một thẻ món: phải nghe đư
 
 ---
 
-# 11. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 11. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-046 — The Finalize Screen Lives Entirely in features/meal; app/ Maps the Ranking

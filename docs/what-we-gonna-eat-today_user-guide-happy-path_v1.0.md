@@ -4,7 +4,7 @@
 >
 > - **Version:** `1.0` | **Status:** `Draft` | **Release:** `R1 (v1.0)`
 > - **Created:** `2026-08-25` | **Last Updated:** `2026-08-25`
-> - **Upstream:** [PRD](what-we-gonna-eat-today_prd_v0_1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) • [Design Criteria](what-we-gonna-eat-today_design-criteria_v0_1.md)
+> - **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • [Design Criteria](what-we-gonna-eat-today_design-criteria_v1.0.md)
 >
 > 📌 *Hướng dẫn sử dụng theo đúng luồng "happy case" của v1.0: từ đăng nhập tới lúc cả nhà nhìn thấy mâm cơm tối nay. Nhãn nút, tên màn hình lấy verbatim từ code hiện hành — không phải bản nháp thiết kế. Dành cho người dùng cuối và người onboard thành viên mới trong đội.*
 
@@ -36,7 +36,7 @@
 | **Member / Participant** | Thành viên gia đình tham gia qua link mời | Vuốt chọn món trong phiên, xem mâm cơm đã chốt, xem lịch sử ăn |
 
 > [!NOTE]
-> Một User chỉ thuộc **một** Group trong v1.0 ([DEC-004](what-we-gonna-eat-today_decision-log_v1.1.md), ngoài phạm vi tới v1.2+).
+> Một User chỉ thuộc **một** Group trong v1.0 ([DEC-004](what-we-gonna-eat-today_decision-log_v3.9.md), ngoài phạm vi tới v1.2+).
 
 ---
 
@@ -185,7 +185,7 @@ flowchart TD
 
 # 3. Những gì happy path này KHÔNG bao gồm
 
-Các tính năng sau **cố ý chưa có** ở v1.0, đã nằm trong roadmap v1.1/v1.2 ([Master Plan §13](what-we-gonna-eat-today_master-plan_v1_0.md)) — không phải lỗi thiếu sót:
+Các tính năng sau **cố ý chưa có** ở v1.0, đã nằm trong roadmap v1.1/v1.2 ([Master Plan §13](what-we-gonna-eat-today_master-plan_v2.1.md)) — không phải lỗi thiếu sót:
 
 | Tính năng | Vì sao chưa có ở v1.0 |
 | :--- | :--- |

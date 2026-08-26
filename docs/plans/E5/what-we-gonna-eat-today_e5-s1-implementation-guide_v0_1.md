@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-20`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E5-T1`, `E5-T1b`, `E5-T2`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-021`) • [Tech Spec](../what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) (§3.1 dòng 159–161) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.4.md) (`BR-010`→`BR-013`) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-085`→`TC-089`) • [Design](../designs/README.md)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E5-T1`, `E5-T1b`, `E5-T2`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-021`) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) (§3.1 dòng 159–161) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-010`→`BR-013`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-085`→`TC-089`) • [Design](../../designs/README.md)
 > - **Tiền đề:** `E2-T5` đã code (`group_dish_tags`, `SystemTag` domain), `E1-T3` đã code (`assertGroupAccess`).
 >
 > 📏 *Slice mở đầu E5. Sau slice này Group Admin đặt được quy định "phải có ít nhất 1 món canh" — nhưng chưa có gì kiểm tra nó. Việc kiểm tra là S2/S3.*
@@ -89,7 +89,7 @@ DoD của `E5-T2` là *"ràng buộc THẬT trong DB"*, nên bước xác minh k
 
 ## 1.4 Thiết kế S-07 có mục "Nên có" — v1.0 không dựng
 
-Ảnh [s07-01-quy-dinh.png](../designs/screenshots/s07-01-quy-dinh.png) vẽ hai nhóm: *"Bắt buộc — thiếu thì không chốt được"* và *"Nên có — chỉ cảnh báo"*. Nhóm thứ hai là `Preferred Rule` (`BR-014`, `F22`, **v1.1**).
+Ảnh [s07-01-quy-dinh.png](../../designs/screenshots/s07-01-quy-dinh.png) vẽ hai nhóm: *"Bắt buộc — thiếu thì không chốt được"* và *"Nên có — chỉ cảnh báo"*. Nhóm thứ hai là `Preferred Rule` (`BR-014`, `F22`, **v1.1**).
 
 Slice này dựng **đúng nhóm "Bắt buộc"**, và không dựng khung rỗng cho nhóm kia — một mục trống với tiêu đề "Nên có" là lời hứa với người dùng mà v1.0 không giữ được. Tiêu đề nhóm cũng bỏ luôn (chỉ còn một nhóm thì không cần tiêu đề phân biệt); giữ lại nguyên văn dòng chân trang *"Quy định chỉ kiểm tra lúc chốt bữa, không chặn ai vuốt"* vì nó đúng ở v1.0 (`BR-054`).
 
@@ -97,7 +97,7 @@ Khối giải thích "Lúc chốt bữa" trong ảnh cũng rút còn một câu,
 
 ## 1.5 Mã màn hình trong Master Plan đánh theo TÊN FILE ẢNH, không theo catalog
 
-Master Plan §7 ghi `E5-T7` là `S-10`, `E4-T7` là `S-09`. Nhưng bảng catalog ở [designs/README.md §4](../designs/README.md) ghi `S-09` = *Cấu hình phiên*, `S-10` = *Xem xét chốt thực đơn*, và `S-07` = *Candidate Deck*.
+Master Plan §7 ghi `E5-T7` là `S-10`, `E4-T7` là `S-09`. Nhưng bảng catalog ở [designs/README.md §4](../../designs/README.md) ghi `S-09` = *Cấu hình phiên*, `S-10` = *Xem xét chốt thực đơn*, và `S-07` = *Candidate Deck*.
 
 Đối chiếu với thư mục ảnh thì rõ: `s09-01-deck.png` (deck — đúng thứ `E4-T7` dựng), `s10-01-tong-hop.png` (tổng hợp — đúng thứ `E5-T7` dựng), `s07-01-quy-dinh.png` (quy định — slice này). **Master Plan đánh số theo tên file ảnh.** Guide E4-S4 §4 đã vấp đúng chỗ này.
 
@@ -753,7 +753,7 @@ it('DB chặn rule trùng và minimum_count = 0, không phụ thuộc hàm thu�
 
 # 8. Presentation — màn S-07 (E5-T1b)
 
-Ảnh tham chiếu: [s07-01-quy-dinh.png](../designs/screenshots/s07-01-quy-dinh.png), [s07-02-sheet-them-quy-dinh.png](../designs/screenshots/s07-02-sheet-them-quy-dinh.png).
+Ảnh tham chiếu: [s07-01-quy-dinh.png](../../designs/screenshots/s07-01-quy-dinh.png), [s07-02-sheet-them-quy-dinh.png](../../designs/screenshots/s07-02-sheet-them-quy-dinh.png).
 
 `rule-sentence.ts` — chuyển một rule thành câu tiếng Việt, tách riêng vì **S4 dùng lại** (dòng "Còn thiếu: 1 món Canh" trên nút chốt):
 
@@ -1214,7 +1214,7 @@ Check constraints:
 
 ---
 
-# 15. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 15. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-040 — SystemTag Moves to shared/domain; Schema Follows Tech Spec §3.1 Verbatim
@@ -1290,11 +1290,11 @@ dùng được không?"* — không có S-07 thì câu trả lời cho E5 là KH
 
 # 16. Master Plan
 
-Sau khi slice xanh, sửa [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) §7:
+Sau khi slice xanh, sửa [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) §7:
 
 ```markdown
 | `[x] E5-T1` | Schema `group_rules` và CRUD | … |
-| `[x] E5-T1b` | Màn hình S-07 "Quy định bữa ăn" | `S-07`, [Design §4](designs/README.md) | 2 | `E5-T1` | Admin đặt được rule trên điện thoại; Member chỉ xem | `src/features/rule/presentation/**` |
+| `[x] E5-T1b` | Màn hình S-07 "Quy định bữa ăn" | `S-07`, [Design §4](../../designs/README.md) | 2 | `E5-T1` | Admin đặt được rule trên điện thoại; Member chỉ xem | `src/features/rule/presentation/**` |
 | `[x] E5-T2` | Invariant của rule ép ở tầng DB | … |
 ```
 

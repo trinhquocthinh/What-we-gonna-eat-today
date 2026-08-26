@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to run`
 > - **Created:** `2026-08-18` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T12`) • [PRD](what-we-gonna-eat-today_prd_v0_1.md) (`NFR-01`) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`MS-01, MS-05`) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E1-T12`) • [PRD](../../what-we-gonna-eat-today_prd_v1.5.md) (`NFR-01`) • [Test Cases Spec](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`MS-01, MS-05`) • [Setup & Ops Guide](../../what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md)
 > - **Tiền đề:** `E1-T1` đến `E1-T11` đã hoàn thành (S1→S6).
 >
 > 📌 *Runbook hướng dẫn thao tác nghiệm thu Cột mốc M2: Triển khai Production, đo lường độ trễ Cold Start thực tế trên thiết bị di động 4G/5G.*
@@ -39,7 +39,7 @@
 - [ ] `yarn verify && yarn arch:probe && yarn build` xanh trên `main` (hoặc nhánh chuẩn bị merge vào `main`)
 - [ ] `yarn test:integration` xanh (cần `.env.test.local` đã cấu hình từ S4)
 - [ ] Mọi migration (`0000` → migration mới nhất của S6) đã commit vào repo, đúng thứ tự, không file nào bị sửa tay sau khi đã chạy trên branch `dev`/`test`
-- [ ] Decision log có đủ DEC-013 → DEC-020 (kiểm bằng `grep -c "^# DEC-" docs/what-we-gonna-eat-today_decision-log_v1.1.md` — phải ≥20)
+- [ ] Decision log có đủ DEC-013 → DEC-020 (kiểm bằng `grep -c "^# DEC-" docs/what-we-gonna-eat-today_decision-log_v3.9.md` — phải ≥20)
 
 ---
 
@@ -154,7 +154,7 @@ Sau khi thêm, deploy lại, đo lại 3 lần (§5.2).
 
 **Bước 2 — nếu vẫn vượt 2.5 giây sau khi đã thử bước 1**: nới ngưỡng NFR-01 lên **4 giây**. Đây là quyết định **đã được duyệt trước** trong Master Plan — không phải một lựa chọn mới cần bàn lại, và **không đổi database** (Master Plan nói rõ đổi database "tốn hơn nhiều so với lợi ích" ở giai đoạn này). Cập nhật:
 
-- `docs/what-we-gonna-eat-today_prd_v0_1.md` — sửa dòng NFR-01 từ "≤ 2.5s" thành "≤ 4s", thêm ghi chú ngày đổi + lý do (trỏ về DEC mới, xem dưới).
+- `docs/what-we-gonna-eat-today_prd_v1.5.md` — sửa dòng NFR-01 từ "≤ 2.5s" thành "≤ 4s", thêm ghi chú ngày đổi + lý do (trỏ về DEC mới, xem dưới).
 - Thêm một mục vào Decision Log (DEC-021, theo khuôn các entry trước) ghi lại: số đo thật, việc đã thử shell-tĩnh-trước, và quyết định nới ngưỡng.
 
 ## 6.3 Nếu vượt cả 4 giây
@@ -167,7 +167,7 @@ Sau khi thêm, deploy lại, đo lại 3 lần (§5.2).
 
 File hiện tại chỉ còn đúng một mục 🔒 trống (dòng *"Ghi lại ngày diễn tập gần nhất ở đây: 🔒 chưa diễn tập lần nào"* — về backup, không liên quan). Chưa có chỗ nào cho số đo cold start — thêm mục mới.
 
-## 7.1 Thêm `docs/what-we-gonna-eat-today_setup-and-ops-guide_v0_1.md` §5.4 — ngay sau §5.3 "Quay lui một bản deploy"
+## 7.1 Thêm `docs/what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md` §5.4 — ngay sau §5.3 "Quay lui một bản deploy"
 
 ```markdown
 ## 5.4 Đo cold start thật (M2)
