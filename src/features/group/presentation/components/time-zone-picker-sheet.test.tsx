@@ -8,10 +8,7 @@ describe('TimeZonePickerSheet', () => {
   it('đánh dấu mục đang chọn theo dạng canonical dù truyền vào alias', () => {
     render(<TimeZonePickerSheet selected="Asia/Ho_Chi_Minh" onSelect={vi.fn()} onClose={vi.fn()} />)
 
-    expect(screen.getByRole('button', { name: 'Asia/Saigon' })).toHaveAttribute(
-      'aria-current',
-      'true',
-    )
+    expect(screen.getByText('Asia/Saigon')).toHaveAttribute('aria-current', 'true')
   })
 
   it('gõ để lọc chỉ còn múi giờ khớp', async () => {
