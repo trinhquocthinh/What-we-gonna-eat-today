@@ -1,11 +1,11 @@
-/**
- * SDD §2.2. `InteractionType` KHÔNG có giá trị `NONE` — "None" được biểu diễn
- * bằng việc KHÔNG tồn tại row trong `interactions` (nguyên văn SDD, không
- * phải suy diễn).
- *
- * `InteractionAction` là tên TỰ ĐẶT: SDD không đặt tên riêng cho enum ba giá
- * trị của cột `interaction_events.action`, chỉ liệt kê chúng trong đầu vào
- * SPEC-012 (`action: SWIPE_RIGHT | SWIPE_LEFT | UNDO`).
- */
 export type InteractionType = 'SWIPE_RIGHT' | 'SWIPE_LEFT'
+
+/** Ba giá trị người dùng gửi lên được qua SPEC-012. */
 export type InteractionAction = 'SWIPE_RIGHT' | 'SWIPE_LEFT' | 'UNDO'
+
+/**
+ * Những gì có thể xuất hiện trong `interaction_events.action`. RỘNG HƠN
+ * `InteractionAction`: `CANNOT_EAT` do hệ thống ghi khi BR-034 xoá một lượt
+ * vuốt, KHÔNG phải một hành động client gửi lên được.
+ */
+export type InteractionEventAction = InteractionAction | 'CANNOT_EAT'

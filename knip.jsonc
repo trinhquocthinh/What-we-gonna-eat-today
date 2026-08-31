@@ -68,8 +68,8 @@
     "src/features/selection/application/list-session-ranking.ts",
     "src/features/selection/domain/ranking.ts",
 
-    // GỠ Ở E7-T4 (S2): Preference domain và repository dựng ở E7-S1, S2 sẽ tạo Route Handler và use case.
-    "src/features/preference/**",
+    // GỠ Ở E7-S3: InteractionEventAction mở rộng cho audit log CANNOT_EAT (DEC-063).
+    "src/features/selection/domain/interaction.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

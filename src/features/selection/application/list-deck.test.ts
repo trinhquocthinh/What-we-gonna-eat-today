@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { HistoryRepository } from '@/features/history/application/history-repository'
+import type { PreferenceKind } from '@/features/preference/domain/explicit-preference'
+import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
 import { listDeck } from './list-deck'
 import type { DishCard, SelectionRepository } from './selection-repository'
 
@@ -21,6 +23,7 @@ function makeDeps(
     eligible?: DishCard[]
     materialized?: readonly string[] | null
     eatingRows?: { globalDishId: string; eatingDate: string }[]
+    preferencesMap?: Map<string, PreferenceKind>
   } = {},
 ) {
   const materializeDeck = vi.fn(async () => ({ outcome: 'MATERIALIZED' as const }))
@@ -35,7 +38,18 @@ function makeDeps(
     countRecentEatersByDish: vi.fn(async () => new Map()),
     findEatingHistory: vi.fn(async () => []),
   }
-  return { selection: selection as SelectionRepository, history, materializeDeck }
+  const preferences: PreferenceRepository = {
+    setConstraint: vi.fn(async () => ({ removedInteraction: false })),
+    setPreference: vi.fn(async () => undefined),
+    findConstrainedGlobalDishIds: vi.fn(async () => new Set<string>()),
+    findPreferencesByGlobalDish: vi.fn(async () => overrides.preferencesMap ?? new Map()),
+  }
+  return {
+    selection: selection as SelectionRepository,
+    history,
+    preferences,
+    materializeDeck,
+  }
 }
 
 const BASE_INPUT = {
@@ -172,5 +186,32 @@ describe('listDeck — E4-T3/T4', () => {
     expect(result.ok).toBe(false)
     if (result.ok) throw new Error('unreachable')
     expect(result.error.code).toBe('ERR_NOT_PARTICIPANT')
+  })
+
+  it('TC-119 — món DISLIKE vẫn nằm trong deck nhưng bị xếp sau món LIKE', async () => {
+    const dishLike = makeDishCard({ dishId: 'd-like', globalDishId: 'g-like', name: 'Món Thích' })
+    const dishDislike = makeDishCard({
+      dishId: 'd-dislike',
+      globalDishId: 'g-dislike',
+      name: 'Món Ghét',
+    })
+    const preferencesMap = new Map<string, PreferenceKind>([
+      ['g-like', 'LIKE'],
+      ['g-dislike', 'DISLIKE'],
+    ])
+
+    const deps = makeDeps({
+      eligible: [dishDislike, dishLike],
+      preferencesMap,
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items).toHaveLength(2)
+    // Món LIKE phải đứng trước món DISLIKE
+    expect(result.value.items[0]?.dishId).toBe('d-like')
+    expect(result.value.items[1]?.dishId).toBe('d-dislike')
   })
 })

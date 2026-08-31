@@ -1639,10 +1639,43 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-063 — Audit Log Ghi `CANNOT_EAT`, Và Enum CSDL Rộng Hơn Ô Cửa Nhận Dữ Liệu
+
+- **Ngày:** 2026-08-26
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E7 Slice S2
+
+## Quyết định
+
+1. `interaction_events.action` thêm giá trị `'CANNOT_EAT'`.
+2. Domain tách hai kiểu: `InteractionAction` (ba giá trị, client gửi lên được)
+   và `InteractionEventAction` (bốn giá trị, những gì có thể nằm trong bảng).
+3. `VALID_ACTIONS` của Route Handler `SPEC-012` giữ nguyên ba giá trị.
+
+## Rationale
+
+1. Ghi `'UNDO'` cho một lượt vuốt bị xoá do `BR-034` là sai sự thật — không ai
+   bấm hoàn tác. `DEC-025` đặt bảng này ra để biết cái gì đã xảy ra; một audit
+   log nói dối tệ hơn không có audit log.
+2. **Nới enum ở CSDL không được phép nới ô cửa nhận dữ liệu từ ngoài.** Nếu
+   dùng chung một kiểu, `VALID_ACTIONS` sẽ tự động chấp nhận `CANNOT_EAT` từ
+   client — cho phép bỏ qua toàn bộ đường `setConstraint` và xoá một lượt vuốt
+   mà không ghi ràng buộc nào. Hai kiểu là hàng rào giữa hai việc khác nhau.
+
+## Consequence
+
+- Migration `0012_cannot_eat_event.sql` chỉ thêm giá trị enum, không đụng dữ liệu.
+- `TC-117` đổi nghĩa: từ "chặn đặt hộ người khác" thành "bỏ qua `userId` trong
+  body" — hành vi cũ không biểu diễn được vì `userId` lấy từ phiên đăng nhập.
+- Không thêm `ERR_FORBIDDEN` vào `ErrorCode`.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.10` | 2026-08-26 | Bổ sung `DEC-063` (`CANNOT_EAT` audit log, tách kiểu enum CSDL vs API input, sửa TC-117) cho E7-S2 |
 | `3.9` | 2026-08-26 | Bổ sung `DEC-056` (re-scope v1.1: thêm `F49`/`F50`, hoãn `F25`/`F28`/`F29`), `DEC-057` (cổng kiểm link tài liệu), `DEC-058` (trần deck 30 thẻ và thứ tự pipeline), `DEC-059` (chế độ vuốt theo chặng), `DEC-060` (`Cannot Eat` xoá tương tác cũ và ngoại lệ `BR-056`), `DEC-061` (đánh số lại epic v1.2) — lập kế hoạch v1.1 |
 | `3.8` | 2026-08-25 | Bổ sung `DEC-052` (nhãn STAPLE và hợp đồng dấu nối), `DEC-053` (dùng lại món phải ghi tag), `DEC-054` (sheet thêm đa chọn nhãn — thay thế `DEC-031`), `DEC-055` (gợi ý catalog chung, SPEC-023) — bảo trì sau v1.0 |
 | `3.7` | 2026-08-21 | Bổ sung `DEC-051` (Ngưỡng coverage từng tầng qua glob, loại trừ type-only, CI test:coverage riêng, NFR-04 định lượng bằng test count, count-tone đổi sang ink-muted) cho E6-S4 (Cột mốc M6) |

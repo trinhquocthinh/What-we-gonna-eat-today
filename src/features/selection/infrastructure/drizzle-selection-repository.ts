@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, notExists, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
 import { getDb } from '@/shared/db/client'
@@ -11,6 +11,7 @@ import {
   participants,
   selectionSessions,
   sessionDecks,
+  userDishConstraints,
 } from '@/shared/db/schema'
 import { toSystemTags, type SystemTag } from '@/shared/domain/system-tag'
 
@@ -37,14 +38,14 @@ async function findParticipant(
 /**
  * VIẾT HAI GIAI ĐOẠN — xem Implementation Guide §2.5 và §9.1.
  *
- * Bản dưới đây là bản SAU E1-T9 (có LEFT JOIN `interactions`). Nếu bạn code
- * E1-T8 trước khi bảng `interactions` tồn tại, tạm bỏ khối JOIN + tham số
- * `participantId` không dùng tới, và trả `effectiveInteraction: null` cứng —
- * rồi quay lại sửa đúng hàm này khi tới E1-T9, đừng tạo hàm thứ hai.
+ * Bản dưới đây là bản SAU E1-T9 (có LEFT JOIN `interactions`).
+ * E7-S2 (§1.1): Nhận `userId` và lọc `NOT EXISTS` trên `user_dish_constraints`
+ * để loại bỏ món Cannot Eat ngay ở tầng SQL (BR-034).
  */
 async function listEligibleDishCards(
   sessionId: string,
   participantId: string,
+  userId: string,
 ): Promise<DishCard[]> {
   const rows = await getDb()
     .select({
@@ -64,7 +65,25 @@ async function listEligibleDishCards(
         eq(interactions.participantId, participantId),
       ),
     )
-    .where(and(eq(selectionSessions.id, sessionId), eq(groupDishes.state, 'ACTIVE')))
+    .where(
+      and(
+        eq(selectionSessions.id, sessionId),
+        eq(groupDishes.state, 'ACTIVE'),
+        // BR-034 — Stage 1 Hard Filter. Lọc ở SQL chứ không ở tầng trên: LIMIT
+        // và phân trang chạy SAU phép lọc, cùng lý lẽ DEC-055 mục 3.
+        notExists(
+          getDb()
+            .select({ one: sql`1` })
+            .from(userDishConstraints)
+            .where(
+              and(
+                eq(userDishConstraints.userId, userId),
+                eq(userDishConstraints.globalDishId, globalDishes.id),
+              ),
+            ),
+        ),
+      ),
+    )
     .orderBy(groupDishes.id)
 
   return rows.map((row) => ({

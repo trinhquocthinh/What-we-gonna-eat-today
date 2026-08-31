@@ -25,7 +25,11 @@ export interface SelectionRepository {
    * - E1-T8: chưa có bảng `interactions` → `effectiveInteraction` hardcode `null`.
    * - E1-T9: sửa lại thân hàm, thêm LEFT JOIN `interactions` để đọc giá trị thật.
    */
-  listEligibleDishCards(sessionId: string, participantId: string): Promise<DishCard[]>
+  listEligibleDishCards(
+    sessionId: string,
+    participantId: string,
+    userId: string,
+  ): Promise<DishCard[]>
 
   /** SPEC-012. Session phải đang ACTIVE mới ghi được interaction. */
   findSessionState(sessionId: string): Promise<'DRAFT' | 'ACTIVE' | 'FINALIZED' | 'INVALID' | null>

@@ -415,7 +415,12 @@ export const interactionType = pgEnum('interaction_type', ['SWIPE_RIGHT', 'SWIPE
  * enum này. Ba giá trị vì UNDO là một sự kiện audit dù nó xoá row khỏi
  * `interactions`.
  */
-export const interactionAction = pgEnum('interaction_action', ['SWIPE_RIGHT', 'SWIPE_LEFT', 'UNDO'])
+export const interactionAction = pgEnum('interaction_action', [
+  'SWIPE_RIGHT',
+  'SWIPE_LEFT',
+  'UNDO',
+  'CANNOT_EAT',
+])
 
 /**
  * Tech Spec §3.1, §3.2. Bảng EFFECTIVE STATE — luôn upsert, không append.

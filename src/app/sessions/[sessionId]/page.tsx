@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/features/auth/infrastructure/session'
 import { assertGroupAccess } from '@/features/group/application/assert-group-access'
 import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
 import { drizzleHistoryRepository } from '@/features/history/infrastructure/drizzle-history-repository'
+import { drizzlePreferenceRepository } from '@/features/preference/infrastructure/drizzle-preference-repository'
 import { listDeck } from '@/features/selection/application/list-deck'
 import { drizzleSelectionRepository } from '@/features/selection/infrastructure/drizzle-selection-repository'
 import { DeckScreen } from '@/features/selection/presentation/components/deck-screen'
@@ -43,7 +44,11 @@ export default async function SessionPage({ params }: SessionPageProps) {
   }
 
   const deck = await listDeck(
-    { selection: drizzleSelectionRepository, history: drizzleHistoryRepository },
+    {
+      selection: drizzleSelectionRepository,
+      history: drizzleHistoryRepository,
+      preferences: drizzlePreferenceRepository,
+    },
     {
       sessionId,
       userId: user.id,

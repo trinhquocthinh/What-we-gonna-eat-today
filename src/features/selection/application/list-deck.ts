@@ -1,5 +1,7 @@
 import type { HistoryRepository } from '@/features/history/application/history-repository'
 import { computeRecencyPenalty, daysSinceLastEaten } from '@/features/history/domain/recency'
+import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
+import { explicitPreferenceScore } from '@/features/preference/domain/explicit-preference'
 import type { Failure } from '@/shared/errors'
 import { failure } from '@/shared/errors'
 import type { Result } from '@/shared/result'
@@ -13,6 +15,7 @@ import type { DishCard, SelectionRepository } from './selection-repository'
 export type ListDeckDeps = {
   readonly selection: SelectionRepository
   readonly history: HistoryRepository
+  readonly preferences: PreferenceRepository
 }
 
 export type ListDeckInput = {
@@ -68,14 +71,19 @@ export async function listDeck(
     return err(failure('ERR_NOT_PARTICIPANT', { sessionId: input.sessionId }))
   }
 
-  const eligible = await deps.selection.listEligibleDishCards(input.sessionId, participant.id)
-
-  // SỬA (S4): đọc lịch sử ăn ở MỌI lần gọi — cần cho lastEatenLabel bất kể
-  // deck đã materialize hay chưa. Xem Implementation Guide §2.
-  const eatingRows = await deps.history.findEatingDates(
+  const eligible = await deps.selection.listEligibleDishCards(
+    input.sessionId,
+    participant.id,
     input.userId,
-    eligible.map((d) => d.globalDishId),
   )
+
+  // SPEC-020 + SPEC-025 (§4.2): đọc lịch sử ăn VÀ sở thích cá nhân cùng lúc
+  // bằng Promise.all để thoả mãn NFR-01 (≤2.5s)
+  const globalDishIds = eligible.map((d) => d.globalDishId)
+  const [eatingRows, preferences] = await Promise.all([
+    deps.history.findEatingDates(input.userId, globalDishIds),
+    deps.preferences.findPreferencesByGlobalDish(input.userId, globalDishIds),
+  ])
   const eatingByDish = groupEatingDatesByDish(eatingRows)
 
   let orderedDishIds = await deps.selection.findMaterializedDeck(input.sessionId, input.userId)
@@ -83,12 +91,15 @@ export async function listDeck(
   if (orderedDishIds === null) {
     // Chỉ bước TÍNH RANKING + GHI còn nằm trong nhánh điều kiện — không phải
     // việc đọc lịch sử (đã chuyển ra ngoài, ở trên).
+    //
+    // LƯU Ý BR-048 (Deck Stability) & SPEC-028: Deck được materialize một lần
+    // vào session_decks. Số hạng E chỉ tác động tới thứ tự ở lần dựng đầu tiên
+    // của phiên; đổi Like/Dislike giữa phiên không sắp xếp lại deck đã lưu.
     const rankingInputs = eligible.map((dish) => {
       const dates = eatingByDish.get(dish.globalDishId) ?? []
       return {
         dishId: dish.dishId,
-        // E7-T4: S1 truyền 0 — nguồn dữ liệu thật từ PreferenceRepository tới ở S2 (§1.5).
-        explicit: 0,
+        explicit: explicitPreferenceScore(preferences.get(dish.globalDishId) ?? null),
         daysSinceLastEaten: daysSinceLastEaten({
           eatingDates: dates,
           referenceDate: input.referenceDate,

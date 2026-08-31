@@ -12,6 +12,7 @@ import {
   participants,
   selectionSessions,
   sessionDecks,
+  userDishConstraints,
   users,
 } from '@/shared/db/schema'
 
@@ -59,6 +60,7 @@ async function seedActiveSessionWithDish() {
 
 async function cleanup(seed: Awaited<ReturnType<typeof seedActiveSessionWithDish>>) {
   const db = getDb()
+  await db.delete(userDishConstraints).where(eq(userDishConstraints.userId, seed.userId))
   await db.delete(sessionDecks).where(eq(sessionDecks.sessionId, seed.sessionId))
   await db.delete(interactionEvents).where(eq(interactionEvents.sessionId, seed.sessionId))
   await db.delete(interactions).where(eq(interactions.sessionId, seed.sessionId))
@@ -372,5 +374,97 @@ describe('SPEC-014 — ranking methods (integration)', () => {
 
     await db.delete(participants).where(eq(participants.sessionId, seed.sessionId))
     await db.delete(users).where(inArray(users.id, [user2Id, user3Id]))
+  })
+})
+
+describe('listEligibleDishCards — SPEC-024 (TC-113, TC-116)', () => {
+  it('TC-113: Đánh dấu Cannot Eat một món → món biến khỏi deck ở lần dựng kế tiếp', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // Chưa đặt Cannot Eat: món có trong listEligibleDishCards
+    const before = await drizzleSelectionRepository.listEligibleDishCards(
+      seed.sessionId,
+      seed.participantId,
+      seed.userId,
+    )
+    expect(before.some((d) => d.dishId === seed.groupDishId)).toBe(true)
+
+    // Đặt Cannot Eat cho user
+    await db.insert(userDishConstraints).values({
+      userId: seed.userId,
+      globalDishId: seed.globalDishId,
+    })
+
+    // Sau khi đặt Cannot Eat: món bị loại khỏi listEligibleDishCards của user này
+    const after = await drizzleSelectionRepository.listEligibleDishCards(
+      seed.sessionId,
+      seed.participantId,
+      seed.userId,
+    )
+    expect(after.some((d) => d.dishId === seed.groupDishId)).toBe(false)
+  })
+
+  it('TC-116: Cùng món ở hai Group khác nhau → Ràng buộc áp cho cả hai (gắn theo global_dishes.id)', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // Tạo Group 2 và Session 2 cho cùng user và cùng globalDish
+    const groupId2 = crypto.randomUUID()
+    const sessionId2 = crypto.randomUUID()
+    const participantIdGroup2 = crypto.randomUUID()
+    const groupDishId2 = crypto.randomUUID()
+
+    await db.insert(groups).values({ id: groupId2, name: 'Group 2', timezone: 'UTC' })
+    await db.insert(groupMembers).values({ groupId: groupId2, userId: seed.userId, isAdmin: true })
+    await db.insert(selectionSessions).values({
+      id: sessionId2,
+      groupId: groupId2,
+      decisionDate: '2026-08-17',
+      creatorUserId: seed.userId,
+      state: 'ACTIVE',
+    })
+    await db.insert(participants).values({
+      id: participantIdGroup2,
+      sessionId: sessionId2,
+      userId: seed.userId,
+      state: 'ACTIVE',
+    })
+    await db.insert(groupDishes).values({
+      id: groupDishId2,
+      groupId: groupId2,
+      globalDishId: seed.globalDishId,
+      state: 'ACTIVE',
+    })
+
+    // Đặt Cannot Eat cho globalDish
+    await db.insert(userDishConstraints).values({
+      userId: seed.userId,
+      globalDishId: seed.globalDishId,
+    })
+
+    // Khẳng định cả hai session đều loại món này khỏi deck
+    const deck1 = await drizzleSelectionRepository.listEligibleDishCards(
+      seed.sessionId,
+      seed.participantId,
+      seed.userId,
+    )
+    const deck2 = await drizzleSelectionRepository.listEligibleDishCards(
+      sessionId2,
+      participantIdGroup2,
+      seed.userId,
+    )
+
+    expect(deck1.some((d) => d.dishId === seed.groupDishId)).toBe(false)
+    expect(deck2.some((d) => d.dishId === groupDishId2)).toBe(false)
+
+    // Dọn dữ liệu Group 2
+    await db.delete(groupDishes).where(eq(groupDishes.id, groupDishId2))
+    await db.delete(participants).where(eq(participants.sessionId, sessionId2))
+    await db.delete(selectionSessions).where(eq(selectionSessions.id, sessionId2))
+    await db.delete(groupMembers).where(eq(groupMembers.groupId, groupId2))
+    await db.delete(groups).where(eq(groups.id, groupId2))
   })
 })
