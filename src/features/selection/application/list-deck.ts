@@ -87,6 +87,8 @@ export async function listDeck(
       const dates = eatingByDish.get(dish.globalDishId) ?? []
       return {
         dishId: dish.dishId,
+        // E7-T4: S1 truyền 0 — nguồn dữ liệu thật từ PreferenceRepository tới ở S2 (§1.5).
+        explicit: 0,
         daysSinceLastEaten: daysSinceLastEaten({
           eatingDates: dates,
           referenceDate: input.referenceDate,

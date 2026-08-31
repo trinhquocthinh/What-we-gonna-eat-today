@@ -67,6 +67,9 @@
     // GỠ Ở E5-T7 (S4): listSessionRanking và rankSession tạo ở E5-S3, E5-S4 (màn S-10) sẽ import và sử dụng.
     "src/features/selection/application/list-session-ranking.ts",
     "src/features/selection/domain/ranking.ts",
+
+    // GỠ Ở E7-T4 (S2): Preference domain và repository dựng ở E7-S1, S2 sẽ tạo Route Handler và use case.
+    "src/features/preference/**",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

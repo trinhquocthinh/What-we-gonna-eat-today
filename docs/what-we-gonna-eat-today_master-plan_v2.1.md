@@ -507,8 +507,8 @@ Chia ba slice, mỗi slice một Implementation Guide:
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- |
 | `[x] E7-T0` | Vá 64 link gãy sau khi guide E6 chuyển vào `docs/plans/E6/` | [DEC-057](what-we-gonna-eat-today_decision-log_v3.9.md) | 0.25 | `yarn docs:links` xanh; `yarn verify` xanh trọn — điều kiện của mọi subtask còn lại | `docs/plans/E6/**`, `docs/what-we-gonna-eat-today_master-plan_v2.1.md` |
-| `[ ] E7-T1` | Schema ràng buộc & sở thích cá nhân | [SPEC-024](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) | 2.5 | Hai bảng `user_dish_constraints` và `user_dish_preferences` khoá `(user_id, global_dish_id)`; enum `preference_kind`; migration chạy được cả chiều lên | `src/shared/db/schema.ts`, `src/shared/db/migrations/**` |
-| `[ ] E7-T2` | Domain sở thích và số hạng $E$ | [SPEC-025](what-we-gonna-eat-today_sdd_v1.3.md), `BR-037` | 3 | `computePersonalScore` đọc `wExplicit` đã có sẵn; `LIKE`→$+1$, không đặt→$0$, `DISLIKE`→$-1$; test canh mốc `DISLIKE` KHÔNG lọc món khỏi deck | `src/features/preference/domain/**`, `src/features/selection/domain/ranking.ts` |
+| `[x] E7-T1` | Schema ràng buộc & sở thích cá nhân | [SPEC-024](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) | 2.5 | Hai bảng `user_dish_constraints` và `user_dish_preferences` khoá `(user_id, global_dish_id)`; enum `preference_kind`; migration chạy được cả chiều lên | `src/shared/db/schema.ts`, `src/shared/db/migrations/**` |
+| `[x] E7-T2` | Domain sở thích và số hạng $E$ | [SPEC-025](what-we-gonna-eat-today_sdd_v1.3.md), `BR-037` | 3 | `computePersonalScore` đọc `wExplicit` đã có sẵn; `LIKE`→$+1$, không đặt→$0$, `DISLIKE`→$-1$; test canh mốc `DISLIKE` KHÔNG lọc món khỏi deck | `src/features/preference/domain/**`, `src/features/selection/domain/ranking.ts` |
 | `[ ] E7-T3` | Lọc cứng Cannot Eat và xoá tương tác cũ | [SPEC-024](what-we-gonna-eat-today_sdd_v1.3.md), `BR-034` | 3 | Đánh dấu Cannot Eat giữa phiên → món biến khỏi deck VÀ tương tác Swipe cũ bị xoá; có test khẳng định $P$ giảm đúng 1 | `src/features/selection/application/list-deck.ts`, `src/features/preference/application/**` |
 | `[ ] E7-T4` | Use case + Route Handler cho hai hành động | [SPEC-024](what-we-gonna-eat-today_sdd_v1.3.md), [SPEC-025](what-we-gonna-eat-today_sdd_v1.3.md) | 3 | `setDishConstraint` / `setDishPreference` chạy qua Route Handler (không phải Server Action — cùng lý lẽ `DEC-055`); chặn người không phải chính chủ | `src/features/preference/application/**`, `src/app/api/preferences/**` |
 | `[ ] E7-T5` | Giao diện khai báo trên thẻ vuốt và danh mục | [Design Criteria](what-we-gonna-eat-today_design-criteria_v1.0.md), `NFR-03` | 4 | Nút "Tôi không ăn được món này" trên thẻ vuốt; màn danh mục hiện trạng thái Like/Dislike/Cannot Eat mỗi món; vùng chạm ≥ 44px ở nửa dưới màn hình | `src/features/selection/presentation/components/dish-swipe-card.tsx`, `src/features/dish/presentation/components/**` |
@@ -521,9 +521,9 @@ Chia ba slice, mỗi slice một Implementation Guide:
 > tự bịa ra một dữ kiện rồi tin vào nó. Đây đúng là rủi ro `R-05` mà [§11](#11-bảng-rủi-ro--phương-án-xử-lý) đã dự báo.
 
 > [!NOTE]
-> **`preference` là feature thứ chín.** Trước khi viết dòng code đầu tiên của `E7-T2`, phải khai
+> **`preference` là feature thứ chín.** Trước khi viết dòng code đầu tiên của `E7-T2`, đã khai
 > **hai** chiều mới trong `ALLOWED_CROSS_FEATURE` của `eslint.config.mjs` và bổ sung probe tương
-> ứng — hiện mới có đúng 5 chiều được phép:
+> ứng — hiện có đúng 7 chiều được phép:
 >
 > - `selection → preference` (cho `E7-T2`, `E7-T3`)
 > - `meal → preference` (cho `E7-T7` — `finalizeSession` phải đọc tập `Cannot Eat`)

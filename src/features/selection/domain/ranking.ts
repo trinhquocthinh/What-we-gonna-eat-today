@@ -3,25 +3,33 @@ import type { SystemTag } from '@/shared/domain/system-tag'
 import type { RankingConfig } from './ranking-config'
 
 /**
- * Ranking Spec §2.2 + SDD SPEC-010. Ở v1.0 chỉ số hạng recency có dữ liệu —
- * xem Implementation Guide §1.1. Kiểu `RankingInput` cố ý CHƯA có `explicit`,
- * `implicit`, `chef`, `source`: thêm một trường mà không hàm nào tính ra được
- * giá trị thật cho nó chỉ tạo ảo giác tính năng đã có.
+ * Ranking Spec §2.2 + SDD SPEC-010. Ở v1.1 CÓ HAI số hạng có dữ liệu thật:
+ * `recencyPenalty` (từ E4) và `explicit` (từ E7-S2). Ba số hạng còn lại —
+ * `implicit` (F30), `chef` (F33), `source` (F36) — vẫn cố ý vắng mặt: thêm
+ * một trường mà không hàm nào tính ra được giá trị thật cho nó chỉ tạo ảo
+ * giác tính năng đã có.
  */
 export type RankingInput = {
   /** $R \in [0, 1]$ từ `computeRecencyPenalty` (SPEC-020). */
   readonly recencyPenalty: number
+  /** $E \in \{-1, 0, +1\}$ từ `explicitPreferenceScore` (SPEC-025). */
+  readonly explicit: number
 }
 
-/** $\text{score} = -w_{\text{recency}} \times R$ — SDD SPEC-010, v1.0. */
+/** $\text{score} = w_{\text{explicit}} \times E - w_{\text{recency}} \times R$ — SPEC-010, v1.1. */
 export function computePersonalScore(input: RankingInput, config: RankingConfig): number {
-  return -config.personalRanking.wRecency * input.recencyPenalty
+  return (
+    config.personalRanking.wExplicit * input.explicit -
+    config.personalRanking.wRecency * input.recencyPenalty
+  )
 }
 
 export type DishRankingInput = {
   /** `group_dishes.id` — cùng hệ id với `DishCard.dishId`. */
   readonly dishId: string
   readonly recencyPenalty: number
+  /** $E \in \{-1, 0, +1\}$ từ `explicitPreferenceScore` (SPEC-025). */
+  readonly explicit: number
   /** `null` = chưa từng ăn ($d = \infty$). Tie-break tầng 2 cần giá trị này. */
   readonly daysSinceLastEaten: number | null
 }
@@ -84,8 +92,8 @@ export function buildDeck(input: BuildDeckInput, config: RankingConfig): string[
   return [...input.eligible]
     .sort((a, b) => {
       const scoreDiff =
-        computePersonalScore({ recencyPenalty: b.recencyPenalty }, config) -
-        computePersonalScore({ recencyPenalty: a.recencyPenalty }, config)
+        computePersonalScore({ recencyPenalty: b.recencyPenalty, explicit: b.explicit }, config) -
+        computePersonalScore({ recencyPenalty: a.recencyPenalty, explicit: a.explicit }, config)
       if (scoreDiff !== 0) {
         return scoreDiff
       }

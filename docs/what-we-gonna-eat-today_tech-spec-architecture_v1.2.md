@@ -103,13 +103,15 @@ Ranh giới này được kiểm soát tự động bởi ESLint (`import/no-res
 
 ## 2.3 Quan hệ phụ thuộc giữa các Feature
 
-Chỉ có đúng **5 chiều quan hệ** được phép (tất cả đều đi qua Application Port hoặc unexecuted statement builder, không import chéo Domain):
+Chỉ có đúng **7 chiều quan hệ** được phép (tất cả đều đi qua Application Port hoặc unexecuted statement builder, không import chéo Domain):
 
 ```text
 selection ────► history    (Lấy dữ liệu tính Recency Penalty)
 selection ────► dish       (Lấy tập món hợp lệ của nhóm)
+selection ────► preference (Lấy sở thích cá nhân E và lọc cứng Cannot Eat — DEC-060)
 meal      ────► rule       (Thực thi Rule Validation khi finalize)
 meal      ────► history    (Tự động sinh Default Eating History)
+meal      ────► preference (Ngoại lệ BR-056 cho lịch sử ăn khi finalize — DEC-060)
 session   ────► rule       (Dựng BatchItem snapshot Group Rule sang Session Rule lúc Start — DEC-043)
 ```
 

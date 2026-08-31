@@ -12,19 +12,42 @@ import { RANKING_CONFIG } from './ranking-config'
 
 const SEED = { sessionId: 'sess-1', userId: 'user-1' }
 
-function dish(dishId: string, daysSinceLastEaten: number | null, recencyPenalty: number) {
-  return { dishId, daysSinceLastEaten, recencyPenalty }
+function dish(
+  dishId: string,
+  daysSinceLastEaten: number | null,
+  recencyPenalty: number,
+  explicit: number = 0,
+) {
+  return { dishId, daysSinceLastEaten, recencyPenalty, explicit }
 }
 
 describe('computePersonalScore', () => {
-  it('v1.0 chỉ có số hạng recency: score = −0.25 × R', () => {
-    expect(computePersonalScore({ recencyPenalty: 1 }, RANKING_CONFIG)).toBeCloseTo(-0.25, 6)
-    expect(computePersonalScore({ recencyPenalty: 0 }, RANKING_CONFIG)).toBe(-0)
+  it('v1.1 có cả explicit và recency: score = 0.3 × E − 0.25 × R', () => {
+    expect(computePersonalScore({ recencyPenalty: 1, explicit: 0 }, RANKING_CONFIG)).toBeCloseTo(
+      -0.25,
+      6,
+    )
+    expect(computePersonalScore({ recencyPenalty: 0, explicit: 0 }, RANKING_CONFIG)).toBe(0)
+    expect(computePersonalScore({ recencyPenalty: 0, explicit: 1 }, RANKING_CONFIG)).toBeCloseTo(
+      0.3,
+      6,
+    )
+    expect(computePersonalScore({ recencyPenalty: 0, explicit: -1 }, RANKING_CONFIG)).toBeCloseTo(
+      -0.3,
+      6,
+    )
+  })
+
+  it('LIKE (+1) vs Neutral (0) cùng R: LIKE xếp trước; hiệu số điểm đúng bằng 0.3', () => {
+    const liked = computePersonalScore({ recencyPenalty: 0.5, explicit: 1 }, RANKING_CONFIG)
+    const neutral = computePersonalScore({ recencyPenalty: 0.5, explicit: 0 }, RANKING_CONFIG)
+    expect(liked).toBeGreaterThan(neutral)
+    expect(liked - neutral).toBeCloseTo(0.3, 6)
   })
 
   it('R càng lớn điểm càng thấp — món vừa ăn bị đẩy xuống', () => {
-    const justEaten = computePersonalScore({ recencyPenalty: 1 }, RANKING_CONFIG)
-    const longAgo = computePersonalScore({ recencyPenalty: 0 }, RANKING_CONFIG)
+    const justEaten = computePersonalScore({ recencyPenalty: 1, explicit: 0 }, RANKING_CONFIG)
+    const longAgo = computePersonalScore({ recencyPenalty: 0, explicit: 0 }, RANKING_CONFIG)
     expect(longAgo).toBeGreaterThan(justEaten)
   })
 })
@@ -88,6 +111,46 @@ describe('buildDeck', () => {
     buildDeck({ ...SEED, eligible }, RANKING_CONFIG)
 
     expect(eligible.map((d) => d.dishId)).toEqual(snapshot)
+  })
+
+  it('TC-119 — hai món cùng R, một DISLIKE một Neutral: DISLIKE vẫn có mặt nhưng xếp sau', () => {
+    const order = buildDeck(
+      {
+        ...SEED,
+        eligible: [dish('disliked', null, 0, -1), dish('neutral', null, 0, 0)],
+      },
+      RANKING_CONFIG,
+    )
+
+    expect(order).toEqual(['neutral', 'disliked'])
+    expect(order).toContain('disliked')
+  })
+
+  it('LIKE (+1) vs Neutral (0) cùng R: LIKE xếp trước', () => {
+    const order = buildDeck(
+      {
+        ...SEED,
+        eligible: [dish('neutral', null, 0, 0), dish('liked', null, 0, 1)],
+      },
+      RANKING_CONFIG,
+    )
+
+    expect(order).toEqual(['liked', 'neutral'])
+  })
+
+  it('DISLIKE (E = -1, R = 0) vs Neutral vừa ăn hôm qua (E = 0, R = 0.86): món vừa ăn xếp trước (DISLIKE xếp sau)', () => {
+    // score(disliked) = 0.3 * (-1) - 0.25 * 0 = -0.3
+    // score(justEaten) = 0.3 * 0 - 0.25 * 0.86 = -0.215
+    // -0.215 > -0.3 => món vừa ăn xếp trước
+    const order = buildDeck(
+      {
+        ...SEED,
+        eligible: [dish('disliked', null, 0, -1), dish('just-eaten', 1, 0.86, 0)],
+      },
+      RANKING_CONFIG,
+    )
+
+    expect(order).toEqual(['just-eaten', 'disliked'])
   })
 
   it('danh sách rỗng: trả mảng rỗng, không ném (TC-102 ở tầng D)', () => {

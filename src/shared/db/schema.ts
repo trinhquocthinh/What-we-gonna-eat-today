@@ -194,6 +194,55 @@ export const groupDishTags = pgTable(
 export type GroupDishTag = typeof groupDishTags.$inferSelect
 
 /**
+ * BR-034 — Cannot Eat. Khoá theo `global_dishes.id` chứ KHÔNG theo
+ * `group_dishes.id`: người dị ứng tôm thì dị ứng ở mọi nhóm, và DEC-009 đã
+ * chốt "thêm lại món là tạo dòng group_dishes mới" — gắn vào đó thì mỗi lần
+ * nhóm gỡ rồi thêm lại, người ta phải khai lại.
+ *
+ * KHÔNG có cột `kind`: `Blacklist` (BR-035) là v1.2 và có ngữ nghĩa khác hẳn
+ * (không xoá tương tác đang có). Một cột enum một-giá-trị hôm nay là đoán
+ * trước một thiết kế chưa chốt — xem Guide §1.3.
+ */
+export const userDishConstraints = pgTable(
+  'user_dish_constraints',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    globalDishId: uuid('global_dish_id')
+      .notNull()
+      .references(() => globalDishes.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.globalDishId] })],
+)
+
+/**
+ * SDD §2.2 khuôn `interactions`. KHÔNG có giá trị `NEUTRAL` — "Neutral" là
+ * việc KHÔNG tồn tại row, đúng như `InteractionType` không có `NONE`.
+ */
+export const preferenceKind = pgEnum('preference_kind', ['LIKE', 'DISLIKE'])
+
+/** BR-037 — Explicit Preference. Cùng lý lẽ khoá theo `global_dishes.id`. */
+export const userDishPreferences = pgTable(
+  'user_dish_preferences',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    globalDishId: uuid('global_dish_id')
+      .notNull()
+      .references(() => globalDishes.id),
+    kind: preferenceKind('kind').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.globalDishId] })],
+)
+
+export type UserDishConstraint = typeof userDishConstraints.$inferSelect
+export type UserDishPreference = typeof userDishPreferences.$inferSelect
+
+/**
  * BR-012 — `rule_type` phân biệt Required (chặn Finalize) với Preferred (chỉ
  * cảnh báo). v1.0 CHỈ ghi `REQUIRED`; `PREFERRED` là F22, v1.1.
  *

@@ -88,19 +88,21 @@ infrastructure ───────┘
 ```
 
 - **Container / Presentational:** Container kết nối Application layer; Component chỉ nhận props. ESLint chặn cứng việc `presentation/components/` import từ `application/`.
-- **Ranh giới giữa các Feature:** Chỉ 5 chiều quan hệ được phép ([Tech Spec §2.3](./docs/what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)):
+- **Ranh giới giữa các Feature:** Chỉ 7 chiều quan hệ được phép ([Tech Spec §2.3](./docs/what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)):
   1. `selection → history`
   2. `selection → dish`
-  3. `meal → rule`
-  4. `meal → history`
-  5. `session → rule`
+  3. `selection → preference`
+  4. `meal → rule`
+  5. `meal → history`
+  6. `meal → preference`
+  7. `session → rule`
      _(Mọi chiều import chéo khác đều bị ESLint chặn)._
 - **Authorization Guards ([SPEC-019](./docs/what-we-gonna-eat-today_sdd_v1.3.md)):** Được kiểm tra ở tầng `app/` trước khi gọi Use Case, không tạo thêm phụ thuộc chéo giữa các feature.
 
 ### 3. Cơ chế kiểm tra ranh giới kiến trúc (`yarn arch:probe`)
 
 > [!NOTE]
-> Quy tắc `import/no-restricted-paths` có thể im lặng nếu cấu hình sai regex / glob. Lệnh `yarn arch:probe` chủ động tạo file vi phạm giả lập, xác nhận ESLint bắt chính xác 5 lỗi kiến trúc và không chặn chiều hợp lệ, sau đó tự động dọn sạch.
+> Quy tắc `import/no-restricted-paths` có thể im lặng nếu cấu hình sai regex / glob. Lệnh `yarn arch:probe` chủ động tạo file vi phạm giả lập, xác nhận ESLint bắt chính xác 6 lỗi kiến trúc và không chặn chiều hợp lệ, sau đó tự động dọn sạch.
 
 ---
 
