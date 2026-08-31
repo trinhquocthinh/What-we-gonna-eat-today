@@ -184,14 +184,12 @@ docs/..._business-rules_v1.8.md  # E8-T4 — sửa BR-048 (§1.4)
 
 # 3. `E8-T0` — Bỏ theo dõi `.probe-result.json`
 
-[`probe-architecture.sh`](../../../scripts/probe-architecture.sh) ghi `.probe-result.json` rồi `trap` xoá ngay. File này đang **bị git theo dõi**, nên mỗi lần chạy `yarn arch:probe` là `git status` mọc thêm một dòng ` D`.
+[`probe-architecture.sh`](../../../scripts/probe-architecture.sh) ghi `.probe-result.json` rồi `trap` xoá ngay. File này từng **bị git theo dõi**, nên mỗi lần chạy `yarn arch:probe` là `git status` mọc thêm một dòng ` D`.
 
-```bash
-echo '.probe-result.json' >> .gitignore
-git rm --cached .probe-result.json
-```
+> [!NOTE]
+> **Đã xong lúc lập kế hoạch E8.** Commit `445f9a8` gỡ file khỏi index, và dòng `.probe-result.json` đã được thêm vào `.gitignore`. Giữ mục này để lưu vết; nếu `git status` lại nhắc tới file này thì đây là chỗ đã sửa nó.
 
-**DoD:** chạy `yarn arch:probe`, rồi `git status` không nhắc tới file này.
+**DoD:** chạy `yarn arch:probe`, rồi `git status` không nhắc tới file này. — ✅ đã kiểm.
 
 ---
 

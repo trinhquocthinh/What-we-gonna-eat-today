@@ -338,7 +338,7 @@
 | Phiên bản | Số tính năng | Mục tiêu | Ước lượng |
 | :---: | :---: | :--- | :---: |
 | `v1.0` | 17 | Chốt được bữa từ đầu tới cuối | Đã phát hành |
-| `v1.1` | 12 | Gợi ý đúng người, deck có điểm dừng | 79.25h |
+| `v1.1` | 12 | Gợi ý đúng người, deck có điểm dừng | 79.5h |
 | `v1.2` | 16 | Học hành vi, linh hoạt và sửa dữ liệu | ~89h |
 
 ---

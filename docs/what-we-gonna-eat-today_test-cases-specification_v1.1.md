@@ -7,7 +7,7 @@
 > - **Supersedes:** `v1.0` | **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md)
 > - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • Bộ mã kiểm thử tự động Vitest
 >
-> 📌 *Tài liệu đặc tả toàn diện 144 ca kiểm thử tự động (`TC-001` đến `TC-144`) và 5 kịch bản kiểm thử khói thủ công (Smoke Tests): 112 ca cho 17 tính năng v1.0, 32 ca cho 11 tính năng v1.1.*
+> 📌 *Tài liệu đặc tả toàn diện 150 ca kiểm thử tự động (`TC-001` đến `TC-150`) và 5 kịch bản kiểm thử khói thủ công (Smoke Tests): 112 ca cho 17 tính năng v1.0, 38 ca cho 12 tính năng v1.1.*
 
 ---
 
@@ -16,7 +16,7 @@
 1. [Quy ước & Kỷ luật kiểm thử (Test Conventions)](#1-quy-ước--kỷ-luật-kiểm-thử-test-conventions)
 2. [Ma trận Test Cases ánh xạ từ SDD (TC-001 → TC-094)](#2-ma-trận-test-cases-ánh-xạ-từ-sdd-tc-001--tc-094)
 3. [Test Cases bổ sung — Biên và Trường hợp âm (TC-095 → TC-112)](#3-test-cases-bổ-sung--biên-và-trường-hợp-âm-tc-095--tc-112)
-3b. [Test Cases v1.1 (TC-113 → TC-144)](#3b-test-cases-v11-tc-113--tc-144)
+3b. [Test Cases v1.1 (TC-113 → TC-150)](#3b-test-cases-v11-tc-113--tc-150)
 4. [Kịch bản kiểm thử khói thủ công trên thiết bị di động (Smoke Tests)](#4-kịch-bản-kiểm-thử-khói-thủ-công-trên-thiết-bị-di-động-smoke-tests)
 5. [Bảng ma trận truy vết (Traceability Matrices)](#5-bảng-ma-trận-truy-vết-traceability-matrices)
 6. [Lịch sử thay đổi (Change History)](#6-lịch-sử-thay-đổi-change-history)
@@ -289,7 +289,7 @@ src/features/selection/
 
 ---
 
-# 3b. Test Cases v1.1 (TC-113 → TC-144)
+# 3b. Test Cases v1.1 (TC-113 → TC-150)
 
 Ánh xạ 1–1 với `SPEC-024` → `SPEC-035` của [SDD §8](what-we-gonna-eat-today_sdd_v1.3.md).
 
@@ -320,6 +320,12 @@ src/features/selection/
 | `TC-128` | `SPEC-027` | Biên | `D` | Món $d = 30$ đúng mốc | Đủ điều kiện vào luồng Explore (biên đóng) |
 | `TC-129` | `SPEC-028` | Thuận | `I` | Thêm món mới khi `cursor = 8` | Mọi thẻ `index < 8` giữ nguyên vị trí |
 | `TC-130` | `SPEC-028` | Biên | `I` | Gỡ món nằm ở `index < cursor` | Phần đã xem giữ nguyên, `cursor` không lệch |
+| `TC-147` | `SPEC-027` | **Then chốt** | `D` | Món chưa từng ăn — có mặt ở **cả hai** luồng Exploit và Explore | Deck **không** chứa id nào hai lần: `new Set(deck).size === deck.length` |
+| `TC-148` | `SPEC-027` | Âm | `D` | Món $d = 400$ nhưng `explicit = -1` (Dislike) | **Không** vào luồng Explore |
+| `TC-149` | `SPEC-028` | Hồi quy | `I` | Gọi `listDeck` hai lần liên tiếp | Thứ tự giống hệt; `session_decks` có đúng một dòng |
+| `TC-150` | `SPEC-028` | Hồi quy | `I` | Thêm món mới vào nhóm giữa phiên rồi gọi lại `listDeck` | Món mới **không** xuất hiện; thứ tự cũ không đổi |
+| `TC-145` | `SPEC-036` | Thuận | `D` | 30 thẻ, 12 thẻ đầu đã có `effectiveInteraction` | `cursor = 12`, `marks.length = 12` |
+| `TC-146` | `SPEC-036` | **Then chốt** | `D` | Thẻ #5 đã Undo (`null`), các thẻ #1→#12 còn lại có tương tác | `cursor = 12` — **không** phải `4`; `marks[4] === 'cannot'` |
 
 ## 3b.3 E9 — Chế độ vuốt theo chặng
 
@@ -379,8 +385,8 @@ Toàn bộ **22 SPEC** của v1.0 đều có độ bao phủ kiểm thử:
 
 ### 5.2 Phủ sóng SPEC v1.1 $\to$ Test Cases
 
-Toàn bộ **12 SPEC** của v1.1 đều có độ bao phủ kiểm thử:
-`SPEC-024` (TC-113→117) • `SPEC-025` (TC-118→120) • `SPEC-026` (TC-123, 124, 126) • `SPEC-027` (TC-125, 127, 128) • `SPEC-028` (TC-129, 130) • `SPEC-029` (TC-131→133) • `SPEC-030` (TC-134→137) • `SPEC-031` (TC-139) • `SPEC-032` (TC-143, 144) • `SPEC-033` (TC-140) • `SPEC-034` (TC-141) • `SPEC-035` (TC-142).
+Toàn bộ **13 SPEC** của v1.1 đều có độ bao phủ kiểm thử:
+`SPEC-024` (TC-113→117) • `SPEC-025` (TC-118→120) • `SPEC-026` (TC-123, 124, 126) • `SPEC-027` (TC-125, 127, 128, 147, 148) • `SPEC-028` (TC-129, 130, 149, 150) • `SPEC-036` (TC-145, 146) • `SPEC-029` (TC-131→133) • `SPEC-030` (TC-134→137) • `SPEC-031` (TC-139) • `SPEC-032` (TC-143, 144) • `SPEC-033` (TC-140) • `SPEC-034` (TC-141) • `SPEC-035` (TC-142).
 
 `SPEC-023` (gợi ý catalog chung, bảo trì sau v1.0) chưa có TC trong tài liệu này — nợ kiểm thử đã ghi nhận, không thuộc phạm vi v1.1.
 
@@ -390,6 +396,7 @@ Toàn bộ **12 SPEC** của v1.1 đều có độ bao phủ kiểm thử:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.1` | 2026-08-26 | §3b, §5.2 | Bổ sung `TC-145`→`TC-150` cho E8: khử trùng hai luồng Exploit/Explore (`TC-147` — hai luồng chồng nhau nên món chưa từng ăn nằm ở cả hai), ghim bất biến đóng băng deck (`TC-149`, `TC-150`), và suy vị trí tiếp tục (`TC-145`, `TC-146` — `F51`) | E8-S1/S2 Guide |
 | `1.1` | 2026-08-26 | §3b | Sửa `TC-117`: hành vi "đặt ràng buộc thay người khác" không biểu diễn được vì `userId` lấy từ phiên đăng nhập, và `ERR_FORBIDDEN` không có trong `ErrorCode` — đổi thành ca khẳng định `userId` trong body bị bỏ qua | E7-S2 Guide §1.4 |
 | `1.1` | 2026-08-26 | §3b, §5.2 | Bổ sung 32 TC cho v1.1 (`TC-113`→`TC-144`) ánh xạ `SPEC-024`→`SPEC-035`; 5 ca then chốt canh các lỗi im lặng (thứ tự cắt trần, món đa tag hai chặng, tương tác cũ sau Cannot Eat, ngoại lệ lịch sử ăn, chia lại phần dư chặng); ma trận truy vết v1.1 | [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md) → [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: 94 TC từ SDD, 18 TC biên, 5 Smoke Tests | Khởi tạo baseline kiểm thử v1.0 |

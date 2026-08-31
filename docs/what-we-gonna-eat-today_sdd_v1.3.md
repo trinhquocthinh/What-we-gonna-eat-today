@@ -7,7 +7,7 @@
 > - **Supersedes:** `v1.2` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md) • [Ranking Spec](what-we-gonna-eat-today_ranking-specification_v1.3.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Test Cases](what-we-gonna-eat-today_test-cases-specification_v1.1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 >
-> 📌 *Tài liệu đặc tả chi tiết 35 module kỹ thuật (`SPEC-001` đến `SPEC-035`): 23 spec cho v1.0 và phần bảo trì sau phát hành, 12 spec cho v1.1. Mỗi kịch bản (Scenario) trong tài liệu này ánh xạ 1–1 thành một Test Case tự động.*
+> 📌 *Tài liệu đặc tả chi tiết 36 module kỹ thuật (`SPEC-001` đến `SPEC-036`): 23 spec cho v1.0 và phần bảo trì sau phát hành, 13 spec cho v1.1. Mỗi kịch bản (Scenario) trong tài liệu này ánh xạ 1–1 thành một Test Case tự động.*
 
 ---
 
@@ -45,7 +45,7 @@
    - [SPEC-023: Gợi ý món từ Global Dish Pool](#spec-023--gợi-ý-món-từ-global-dish-pool-catalog-search)
 8. [Spec — Phiên bản v1.1](#8-spec--phiên-bản-v11)
    - [8.1 Ràng buộc và sở thích cá nhân (E7)](#81-ràng-buộc-và-sở-thích-cá-nhân-epic-e7) — `SPEC-024`, `SPEC-025`
-   - [8.2 Deck ngắn và có nhịp (E8)](#82-deck-ngắn-và-có-nhịp-epic-e8) — `SPEC-026`, `SPEC-027`, `SPEC-028`
+   - [8.2 Deck ngắn và có nhịp (E8)](#82-deck-ngắn-và-có-nhịp-epic-e8) — `SPEC-026`, `SPEC-027`, `SPEC-028`, `SPEC-036`
    - [8.3 Chế độ vuốt theo chặng (E9)](#83-chế-độ-vuốt-theo-chặng-epic-e9) — `SPEC-029`, `SPEC-030`
    - [8.4 Chốt bữa có hướng dẫn mềm (E10)](#84-chốt-bữa-có-hướng-dẫn-mềm-epic-e10) — `SPEC-031`, `SPEC-032`, `SPEC-033`
    - [8.5 Vận hành tối thiểu (E11)](#85-vận-hành-tối-thiểu-epic-e11) — `SPEC-034`, `SPEC-035`
@@ -80,7 +80,7 @@
 | *Core* | Quy đổi múi giờ Decision Date & Authorization Guard | `SPEC-018`, `SPEC-019` |
 | *Bảo trì* | Gợi ý món từ catalog chung khi đang gõ | `SPEC-023` |
 
-## 1.2 Danh mục 11 tính năng của v1.1
+## 1.2 Danh mục 12 tính năng của v1.1
 
 Chi tiết ở [§8](#8-spec--phiên-bản-v11). Phạm vi chốt theo [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md).
 
@@ -441,13 +441,29 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-028 — Materialize và đóng băng Deck
 
-- **Nguồn:** `US-013`, `F19`, [BR-048](what-we-gonna-eat-today_business-rules_v1.7.md)
-- **Đầu vào:** `{ sessionId, participantId, cursor }`
-- **Đầu ra:** `void` (ghi `session_decks`)
+- **Nguồn:** `US-013`, `F19`, [BR-048](what-we-gonna-eat-today_business-rules_v1.7.md), `DEC-064`
+- **Đầu vào:** `{ sessionId, userId, orderedDishIds }`
+- **Đầu ra:** `{ outcome: MATERIALIZED | ALREADY_MATERIALIZED }`
 - **Quy tắc:**
-  - Khi tính lại giữa phiên: **giữ nguyên vị trí mọi thẻ có `index < cursor`**; chỉ sắp lại phần đuôi.
-  - Món mới thêm vào pool giữa phiên chỉ được chèn vào phần đuôi chưa xem.
-  - Món chuyển `INACTIVE` hoặc bị đánh dấu `Cannot Eat` giữa phiên bị gỡ khỏi phần đuôi; phần đã xem giữ nguyên để `cursor` không lệch.
+  - Deck được materialize vào `session_decks` **đúng một lần** cho mỗi `(session, user)` và **không bao giờ được sắp xếp lại** trong phiên. Đây là cam kết mạnh hơn "đóng băng thẻ `index < cursor`" và bao hàm nó.
+  - Món mất tư cách giữa phiên (`INACTIVE`, `Cannot Eat`) **rơi khỏi** deck ở lần đọc kế tiếp — phép lọc nằm ở tầng đọc, bảng chỉ lưu thứ tự.
+  - Món mới thêm vào nhóm giữa phiên **không** chen vào deck đang chạy; nó không nằm trong `ordered_dish_ids`.
+  - Đổi `Like`/`Dislike` giữa phiên **không** sắp lại thứ tự — có hiệu lực từ phiên sau.
+  - Deck co lại dưới trần `BR-062` do lọc thì **không** bù thêm thẻ; bù thẻ chính là tính lại.
+
+> [!NOTE]
+> Phiên bản trước của spec này mô tả một phép **tính lại có chọn lọc** (giữ `index < cursor`, sắp lại phần đuôi). Cơ chế đó chưa từng được xây và `DEC-064` quyết định không xây: hành vi thật từ E4 là đóng băng toàn phần, vốn đã mạnh hơn. Một spec lỏng hơn code thật là chỗ mà lần refactor sau sẽ nới code cho "đúng đặc tả" rồi làm hỏng thứ đang chạy tốt.
+
+### SPEC-036 — Suy vị trí tiếp tục khi mở lại phiên
+
+- **Nguồn:** `F51`, `DEC-065`
+- **Đầu vào:** `dishes: DishCard[]` (đã mang `effectiveInteraction`)
+- **Đầu ra:** `{ cursor: number, marks: Array<'yes' | 'no' | 'cannot'> }`
+- **Quy tắc:**
+  - `cursor` = vị trí **sau thẻ cuối cùng** có `effectiveInteraction !== null`. **Không** phải vị trí thẻ đầu tiên có `null`: một thẻ đã Undo ở giữa để lại lỗ `null`, và cách sau sẽ kéo người dùng lùi về đó rồi bắt vuốt lại toàn bộ phần đuôi.
+  - `marks` sinh cho đúng tiền tố `[0, cursor)` — bất biến `marks.length === cursor`.
+  - Thẻ trong tiền tố có `effectiveInteraction === null` (đã Undo) đánh `'cannot'`: đó là giá trị duy nhất không góp vào `yesCount` lẫn `noCount`, khớp ngữ nghĩa "đã đi qua, không còn ý kiến".
+  - Hàm thuần, chạy ở tầng `presentation`. **Không** lưu cursor xuống CSDL — lưu nghĩa là thêm một lượt ghi vào mỗi lượt vuốt, tức vào đúng đường nóng `NFR-02`.
 
 ## 8.3 Chế độ vuốt theo chặng (Epic E9)
 
@@ -555,6 +571,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.3` | 2026-08-26 | §1.2, §8.2 | Bổ sung `SPEC-036` (suy vị trí tiếp tục, `F51`); viết lại `SPEC-028` cho khớp hành vi thật — đóng băng toàn phần thay vì tính lại có chọn lọc, cơ chế chưa từng được xây | E8-S1 Guide §1.4, `DEC-064`, `DEC-065` |
 | `1.3` | 2026-08-26 | §1.2, §8, §9 | Bổ sung §8 với `SPEC-024`→`SPEC-035` cho 11 tính năng v1.1; ba lưu ý kiến trúc mới (một món một chặng, feature `preference`) | [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md) → [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `0.2` | 2026-08-14 | §1, §6, §7 | Kéo `F17`, `F20`, `F21` vào v1.0; thêm `SPEC-020→022` | Quyết định mở rộng baseline v1.0 |
 | `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: 19 spec cho 14 tính năng | Khởi tạo baseline SDD |

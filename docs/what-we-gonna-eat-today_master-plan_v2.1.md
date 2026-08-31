@@ -6,7 +6,7 @@
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
 > - **Supersedes:** `v2.0` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md)
 >
-> 📌 *Tài liệu này là cẩm nang thực thi hằng ngày. **v1.0 đã phát hành:** 56 subtask, 121 giờ cơ sở. **v1.1 đang mở:** 30 subtask, 81.25 giờ cơ sở ([§16](#16-v11--chi-tiết-thi-công)). Mỗi subtask được thiết kế để hoàn thành trong một buổi ngồi (1 đến 4 giờ).*
+> 📌 *Tài liệu này là cẩm nang thực thi hằng ngày. **v1.0 đã phát hành:** 56 subtask, 121 giờ cơ sở. **v1.1 đang mở:** 32 subtask, 79.5 giờ cơ sở ([§16](#16-v11--chi-tiết-thi-công)). Mỗi subtask được thiết kế để hoàn thành trong một buổi ngồi (1 đến 4 giờ).*
 
 ---
 
@@ -53,12 +53,12 @@
 | **M1** | Bảo trì sau v1.0 — Danh mục món | 5 | 9 | `[x]` ✅ Xong |
 | | **— Kết thúc v1.0 —** | **56** | **121** | |
 | **M2** | Vá cross-link tài liệu | 4 | 2 | `[x]` ✅ Xong |
-| **E7** | Ràng buộc và sở thích cá nhân | 8 | 19.25 | `[ ]` Chưa bắt đầu |
-| **E8** | Deck ngắn và có nhịp | 6 | 19 | `[ ]` Chưa bắt đầu |
+| **E7** | Ràng buộc và sở thích cá nhân | 8 | 19.25 | `[x]` ✅ Xong |
+| **E8** | Deck ngắn và có nhịp | 8 | 17.25 | `[ ]` Chưa bắt đầu |
 | **E9** | Chế độ vuốt theo chặng | 5 | 17 | `[ ]` Chưa bắt đầu |
 | **E10** | Chốt bữa có hướng dẫn mềm | 5 | 16 | `[ ]` Chưa bắt đầu |
 | **E11** | Vận hành tối thiểu | 2 | 8 | `[ ]` Chưa bắt đầu |
-| | **— Tổng v1.1 —** | **30** | **81.25** | |
+| | **— Tổng v1.1 —** | **32** | **79.5** | |
 
 > [!TIP]
 > Cột trạng thái dùng để theo dõi tiến độ. Nếu sau ba tuần chưa có ô nào được tick, vấn đề không nằm ở kế hoạch mà ở nhịp độ thực thi.
@@ -378,11 +378,11 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 | :--- | :--- | :--- | :---: |
 | **M2** | Tiền đề — vá cross-link tài liệu | — | 2h |
 | **E7** | Ràng buộc và sở thích cá nhân | `F15` Cannot Eat, `F16` Like/Dislike | 19.25h |
-| **E8** | Deck ngắn và có nhịp | **`F49` Trần 30 thẻ**, `F18` Explore Lane 20%, `F19` Deck ổn định khi tính lại | 19h |
+| **E8** | Deck ngắn và có nhịp | **`F49` Trần 30 thẻ**, `F18` Explore Lane 20%, `F19` Deck ổn định, **`F51` Tiếp tục đúng chỗ** | 17.25h |
 | **E9** | Chế độ vuốt theo chặng | **`F50` Guided Course Mode** | 17h |
 | **E10** | Chốt bữa có hướng dẫn mềm | `F22` Preferred Rule, `F23` Target Dish Count, `F24` Lưu vết cảnh báo | 16h |
 | **E11** | Vận hành tối thiểu | `F26` Phiên hết hạn, `F27` Gỡ Dish | 8h |
-| | | **Tổng v1.1** | **81.25h** |
+| | | **Tổng v1.1** | **79.5h** |
 
 **Ba thay đổi so với kế hoạch cũ:**
 
@@ -428,6 +428,7 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `2.1` | 2026-08-26 | §1, §13, §16.3 | Chốt kế hoạch thi công E8: chia 2 slice kèm 2 Implementation Guide; `E8-T4` từ 6h còn 2h (deck vốn đã đóng băng toàn phần — `DEC-064`); bổ sung `E8-T7` (`F51` tiếp tục đúng chỗ đang vuốt) và `E8-T0`; E8 19h → 17.25h, tổng v1.1 79.5h; đánh dấu E7 đã xong | E8-S1/S2 Guide, `DEC-064`, `DEC-065` |
 | `2.1` | 2026-08-26 | §1, §13, §16.2 | Chốt kế hoạch thi công E7: chia 3 slice kèm 3 Implementation Guide; bổ sung `E7-T0` (vá 64 link gãy sau khi guide E6 chuyển thư mục); ghi rõ thứ tự `T4→T3` ở S2 và `T7→T6→T5` ở S3 | E7-S1/S2/S3 Guide |
 | `2.1` | 2026-08-26 | §1, §13, §16 | Mở phạm vi v1.1: re-scope theo phản hồi dùng thật (thêm `F49` trần 30 thẻ, `F50` vuốt theo chặng; hoãn `F25`/`F28`/`F29`); bổ sung §16 với 29 subtask chi tiết `M2`→`E11`; đánh số lại epic v1.2 | Quyết định DEC-056 đến DEC-061 |
 | `2.0` | 2026-08-25 | §8b | Bổ sung slice bảo trì sau v1.0 (`M1-T1`→`M1-T5`): sửa nhãn `STAPLE`, dùng lại món giữ tag, sheet thêm đa nhãn, sửa 2 lỗi `inferSystemTag`, gợi ý catalog chung (SPEC-023) | Quyết định DEC-052 đến DEC-055 |
@@ -536,15 +537,27 @@ Chia ba slice, mỗi slice một Implementation Guide:
 
 ## 16.3 E8 — Deck ngắn và có nhịp
 
-**19 giờ · `F49`, `F18`, `F19` · [SPEC-026 → SPEC-028](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-047`, `BR-048`, `BR-062`**
+**17.25 giờ · `F49`, `F18`, `F19`, `F51` · [SPEC-026 → SPEC-028, SPEC-036](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-047`, `BR-048`, `BR-062`**
+
+Chia hai slice, mỗi slice một Implementation Guide:
+
+| Slice | Subtask | Giờ | Guide |
+| :--- | :--- | :---: | :--- |
+| **S1 — Thuật toán** | `E8-T0`, `E8-T1`, `E8-T2`, `E8-T4` | 9.25 | [e8-s1](plans/E8/what-we-gonna-eat-today_e8-s1-implementation-guide_v0_1.md) |
+| **S2 — Trải nghiệm** | `E8-T3`, `E8-T5`, `E8-T7`, `E8-T6` | 8 | [e8-s2](plans/E8/what-we-gonna-eat-today_e8-s2-implementation-guide_v0_1.md) |
+
+> [!NOTE]
+> **E8 giảm 19h → 17.25h.** `F19` từ 6h còn 2h vì deck vốn đã đóng băng toàn phần từ E4, mạnh hơn `BR-048` đòi hỏi ([DEC-064](what-we-gonna-eat-today_decision-log_v3.9.md)). Bốn giờ dư đi vào `F51` (`E8-T7`, 2h) và phần dự phòng.
 
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] E8-T0` | Bỏ theo dõi `.probe-result.json` | — | 0.25 | `yarn arch:probe` chạy xong thì `git status` sạch — hiện mỗi lần chạy probe để lại một dòng ` D` | `.gitignore` |
 | `[ ] E8-T1` | Trần số thẻ mỗi phiên | [SPEC-026](what-we-gonna-eat-today_sdd_v1.3.md), `BR-062`, [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md) | 2 | `RANKING_CONFIG.deck.maxCards = 30`; hàm thuần `capDeck`; nhóm 150 món cho deck đúng 30 thẻ | `src/features/selection/domain/ranking-config.ts`, `src/features/selection/domain/deck-page.ts` |
 | `[ ] E8-T2` | Trộn luồng Exploit / Explore theo khối | [SPEC-027](what-we-gonna-eat-today_sdd_v1.3.md), `BR-047` | 5 | Khối 5 vị trí = 4 Exploit + 1 Explore; tập Explore là món chưa ăn hoặc $d \ge 30$; **test khẳng định đúng 6/30 thẻ đến từ luồng Explore** | `src/features/selection/domain/ranking.ts` |
 | `[ ] E8-T3` | Chip lý do đổi màu cho thẻ Explore | [Design Criteria](what-we-gonna-eat-today_design-criteria_v1.0.md), `NFR` a11y | 2 | Thẻ Explore có chip `reason` khác màu VÀ khác chữ — không thông tin nào chỉ truyền tải bằng màu sắc (ràng buộc từ `E6-T6`) | `src/features/selection/presentation/components/dish-swipe-card.tsx` |
-| `[ ] E8-T4` | Đóng băng thẻ đã xem khi tính lại | [SPEC-028](what-we-gonna-eat-today_sdd_v1.3.md), `BR-048` | 6 | Thêm/gỡ món giữa phiên → mọi thẻ `index < cursor` giữ nguyên vị trí; `cursor` không lệch | `src/features/selection/infrastructure/**`, `src/features/selection/application/list-deck.ts` |
-| `[ ] E8-T5` | Tiến trình `x/30` và màn hình hết thẻ | [Design §3](designs/README.md) | 2 | Người dùng luôn biết còn bao nhiêu thẻ; hết thẻ thì hiện trạng thái kết thúc kèm nút "Tôi đã chọn xong" | `src/features/selection/presentation/components/deck-screen.tsx` |
+| `[ ] E8-T4` | Ghim bất biến đóng băng deck | [SPEC-028](what-we-gonna-eat-today_sdd_v1.3.md), `BR-048`, [DEC-064](what-we-gonna-eat-today_decision-log_v3.9.md) | 2 | Test ghim: gọi `listDeck` hai lần cho thứ tự giống hệt; món thêm giữa phiên không chen vào; `BR-048` sửa lại cho khớp hành vi thật (đóng băng **toàn bộ**, không chỉ `index < cursor`) | `src/features/selection/infrastructure/*.integration.test.ts`, `docs/..._business-rules_v1.8.md` |
+| `[ ] E8-T5` | Tiến trình `x/30` và màn hình hết thẻ | [Design §3](designs/README.md) | 2 | `total` lấy từ `dishes.length` **không** từ `maxCards` (deck co lại được); màn hết thẻ nói "N món được chọn cho hôm nay", không ngụ ý đã xem hết danh mục | `src/features/selection/presentation/components/deck-screen.tsx` |
+| `[ ] E8-T7` | Tiếp tục đúng chỗ đang vuốt | [SPEC-036](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-065](what-we-gonna-eat-today_decision-log_v3.9.md) | 2 | Vuốt 12 thẻ, đóng app, mở lại → tiếp tục ở thẻ 13. Suy từ `effectiveInteraction` đã có sẵn, không thêm cột DB | `src/features/selection/presentation/components/resume-position.ts`, `deck-screen.tsx` |
 | `[ ] E8-T6` | Đo lại NFR sau khi deck đổi | `NFR-01`, `NFR-02` | 2 | Deck tải lần đầu ≤ 2.5s trên 4G; độ trễ vuốt ≤ 100ms — đo lại chứ không suy đoán từ số của `E1-T12` | — |
 
 > [!CAUTION]
