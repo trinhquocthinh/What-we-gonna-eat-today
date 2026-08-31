@@ -1,6 +1,7 @@
 import { eq, inArray } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { drizzlePreferenceRepository } from '@/features/preference/infrastructure/drizzle-preference-repository'
 import { drizzleRuleRepository } from '@/features/rule/infrastructure/drizzle-rule-repository'
 import { getDb } from '@/shared/db/client'
 import {
@@ -16,6 +17,7 @@ import {
   participants,
   selectionSessions,
   sessionRules,
+  userDishConstraints,
   users,
 } from '@/shared/db/schema'
 
@@ -120,6 +122,10 @@ async function cleanup(seed: Seed) {
   await db.delete(finalMeals).where(eq(finalMeals.sessionId, seed.sessionId))
   await db.delete(participants).where(eq(participants.sessionId, seed.sessionId))
   await db.delete(selectionSessions).where(eq(selectionSessions.id, seed.sessionId))
+  await db
+    .delete(userDishConstraints)
+    .where(inArray(userDishConstraints.userId, [seed.creatorId, seed.otherUserId]))
+    .catch(() => {})
   await db.delete(groupDishes).where(eq(groupDishes.groupId, seed.groupId))
   await db.delete(globalDishes).where(eq(globalDishes.createdFromGroupId, seed.groupId))
   await db.delete(groupMembers).where(eq(groupMembers.groupId, seed.groupId))
@@ -169,7 +175,11 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
     expect(draft.ok).toBe(true)
 
     const finalize = await finalizeSession(
-      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+      {
+        meal: drizzleMealRepository,
+        rules: drizzleRuleRepository,
+        preferences: drizzlePreferenceRepository,
+      },
       { sessionId: seed.sessionId, userId: seed.creatorId },
     )
     expect(finalize.ok).toBe(true)
@@ -188,6 +198,59 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
     expect(historyRows).toHaveLength(4)
   })
 
+  it('TC-122: Chốt bữa có món X; người B đã khai Cannot Eat món X -> KHÔNG sinh lịch sử ăn cho B; món Y vẫn sinh cho B', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+
+    // Người B (otherUserId) khai Cannot Eat cho dish1
+    await drizzlePreferenceRepository.setConstraint({
+      userId: seed.otherUserId,
+      globalDishId: seed.dish1.globalId,
+      cannotEat: true,
+    })
+
+    const draft = await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      {
+        sessionId: seed.sessionId,
+        userId: seed.creatorId,
+        dishIds: [seed.dish1.groupDishId, seed.dish2.groupDishId],
+      },
+    )
+    expect(draft.ok).toBe(true)
+
+    const finalize = await finalizeSession(
+      {
+        meal: drizzleMealRepository,
+        rules: drizzleRuleRepository,
+        preferences: drizzlePreferenceRepository,
+      },
+      { sessionId: seed.sessionId, userId: seed.creatorId },
+    )
+    expect(finalize.ok).toBe(true)
+
+    const finalMealId = finalize.ok ? finalize.value.finalMealId : ''
+    const historyRows = await getDb()
+      .select()
+      .from(eatingHistory)
+      .where(eq(eatingHistory.sourceFinalMealId, finalMealId))
+
+    // (A, dish1), (A, dish2), (B, dish2) -> Đúng 3 dòng. KHÔNG có (B, dish1)
+    expect(historyRows).toHaveLength(3)
+    expect(historyRows).toContainEqual(
+      expect.objectContaining({ userId: seed.creatorId, globalDishId: seed.dish1.globalId }),
+    )
+    expect(historyRows).toContainEqual(
+      expect.objectContaining({ userId: seed.creatorId, globalDishId: seed.dish2.globalId }),
+    )
+    expect(historyRows).toContainEqual(
+      expect.objectContaining({ userId: seed.otherUserId, globalDishId: seed.dish2.globalId }),
+    )
+    expect(historyRows).not.toContainEqual(
+      expect.objectContaining({ userId: seed.otherUserId, globalDishId: seed.dish1.globalId }),
+    )
+  })
+
   it('TC-069: Dish bị gỡ SAU khi lưu nháp thì Finalize trả ERR_DISH_NOT_IN_POOL, Session vẫn ACTIVE', async () => {
     const seed = await seedActiveSessionWithTwoDishes()
     cleanupQueue.push(() => cleanup(seed))
@@ -202,7 +265,11 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
       .where(eq(groupDishes.id, seed.dish1.groupDishId))
 
     const finalize = await finalizeSession(
-      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+      {
+        meal: drizzleMealRepository,
+        rules: drizzleRuleRepository,
+        preferences: drizzlePreferenceRepository,
+      },
       { sessionId: seed.sessionId, userId: seed.creatorId },
     )
 
@@ -285,7 +352,11 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
 
     // Finalize phải FAIL vì session_rules vẫn đòi SOUP >= 1 (dù group_rules đã xoá)
     const finalize = await finalizeSession(
-      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+      {
+        meal: drizzleMealRepository,
+        rules: drizzleRuleRepository,
+        preferences: drizzlePreferenceRepository,
+      },
       { sessionId: seed.sessionId, userId: seed.creatorId },
     )
 
@@ -322,7 +393,11 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
 
     // Chốt lần 1: FAIL vì thiếu canh
     const finalize1 = await finalizeSession(
-      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+      {
+        meal: drizzleMealRepository,
+        rules: drizzleRuleRepository,
+        preferences: drizzlePreferenceRepository,
+      },
       { sessionId: seed.sessionId, userId: seed.creatorId },
     )
     expect(finalize1.ok).toBe(false)
@@ -335,7 +410,11 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
 
     // Chốt lần 2: THÀNH CÔNG vì đọc System Tag hiện tại lúc chốt
     const finalize2 = await finalizeSession(
-      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+      {
+        meal: drizzleMealRepository,
+        rules: drizzleRuleRepository,
+        preferences: drizzlePreferenceRepository,
+      },
       { sessionId: seed.sessionId, userId: seed.creatorId },
     )
     expect(finalize2.ok).toBe(true)
@@ -413,7 +492,11 @@ describe('findFinalMeal — E6-T7 (S-11)', () => {
 
     // Chốt session
     const finalize = await finalizeSession(
-      { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+      {
+        meal: drizzleMealRepository,
+        rules: drizzleRuleRepository,
+        preferences: drizzlePreferenceRepository,
+      },
       { sessionId: seed.sessionId, userId: seed.creatorId },
     )
     expect(finalize.ok).toBe(true)

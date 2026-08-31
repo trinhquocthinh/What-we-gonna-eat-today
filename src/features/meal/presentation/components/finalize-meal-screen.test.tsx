@@ -14,6 +14,7 @@ const RANKED_DISHES: readonly SummaryDish[] = [
     systemTags: ['MAIN' as SystemTag],
     proposedCount: 3,
     rejectedCount: 0,
+    cannotEatCount: 0,
     recentEaterCount: 0,
     score: 0.75,
   },
@@ -26,6 +27,7 @@ const UNTOUCHED_DISHES: readonly SummaryDish[] = [
     systemTags: ['SOUP' as SystemTag],
     proposedCount: 0,
     rejectedCount: 0,
+    cannotEatCount: 0,
     recentEaterCount: 0,
     score: null, // TC-061: untouched không có điểm
   },

@@ -172,4 +172,62 @@ describe('S-09 Deck vuốt', () => {
     )
     vi.unstubAllGlobals()
   })
+
+  it('bấm "Tôi không ăn được món này" gọi PUT /api/preferences/constraints, hiện toast và sang món kế tiếp', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    render(
+      <DeckScreen
+        sessionId="s1"
+        dateCaption="Thứ Ba 18/8"
+        dishes={makeDishes(['Cá basa kho tiêu', 'Canh chua'])}
+        initialParticipantState="ACTIVE"
+        groupHref="/groups/g1"
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tôi không ăn được món này' }))
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/preferences/constraints',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ globalDishId: 'gld-0', cannotEat: true }),
+      }),
+    )
+
+    // Hiện toast thông báo
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Sẽ không hiện lại Cá basa kho tiêu với bạn.',
+    )
+
+    // Tiến sang món kế tiếp
+    expect(await screen.findByText('Canh chua')).toBeInTheDocument()
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('DEC-060: sau khi bấm "Tôi không ăn được món này", nút Hoàn tác bị disabled', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    render(
+      <DeckScreen
+        sessionId="s1"
+        dateCaption="Thứ Ba 18/8"
+        dishes={makeDishes(['Cá basa kho tiêu', 'Canh chua'])}
+        initialParticipantState="ACTIVE"
+        groupHref="/groups/g1"
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tôi không ăn được món này' }))
+
+    // Nút Hoàn tác bị disabled vì lượt vừa rồi là Cannot Eat
+    expect(screen.getByRole('button', { name: 'Hoàn tác lượt vuốt vừa rồi' })).toBeDisabled()
+
+    vi.unstubAllGlobals()
+  })
 })

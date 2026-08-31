@@ -96,6 +96,12 @@ export interface SelectionRepository {
     }[]
   >
 
+  /**
+   * $X$ của SPEC-014 — với mỗi món, ĐẾM SỐ NGƯỜI trong phiên đã khai Cannot
+   * Eat. Món không ai khai KHÔNG có mặt trong Map; người gọi dùng `?? 0`.
+   */
+  countCannotEatByDish(sessionId: string): Promise<Map<string, number>>
+
   /** $T$ của SPEC-014 và đồng thời tập người để đếm $H$. ACTIVE hoặc
    *  COMPLETED — `REMOVED` không tính (BR-026). */
   listRankingParticipantUserIds(sessionId: string): Promise<string[]>

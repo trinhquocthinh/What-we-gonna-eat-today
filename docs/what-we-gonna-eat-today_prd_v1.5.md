@@ -290,11 +290,12 @@
 | `F29` | Phát hiện trùng tên món (Bỏ dấu) | E2 | **Should** | `BR-001` | Duplicate detection — hoãn sang v1.2 ([DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md)) |
 | `F49` | Trần số thẻ mỗi phiên (30 thẻ) | E5 | **Should** | `BR-062` | Deck có điểm dừng; cắt sau khi trộn Explore |
 | `F50` | Chế độ vuốt theo chặng (Course Mode) | E4 | **Should** | `BR-063` | Creator chọn chặng lúc mở phiên; không đụng luồng chốt bữa |
+| `F51` | Tiếp tục đúng chỗ đang vuốt | E5 | **Should** | — | Mở lại phiên không phải vuốt lại từ đầu; suy từ dữ liệu đã có, không lưu thêm |
 | `F30→42` | Implicit Preference, Chef Mode, v.v. | E12–14 | **Could** | — | Lộ trình v1.2 |
 | `F43→48` | Multi-group, Admin UI, Auto Merge | — | **Won't** | — | Hoãn sau v1.2 |
 
 > [!NOTE]
-> Tổng số tính năng **Must Have** ở v1.0 là **17/50 (34%)**, tuân thủ nguyên tắc kỷ luật phạm vi dưới 40%.
+> Tổng số tính năng **Must Have** ở v1.0 là **17/51 (33%)**, tuân thủ nguyên tắc kỷ luật phạm vi dưới 40%.
 
 > [!IMPORTANT]
 > `F49` và `F50` được bổ sung ngày 2026-08-26 từ phản hồi dùng thật v1.0, **không** phải từ đợt hoạch định ban đầu — xem [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md). Cùng quyết định đó hoãn `F25`, `F28`, `F29` sang v1.2.
@@ -322,7 +323,7 @@
 └────────────────────────────────────┬────────────────────────────────────┘
                                      │
 ┌────────────────────────────────────▼────────────────────────────────────┐
-│ v1.1 — 11 Tính năng (Khẩu vị cá nhân & Deck ngắn, có nhịp)              │
+│ v1.1 — 12 Tính năng (Khẩu vị cá nhân & Deck ngắn, có nhịp)              │
 │ └─ Cannot Eat, Like/Dislike, trần 30 thẻ, Explore 20%, vuốt theo chặng, │
 │    cảnh báo mềm lúc chốt bữa                                            │
 └────────────────────────────────────┬────────────────────────────────────┘
@@ -337,7 +338,7 @@
 | Phiên bản | Số tính năng | Mục tiêu | Ước lượng |
 | :---: | :---: | :--- | :---: |
 | `v1.0` | 17 | Chốt được bữa từ đầu tới cuối | Đã phát hành |
-| `v1.1` | 11 | Gợi ý đúng người, deck có điểm dừng | 81h |
+| `v1.1` | 12 | Gợi ý đúng người, deck có điểm dừng | 79.25h |
 | `v1.2` | 16 | Học hành vi, linh hoạt và sửa dữ liệu | ~89h |
 
 ---

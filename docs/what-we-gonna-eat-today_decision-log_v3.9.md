@@ -1671,10 +1671,27 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-062 — Tương tác Cannot Eat ở Swipe Card (S-09) & Hệ quả Bỏ qua Lịch sử Ăn (BR-056)
+
+- **Ngày:** 2026-08-31
+- **Trạng thái:** Accepted
+- **Bối cảnh:** Epic 7 Slice S3 (E7-T5, E7-T6, E7-T7)
+
+## Quyết định
+
+1. **Giao diện Swipe Card (S-09)**: Thêm nút quiet "Tôi không ăn được món này" ở nửa dưới card. `min-h-11` (>=44px), `onPointerDown={(e) => e.stopPropagation()}` để không cướp gesture swipe.
+2. **Không có Like/Dislike trên card swipe**: Theo `BR-043`, card chỉ có MỘT hành động: "Tôi không ăn được món này". Thích / Không thích thuộc về danh mục món (S-05).
+3. **Chặn Undo sau Cannot Eat (DEC-060)**: `marks` quản lý 3 giá trị `'yes' | 'no' | 'cannot'`. Khi lượt tương tác gần nhất là `'cannot'`, nút Hoàn tác bị vô hiệu hoá (`canUndo = false`).
+4. **Session Ranking (SPEC-014 / E7-T6)**: Khôi phục số hạng $X$ trong `SessionScoreInput` và `computeSessionScore`, trừ điểm theo trọng số $c_{\text{cannotEat}} = 1.0$. Màn hình S-10 hiển thị đủ 4 ô đếm: đề xuất ($P$), không muốn ($N$), vừa ăn ($H$), không ăn được ($X$). Món chỉ có $X > 0$ mà $P=0, N=0$ vẫn nằm ở `untouched`.
+5. **Sinh Default Eating History (SPEC-017 / E7-T7)**: `buildDefaultEatingHistory` nhận tập cặp `cannotEatPairs` định dạng `${userId}:${globalDishId}`. Use case `finalizeSession` đọc constraints của tất cả active participants trước transaction và lọc bỏ các cặp tương ứng theo `BR-056`.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.11` | 2026-08-31 | Bổ sung `DEC-062` (Tương tác Cannot Eat ở Swipe Card, chặn Undo, số hạng X trong Session Ranking, và ngoại lệ BR-056 khi Finalize) cho E7-S3 |
 | `3.10` | 2026-08-26 | Bổ sung `DEC-063` (`CANNOT_EAT` audit log, tách kiểu enum CSDL vs API input, sửa TC-117) cho E7-S2 |
 | `3.9` | 2026-08-26 | Bổ sung `DEC-056` (re-scope v1.1: thêm `F49`/`F50`, hoãn `F25`/`F28`/`F29`), `DEC-057` (cổng kiểm link tài liệu), `DEC-058` (trần deck 30 thẻ và thứ tự pipeline), `DEC-059` (chế độ vuốt theo chặng), `DEC-060` (`Cannot Eat` xoá tương tác cũ và ngoại lệ `BR-056`), `DEC-061` (đánh số lại epic v1.2) — lập kế hoạch v1.1 |
 | `3.8` | 2026-08-25 | Bổ sung `DEC-052` (nhãn STAPLE và hợp đồng dấu nối), `DEC-053` (dùng lại món phải ghi tag), `DEC-054` (sheet thêm đa chọn nhãn — thay thế `DEC-031`), `DEC-055` (gợi ý catalog chung, SPEC-023) — bảo trì sau v1.0 |

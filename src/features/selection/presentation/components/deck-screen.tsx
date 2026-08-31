@@ -52,7 +52,8 @@ export function DeckScreen({
   groupHref,
 }: DeckScreenProps): ReactElement {
   const [cursor, setCursor] = useState(0)
-  const [marks, setMarks] = useState<Array<'yes' | 'no'>>([])
+  const [marks, setMarks] = useState<Array<'yes' | 'no' | 'cannot'>>([])
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [view, setView] = useState<ViewState>(
     initialParticipantState === 'COMPLETED' ? 'done' : 'deck',
   )
@@ -85,8 +86,27 @@ export function DeckScreen({
     })
   }
 
+  function handleCannotEat(dish: DishCard) {
+    setMarks((m) => [...m, 'cannot'])
+    setCursor((c) => c + 1)
+    setToastMessage(`Sẽ không hiện lại ${dish.name} với bạn.`)
+
+    void fetch('/api/preferences/constraints', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        globalDishId: dish.globalDishId,
+        cannotEat: true,
+      }),
+    }).catch(() => {})
+  }
+
   function handleUndo() {
     if (cursor === 0) return
+    const lastMark = marks[marks.length - 1]
+    if (lastMark === 'cannot') {
+      return
+    }
     const previousDish = dishes[cursor - 1]
     setCursor((c) => c - 1)
     setMarks((m) => m.slice(0, -1))
@@ -137,6 +157,16 @@ export function DeckScreen({
         </div>
       )}
 
+      {toastMessage === null ? null : (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-control border border-border bg-surface-raised px-4 py-3 text-body font-medium text-ink shadow-lift"
+        >
+          {toastMessage}
+        </div>
+      )}
+
       <div className="flex flex-col gap-3 px-4 pb-3 pt-4">
         <div className="flex min-h-6 items-center justify-between gap-3">
           <span className="text-caption font-medium text-ink-muted">Bữa tối · {dateCaption}</span>
@@ -161,6 +191,7 @@ export function DeckScreen({
               explanation={formatExplanation(current.daysSinceLastEaten)}
               upcomingNames={upcoming}
               onCommit={handleCommit}
+              onCannotEat={handleCannotEat}
             />
           </>
         ) : null}
@@ -188,7 +219,7 @@ export function DeckScreen({
         {isDeck ? (
           <SwipeControls
             currentDishName={current?.name ?? null}
-            canUndo={cursor > 0}
+            canUndo={cursor > 0 && marks[marks.length - 1] !== 'cannot'}
             onSwipeLeft={() => current !== undefined && handleCommit(-1, current.dishId)}
             onSwipeRight={() => current !== undefined && handleCommit(1, current.dishId)}
             onUndo={handleUndo}
@@ -208,6 +239,7 @@ export function DeckScreen({
               onClick={() => {
                 setCursor(0)
                 setMarks([])
+                setToastMessage(null)
               }}
             >
               Xem lại từ đầu

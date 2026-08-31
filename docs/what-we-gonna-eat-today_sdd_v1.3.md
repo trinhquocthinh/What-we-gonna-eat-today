@@ -91,6 +91,7 @@ Chi tiết ở [§8](#8-spec--phiên-bản-v11). Phạm vi chốt theo [DEC-056]
 | `F49` | Trần số thẻ mỗi phiên (30 thẻ) | E8 | `SPEC-026` |
 | `F18` | Explore Lane 20% | E8 | `SPEC-027` |
 | `F19` | Ổn định Deck khi tính lại điểm | E8 | `SPEC-028` |
+| `F51` | Tiếp tục đúng chỗ đang vuốt | E8 | `SPEC-036` |
 | `F50` | Chế độ vuốt theo chặng | E9 | `SPEC-029`, `SPEC-030` |
 | `F22` | Preferred Rule & Cảnh báo mềm | E10 | `SPEC-031` |
 | `F23` | Target Dish Count & Cảnh báo | E10 | `SPEC-032` |

@@ -17,6 +17,7 @@ function makeFakeSelectionRepository(options: {
     rejectedCount: number
   }[]
   participantUserIds?: string[]
+  cannotEatMap?: Map<string, number>
   countInteractionsCalls?: string[]
 }) {
   const repository: SelectionRepository = {
@@ -71,6 +72,9 @@ function makeFakeSelectionRepository(options: {
           },
         ]
       )
+    },
+    async countCannotEatByDish() {
+      return options.cannotEatMap ?? new Map()
     },
     async listRankingParticipantUserIds() {
       return options.participantUserIds ?? ['u1', 'u2', 'u3', 'u4']
@@ -215,6 +219,32 @@ describe('listSessionRanking (SPEC-014)', () => {
       // T=4, P=3, N=1, H=2 -> (3*1 - 1*0.7 - 2*0.3)/4 = 0.425
       expect(result.value.ranked[0]?.recentEaterCount).toBe(2)
       expect(result.value.ranked[0]?.score).toBeCloseTo(0.425, 3)
+    }
+  })
+
+  it('X nối đúng: countCannotEatByDish trả { g-1 -> 2 } thì món có globalDishId = g-1 nhận cannotEatCount = 2 và trừ điểm đúng 1.0 * 2', async () => {
+    const selection = makeFakeSelectionRepository({
+      dishes: [
+        {
+          groupDishId: 'gd-1',
+          globalDishId: 'g-1',
+          name: 'Món A',
+          proposedCount: 3,
+          rejectedCount: 0,
+        },
+      ],
+      participantUserIds: ['u1', 'u2', 'u3', 'u4'],
+      cannotEatMap: new Map([['g-1', 2]]),
+    })
+    const history = makeFakeHistoryRepository({})
+
+    const result = await listSessionRanking({ selection, history }, INPUT)
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      // T=4, P=3, N=0, X=2, H=0 -> (3*1.0 - 0 - 2*1.0 - 0) / 4 = 1/4 = 0.25
+      expect(result.value.ranked[0]?.cannotEatCount).toBe(2)
+      expect(result.value.ranked[0]?.score).toBeCloseTo(0.25, 3)
     }
   })
 })

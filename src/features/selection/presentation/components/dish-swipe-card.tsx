@@ -15,6 +15,7 @@ export type DishSwipeCardProps = {
   /** Tên hai món kế tiếp trong deck — "Trong chồng". */
   upcomingNames: readonly string[]
   onCommit: (direction: SwipeDirection, dishId: string) => void
+  onCannotEat?: (dish: DishCard) => void
 }
 
 export const DIRECTION_STYLES: Record<
@@ -42,8 +43,8 @@ export const DIRECTION_STYLES: Record<
 }
 
 /**
- * Thẻ chính của S-09. `reason` chip đổi màu theo explore lane là F18/v1.1 —
- * BỎ ở S5, luôn dùng màu trung tính (`--surface-sunken`/`--ink-muted`).
+ * Thẻ chính của S-09. Nút "Tôi không ăn được món này" (BR-043, DEC-062)
+ * nằm ở nửa dưới card, dừng propagation của pointer để không xung đột gesture.
  */
 export function DishSwipeCard({
   dish,
@@ -51,6 +52,7 @@ export function DishSwipeCard({
   explanation,
   upcomingNames,
   onCommit,
+  onCannotEat,
 }: DishSwipeCardProps): ReactElement {
   const gesture = useSwipeGesture((direction) => onCommit(direction, dish.dishId))
   const tone = DIRECTION_STYLES[gesture.previewDirection]
@@ -97,6 +99,17 @@ export function DishSwipeCard({
       )}
 
       <div className="flex-1" />
+
+      {onCannotEat === undefined ? null : (
+        <button
+          type="button"
+          onClick={() => onCannotEat(dish)}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="min-h-11 w-full rounded-button text-caption font-medium text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Tôi không ăn được món này
+        </button>
+      )}
 
       <div className="flex flex-col gap-2 border-t border-border pt-4">
         <span className="tabular text-caption font-medium text-ink-muted">{lastEatenLabel}</span>

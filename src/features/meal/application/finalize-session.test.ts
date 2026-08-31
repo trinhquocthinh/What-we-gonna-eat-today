@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
 import type { RuleRepository } from '@/features/rule/application/rule-repository'
 import type { RequiredRule } from '@/features/rule/domain/evaluate'
 import type { SystemTag } from '@/shared/domain/system-tag'
@@ -82,14 +83,41 @@ function makeFakeRuleRepository(
   return repository
 }
 
+function makeFakePreferenceRepository(
+  options: {
+    constraintsByUser?: Map<string, ReadonlySet<string>>
+  } = {},
+) {
+  const repository: PreferenceRepository = {
+    async setConstraint(): Promise<never> {
+      throw new Error('không dùng trong finalize')
+    },
+    async setPreference(): Promise<never> {
+      throw new Error('không dùng trong finalize')
+    },
+    async findConstrainedGlobalDishIds(userId: string) {
+      return options.constraintsByUser?.get(userId) ?? new Set()
+    },
+    async findPreferencesByGlobalDish(): Promise<never> {
+      throw new Error('không dùng trong finalize')
+    },
+  }
+
+  return repository
+}
+
 const INPUT = { sessionId: 's1', userId: 'creator-1' } as const
 
 describe('SPEC-016 — Finalize', () => {
   it('SPEC-016: nháp hợp lệ thì finalize thành công và gọi commitFinalize đúng một lần', async () => {
     const fakeMeal = makeFakeMealRepository({})
     const fakeRules = makeFakeRuleRepository()
+    const fakePreferences = makeFakePreferenceRepository()
 
-    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
 
     expect(result.ok).toBe(true)
     expect(fakeMeal.commitCalls).toHaveLength(1)
@@ -100,8 +128,12 @@ describe('SPEC-016 — Finalize', () => {
   it('TC-068: nháp rỗng thì ERR_EMPTY_FINAL_MEAL, không gọi commitFinalize', async () => {
     const fakeMeal = makeFakeMealRepository({ draft: null })
     const fakeRules = makeFakeRuleRepository()
+    const fakePreferences = makeFakePreferenceRepository()
 
-    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
 
     expect(result.ok === false && result.error.code).toBe('ERR_EMPTY_FINAL_MEAL')
     expect(fakeMeal.commitCalls).toHaveLength(0)
@@ -117,8 +149,12 @@ describe('SPEC-016 — Finalize', () => {
       },
     })
     const fakeRules = makeFakeRuleRepository()
+    const fakePreferences = makeFakePreferenceRepository()
 
-    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
 
     expect(result.ok === false && result.error.code).toBe('ERR_SESSION_NOT_ACTIVE')
     expect(fakeMeal.commitCalls).toHaveLength(0)
@@ -134,8 +170,12 @@ describe('SPEC-016 — Finalize', () => {
       },
     })
     const fakeRules = makeFakeRuleRepository()
+    const fakePreferences = makeFakePreferenceRepository()
 
-    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
 
     expect(result.ok === false && result.error.code).toBe('ERR_NOT_SESSION_CREATOR')
   })
@@ -143,8 +183,12 @@ describe('SPEC-016 — Finalize', () => {
   it('SPEC-016 bước 4: Dish bị gỡ khỏi pool sau khi lưu nháp thì ERR_DISH_NOT_IN_POOL, không gọi commitFinalize', async () => {
     const fakeMeal = makeFakeMealRepository({ inactiveDishIds: ['d1'] })
     const fakeRules = makeFakeRuleRepository()
+    const fakePreferences = makeFakePreferenceRepository()
 
-    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
 
     expect(result.ok === false && result.error.code).toBe('ERR_DISH_NOT_IN_POOL')
     expect(fakeMeal.commitCalls).toHaveLength(0)
@@ -157,8 +201,12 @@ describe('SPEC-016 — Finalize', () => {
       tagsByDish: new Map([['d1', ['MAIN']]]),
     })
     const fakeRules = makeFakeRuleRepository({ rules: [] })
+    const fakePreferences = makeFakePreferenceRepository()
 
-    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
 
     expect(result.ok).toBe(true)
     expect(fakeMeal.commitCalls).toHaveLength(1)
@@ -176,8 +224,12 @@ describe('SPEC-016 — Finalize', () => {
     const fakeRules = makeFakeRuleRepository({
       rules: [{ systemTag: 'SOUP', minimumCount: 1 }],
     })
+    const fakePreferences = makeFakePreferenceRepository()
 
-    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
 
     expect(result.ok).toBe(false)
     if (!result.ok) {
@@ -201,8 +253,12 @@ describe('SPEC-016 — Finalize', () => {
         { systemTag: 'SOUP', minimumCount: 1 },
       ],
     })
+    const fakePreferences = makeFakePreferenceRepository()
 
-    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
 
     expect(result.ok).toBe(true)
     expect(fakeMeal.commitCalls).toHaveLength(1)
@@ -219,8 +275,12 @@ describe('SPEC-016 — Finalize', () => {
       rules: [{ systemTag: 'MAIN', minimumCount: 1 }],
       listSessionRulesCalls,
     })
+    const fakePreferences = makeFakePreferenceRepository()
 
-    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
 
     expect(result.ok).toBe(true)
     expect(listSessionRulesCalls).toEqual(['s1'])
@@ -237,10 +297,51 @@ describe('SPEC-016 — Finalize', () => {
     const fakeRules = makeFakeRuleRepository({
       rules: [{ systemTag: 'SOUP', minimumCount: 1 }],
     })
+    const fakePreferences = makeFakePreferenceRepository()
 
-    const result = await finalizeSession({ meal: fakeMeal.repository, rules: fakeRules }, INPUT)
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
 
     expect(result.ok).toBe(true)
     expect(findTagsCalls).toEqual([['d1']])
+  })
+
+  it('BR-056: Participant khai Cannot Eat món nào thì không sinh lịch sử ăn cho món đó', async () => {
+    const fakeMeal = makeFakeMealRepository({
+      participantUserIds: ['u1', 'u2'],
+      draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1', 'd2'] },
+    })
+    const fakeRules = makeFakeRuleRepository()
+    const fakePreferences = makeFakePreferenceRepository({
+      constraintsByUser: new Map([['u2', new Set(['global-d1'])]]),
+    })
+
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
+
+    expect(result.ok).toBe(true)
+    expect(fakeMeal.commitCalls).toHaveLength(1)
+    // (u1, d1), (u1, d2), (u2, d2) -> 3 rows, (u2, d1) bị bỏ qua
+    const rows = fakeMeal.commitCalls[0]?.eatingHistoryRows as Array<{
+      userId: string
+      globalDishId: string
+    }>
+    expect(rows).toHaveLength(3)
+    expect(rows).toContainEqual(
+      expect.objectContaining({ userId: 'u1', globalDishId: 'global-d1' }),
+    )
+    expect(rows).toContainEqual(
+      expect.objectContaining({ userId: 'u1', globalDishId: 'global-d2' }),
+    )
+    expect(rows).toContainEqual(
+      expect.objectContaining({ userId: 'u2', globalDishId: 'global-d2' }),
+    )
+    expect(rows).not.toContainEqual(
+      expect.objectContaining({ userId: 'u2', globalDishId: 'global-d1' }),
+    )
   })
 })

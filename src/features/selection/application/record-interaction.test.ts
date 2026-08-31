@@ -45,6 +45,9 @@ function makeFakeSelectionRepository(options: {
     async countInteractionsByDish(): Promise<never> {
       throw new Error('không dùng trong test này')
     },
+    async countCannotEatByDish(): Promise<never> {
+      throw new Error('không dùng trong test này')
+    },
     async listRankingParticipantUserIds(): Promise<never> {
       throw new Error('không dùng trong test này')
     },

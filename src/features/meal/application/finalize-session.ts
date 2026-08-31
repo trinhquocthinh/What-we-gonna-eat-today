@@ -1,4 +1,5 @@
 import { buildDefaultEatingHistory } from '@/features/history/domain/default-eating-history'
+import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
 import type { RuleRepository } from '@/features/rule/application/rule-repository'
 import { evaluateRequired } from '@/features/rule/domain/evaluate'
 import type { Failure } from '@/shared/errors'
@@ -13,6 +14,8 @@ export type FinalizeSessionDeps = {
   /** `meal → rule` đã nằm sẵn trong `ALLOWED_CROSS_FEATURE` từ E0-T2 —
    *  chiều này được dự trù đúng cho khoảnh khắc này. */
   readonly rules: RuleRepository
+  /** `meal → preference` đã nằm trong `ALLOWED_CROSS_FEATURE` từ E7-S1 (E7-T7). */
+  readonly preferences: PreferenceRepository
 }
 
 export type FinalizeSessionInput = {
@@ -87,17 +90,34 @@ export async function finalizeSession(
 
   // Bước 7 — chuẩn bị dữ liệu TRƯỚC transaction, đúng nguyên tắc "đọc trước,
   // ghi nguyên tử sau" đã dùng xuyên suốt S2-S5.
-  const participantUserIds = await deps.meal.listActiveParticipantUserIds(input.sessionId)
-  const globalDishIdByGroupDishId = await deps.meal.resolveGlobalDishIds(draft.groupDishIds)
+  const [participantUserIds, globalDishIdByGroupDishId] = await Promise.all([
+    deps.meal.listActiveParticipantUserIds(input.sessionId),
+    deps.meal.resolveGlobalDishIds(draft.groupDishIds),
+  ])
   const globalDishIds = draft.groupDishIds
     .map((id) => globalDishIdByGroupDishId.get(id))
     .filter((id): id is string => id !== undefined)
+
+  const participantConstraints = await Promise.all(
+    participantUserIds.map(async (userId) => {
+      const constrainedDishIds = await deps.preferences.findConstrainedGlobalDishIds(userId)
+      return { userId, constrainedDishIds }
+    }),
+  )
+
+  const cannotEatPairs = new Set<string>()
+  for (const { userId, constrainedDishIds } of participantConstraints) {
+    for (const globalDishId of constrainedDishIds) {
+      cannotEatPairs.add(`${userId}:${globalDishId}`)
+    }
+  }
 
   const eatingHistoryRows = buildDefaultEatingHistory({
     participantUserIds,
     globalDishIds,
     decisionDate: session.decisionDate,
     finalMealId: draft.finalMealId,
+    cannotEatPairs,
   })
 
   await deps.meal.commitFinalize({ sessionId: input.sessionId, eatingHistoryRows })

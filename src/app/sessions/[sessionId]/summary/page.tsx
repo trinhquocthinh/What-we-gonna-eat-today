@@ -63,6 +63,7 @@ export default async function SummaryPage({ params }: SummaryPageProps) {
     systemTags: dish.systemTags,
     proposedCount: dish.proposedCount,
     rejectedCount: dish.rejectedCount,
+    cannotEatCount: dish.cannotEatCount,
     recentEaterCount: dish.recentEaterCount,
     score,
   })

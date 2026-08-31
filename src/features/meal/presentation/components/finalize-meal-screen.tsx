@@ -18,6 +18,7 @@ export type SummaryDish = {
   readonly systemTags: readonly SystemTag[]
   readonly proposedCount: number
   readonly rejectedCount: number
+  readonly cannotEatCount: number
   readonly recentEaterCount: number
   /** `null` với món ở mục "Chưa ai chọn" — TC-061: chúng KHÔNG có điểm. */
   readonly score: number | null

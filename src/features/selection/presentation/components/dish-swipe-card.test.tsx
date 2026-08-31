@@ -44,6 +44,25 @@ describe('DishSwipeCard', () => {
 
     expect(screen.queryByText('Trong chồng')).not.toBeInTheDocument()
   })
+
+  it('render nút "Tôi không ăn được món này" khi có onCannotEat và gọi onCannotEat khi click', () => {
+    const onCannotEat = vi.fn()
+    render(
+      <DishSwipeCard
+        dish={DISH}
+        lastEatenLabel="Chưa từng ăn"
+        explanation="..."
+        upcomingNames={[]}
+        onCommit={vi.fn()}
+        onCannotEat={onCannotEat}
+      />,
+    )
+
+    const btn = screen.getByRole('button', { name: 'Tôi không ăn được món này' })
+    expect(btn).toBeInTheDocument()
+    btn.click()
+    expect(onCannotEat).toHaveBeenCalledWith(DISH)
+  })
 })
 
 describe('DIRECTION_STYLES — bất biến thiết kế', () => {

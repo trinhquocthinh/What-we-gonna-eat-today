@@ -46,4 +46,40 @@ describe('SPEC-017 — Sinh Default Eating History (domain)', () => {
       }),
     ).toEqual([])
   })
+
+  it('BR-056: loại trừ đúng các cặp trong cannotEatPairs (u2 không ăn d1 nhưng vẫn ăn d2)', () => {
+    const rows = buildDefaultEatingHistory({
+      participantUserIds: ['u1', 'u2'],
+      globalDishIds: ['d1', 'd2'],
+      decisionDate: '2026-08-14',
+      finalMealId: 'meal-1',
+      cannotEatPairs: new Set(['u2:d1']),
+    })
+
+    expect(rows).toHaveLength(3)
+    expect(rows).toContainEqual({
+      userId: 'u1',
+      globalDishId: 'd1',
+      eatingDate: '2026-08-14',
+      sourceFinalMealId: 'meal-1',
+    })
+    expect(rows).toContainEqual({
+      userId: 'u1',
+      globalDishId: 'd2',
+      eatingDate: '2026-08-14',
+      sourceFinalMealId: 'meal-1',
+    })
+    expect(rows).toContainEqual({
+      userId: 'u2',
+      globalDishId: 'd2',
+      eatingDate: '2026-08-14',
+      sourceFinalMealId: 'meal-1',
+    })
+    expect(rows).not.toContainEqual(
+      expect.objectContaining({
+        userId: 'u2',
+        globalDishId: 'd1',
+      }),
+    )
+  })
 })

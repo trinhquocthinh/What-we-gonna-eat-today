@@ -341,6 +341,31 @@ async function countInteractionsByDish(sessionId: string): Promise<
   }))
 }
 
+async function countCannotEatByDish(sessionId: string): Promise<Map<string, number>> {
+  const rows = await getDb()
+    .select({
+      globalDishId: userDishConstraints.globalDishId,
+      cannotEatCount: sql<string>`COUNT(DISTINCT ${userDishConstraints.userId})`,
+    })
+    .from(userDishConstraints)
+    .innerJoin(
+      participants,
+      and(
+        eq(participants.userId, userDishConstraints.userId),
+        eq(participants.sessionId, sessionId),
+        inArray(participants.state, ['ACTIVE', 'COMPLETED']),
+      ),
+    )
+    .groupBy(userDishConstraints.globalDishId)
+
+  const map = new Map<string, number>()
+  for (const row of rows) {
+    map.set(row.globalDishId, Number(row.cannotEatCount))
+  }
+
+  return map
+}
+
 async function listRankingParticipantUserIds(sessionId: string): Promise<string[]> {
   const rows = await getDb()
     .select({ userId: participants.userId })
@@ -365,5 +390,6 @@ export const drizzleSelectionRepository: SelectionRepository = {
   materializeDeck,
   findSessionForRanking,
   countInteractionsByDish,
+  countCannotEatByDish,
   listRankingParticipantUserIds,
 }

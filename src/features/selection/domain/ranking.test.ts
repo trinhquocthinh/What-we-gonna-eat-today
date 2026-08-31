@@ -184,6 +184,7 @@ const makeSessionDish = (over: Partial<SessionDishInput> = {}): SessionDishInput
   systemTags: [],
   proposedCount: 0,
   rejectedCount: 0,
+  cannotEatCount: 0,
   recentEaterCount: 0,
   ...over,
 })
@@ -192,7 +193,7 @@ describe('computeSessionScore', () => {
   // TC-058 — T=4, P=3, N=0, H=0 → 3/4.
   it('TC-058', () => {
     const score = computeSessionScore(
-      { proposedCount: 3, rejectedCount: 0, recentEaterCount: 0 },
+      { proposedCount: 3, rejectedCount: 0, cannotEatCount: 0, recentEaterCount: 0 },
       4,
       RANKING_CONFIG,
     )
@@ -202,7 +203,7 @@ describe('computeSessionScore', () => {
   // TC-059 — (3 - 0.7 - 0.6) / 4 = 0.425.
   it('TC-059', () => {
     const score = computeSessionScore(
-      { proposedCount: 3, rejectedCount: 1, recentEaterCount: 2 },
+      { proposedCount: 3, rejectedCount: 1, cannotEatCount: 0, recentEaterCount: 2 },
       4,
       RANKING_CONFIG,
     )
@@ -212,17 +213,27 @@ describe('computeSessionScore', () => {
   // TC-060 — thêm người thứ 5, cùng P=3 → 0.6.
   it('TC-060 — chuẩn hoá theo T', () => {
     const score = computeSessionScore(
-      { proposedCount: 3, rejectedCount: 0, recentEaterCount: 0 },
+      { proposedCount: 3, rejectedCount: 0, cannotEatCount: 0, recentEaterCount: 0 },
       5,
       RANKING_CONFIG,
     )
     expect(score).toBeCloseTo(0.6, 5)
   })
 
+  // TC-121 — T=4, P=2, N=0, X=2, H=0 → (2 - 2)/4 = 0.
+  it('TC-121 — X = 2 trừ điểm đúng trọng số cCannotEat (1.0)', () => {
+    const score = computeSessionScore(
+      { proposedCount: 2, rejectedCount: 0, cannotEatCount: 2, recentEaterCount: 0 },
+      4,
+      RANKING_CONFIG,
+    )
+    expect(score).toBe(0)
+  })
+
   // TC-111 — T=1, P=1 → 1.0, không chia cho 0.
   it('TC-111 — T = 1', () => {
     const score = computeSessionScore(
-      { proposedCount: 1, rejectedCount: 0, recentEaterCount: 0 },
+      { proposedCount: 1, rejectedCount: 0, cannotEatCount: 0, recentEaterCount: 0 },
       1,
       RANKING_CONFIG,
     )
@@ -231,7 +242,7 @@ describe('computeSessionScore', () => {
 
   it('T = 0 trả 0, không NaN', () => {
     const score = computeSessionScore(
-      { proposedCount: 1, rejectedCount: 0, recentEaterCount: 0 },
+      { proposedCount: 1, rejectedCount: 0, cannotEatCount: 0, recentEaterCount: 0 },
       0,
       RANKING_CONFIG,
     )
@@ -257,6 +268,19 @@ describe('rankSession', () => {
     expect(result.ranked.map((d) => d.dishId)).toEqual(['a'])
     expect(result.untouched.map((d) => d.dishId)).toEqual(['b'])
     expect(result.untouched[0]).not.toHaveProperty('score')
+  })
+
+  it('món có người khai không ăn được nhưng chưa ai vuốt vẫn là untouched (chỉ xét P, N)', () => {
+    const result = rankSession(
+      {
+        dishes: [makeSessionDish({ dishId: 'a', cannotEatCount: 2 })],
+        participantCount: 3,
+      },
+      RANKING_CONFIG,
+    )
+
+    expect(result.untouched.map((d) => d.dishId)).toEqual(['a'])
+    expect(result.ranked).toEqual([])
   })
 
   it('món chỉ bị vuốt trái VẪN nằm trong ranked', () => {

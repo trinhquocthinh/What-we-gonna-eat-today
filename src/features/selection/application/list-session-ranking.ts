@@ -45,9 +45,10 @@ export async function listSessionRanking(
     return err(failure('ERR_NOT_SESSION_CREATOR', { sessionId: input.sessionId }))
   }
 
-  const [counts, participantUserIds] = await Promise.all([
+  const [counts, participantUserIds, cannotEatCounts] = await Promise.all([
     deps.selection.countInteractionsByDish(input.sessionId),
     deps.selection.listRankingParticipantUserIds(input.sessionId),
+    deps.selection.countCannotEatByDish(input.sessionId),
   ])
 
   const recentEaters = await deps.history.countRecentEatersByDish({
@@ -67,6 +68,7 @@ export async function listSessionRanking(
           systemTags: row.systemTags,
           proposedCount: row.proposedCount,
           rejectedCount: row.rejectedCount,
+          cannotEatCount: cannotEatCounts.get(row.globalDishId) ?? 0,
           recentEaterCount: recentEaters.get(row.globalDishId) ?? 0,
         })),
       },

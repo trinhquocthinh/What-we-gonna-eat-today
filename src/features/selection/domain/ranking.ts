@@ -116,10 +116,7 @@ export function buildDeck(input: BuildDeckInput, config: RankingConfig): string[
 /**
  * SPEC-014 — số đếm thô của MỘT món trong MỘT phiên.
  *
- * KHÔNG có `cannotEatCount` ($X$): F15 là v1.1, mọi giá trị đều sẽ là 0 —
- * cùng lý lẽ đã áp cho `RankingInput` ở đầu file. Trọng số `cCannotEat` vẫn
- * nằm trong RANKING_CONFIG vì hằng số tập trung nói về nơi ĐỊNH NGHĨA
- * (Ranking Spec §1 nguyên tắc 4).
+ * `cannotEatCount` ($X$): SỐ NGƯỜI trong phiên đã khai `Cannot Eat` món này (BR-034).
  *
  * `recentEaterCount` ($H$) là SỐ NGƯỜI trong phiên đã ăn món này trong cửa sổ
  * cooldown — KHÁC hẳn `recencyPenalty` của SPEC-020 ($R \in [0,1]$ của MỘT
@@ -129,11 +126,13 @@ export function buildDeck(input: BuildDeckInput, config: RankingConfig): string[
 export type SessionScoreInput = {
   readonly proposedCount: number
   readonly rejectedCount: number
+  /** $X$ — SỐ NGƯỜI trong phiên đã khai `Cannot Eat` món này (BR-034). */
+  readonly cannotEatCount: number
   readonly recentEaterCount: number
 }
 
 /**
- * $$\text{Score} = \frac{a P - b N - d H}{T}$$
+ * $$\text{Score} = \frac{a P - b N - c X - d H}{T}$$
  *
  * Chuẩn hoá theo $T$ để điểm so sánh được giữa các phiên có số người khác nhau
  * (TC-060: thêm người thứ 5 thì cùng $P=3$ phải cho điểm thấp hơn).
@@ -152,11 +151,12 @@ export function computeSessionScore(
     return 0
   }
 
-  const { aSwipeRight, bSwipeLeft, dRecent } = config.sessionRanking
+  const { aSwipeRight, bSwipeLeft, cCannotEat, dRecent } = config.sessionRanking
 
   return (
     (aSwipeRight * input.proposedCount -
       bSwipeLeft * input.rejectedCount -
+      cCannotEat * input.cannotEatCount -
       dRecent * input.recentEaterCount) /
     participantCount
   )

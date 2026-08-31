@@ -11,12 +11,13 @@ const SAMPLE_DISH: SummaryDish = {
   systemTags: ['MAIN'],
   proposedCount: 3,
   rejectedCount: 0,
+  cannotEatCount: 2,
   recentEaterCount: 1,
   score: 0.425,
 }
 
-describe('DishScoreRow (S-10 Thẻ món — E5-T7)', () => {
-  it('ba ô đếm: thấy "0 không muốn" (không bị ẩn) và KHÔNG có ô "không ăn được"', () => {
+describe('DishScoreRow (S-10 Thẻ món — E7-T6)', () => {
+  it('bốn ô đếm: thấy "0 không muốn" (không bị ẩn) và CÓ ô "2 không ăn được"', () => {
     render(
       <DishScoreRow dish={SAMPLE_DISH} selected={false} onToggle={vi.fn()} tagLabel="Món mặn" />,
     )
@@ -25,13 +26,11 @@ describe('DishScoreRow (S-10 Thẻ món — E5-T7)', () => {
     expect(screen.getByText('Cá basa kho tiêu')).toBeDefined()
     expect(screen.getByText('Món mặn')).toBeDefined()
 
-    // 3 ô đếm: đề xuất, không muốn, vừa ăn
+    // 4 ô đếm: đề xuất, không muốn, vừa ăn, không ăn được
     expect(screen.getByText(/3 đề xuất/)).toBeDefined()
     expect(screen.getByText(/0 không muốn/)).toBeDefined()
     expect(screen.getByText(/1 vừa ăn/)).toBeDefined()
-
-    // KHÔNG có ô "không ăn được" (Guide §1.2 / SPEC-014)
-    expect(screen.queryByText(/không ăn được/i)).toBeNull()
+    expect(screen.getByText(/2 không ăn được/)).toBeDefined()
   })
 
   it('dùng tabular-nums trên các ô đếm', () => {
@@ -40,7 +39,7 @@ describe('DishScoreRow (S-10 Thẻ món — E5-T7)', () => {
     )
 
     const tabularElements = container.querySelectorAll('.tabular-nums')
-    expect(tabularElements.length).toBeGreaterThanOrEqual(3)
+    expect(tabularElements.length).toBeGreaterThanOrEqual(4)
   })
 
   it('không hiện điểm số float: queryByText(/0\\.\\d/) là null', () => {
