@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-21`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T5`, `E6-T6`, `E6-T3` — **Cột mốc M6**) • [Tech Spec §8.2](../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Design Criteria §8, §10](../what-we-gonna-eat-today_design-criteria_v1.0.md) • [PRD `NFR-01`→`NFR-05`](../what-we-gonna-eat-today_prd_v1.5.md) • [Test Cases `MS-01`→`MS-05`](../what-we-gonna-eat-today_test-cases-specification_v1.1.md)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T5`, `E6-T6`, `E6-T3` — **Cột mốc M6**) • [Tech Spec §8.2](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Design Criteria §8, §10](../../what-we-gonna-eat-today_design-criteria_v1.0.md) • [PRD `NFR-01`→`NFR-05`](../../what-we-gonna-eat-today_prd_v1.5.md) • [Test Cases `MS-01`→`MS-05`](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md)
 > - **Tiền đề:** S1, S2, S3 đã code. `MS-01` chỉ chạy được sau S1.
 >
 > 🚪 *Slice cuối của v1.0. Không thêm màn hình, không thêm tính năng — dựng ba cái cổng và đo bằng số thật. Xong slice này là mốc M6.*
@@ -31,7 +31,7 @@
 
 ## 1.1 Tech Spec đòi HAI ngưỡng, cấu hình hiện tại chỉ cho MỘT số
 
-[Tech Spec §8.2](../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) đặt ngưỡng theo **từng tầng**:
+[Tech Spec §8.2](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) đặt ngưỡng theo **từng tầng**:
 
 | Tầng | Ngưỡng |
 | --- | :---: |
@@ -40,7 +40,7 @@
 | `infrastructure/` | Không đặt ngưỡng |
 | `presentation/` | Không đặt ngưỡng |
 
-Còn [vitest.config.mts](../../vitest.config.mts) gộp cả hai vào một `include`:
+Còn [vitest.config.mts](../../../vitest.config.mts) gộp cả hai vào một `include`:
 
 ```js
 include: [
@@ -94,7 +94,7 @@ Khoảng trống **thật** sau khi loại trừ chỉ còn hai file, và cả h
 
 ## 1.3 `--ink-faint` trượt chuẩn tương phản, và E5 đang dùng nó cho thông tin thật
 
-[Design Criteria §8](../what-we-gonna-eat-today_design-criteria_v1.0.md) đòi tương phản **≥ 4.5:1**. Tính thật trên bảng token của §3.1:
+[Design Criteria §8](../../what-we-gonna-eat-today_design-criteria_v1.0.md) đòi tương phản **≥ 4.5:1**. Tính thật trên bảng token của §3.1:
 
 | Token | trên `--surface` | trên `--surface-raised` | trên `--surface-sunken` |
 | --- | :---: | :---: | :---: |
@@ -110,7 +110,7 @@ Khoảng trống **thật** sau khi loại trừ chỉ còn hai file, và cả h
 
 `--ink-faint` trượt ở mọi nền. Design Criteria §3.1 định nghĩa nó cho *"Placeholder và disabled"* — WCAG miễn trừ điều khiển bị vô hiệu hoá, và placeholder là vùng xám. Nhưng **E5 đã dùng nó cho thông tin thật**:
 
-- [count-tone.ts](../../src/features/meal/presentation/components/count-tone.ts) — số `0` trong bảng đếm ở S-10 (`E5-T7` DoD: *"số 0 hiện mờ chứ không ẩn"*).
+- [count-tone.ts](../../../src/features/meal/presentation/components/count-tone.ts) — số `0` trong bảng đếm ở S-10 (`E5-T7` DoD: *"số 0 hiện mờ chứ không ẩn"*).
 - Ví dụ món mẫu ở S-05.
 
 `0 không muốn` **là** thông tin, và là tin tốt (E5-S4 §1.3 đã lập luận đúng điều đó khi từ chối ẩn nó). Hiện nó ở 2.91:1 là ẩn nó bằng cách khác.
@@ -121,7 +121,7 @@ Hai ô còn lại (`--accent` và `--warning` trên `--surface-sunken`) là **c�
 
 ## 1.4 Ba trong tám anti-pattern kiểm được bằng máy — viết test thay vì tin mắt
 
-[Design Criteria §10](../what-we-gonna-eat-today_design-criteria_v1.0.md) liệt kê 8 anti-pattern. Ba cái là bài kiểm tra tự động được, và E4-S4 đã dựng sẵn khuôn ở [dish-swipe-card.test.tsx](../../src/features/selection/presentation/components/dish-swipe-card.test.tsx):
+[Design Criteria §10](../../what-we-gonna-eat-today_design-criteria_v1.0.md) liệt kê 8 anti-pattern. Ba cái là bài kiểm tra tự động được, và E4-S4 đã dựng sẵn khuôn ở [dish-swipe-card.test.tsx](../../../src/features/selection/presentation/components/dish-swipe-card.test.tsx):
 
 ```ts
 describe('DIRECTION_STYLES — bất biến thiết kế', () => {
@@ -160,7 +160,7 @@ Bốn cái còn lại (ảnh stock, emoji chibi, đếm ngược, pháo hoa) kh�
 - `TC-006`, `TC-007` — `assertGroupAccess` chặn người ngoài nhóm.
 - `TC-024`, `TC-100` — tag của Group A không ảnh hưởng Group B.
 - `TC-112` — tham gia bằng link mời, các ca âm.
-- Bằng chứng cấu trúc: [group-access.ts](../../src/app/groups/[groupId]/group-access.ts) trả `notFound()` chứ không `forbidden()` — *"NFR-04 — không lộ nhóm có tồn tại hay không"*, ghi ngay trong file.
+- Bằng chứng cấu trúc: [group-access.ts](../../../src/app/groups/[groupId]/group-access.ts) trả `notFound()` chứ không `forbidden()` — *"NFR-04 — không lộ nhóm có tồn tại hay không"*, ghi ngay trong file.
 
 Ghi vào Setup Guide dưới dạng "N test tự động đang canh, chạy mỗi lần CI", kèm danh sách mã `TC`. Đó là con số thật và kiểm lại được.
 
@@ -370,7 +370,7 @@ Ba việc còn lại của Design Criteria §8, không tự động hoá đượ
 
 Không sinh code. Chạy trên **production**, **điện thoại thật**, **4G/5G** — không phải localhost, không phải Wi-Fi.
 
-Thêm §5.5 vào [Setup & Ops Guide](../what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md), ngay sau bảng đo cold start M2 hiện có ở §5.4 (giữ nguyên bảng đó — nó là số liệu M2, không ghi đè):
+Thêm §5.5 vào [Setup & Ops Guide](../../what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md), ngay sau bảng đo cold start M2 hiện có ở §5.4 (giữ nguyên bảng đó — nó là số liệu M2, không ghi đè):
 
 ```markdown
 ## 5.5 Bảng đo NFR-01 → NFR-05 (M6)
@@ -526,7 +526,7 @@ Bảng §5.5 của Setup & Ops Guide điền đủ **5 dòng**, không dòng nà
 
 ```markdown
 | `[x] E6-T5` | Rà coverage `domain/` và `application/` đạt 80% | … |
-| `[x] E6-T6` | Rà khả năng tiếp cận: Tương phản, focus, nhãn | [Design Criteria §8](../what-we-gonna-eat-today_design-criteria_v1.0.md) | … — **Cột mốc M6** |
+| `[x] E6-T6` | Rà khả năng tiếp cận: Tương phản, focus, nhãn | [Design Criteria §8](../../what-we-gonna-eat-today_design-criteria_v1.0.md) | … — **Cột mốc M6** |
 | `[x] E6-T3` | Đo NFR-01 đến NFR-05 bằng số thật | … |
 ```
 

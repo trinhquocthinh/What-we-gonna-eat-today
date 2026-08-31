@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-21`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T2`) • [SDD §2.5](../what-we-gonna-eat-today_sdd_v1.3.md) • [Design Criteria §5, §10](../what-we-gonna-eat-today_design-criteria_v1.0.md)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T2`) • [SDD §2.5](../../what-we-gonna-eat-today_sdd_v1.3.md) • [Design Criteria §5, §10](../../what-we-gonna-eat-today_design-criteria_v1.0.md)
 > - **Tiền đề:** S1 đã code (`SYSTEM_TAG_LABELS` đã ở `shared/ui/`).
 >
 > 🗣️ *Một bảng tra duy nhất cho 22 mã lỗi, và một component `InlineError` duy nhất để hiện chúng. Không thêm tính năng, chỉ gom.*
@@ -29,7 +29,7 @@
 
 ## 1.1 `shared/errors.ts` phải thành thư mục, và đó là thao tác không mất gì
 
-Master Plan chỉ định `src/shared/errors/messages.ts`, mà hiện tại [errors.ts](../../src/shared/errors/index.ts) là **file**.
+Master Plan chỉ định `src/shared/errors/messages.ts`, mà hiện tại [errors.ts](../../../src/shared/errors/index.ts) là **file**.
 
 ```bash
 git mv src/shared/errors.ts src/shared/errors/index.ts
@@ -61,7 +61,7 @@ const BASE_MESSAGES = { … } satisfies Record<ErrorCode, string>
 `satisfies` là điểm mấu chốt: thêm một mã lỗi mới vào `ErrorCode` mà quên dịch thì **`tsc` đỏ**, không phải người dùng phát hiện bằng cách gặp một câu tiếng Anh giữa màn hình.
 
 > [!NOTE]
-> `ERR_UNAUTHENTICATED` hiện **không được `failure()` nào ném ra** — nó chỉ sống trong bảng ánh xạ HTTP ở [http-error.ts](../../src/shared/http-error.ts). Vẫn phải có câu dịch (vì `satisfies` đòi đủ), và đó là đúng: mã tồn tại trong hợp đồng thì phải có câu cho nó, không đợi tới lúc ai đó ném ra mới đi tìm chữ.
+> `ERR_UNAUTHENTICATED` hiện **không được `failure()` nào ném ra** — nó chỉ sống trong bảng ánh xạ HTTP ở [http-error.ts](../../../src/shared/http-error.ts). Vẫn phải có câu dịch (vì `satisfies` đòi đủ), và đó là đúng: mã tồn tại trong hợp đồng thì phải có câu cho nó, không đợi tới lúc ai đó ném ra mới đi tìm chữ.
 
 ## 1.3 `ERR_VALIDATION` + `field: 'name'` đang mang HAI nghĩa khác nhau
 
@@ -69,8 +69,8 @@ const BASE_MESSAGES = { … } satisfies Record<ErrorCode, string>
 
 | Nơi ném | `details` | Câu hiện tại |
 | --- | --- | --- |
-| [add-dish-to-group.ts](../../src/features/dish/application/add-dish-to-group.ts) | `{ code: 'ERR_VALIDATION', field: 'name', … }` | *"Nhập tên món trước đã."* |
-| [create-group.ts](../../src/features/group/application/create-group.ts) | `FAILURE_DETAILS[…]` → `field: 'name'` | *"Đặt tên để cả nhà nhận ra nhóm."* |
+| [add-dish-to-group.ts](../../../src/features/dish/application/add-dish-to-group.ts) | `{ code: 'ERR_VALIDATION', field: 'name', … }` | *"Nhập tên món trước đã."* |
+| [create-group.ts](../../../src/features/group/application/create-group.ts) | `FAILURE_DETAILS[…]` → `field: 'name'` | *"Đặt tên để cả nhà nhận ra nhóm."* |
 
 Cùng `code`, cùng `field`, **hai câu khác nhau**. Hôm nay việc đó chạy được vì mỗi màn có bảng dịch riêng và mỗi bảng chỉ biết một ngữ cảnh. Gom vào một bảng thì một trong hai câu biến mất.
 
@@ -81,7 +81,7 @@ Hai lối, chọn lối thứ nhất:
 | **Đổi `field` tại NGUỒN cho cụ thể**: `'dishName'` và `'groupName'` ✅ | Failure tự nói nó nói về cái gì. Sửa 2 chỗ ném + 2 chỗ đọc, không thêm tham số nào |
 | `messageFor(failure, context)` | Thêm một tham số mà mọi caller có thể truyền sai, để bù cho việc failure mô tả thiếu chính xác. Chữa triệu chứng |
 
-Cùng việc đó áp cho `field: 'cursor'` ([list-deck.ts](../../src/features/selection/application/list-deck.ts)) — giữ nguyên tên, nó đã đủ riêng. Kiểm lại `provision-user.ts` khi làm.
+Cùng việc đó áp cho `field: 'cursor'` ([list-deck.ts](../../../src/features/selection/application/list-deck.ts)) — giữ nguyên tên, nó đã đủ riêng. Kiểm lại `provision-user.ts` khi làm.
 
 **Không sửa test cũ cho khớp một cách máy móc:** hai test hiện khẳng định `field === 'name'`; đổi chúng sang tên mới là một phần của việc này, không phải hiệu ứng phụ.
 
@@ -141,7 +141,7 @@ src/features/**/presentation/**  ~ SỬA — 7 chỗ dùng InlineError (§4.2)
 
 ## 3.1 Chuẩn bị: mảnh câu cho `ERR_REQUIRED_RULE_FAILED`
 
-`messageFor` cần dựng *"Còn thiếu 1 món canh."* từ `details.shortfalls`. Mảnh câu đó hiện nằm ở `ruleShortfallPhrase` trong [rule-sentence.ts](../../src/features/rule/presentation/components/rule-sentence.ts) — tức là ở **presentation của feature `rule`**.
+`messageFor` cần dựng *"Còn thiếu 1 món canh."* từ `details.shortfalls`. Mảnh câu đó hiện nằm ở `ruleShortfallPhrase` trong [rule-sentence.ts](../../../src/features/rule/presentation/components/rule-sentence.ts) — tức là ở **presentation của feature `rule`**.
 
 `shared/` import `features/` là chiều ngược của mọi thứ trong dự án này. ESLint chưa chặn nó (`CROSS_FEATURE_ZONES` chỉ lấy `./src/features/*` làm `target`), nhưng "lint chưa bắt" không phải "được phép" — `shared/` là thứ mọi feature import, cho nó import ngược lại một feature là mở đường cho vòng lặp phụ thuộc.
 
@@ -379,13 +379,13 @@ export function InlineError({ message, id, size = 'caption' }: InlineErrorProps)
 
 | File | Hàm phải xoá |
 | --- | --- |
-| [app/groups/actions.ts](../../src/app/groups/actions.ts) | `toVietnameseMessage` — comment trong file đã ghi sẵn *"E6-T2 chuyển bảng này sang `shared/errors/messages.ts`"* |
-| [app/groups/[groupId]/invite/actions.ts](../../src/app/groups/[groupId]/invite/actions.ts) | `toVietnameseMessage` |
-| [app/groups/[groupId]/dishes/actions.ts](../../src/app/groups/[groupId]/dishes/actions.ts) | `toVietnameseMessage` |
-| [app/groups/[groupId]/rules/actions.ts](../../src/app/groups/[groupId]/rules/actions.ts) | `toVietnameseMessage` |
-| [app/join/[token]/actions.ts](../../src/app/join/[token]/actions.ts) | `toVietnameseMessage` (nhận `code: string`, khác chữ ký ba cái trên) |
-| [app/sessions/[sessionId]/summary/actions.ts](../../src/app/sessions/[sessionId]/summary/actions.ts) | `toVietnameseMessage` |
-| [app/groups/[groupId]/sessions/new/actions.ts](../../src/app/groups/[groupId]/sessions/new/actions.ts) | `toVietnameseBlockText` — trả `string \| null`, xem cảnh báo dưới |
+| [app/groups/actions.ts](../../../src/app/groups/actions.ts) | `toVietnameseMessage` — comment trong file đã ghi sẵn *"E6-T2 chuyển bảng này sang `shared/errors/messages.ts`"* |
+| [app/groups/[groupId]/invite/actions.ts](../../../src/app/groups/[groupId]/invite/actions.ts) | `toVietnameseMessage` |
+| [app/groups/[groupId]/dishes/actions.ts](../../../src/app/groups/[groupId]/dishes/actions.ts) | `toVietnameseMessage` |
+| [app/groups/[groupId]/rules/actions.ts](../../../src/app/groups/[groupId]/rules/actions.ts) | `toVietnameseMessage` |
+| [app/join/[token]/actions.ts](../../../src/app/join/[token]/actions.ts) | `toVietnameseMessage` (nhận `code: string`, khác chữ ký ba cái trên) |
+| [app/sessions/[sessionId]/summary/actions.ts](../../../src/app/sessions/[sessionId]/summary/actions.ts) | `toVietnameseMessage` |
+| [app/groups/[groupId]/sessions/new/actions.ts](../../../src/app/groups/[groupId]/sessions/new/actions.ts) | `toVietnameseBlockText` — trả `string \| null`, xem cảnh báo dưới |
 
 > [!WARNING]
 > `toVietnameseBlockText` **không** cùng hình dạng với sáu cái kia: kiểu trả về là `string | null` và `null` có nghĩa "không hiện banner". Đọc kỹ chỗ gọi trước khi thay — `StartSessionFormState.blockText` nhận `null` là trạng thái hợp lệ. `messageFor` luôn trả `string`, nên chỗ này giữ nhánh `null` của riêng nó ở ngoài, chỉ thay phần dựng chuỗi.

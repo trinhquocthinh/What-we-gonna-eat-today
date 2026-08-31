@@ -6,7 +6,7 @@
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
 > - **Supersedes:** `v2.0` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md)
 >
-> 📌 *Tài liệu này là cẩm nang thực thi hằng ngày. **v1.0 đã phát hành:** 56 subtask, 121 giờ cơ sở. **v1.1 đang mở:** 29 subtask, 81 giờ cơ sở ([§16](#16-v11--chi-tiết-thi-công)). Mỗi subtask được thiết kế để hoàn thành trong một buổi ngồi (1 đến 4 giờ).*
+> 📌 *Tài liệu này là cẩm nang thực thi hằng ngày. **v1.0 đã phát hành:** 56 subtask, 121 giờ cơ sở. **v1.1 đang mở:** 30 subtask, 81.25 giờ cơ sở ([§16](#16-v11--chi-tiết-thi-công)). Mỗi subtask được thiết kế để hoàn thành trong một buổi ngồi (1 đến 4 giờ).*
 
 ---
 
@@ -53,12 +53,12 @@
 | **M1** | Bảo trì sau v1.0 — Danh mục món | 5 | 9 | `[x]` ✅ Xong |
 | | **— Kết thúc v1.0 —** | **56** | **121** | |
 | **M2** | Vá cross-link tài liệu | 4 | 2 | `[x]` ✅ Xong |
-| **E7** | Ràng buộc và sở thích cá nhân | 7 | 19 | `[ ]` Chưa bắt đầu |
+| **E7** | Ràng buộc và sở thích cá nhân | 8 | 19.25 | `[ ]` Chưa bắt đầu |
 | **E8** | Deck ngắn và có nhịp | 6 | 19 | `[ ]` Chưa bắt đầu |
 | **E9** | Chế độ vuốt theo chặng | 5 | 17 | `[ ]` Chưa bắt đầu |
 | **E10** | Chốt bữa có hướng dẫn mềm | 5 | 16 | `[ ]` Chưa bắt đầu |
 | **E11** | Vận hành tối thiểu | 2 | 8 | `[ ]` Chưa bắt đầu |
-| | **— Tổng v1.1 —** | **29** | **81** | |
+| | **— Tổng v1.1 —** | **30** | **81.25** | |
 
 > [!TIP]
 > Cột trạng thái dùng để theo dõi tiến độ. Nếu sau ba tuần chưa có ô nào được tick, vấn đề không nằm ở kế hoạch mà ở nhịp độ thực thi.
@@ -259,10 +259,10 @@ Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` �
 >
 > | Slice | Subtask | Giờ | Guide |
 > | :---: | :--- | :---: | :--- |
-> | `S1` | `E6-T7`, `E6-T8` | 5.5 | [E6-S1 — Bữa đã chốt và lịch sử ăn](plans/what-we-gonna-eat-today_e6-s1-implementation-guide_v0_1.md) |
-> | `S2` | `E6-T2` | 2 | [E6-S2 — Bảng dịch mã lỗi và lỗi tại chỗ](plans/what-we-gonna-eat-today_e6-s2-implementation-guide_v0_1.md) |
-> | `S3` | `E6-T1`, `E6-T4` | 6 | [E6-S3 — Trạng thái rỗng và chặn mở phiên](plans/what-we-gonna-eat-today_e6-s3-implementation-guide_v0_1.md) |
-> | `S4` | `E6-T5`, `E6-T6`, `E6-T3` | 7 | [E6-S4 — Cổng chất lượng: Coverage, a11y, NFR](plans/what-we-gonna-eat-today_e6-s4-implementation-guide_v0_1.md) |
+> | `S1` | `E6-T7`, `E6-T8` | 5.5 | [E6-S1 — Bữa đã chốt và lịch sử ăn](plans/E6/what-we-gonna-eat-today_e6-s1-implementation-guide_v0_1.md) |
+> | `S2` | `E6-T2` | 2 | [E6-S2 — Bảng dịch mã lỗi và lỗi tại chỗ](plans/E6/what-we-gonna-eat-today_e6-s2-implementation-guide_v0_1.md) |
+> | `S3` | `E6-T1`, `E6-T4` | 6 | [E6-S3 — Trạng thái rỗng và chặn mở phiên](plans/E6/what-we-gonna-eat-today_e6-s3-implementation-guide_v0_1.md) |
+> | `S4` | `E6-T5`, `E6-T6`, `E6-T3` | 7 | [E6-S4 — Cổng chất lượng: Coverage, a11y, NFR](plans/E6/what-we-gonna-eat-today_e6-s4-implementation-guide_v0_1.md) |
 >
 > **Thứ tự slice lệch bảng phụ thuộc dưới đây có chủ ý:** `E6-T7`/`E6-T8` đi trước `E6-T1` và
 > `E6-T6` vì cả hai việc sau là thao tác **quét toàn bộ màn hình** — quét khi tập màn hình chưa
@@ -377,12 +377,12 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 | Epic | Nội dung | Danh sách tính năng | Ước lượng |
 | :--- | :--- | :--- | :---: |
 | **M2** | Tiền đề — vá cross-link tài liệu | — | 2h |
-| **E7** | Ràng buộc và sở thích cá nhân | `F15` Cannot Eat, `F16` Like/Dislike | 19h |
+| **E7** | Ràng buộc và sở thích cá nhân | `F15` Cannot Eat, `F16` Like/Dislike | 19.25h |
 | **E8** | Deck ngắn và có nhịp | **`F49` Trần 30 thẻ**, `F18` Explore Lane 20%, `F19` Deck ổn định khi tính lại | 19h |
 | **E9** | Chế độ vuốt theo chặng | **`F50` Guided Course Mode** | 17h |
 | **E10** | Chốt bữa có hướng dẫn mềm | `F22` Preferred Rule, `F23` Target Dish Count, `F24` Lưu vết cảnh báo | 16h |
 | **E11** | Vận hành tối thiểu | `F26` Phiên hết hạn, `F27` Gỡ Dish | 8h |
-| | | **Tổng v1.1** | **81h** |
+| | | **Tổng v1.1** | **81.25h** |
 
 **Ba thay đổi so với kế hoạch cũ:**
 
@@ -428,6 +428,7 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `2.1` | 2026-08-26 | §1, §13, §16.2 | Chốt kế hoạch thi công E7: chia 3 slice kèm 3 Implementation Guide; bổ sung `E7-T0` (vá 64 link gãy sau khi guide E6 chuyển thư mục); ghi rõ thứ tự `T4→T3` ở S2 và `T7→T6→T5` ở S3 | E7-S1/S2/S3 Guide |
 | `2.1` | 2026-08-26 | §1, §13, §16 | Mở phạm vi v1.1: re-scope theo phản hồi dùng thật (thêm `F49` trần 30 thẻ, `F50` vuốt theo chặng; hoãn `F25`/`F28`/`F29`); bổ sung §16 với 29 subtask chi tiết `M2`→`E11`; đánh số lại epic v1.2 | Quyết định DEC-056 đến DEC-061 |
 | `2.0` | 2026-08-25 | §8b | Bổ sung slice bảo trì sau v1.0 (`M1-T1`→`M1-T5`): sửa nhãn `STAPLE`, dùng lại món giữ tag, sheet thêm đa nhãn, sửa 2 lỗi `inferSystemTag`, gợi ý catalog chung (SPEC-023) | Quyết định DEC-052 đến DEC-055 |
 | `1.9` | 2026-08-21 | §1, §8 | Hoàn tất thi công Slice S4 của Epic E6 (E6-T5, E6-T6, E6-T3: Coverage, a11y, NFR) — Hoàn tất toàn bộ Epic E6, Đạt cột mốc M6 và sẵn sàng phát hành v1.0 | Quyết định DEC-051 |
@@ -490,10 +491,22 @@ M2 ──► E7 ──► E8 ──► E9 ──► E10 ──► E11
 
 ## 16.2 E7 — Ràng buộc và sở thích cá nhân
 
-**19 giờ · `F15`, `F16` · [SPEC-024, SPEC-025](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-034`, `BR-037`, `BR-056`**
+**19.25 giờ · `F15`, `F16` · [SPEC-024, SPEC-025](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-034`, `BR-037`, `BR-056`**
+
+Chia ba slice, mỗi slice một Implementation Guide:
+
+| Slice | Subtask | Giờ | Guide |
+| :--- | :--- | :---: | :--- |
+| **S1 — Nền tảng** | `E7-T1`, `E7-T2` | 5.5 | [e7-s1](plans/E7/what-we-gonna-eat-today_e7-s1-implementation-guide_v0_1.md) |
+| **S2 — Luồng dữ liệu** | `E7-T4`, `E7-T3` | 6 | [e7-s2](plans/E7/what-we-gonna-eat-today_e7-s2-implementation-guide_v0_1.md) |
+| **S3 — Hiển thị & hệ quả** | `E7-T7`, `E7-T6`, `E7-T5` | 7.5 | [e7-s3](plans/E7/what-we-gonna-eat-today_e7-s3-implementation-guide_v0_1.md) |
+
+> [!NOTE]
+> **Thứ tự trong S2 và S3 ngược số thứ tự subtask, có chủ đích.** `T3` cần một use case đã tồn tại để gọi, nên `T4` đi trước. Trong S3, `T7` đi đầu vì nó là subtask vá rủi ro `R-05` — hết thời gian giữa chừng thì thứ đã xong phải là nó chứ không phải một cái nút.
 
 | ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
 | :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] E7-T0` | Vá 64 link gãy sau khi guide E6 chuyển vào `docs/plans/E6/` | [DEC-057](what-we-gonna-eat-today_decision-log_v3.9.md) | 0.25 | `yarn docs:links` xanh; `yarn verify` xanh trọn — điều kiện của mọi subtask còn lại | `docs/plans/E6/**`, `docs/what-we-gonna-eat-today_master-plan_v2.1.md` |
 | `[ ] E7-T1` | Schema ràng buộc & sở thích cá nhân | [SPEC-024](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) | 2.5 | Hai bảng `user_dish_constraints` và `user_dish_preferences` khoá `(user_id, global_dish_id)`; enum `preference_kind`; migration chạy được cả chiều lên | `src/shared/db/schema.ts`, `src/shared/db/migrations/**` |
 | `[ ] E7-T2` | Domain sở thích và số hạng $E$ | [SPEC-025](what-we-gonna-eat-today_sdd_v1.3.md), `BR-037` | 3 | `computePersonalScore` đọc `wExplicit` đã có sẵn; `LIKE`→$+1$, không đặt→$0$, `DISLIKE`→$-1$; test canh mốc `DISLIKE` KHÔNG lọc món khỏi deck | `src/features/preference/domain/**`, `src/features/selection/domain/ranking.ts` |
 | `[ ] E7-T3` | Lọc cứng Cannot Eat và xoá tương tác cũ | [SPEC-024](what-we-gonna-eat-today_sdd_v1.3.md), `BR-034` | 3 | Đánh dấu Cannot Eat giữa phiên → món biến khỏi deck VÀ tương tác Swipe cũ bị xoá; có test khẳng định $P$ giảm đúng 1 | `src/features/selection/application/list-deck.ts`, `src/features/preference/application/**` |

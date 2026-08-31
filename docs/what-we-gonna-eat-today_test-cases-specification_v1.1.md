@@ -301,7 +301,7 @@ src/features/selection/
 | `TC-114` | `SPEC-024` | **Then chốt** | `I` | Đã `SWIPE_RIGHT` món X rồi mới đánh dấu `Cannot Eat` | Tương tác cũ bị xoá; $P$ của món X giảm đúng 1 |
 | `TC-115` | `SPEC-024` | Biên | `A` | Gỡ `Cannot Eat` sau khi đã xoá tương tác | **KHÔNG** khôi phục tương tác cũ |
 | `TC-116` | `SPEC-024` | Biên | `I` | Cùng món ở hai Group khác nhau | Ràng buộc áp cho **cả hai** (gắn theo `global_dishes.id`) |
-| `TC-117` | `SPEC-024` | Âm | `A` | Đặt ràng buộc thay cho người khác | Trả `ERR_FORBIDDEN` |
+| `TC-117` | `SPEC-024` | Biên | `A` | Payload kèm trường `userId` của người khác | Trường bị **bỏ qua**; ràng buộc ghi cho người đang đăng nhập |
 | `TC-118` | `SPEC-025` | Thuận | `D` | `LIKE` / không đặt / `DISLIKE` | $E$ lần lượt bằng $+1$, $0$, $-1$ |
 | `TC-119` | `SPEC-025` | **Then chốt** | `A` | Đặt `DISLIKE` một món | Món **vẫn nằm trong deck**, chỉ tụt hạng |
 | `TC-120` | `SPEC-025` | Biên | `A` | Đặt `preference = null` khi đang là `LIKE` | Xoá dòng, không lưu giá trị enum thứ ba |
@@ -390,5 +390,6 @@ Toàn bộ **12 SPEC** của v1.1 đều có độ bao phủ kiểm thử:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.1` | 2026-08-26 | §3b | Sửa `TC-117`: hành vi "đặt ràng buộc thay người khác" không biểu diễn được vì `userId` lấy từ phiên đăng nhập, và `ERR_FORBIDDEN` không có trong `ErrorCode` — đổi thành ca khẳng định `userId` trong body bị bỏ qua | E7-S2 Guide §1.4 |
 | `1.1` | 2026-08-26 | §3b, §5.2 | Bổ sung 32 TC cho v1.1 (`TC-113`→`TC-144`) ánh xạ `SPEC-024`→`SPEC-035`; 5 ca then chốt canh các lỗi im lặng (thứ tự cắt trần, món đa tag hai chặng, tương tác cũ sau Cannot Eat, ngoại lệ lịch sử ăn, chia lại phần dư chặng); ma trận truy vết v1.1 | [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md) → [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: 94 TC từ SDD, 18 TC biên, 5 Smoke Tests | Khởi tạo baseline kiểm thử v1.0 |

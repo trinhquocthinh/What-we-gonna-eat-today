@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-21`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T1`, `E6-T4`) • [Design Criteria §4](../what-we-gonna-eat-today_design-criteria_v1.0.md) • [SDD](../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-007`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T1`, `E6-T4`) • [Design Criteria §4](../../what-we-gonna-eat-today_design-criteria_v1.0.md) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-007`)
 > - **Tiền đề:** S1 đã code (S-11, S-12 tồn tại để quét tới), S2 đã code (`InlineError`, `messageFor`).
 >
 > 🕳️ *Slice đi tìm những chỗ màn hình không có gì để nói. Bắt đầu bằng một lỗi đang sống: Group Hub bảo mọi nhóm rằng họ chưa có món nào.*
@@ -30,7 +30,7 @@
 
 ## 1.1 Lỗi đang sống: Group Hub nói với MỌI nhóm rằng họ chưa có món
 
-[group-overview-screen.tsx](../../src/features/group/presentation/components/group-overview-screen.tsx) — khối này **không** được bọc trong điều kiện nào:
+[group-overview-screen.tsx](../../../src/features/group/presentation/components/group-overview-screen.tsx) — khối này **không** được bọc trong điều kiện nào:
 
 ```tsx
         {activeSession === null ? null : (
@@ -60,8 +60,8 @@ ngược lại                → không thẻ nào
 
 Cùng một mảng ba món mẫu được khai hai lần:
 
-- [dish-catalog-screen.tsx](../../src/features/dish/presentation/components/dish-catalog-screen.tsx) — đúng chỗ. Design Criteria §4 giao `S-05`: *"Empty state: 3 ví dụ món mẫu mờ trực quan"*.
-- [group-overview-screen.tsx](../../src/features/group/presentation/components/group-overview-screen.tsx) — bản sao, đi cùng thẻ đang hỏng ở §1.1.
+- [dish-catalog-screen.tsx](../../../src/features/dish/presentation/components/dish-catalog-screen.tsx) — đúng chỗ. Design Criteria §4 giao `S-05`: *"Empty state: 3 ví dụ món mẫu mờ trực quan"*.
+- [group-overview-screen.tsx](../../../src/features/group/presentation/components/group-overview-screen.tsx) — bản sao, đi cùng thẻ đang hỏng ở §1.1.
 
 Design Criteria §4 giao cho `S-04` một việc **khác**: *"Nhóm chưa có món: **Chặn nút mở phiên, hướng dẫn thêm món**"* — hướng dẫn, không phải liệt kê ví dụ. Ví dụ món thuộc về nơi người dùng sắp gõ tên món.
 
@@ -77,13 +77,13 @@ DoD ghi *"Nhóm mới thấy 'Thêm món' thay vì 'Mở phiên'"*, và điều 
 </Link>
 ```
 
-Nhưng đó là rào bằng giao diện. [create-session.ts](../../src/features/session/application/create-session.ts) chỉ kiểm `findBlockingSessionToday`; không có điều kiện nào về số món. Ai gọi thẳng Server Action, hoặc gõ tay `/groups/<id>/sessions/new`, vẫn tạo được một phiên trên nhóm rỗng — rồi mở deck ra và thấy `TC-102` (Group 0 món ACTIVE, deck rỗng).
+Nhưng đó là rào bằng giao diện. [create-session.ts](../../../src/features/session/application/create-session.ts) chỉ kiểm `findBlockingSessionToday`; không có điều kiện nào về số món. Ai gọi thẳng Server Action, hoặc gõ tay `/groups/<id>/sessions/new`, vẫn tạo được một phiên trên nhóm rỗng — rồi mở deck ra và thấy `TC-102` (Group 0 món ACTIVE, deck rỗng).
 
 Ba việc cần làm, và một ràng buộc:
 
 1. Thêm `ERR_GROUP_HAS_NO_DISH` vào `ErrorCode` **và vào `BASE_MESSAGES`** (S2 §3.2 — `satisfies` sẽ đỏ cho tới khi có câu dịch, đúng như thiết kế).
 2. Thêm điều kiện vào `createSession`, **trước** `findBlockingSessionToday`: nhóm rỗng là lỗi cơ bản hơn "đã có phiên hôm nay".
-3. **`session → dish` KHÔNG nằm trong `ALLOWED_CROSS_FEATURE`** ([eslint.config.mjs](../../eslint.config.mjs)). Nên phép đếm phải **tiêm từ `app/`**, đúng khuôn `assertAdmin` của `setSystemTags` (E2-T5) và `findInvalidParticipants` của `startSession` (E3-T1):
+3. **`session → dish` KHÔNG nằm trong `ALLOWED_CROSS_FEATURE`** ([eslint.config.mjs](../../../eslint.config.mjs)). Nên phép đếm phải **tiêm từ `app/`**, đúng khuôn `assertAdmin` của `setSystemTags` (E2-T5) và `findInvalidParticipants` của `startSession` (E3-T1):
 
 ```ts
 export type CreateSessionDeps = {
@@ -98,9 +98,9 @@ export type CreateSessionDeps = {
 
 ## 1.4 Design Criteria §4 là đặc tả của `E6-T1`, không phải `designs/README.md` §3
 
-Master Plan `E6-T1` ghi nguồn tham chiếu là `[Design §3](../designs/README.md)`. §3 của file đó là **Design Tokens & Typography** — không liên quan.
+Master Plan `E6-T1` ghi nguồn tham chiếu là `[Design §3](../../designs/README.md)`. §3 của file đó là **Design Tokens & Typography** — không liên quan.
 
-Đặc tả thật nằm ở [design-criteria_v0_1.md §4](../what-we-gonna-eat-today_design-criteria_v1.0.md), bảng 13 màn hình với cột *"Yêu cầu trạng thái đặc biệt"*. Đó là danh sách kiểm của slice này, chép vào §3 dưới đây.
+Đặc tả thật nằm ở [design-criteria_v0_1.md §4](../../what-we-gonna-eat-today_design-criteria_v1.0.md), bảng 13 màn hình với cột *"Yêu cầu trạng thái đặc biệt"*. Đó là danh sách kiểm của slice này, chép vào §3 dưới đây.
 
 Cùng loại trôi tham chiếu đã ghi nhận ở E5-S1 §1.5 (mã màn hình S-07/S-09/S-10 đánh theo tên file ảnh). Không tự sửa Master Plan trong lúc code — §11 ghi dòng cần sửa, làm cùng commit.
 
@@ -166,7 +166,7 @@ Quét đủ bảng này và ghi kết luận cho **từng** dòng vào PR. Dòng
 
 ## 3.1 `S-02` — "Dùng link mời" không thể là một cái nút
 
-[group-list-screen.tsx](../../src/features/group/presentation/components/group-list-screen.tsx) có sẵn một chỗ đặt trước đã cũ:
+[group-list-screen.tsx](../../../src/features/group/presentation/components/group-list-screen.tsx) có sẵn một chỗ đặt trước đã cũ:
 
 ```tsx
 {/* E2-T2: "Tôi có link mời" bật lên khi SPEC-004 có màn hình. */}
@@ -418,8 +418,8 @@ Dán bảng §3 vào PR với cột "Việc" đã điền kết luận cho từn
 # 11. Master Plan
 
 ```markdown
-| `[x] E6-T1` | Toàn bộ trạng thái rỗng (Empty States) | [Design Criteria §4](../what-we-gonna-eat-today_design-criteria_v1.0.md) | … |
-| `[x] E6-T4` | Chặn mở phiên khi nhóm chưa có món | `S-04`, [Design Criteria §4](../what-we-gonna-eat-today_design-criteria_v1.0.md) | … |
+| `[x] E6-T1` | Toàn bộ trạng thái rỗng (Empty States) | [Design Criteria §4](../../what-we-gonna-eat-today_design-criteria_v1.0.md) | … |
+| `[x] E6-T4` | Chặn mở phiên khi nhóm chưa có món | `S-04`, [Design Criteria §4](../../what-we-gonna-eat-today_design-criteria_v1.0.md) | … |
 ```
 
-Sửa luôn cột "Nguồn tham chiếu" của `E6-T1` (đang là `[Design §3](../designs/README.md)`) và của `E6-T6` (đang là `[Design §7]`) — cả hai trỏ sai file, xem §1.4.
+Sửa luôn cột "Nguồn tham chiếu" của `E6-T1` (đang là `[Design §3](../../designs/README.md)`) và của `E6-T6` (đang là `[Design §7]`) — cả hai trỏ sai file, xem §1.4.
