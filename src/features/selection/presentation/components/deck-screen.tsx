@@ -10,6 +10,7 @@ import type { DishCard } from '../../domain/dish-card'
 import type { SwipeDirection } from '../../domain/swipe-gesture'
 import { formatExplanation, formatLastEatenLabel } from './dish-explanation'
 import { DishSwipeCard } from './dish-swipe-card'
+import { resumePosition } from './resume-position'
 import type { SendInteractionStatus } from './send-interaction'
 import { sendInteractionWithRetry } from './send-interaction'
 import { SwipeControls } from './swipe-controls'
@@ -41,8 +42,8 @@ type ViewState = 'deck' | 'done'
  * E4-S4 tách `SwipeControls` theo Design Criteria §5 và dùng dữ liệu thật
  * cho `lastEatenLabel` / `explanation`.
  *
- * CỐ Ý CHƯA CÓ ở S5 (F15/F18, v1.1): nút "Tôi không ăn được món này", đổi màu
- * reason chip theo explore lane.
+ * E8-S2 kết nối `resumePosition` (F51/SPEC-036), hiển thị lý do explore lane,
+ * và cập nhật màn hết thẻ theo trần deck.
  */
 export function DeckScreen({
   sessionId,
@@ -51,8 +52,9 @@ export function DeckScreen({
   initialParticipantState,
   groupHref,
 }: DeckScreenProps): ReactElement {
-  const [cursor, setCursor] = useState(0)
-  const [marks, setMarks] = useState<Array<'yes' | 'no' | 'cannot'>>([])
+  const initial = resumePosition(dishes)
+  const [cursor, setCursor] = useState(initial.cursor)
+  const [marks, setMarks] = useState<Array<'yes' | 'no' | 'cannot'>>(initial.marks)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [view, setView] = useState<ViewState>(
     initialParticipantState === 'COMPLETED' ? 'done' : 'deck',
@@ -188,7 +190,7 @@ export function DeckScreen({
             <DishSwipeCard
               dish={current}
               lastEatenLabel={formatLastEatenLabel(current.daysSinceLastEaten)}
-              explanation={formatExplanation(current.daysSinceLastEaten)}
+              explanation={formatExplanation(current.daysSinceLastEaten, current.lane)}
               upcomingNames={upcoming}
               onCommit={handleCommit}
               onCannotEat={handleCannotEat}
@@ -198,7 +200,9 @@ export function DeckScreen({
 
         {isEmpty ? (
           <div className="flex h-full flex-col justify-center gap-3 px-2">
-            <h2 className="text-title font-semibold text-ink">Bạn đã xem hết {cursor} món.</h2>
+            <h2 className="text-title font-semibold text-ink">
+              Bạn đã xem hết {total} món được chọn cho hôm nay.
+            </h2>
             <p className="text-pretty text-body-lg font-normal text-ink-muted">
               Đã đề xuất {yesCount} món. Xong lượt của mình chứ?
             </p>

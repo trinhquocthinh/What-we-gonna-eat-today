@@ -1,5 +1,7 @@
 import type { InteractionType } from './interaction'
 
+export type DishLane = 'EXPLOIT' | 'EXPLORE'
+
 export type DishCard = {
   readonly dishId: string
   readonly globalDishId: string
@@ -17,5 +19,5 @@ export type DishCard = {
    * E8-T2 — Luồng của thẻ: 'EXPLOIT' hoặc 'EXPLORE'.
    * Không lưu xuống DB (`session_decks`), được suy lại ở mỗi lần đọc.
    */
-  readonly lane: 'EXPLOIT' | 'EXPLORE'
+  readonly lane: DishLane
 }

@@ -482,13 +482,19 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 ### SPEC-030 — Dựng Deck theo chặng và phân bổ hạn mức
 
 - **Nguồn:** `F50`, [BR-063](what-we-gonna-eat-today_business-rules_v1.8.md), [Ranking Spec §2.5](what-we-gonna-eat-today_ranking-specification_v1.3.md)
-- **Đầu vào:** `{ cappedDishIds: string[], courses: SystemTag[], maxCards: 30 }`
+- **Đầu vào:** `{ orderedDishIds: string[], tagsByDishId: Map<string, SystemTag[]>, courses: SystemTag[], maxCards: 30 }` — danh sách **đã sắp theo Personal Score**, **chưa** trộn Explore và **chưa** cắt trần
 - **Đầu ra:** `courseDecks: { systemTag: SystemTag, dishIds: string[] }[]`
 - **Quy tắc:**
-  - Hạn mức cơ sở mỗi chặng $= \lfloor 30 / n \rfloor$. Chặng không dùng hết hạn mức thì phần dư chia lại cho các chặng còn thiếu, lặp cho tới khi không còn phân bổ được nữa.
-  - Thứ tự tương đối bên trong mỗi chặng **giữ nguyên** thứ tự đã có từ `SPEC-026`.
-  - Món mang nhiều tag thuộc nhiều chặng chỉ xuất hiện ở **chặng đầu tiên** khớp — nếu không, người dùng vuốt cùng một món hai lần và $P$ bị đếm trùng.
-  - `deck_mode = FREE` $\to$ trả đúng một "chặng" chứa toàn bộ deck; người gọi không cần rẽ nhánh.
+  - **Trần `BR-062` cắt TRONG TỪNG CHẶNG, không cắt chung rồi chia.** Pipeline ở chế độ `COURSE` là: lọc → xếp → **chia theo tag** → (trộn Explore + cắt hạn mức) trong từng chặng → nối lại theo thứ tự chặng → materialize.
+  - Hạn mức cơ sở mỗi chặng $= \lfloor 30 / n \rfloor$. Chặng không dùng hết hạn mức thì phần dư chia lại cho các chặng còn thiếu, **lặp** cho tới khi không còn phân bổ được nữa — một vòng không đủ, vì chia lại có thể làm chặng khác chạm trần và sinh dư mới.
+  - Thứ tự tương đối bên trong mỗi chặng **giữ nguyên** thứ tự của `SPEC-010`.
+  - Món mang nhiều tag thuộc nhiều chặng chỉ xuất hiện ở **chặng đầu tiên** khớp theo **thứ tự Creator sắp** — nếu không, người dùng vuốt cùng một món hai lần và $P$ bị đếm trùng.
+  - Món **không khớp chặng nào** bị loại khỏi deck ở chế độ `COURSE`: chọn ba chặng nghĩa là tối nay chỉ duyệt ba loại món đó.
+  - `deck_mode = FREE` $\to$ `SPEC-030` không chạy; pipeline đi đường `SPEC-026` như cũ.
+  - `session_decks` **không** đổi schema — vẫn lưu một mảng id phẳng. Nhóm theo chặng suy lại ở mỗi lần đọc từ mảng phẳng + tag món + `session_courses`, cùng khuôn `lane` của `SPEC-027`.
+
+> [!CAUTION]
+> **Cắt trần trước rồi mới chia chặng sẽ làm rỗng chặng.** Personal Score ở v1.1 chỉ có hai số hạng ($E$, $R$), nên một nhóm vừa ăn canh hôm qua sẽ đẩy toàn bộ món canh xuống đuôi bảng cùng lúc — top-30 không còn món `SOUP` nào, và chặng Canh rỗng dù danh mục có 15 món canh. Deck vẫn đủ thẻ, vẫn chạy, không lỗi nào. Đây là cùng lớp lỗi với `DEC-058` (cắt trần trước khi trộn Explore), ở một tầng cao hơn. Xem [`DEC-066`](what-we-gonna-eat-today_decision-log_v3.9.md) và `TC-152`.
 
 ## 8.4 Chốt bữa có hướng dẫn mềm (Epic E10)
 

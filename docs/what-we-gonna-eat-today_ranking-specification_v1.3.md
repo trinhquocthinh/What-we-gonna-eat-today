@@ -53,8 +53,9 @@ flowchart TD
     Stage1 --> Stage2["Stage 2: Tính điểm cá nhân (Personal Score)<br/>Explicit + Implicit + Chef + Source - Recency"]
     Stage2 --> Stage3["Stage 3: Ghép luồng Exploit / Explore (4:1)<br/>80% Món điểm cao + 20% Món lâu chưa ăn"]
     Stage3 --> Stage4["Stage 4: Cắt trần số thẻ<br/>maxCards = 30 (24 Exploit + 6 Explore)"]
-    Stage4 --> Stage5["Stage 5: Chia chặng<br/>Chỉ khi deck_mode = COURSE"]
-    Stage5 --> Stage6["Stage 6: Đóng băng Deck & Phân trang<br/>Materialized vào session_decks (Page size = 20)"]
+    Stage4 --> Stage6["Stage 6: Đóng băng Deck & Phân trang<br/>Materialized vào session_decks (Page size = 20)"]
+    Stage2 -.->|"deck_mode = COURSE"| Stage5["Stage 5: Chia chặng theo System Tag<br/>rồi chạy Stage 3 + Stage 4 TRONG TỪNG CHẶNG"]
+    Stage5 -.-> Stage6
     Stage6 --> Deck["Personal Candidate Deck"]
 ```
 
@@ -139,13 +140,28 @@ Luồng ghép:  [EXP] [EXP] [EXP] [EXP] [NEW] [EXP] [EXP] [EXP] [EXP] [NEW]
 
 ## 2.5 Stage 5 — Chia chặng (Course Split)
 
-Chỉ chạy khi phiên có `deck_mode = COURSE` (`BR-063`). Với `deck_mode = FREE`, Stage 5 là phép đồng nhất.
+Chỉ chạy khi phiên có `deck_mode = COURSE` (`BR-063`). Với `deck_mode = FREE`, Stage 5 không tồn tại và pipeline đi thẳng Stage 3 → Stage 4 → Stage 6.
 
-- Deck đã cắt trần được chia thành $n$ nhóm con theo System Tag của từng chặng, giữ nguyên thứ tự tương đối bên trong mỗi chặng.
-- **Phân bổ hạn mức:** chia đều $30 / n$ thẻ cho mỗi chặng. Chặng nào không đủ món thì phần dư chia lại cho các chặng còn lại.
+> [!CAUTION]
+> **Ở chế độ `COURSE`, Stage 5 chạy TRƯỚC Stage 3 và Stage 4, không phải sau.** Chia chặng từ danh sách **đã sắp nhưng chưa cắt trần**; trộn Explore và cắt hạn mức diễn ra **bên trong từng chặng**.
+>
+> Cắt trần 30 trước rồi mới chia sẽ làm rỗng chặng: Personal Score ở v1.1 chỉ có hai số hạng ($E$, $R$), nên một nhóm vừa ăn canh hôm qua đẩy toàn bộ món canh xuống đuôi bảng cùng lúc — top-30 không còn món `SOUP` nào, và chặng Canh rỗng dù danh mục có 15 món canh. Deck vẫn đủ thẻ, vẫn chạy. Xem [`DEC-066`](what-we-gonna-eat-today_decision-log_v3.9.md).
+
+```text
+FREE    Stage 1 → Stage 2 → Stage 3 (trộn) → Stage 4 (cắt trần 30) → Stage 6
+
+COURSE  Stage 1 → Stage 2 → Stage 5 (chia theo tag) ─┬─ chặng 1: Stage 3 + Stage 4 ─┐
+                                                     ├─ chặng 2: Stage 3 + Stage 4 ─┼→ nối
+                                                     └─ chặng n: Stage 3 + Stage 4 ─┘  → Stage 6
+```
+
+- Chia thành $n$ nhóm con theo System Tag của từng chặng, giữ nguyên thứ tự tương đối của Stage 2 bên trong mỗi chặng.
+- **Phân bổ hạn mức:** chia đều $\lfloor 30 / n \rfloor$ thẻ cho mỗi chặng. Chặng nào không đủ món thì phần dư chia lại cho các chặng còn lại, **lặp** cho tới khi không phân bổ được nữa.
 
   > Nhóm cấu hình 3 chặng ⇒ 10 thẻ mỗi chặng. Nếu chặng `SOUP` chỉ có 4 món thì 26 thẻ còn lại chia cho hai chặng kia (13 + 13).
 
+- Món mang nhiều tag vào **chặng đầu tiên khớp** theo thứ tự Creator sắp. Món không khớp chặng nào bị loại khỏi deck.
+- Tỉ lệ Explore của `BR-047` là tỉ lệ **theo khối 5 vị trí**, không theo deck — nên một chặng 10 thẻ cho 8 Exploit + 2 Explore, đúng như định nghĩa.
 - Người dùng duyệt hết chặng hiện tại mới sang chặng kế tiếp; quay lại chặng trước vẫn được.
 - Chia chặng **không** tác động tới Session Ranking hay luồng chốt bữa — xem §3 và [`BR-050`](what-we-gonna-eat-today_business-rules_v1.8.md).
 
@@ -279,6 +295,7 @@ session_ranking:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.3` | 2026-09-01 | §2, §2.5 | Sửa thứ tự Stage 5: ở chế độ `COURSE`, chia chặng chạy **trước** cắt trần, và trộn Explore + cắt hạn mức diễn ra trong từng chặng — cắt chung rồi chia sẽ làm rỗng chặng | [DEC-066](what-we-gonna-eat-today_decision-log_v3.9.md), E9-S1 Guide §1.2 |
 | `1.3` | 2026-08-26 | §2, §5 | Pipeline từ 4 lên 6 Stage: bổ sung Stage 4 (cắt trần `maxCards = 30`) và Stage 5 (chia chặng); ghi rõ thứ tự Stage 3 → Stage 4 không được đảo; §5 thêm `deck.max_cards` | [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `0.2` | 2026-08-14 | Toàn bộ | Chuyển đổi toàn bộ tham chiếu sang hệ thống mã `BR-ID` | Đồng bộ PRD v0.1 |
 | `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: Personal Score, Explore Lane, Session Ranking | Khởi tạo baseline [DEC-012](what-we-gonna-eat-today_decision-log_v3.9.md) |

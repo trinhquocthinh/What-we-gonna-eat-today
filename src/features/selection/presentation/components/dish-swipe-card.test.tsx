@@ -64,6 +64,36 @@ describe('DishSwipeCard', () => {
     btn.click()
     expect(onCannotEat).toHaveBeenCalledWith(DISH)
   })
+
+  it('E8-T3: thẻ có lane EXPLORE hiện chip "Đổi vị", thẻ EXPLOIT không hiện', () => {
+    const exploreDish: DishCard = {
+      ...DISH,
+      lane: 'EXPLORE',
+    }
+    const { rerender } = render(
+      <DishSwipeCard
+        dish={exploreDish}
+        lastEatenLabel="Chưa từng ăn"
+        explanation="Nhà mình chưa ăn món này bao giờ."
+        upcomingNames={[]}
+        onCommit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Đổi vị')).toBeInTheDocument()
+
+    rerender(
+      <DishSwipeCard
+        dish={DISH}
+        lastEatenLabel="Chưa từng ăn"
+        explanation="Món này đang có trong danh mục của nhóm."
+        upcomingNames={[]}
+        onCommit={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText('Đổi vị')).not.toBeInTheDocument()
+  })
 })
 
 describe('DIRECTION_STYLES — bất biến thiết kế', () => {

@@ -1726,12 +1726,50 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 - Một món đứng ở ô Exploit vẫn có thể mang nhãn `EXPLORE` — nhãn mô tả món,
    không mô tả ô. Đây là chủ đích, ghi rõ ở `E8-T3` (S2).
 
+# DEC-065 — Vị Trí Tiếp Tục Suy Ở Client, Không Lưu Server
+
+- **Ngày:** 2026-08-26
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E8 Slice S2 — `F51`
+
+## Quyết định
+
+1. `cursor` và `marks` ban đầu suy từ `effectiveInteraction` đã có sẵn trên
+   `DishCard`. KHÔNG thêm cột `cursor` vào `session_decks`.
+2. Lấy vị trí SAU thẻ CUỐI CÙNG đã tương tác, không phải thẻ ĐẦU TIÊN chưa
+   tương tác.
+3. Thẻ trong tiền tố có `effectiveInteraction === null` (đã Undo) được đánh
+   `'cannot'` trong `marks`.
+
+## Rationale
+
+1. Dữ liệu đã đi từ SQL ra tới client ở mỗi lần tải trang từ E1 — chỉ là chưa
+   ai đọc. Lưu cursor phía server nghĩa là thêm một lượt ghi vào MỖI lượt vuốt,
+   tức vào đúng đường nóng mà `NFR-02` (≤100ms) và lựa chọn Route Handler thay
+   Server Action (Tech Spec §4.1) đang bảo vệ — để giải quyết một chuyện đã có
+   sẵn câu trả lời trong dữ liệu.
+2. Undo để lại một lỗ `null` ở giữa. Suy theo "thẻ đầu tiên chưa tương tác" sẽ
+   kéo người dùng lùi về cái lỗ đó và bắt vuốt lại toàn bộ phần đuôi — biến một
+   thao tác sửa sai thành một hình phạt.
+3. Ba giá trị của `marks`, chỉ `'cannot'` là giá trị không góp vào `yesCount`
+   lẫn `noCount`. Một thẻ đã xem nhưng không còn ý kiến thì đúng là không nên
+   góp vào con số nào. Dùng `'no'` sẽ làm màn tổng kết nói dối.
+
+## Consequence
+
+- Không migration. Không request mới.
+- Đa thiết bị: hai máy cùng lúc vẫn suy ra cùng một cursor sau mỗi lần tải
+  trang, vì cả hai đọc cùng một `effectiveInteraction`. Không đồng bộ tức thời
+  giữa hai máy đang mở — chấp nhận được ở quy mô một gia đình.
+- `F51` là tính năng thứ 12 của v1.1, thêm vào PRD §4 sau `F50`.
+
 ---
 
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.13` | 2026-08-26 | Bổ sung `DEC-065` (Vị Trí Tiếp Tục Suy Ở Client, Không Lưu Server) cho E8-S2 |
 | `3.12` | 2026-08-26 | Bổ sung `DEC-064` (v1.1 Đóng Băng Deck Toàn Phần; `BR-048` Được Siết Cho Khớp Code) cho E8-S1 |
 | `3.11` | 2026-08-31 | Bổ sung `DEC-062` (Tương tác Cannot Eat ở Swipe Card, chặn Undo, số hạng X trong Session Ranking, và ngoại lệ BR-056 khi Finalize) cho E7-S3 |
 | `3.10` | 2026-08-26 | Bổ sung `DEC-063` (`CANNOT_EAT` audit log, tách kiểu enum CSDL vs API input, sửa TC-117) cho E7-S2 |
