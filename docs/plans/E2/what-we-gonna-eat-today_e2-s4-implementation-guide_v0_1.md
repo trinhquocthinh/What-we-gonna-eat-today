@@ -3,7 +3,7 @@
 > **Document Metadata**
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-18`
-> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E2-T6`, `E2-T7`) • Mockup `docs/designs/designs/S-05 S-06 Danh muc mon.dc.html` • [Design Criteria](../../what-we-gonna-eat-today_design-criteria_v1.0.md) (`S-05`, `S-06`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-001`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E2-T6`, `E2-T7`) • Mockup `docs/designs/designs/S-05 S-06 Danh muc mon.dc.html` • [Design Criteria](../../what-we-gonna-eat-today_design-criteria_v1.0.md) (`S-05`, `S-06`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-001`)
 > - **Tiền đề bắt buộc:** **S2 (E2-T3/T4) và S3 (E2-T5) phải code xong trước.**
 >
 > 📒 *Slice cuối của E2. Gần như thuần UI: ô tìm kiếm, nhóm theo nhãn, sửa tag, và khối phát hiện trùng trên sheet thêm món.*

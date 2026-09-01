@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  blendExploitExplore,
   buildDeck,
   computePersonalScore,
   computeSessionScore,
+  isExploreEligible,
   rankSession,
   stableHash,
   type SessionDishInput,
@@ -155,6 +157,99 @@ describe('buildDeck', () => {
 
   it('danh sách rỗng: trả mảng rỗng, không ném (TC-102 ở tầng D)', () => {
     expect(buildDeck({ ...SEED, eligible: [] }, RANKING_CONFIG)).toEqual([])
+  })
+})
+
+describe('isExploreEligible', () => {
+  it('TC-128 — d = 30 đúng mốc staleDays: đủ điều kiện (biên đóng)', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: 30, explicit: 0 }, RANKING_CONFIG)).toBe(true)
+  })
+
+  it('d = 29 < staleDays (30) và explicit = 0: không đủ điều kiện', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: 29, explicit: 0 }, RANKING_CONFIG)).toBe(false)
+  })
+
+  it('chưa từng ăn (daysSinceLastEaten = null): đủ điều kiện Explore', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: null, explicit: 0 }, RANKING_CONFIG)).toBe(true)
+  })
+
+  it('món chưa từng ăn nhưng explicit = -1 (DISLIKE): KHÔNG vào luồng Explore (BR-047 loại trừ)', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: null, explicit: -1 }, RANKING_CONFIG)).toBe(
+      false,
+    )
+  })
+
+  it('món d = 35 nhưng explicit = -1 (DISLIKE): KHÔNG vào luồng Explore', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: 35, explicit: -1 }, RANKING_CONFIG)).toBe(false)
+  })
+
+  it('món d = 30 và explicit = 1 (LIKE): đủ điều kiện Explore', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: 30, explicit: 1 }, RANKING_CONFIG)).toBe(true)
+  })
+})
+
+describe('blendExploitExplore', () => {
+  it('TC-125 — Deck 30 thẻ, cả hai luồng đều dư món: vị trí #5, #10, ..., #30 là thẻ explore-eligible', () => {
+    const exploit = Array.from({ length: 50 }, (_, i) => `exploit-${i}`)
+    const explore = Array.from({ length: 20 }, (_, i) => `explore-${i}`)
+
+    const blended = blendExploitExplore({ exploit, explore, blockSize: 5 })
+
+    // Vị trí 5, 10, 15, 20, 25, 30 (chỉ số 4, 9, 14, 19, 24, 29)
+    for (let k = 1; k <= 6; k += 1) {
+      const idx = k * 5 - 1
+      expect(blended[idx]).toBe(`explore-${k - 1}`)
+    }
+    // Các vị trí còn lại là exploit
+    expect(blended[0]).toBe('exploit-0')
+    expect(blended[1]).toBe('exploit-1')
+    expect(blended[2]).toBe('exploit-2')
+    expect(blended[3]).toBe('exploit-3')
+    expect(blended[5]).toBe('exploit-4')
+  })
+
+  it('TC-126 — 150 món, cắt còn 30: đúng 6/30 thẻ đến từ luồng Explore (§1.2)', () => {
+    // 150 món: 120 món exploit thuần, 30 món explore thuần
+    const exploit = Array.from({ length: 120 }, (_, i) => `dish-exploit-${i}`)
+    const explore = Array.from({ length: 30 }, (_, i) => `dish-explore-${i}`)
+
+    const blended = blendExploitExplore({ exploit, explore, blockSize: 5 })
+    const capped = blended.slice(0, 30)
+
+    const exploreSet = new Set(explore)
+    const exploreCount = capped.filter((id) => exploreSet.has(id)).length
+
+    expect(capped).toHaveLength(30)
+    expect(exploreCount).toBe(6)
+  })
+
+  it('TC-127 — Luồng Explore cạn (mọi món đều vừa ăn): khối lấy trọn từ Exploit, đủ 30 thẻ, không vị trí trống', () => {
+    const exploit = Array.from({ length: 40 }, (_, i) => `exploit-${i}`)
+    const explore: string[] = []
+
+    const blended = blendExploitExplore({ exploit, explore, blockSize: 5 })
+    const capped = blended.slice(0, 30)
+
+    expect(capped).toHaveLength(30)
+    expect(capped).toEqual(exploit.slice(0, 30))
+  })
+
+  it('hai luồng chồng nhau (món chưa từng ăn có mặt ở cả hai luồng): KHÔNG id nào xuất hiện hai lần (§1.1)', () => {
+    // Giả lập exploit và explore chia sẻ các món chưa ăn đầu bảng
+    const shared = ['dish-new-1', 'dish-new-2', 'dish-new-3', 'dish-new-4', 'dish-new-5']
+    const exploitOnly = Array.from({ length: 20 }, (_, i) => `exploit-only-${i}`)
+    const exploreOnly = Array.from({ length: 10 }, (_, i) => `explore-only-${i}`)
+
+    const exploit = [...shared, ...exploitOnly]
+    const explore = [...shared, ...exploreOnly]
+
+    const blended = blendExploitExplore({ exploit, explore, blockSize: 5 })
+
+    expect(new Set(blended).size).toBe(blended.length)
+  })
+
+  it('danh sách rỗng: trả mảng rỗng, không ném', () => {
+    expect(blendExploitExplore({ exploit: [], explore: [], blockSize: 5 })).toEqual([])
   })
 })
 

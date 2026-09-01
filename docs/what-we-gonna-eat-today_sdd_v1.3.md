@@ -4,7 +4,7 @@
 >
 > - **Version:** `1.3` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
-> - **Supersedes:** `v1.2` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md) • [Ranking Spec](what-we-gonna-eat-today_ranking-specification_v1.3.md)
+> - **Supersedes:** `v1.2` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md) • [Ranking Spec](what-we-gonna-eat-today_ranking-specification_v1.3.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Test Cases](what-we-gonna-eat-today_test-cases-specification_v1.1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 >
 > 📌 *Tài liệu đặc tả chi tiết 36 module kỹ thuật (`SPEC-001` đến `SPEC-036`): 23 spec cho v1.0 và phần bảo trì sau phát hành, 13 spec cho v1.1. Mỗi kịch bản (Scenario) trong tài liệu này ánh xạ 1–1 thành một Test Case tự động.*
@@ -189,7 +189,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-018 — Decision Date Resolution
 
-- **Nguồn:** [BR-020](what-we-gonna-eat-today_business-rules_v1.7.md), `BR-025`
+- **Nguồn:** [BR-020](what-we-gonna-eat-today_business-rules_v1.8.md), `BR-025`
 - **Đầu vào:** `groupId`, mốc thời gian UTC hiện tại
 - **Đầu ra:** `decisionDate: date`
 - **Quy tắc:**
@@ -203,7 +203,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-019 — Authorization Guard
 
-- **Nguồn:** [BR-006](what-we-gonna-eat-today_business-rules_v1.7.md), `BR-007`, `BR-008`
+- **Nguồn:** [BR-006](what-we-gonna-eat-today_business-rules_v1.8.md), `BR-007`, `BR-008`
 - **Đầu vào:** `userId`, `groupId`, `requiredRole` (`MEMBER` | `ADMIN`)
 - **Đầu ra:** `void` | `Failure`
 - **Quy tắc:**
@@ -218,7 +218,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-002 — Tạo Group
 
-- **Nguồn:** `US-001`, `F02`, [BR-006](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-001`, `F02`, [BR-006](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ name: string (1..60), timezone: IANA string }`
 - **Đầu ra:** `Group` | `ValidationError`
 - **Quy tắc:** Người tạo tự động trở thành Member và gán role `ADMIN`.
@@ -239,7 +239,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-005 — Thêm Dish vào Group Dish Pool
 
-- **Nguồn:** `US-002`, `F03`, [BR-001](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-002`, `F03`, [BR-001](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ groupId, name: string (1..120), systemTags: SystemTag[] (0..5), forceCreate?: boolean }`
 - **Đầu ra:** `GroupDish` | `{ existingCandidates: GlobalDish[] }` | `Failure`
 - **Quy tắc:** Chuẩn hóa tên (cắt khoảng trắng thừa, chuyển chữ thường, bỏ dấu tiếng Việt) thành `normalized_name`. Nếu tìm thấy món trùng, trả về danh sách gợi ý; nếu có cờ `forceCreate = true`, tạo Global Dish mới kèm provenance.
@@ -247,7 +247,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-006 — Gán System Tag cho Dish trong Group
 
-- **Nguồn:** `US-003`, `F04`, [BR-003](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-003`, `F04`, [BR-003](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ groupId, dishId, systemTags: SystemTag[] }` (Yêu cầu quyền Group Admin)
 - **Đầu ra:** `GroupDish` | `Failure`
 - **Quy tắc:** Ghi đè toàn bộ tag của món ăn trong Group hiện tại; hoàn toàn độc lập và không ảnh hưởng Group khác.
@@ -258,14 +258,14 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-007 — Khởi tạo Session Draft
 
-- **Nguồn:** `US-008`, `F05`, [BR-020](what-we-gonna-eat-today_business-rules_v1.7.md), `BR-025`
+- **Nguồn:** `US-008`, `F05`, [BR-020](what-we-gonna-eat-today_business-rules_v1.8.md), `BR-025`
 - **Đầu vào:** `{ groupId }`
 - **Đầu ra:** `Session` (State: `DRAFT`) | `Failure`
 - **Quy tắc:** Nếu nhóm đã có phiên `ACTIVE` hoặc `FINALIZED` cùng ngày → `ERR_SESSION_EXISTS_TODAY`.
 
 ### SPEC-008 — Bắt đầu Session (Start Session)
 
-- **Nguồn:** `US-008`, `F05`, [BR-021](what-we-gonna-eat-today_business-rules_v1.7.md), `BR-025`
+- **Nguồn:** `US-008`, `F05`, [BR-021](what-we-gonna-eat-today_business-rules_v1.8.md), `BR-025`
 - **Đầu vào:** `{ sessionId }` (Yêu cầu Creator)
 - **Đầu ra:** `Session` (State: `ACTIVE`) | `Failure`
 - **Quy tắc (Revalidation 5 bước):**
@@ -278,7 +278,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-009 — Thêm Participant vào phiên
 
-- **Nguồn:** `US-009`, `F06`, [BR-026](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-009`, `F06`, [BR-026](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ sessionId, userId }` (Yêu cầu Creator)
 - **Đầu ra:** `Participant` | `Failure`
 - **Quy tắc:** Cho phép thêm khi phiên ở `DRAFT` hoặc `ACTIVE`. Người mới bắt đầu với 0 tương tác.
@@ -305,14 +305,14 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-012 — Ghi nhận tương tác Swipe & Undo
 
-- **Nguồn:** `US-011`, `F08`, `F09`, [BR-040→042](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-011`, `F08`, `F09`, [BR-040→042](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ sessionId, dishId, action: SWIPE_RIGHT | SWIPE_LEFT | UNDO }`
 - **Đầu ra:** `{ effectiveInteraction: InteractionType | null }`
 - **Quy tắc:** Upsert vào `interactions` (chỉ giữ 1 trạng thái hiệu lực); đồng thời append vào `interaction_events` để lưu vết audit log.
 
 ### SPEC-013 — Đánh dấu Completed & Mở lại
 
-- **Nguồn:** `US-014`, `F10`, [BR-044](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-014`, `F10`, [BR-044](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ sessionId, completed: boolean }`
 - **Quy tắc:** `COMPLETED` chỉ mang tính chất báo hiệu cho Creator, **không khóa quyền vuốt tiếp** của thành viên nếu phiên còn mở.
 
@@ -327,13 +327,13 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-015 — Dựng Final Meal nháp
 
-- **Nguồn:** `US-016`, `F12`, [BR-050](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-016`, `F12`, [BR-050](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ sessionId, dishIds: string[] }` (Yêu cầu Creator)
 - **Quy tắc:** Cho phép chọn bất kỳ món nào trong nhóm (kể cả món chưa ai vuốt), không kích hoạt validate rule ở bước nháp.
 
 ### SPEC-016 — Chốt bữa chính thức (Finalize)
 
-- **Nguồn:** `US-016`, `F12`, `F13`, [BR-052](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-016`, `F12`, `F13`, [BR-052](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ sessionId }` (Yêu cầu Creator)
 - **Đầu ra:** `FinalMeal` | `Failure`
 - **Quy tắc:**
@@ -344,7 +344,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-017 — Tự động sinh Default Eating History
 
-- **Nguồn:** `US-018`, `F14`, [BR-056](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-018`, `F14`, [BR-056](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `FinalMeal`
 - **Quy tắc:** Sinh bản ghi ăn uống cho toàn bộ Participant hiện tại với ngày `eating_date = session.decision_date`. Đảm bảo tính Idempotent qua `source_final_meal_id`.
 
@@ -354,7 +354,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-020 — Tính toán Recency Penalty
 
-- **Nguồn:** `F17`, [BR-046](what-we-gonna-eat-today_business-rules_v1.7.md), [Ranking Spec §2.2](what-we-gonna-eat-today_ranking-specification_v1.3.md)
+- **Nguồn:** `F17`, [BR-046](what-we-gonna-eat-today_business-rules_v1.8.md), [Ranking Spec §2.2](what-we-gonna-eat-today_ranking-specification_v1.3.md)
 - **Đầu vào:** `{ userId, dishId, referenceDate }`
 - **Đầu ra:** $R \in [0, 1]$
 - **Công thức:**
@@ -363,19 +363,19 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-021 — Cấu hình Group Required Rules
 
-- **Nguồn:** `F20`, [BR-010](what-we-gonna-eat-today_business-rules_v1.7.md), `BR-013`
+- **Nguồn:** `F20`, [BR-010](what-we-gonna-eat-today_business-rules_v1.8.md), `BR-013`
 - **Đầu vào:** `{ groupId, rules: [{ systemTag: SystemTag, minimumCount: number }] }` (Yêu cầu Group Admin)
 - **Quy tắc:** Ghi đè toàn bộ danh sách quy định; `minimumCount` phải $\ge 1$; không cho phép trùng lặp tag.
 
 ### SPEC-022 — Snapshot Session Rules
 
-- **Nguồn:** `F21`, [BR-015](what-we-gonna-eat-today_business-rules_v1.7.md), `BR-016`
+- **Nguồn:** `F21`, [BR-015](what-we-gonna-eat-today_business-rules_v1.8.md), `BR-016`
 - **Đầu vào:** `{ sessionId }`
 - **Quy tắc:** Đóng băng bản sao các quy định mâm cơm của Group tại thời điểm Start. Admin chỉnh sửa Group Rule sau đó sẽ không làm đổi luật của phiên đang chạy.
 
 ### SPEC-023 — Gợi ý món từ Global Dish Pool (Catalog Search)
 
-- **Nguồn:** `US-002`, [BR-001](what-we-gonna-eat-today_business-rules_v1.7.md), [DEC-055](what-we-gonna-eat-today_decision-log_v3.9.md)
+- **Nguồn:** `US-002`, [BR-001](what-we-gonna-eat-today_business-rules_v1.8.md), [DEC-055](what-we-gonna-eat-today_decision-log_v3.9.md)
 - **Giao thức:** `GET /api/groups/{groupId}/dishes/search?q={query}` — **Route Handler**, không phải Server Action (Tech Spec §4.1: Server Action bị serialise, mà typeahead bắn theo từng phím).
 - **Quyền:** Đăng nhập **và** là Member của `groupId`. Kiểm tư cách thành viên là BẮT BUỘC — kết quả đã loại món nhóm đang có, nên dò `groupId` bất kỳ sẽ suy ra được danh mục của nhóm đó.
 - **Đầu vào:** `q` — chuỗi thô người dùng gõ.
@@ -397,7 +397,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-024 — Đánh dấu / gỡ Cannot Eat
 
-- **Nguồn:** `US-005`, `F15`, [BR-034](what-we-gonna-eat-today_business-rules_v1.7.md), [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md)
+- **Nguồn:** `US-005`, `F15`, [BR-034](what-we-gonna-eat-today_business-rules_v1.8.md), [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md)
 - **Đầu vào:** `{ globalDishId, cannotEat: boolean }` (người gọi là chính chủ)
 - **Đầu ra:** `{ removedInteraction: boolean }`
 - **Quy tắc:**
@@ -408,7 +408,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-025 — Đặt Explicit Preference (Like / Dislike)
 
-- **Nguồn:** `US-006`, `F16`, [BR-037](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-006`, `F16`, [BR-037](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ globalDishId, preference: LIKE | DISLIKE | null }`
 - **Đầu ra:** `{ preference: LIKE | DISLIKE | null }`
 - **Quy tắc:**
@@ -420,17 +420,17 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-026 — Cắt trần số thẻ (Deck Size Cap)
 
-- **Nguồn:** `F49`, [BR-062](what-we-gonna-eat-today_business-rules_v1.7.md), [Ranking Spec §2.4](what-we-gonna-eat-today_ranking-specification_v1.3.md), [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md)
+- **Nguồn:** `F49`, [BR-062](what-we-gonna-eat-today_business-rules_v1.8.md), [Ranking Spec §2.4](what-we-gonna-eat-today_ranking-specification_v1.3.md), [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md)
 - **Đầu vào:** `{ orderedDishIds: string[], maxCards: 30 }`
 - **Đầu ra:** `cappedDishIds: string[]` (độ dài $\le 30$)
 - **Quy tắc:**
   - Hàm thuần, không chạm CSDL — cùng khuôn `getDeckPage` của `SPEC-011`.
-  - Chạy **sau** `SPEC-027`, không bao giờ trước. Đây là bất biến `Cap After Blend` của [Business Rules §23](what-we-gonna-eat-today_business-rules_v1.7.md).
+  - Chạy **sau** `SPEC-027`, không bao giờ trước. Đây là bất biến `Cap After Blend` của [Business Rules §23](what-we-gonna-eat-today_business-rules_v1.8.md).
   - Deck ngắn hơn 30 thì trả nguyên vẹn, không đệm thêm.
 
 ### SPEC-027 — Trộn luồng Exploit / Explore
 
-- **Nguồn:** `US-012`, `F18`, [BR-047](what-we-gonna-eat-today_business-rules_v1.7.md), [Ranking Spec §2.3](what-we-gonna-eat-today_ranking-specification_v1.3.md)
+- **Nguồn:** `US-012`, `F18`, [BR-047](what-we-gonna-eat-today_business-rules_v1.8.md), [Ranking Spec §2.3](what-we-gonna-eat-today_ranking-specification_v1.3.md)
 - **Đầu vào:** `{ exploit: DishCandidate[], explore: DishCandidate[], blockSize: 5 }`
 - **Đầu ra:** `blendedDishIds: string[]`
 - **Quy tắc:**
@@ -441,7 +441,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-028 — Materialize và đóng băng Deck
 
-- **Nguồn:** `US-013`, `F19`, [BR-048](what-we-gonna-eat-today_business-rules_v1.7.md), `DEC-064`
+- **Nguồn:** `US-013`, `F19`, [BR-048](what-we-gonna-eat-today_business-rules_v1.8.md), `DEC-064`
 - **Đầu vào:** `{ sessionId, userId, orderedDishIds }`
 - **Đầu ra:** `{ outcome: MATERIALIZED | ALREADY_MATERIALIZED }`
 - **Quy tắc:**
@@ -469,7 +469,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-029 — Snapshot Session Course lúc Start
 
-- **Nguồn:** `F50`, [BR-063](what-we-gonna-eat-today_business-rules_v1.7.md), [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md)
+- **Nguồn:** `F50`, [BR-063](what-we-gonna-eat-today_business-rules_v1.8.md), [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md)
 - **Đầu vào:** `{ sessionId, deckMode: FREE | COURSE, courses: SystemTag[] }` (theo thứ tự Creator sắp)
 - **Đầu ra:** `void` (ghi `selection_sessions.deck_mode` và `session_courses`)
 - **Quy tắc:**
@@ -481,7 +481,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-030 — Dựng Deck theo chặng và phân bổ hạn mức
 
-- **Nguồn:** `F50`, [BR-063](what-we-gonna-eat-today_business-rules_v1.7.md), [Ranking Spec §2.5](what-we-gonna-eat-today_ranking-specification_v1.3.md)
+- **Nguồn:** `F50`, [BR-063](what-we-gonna-eat-today_business-rules_v1.8.md), [Ranking Spec §2.5](what-we-gonna-eat-today_ranking-specification_v1.3.md)
 - **Đầu vào:** `{ cappedDishIds: string[], courses: SystemTag[], maxCards: 30 }`
 - **Đầu ra:** `courseDecks: { systemTag: SystemTag, dishIds: string[] }[]`
 - **Quy tắc:**
@@ -494,7 +494,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-031 — Đánh giá Preferred Rule (cảnh báo mềm)
 
-- **Nguồn:** `US-019`, `F22`, [BR-014](what-we-gonna-eat-today_business-rules_v1.7.md), [BR-052](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-019`, `F22`, [BR-014](what-we-gonna-eat-today_business-rules_v1.8.md), [BR-052](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ selectedDishTags: SystemTag[][], sessionRules: SessionRule[] }`
 - **Đầu ra:** `{ blocking: RuleViolation[], warnings: RuleViolation[] }`
 - **Quy tắc:**
@@ -504,7 +504,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-032 — Target Dish Count
 
-- **Nguồn:** `F23`, [BR-011](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `F23`, [BR-011](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ selectedCount: number, targetCount: number | null }`
 - **Đầu ra:** `RuleViolation | null`
 - **Quy tắc:**
@@ -514,11 +514,11 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-033 — Lưu vết cảnh báo lúc chốt bữa
 
-- **Nguồn:** `F24`, [BR-053](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `F24`, [BR-053](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ sessionId, warnings: RuleViolation[], acknowledgedBy: string }`
 - **Đầu ra:** `void` (ghi `finalize_warnings`)
 - **Quy tắc:**
-  - Ghi **trong cùng giao dịch** với `SPEC-016` — bất biến `Atomic Finalize` của [Business Rules §23](what-we-gonna-eat-today_business-rules_v1.7.md).
+  - Ghi **trong cùng giao dịch** với `SPEC-016` — bất biến `Atomic Finalize` của [Business Rules §23](what-we-gonna-eat-today_business-rules_v1.8.md).
   - Chốt bữa không có cảnh báo nào thì **không** ghi dòng nào; bảng rỗng nghĩa là mọi lần chốt đều sạch.
   - Chỉ ghi cảnh báo Creator thực sự bỏ qua, không ghi cảnh báo đã được xử lý bằng cách thêm món.
 
@@ -526,19 +526,19 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ### SPEC-034 — Tự động đóng phiên quá hạn
 
-- **Nguồn:** `US-010`, `F26`, [BR-055](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-010`, `F26`, [BR-055](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ groupId, referenceDate }`
 - **Đầu ra:** `{ invalidatedSessionIds: string[] }`
 - **Quy tắc:**
   - Phiên `DRAFT` hoặc `ACTIVE` có `decision_date < referenceDate` chuyển sang `INVALID`.
   - `referenceDate` quy đổi theo timezone của Group qua `SPEC-018`, **không** dùng `new Date()` tại chỗ.
   - Xét **lười** khi mở phiên mới, không cần cron. Quy mô sản phẩm không biện minh nổi cho một tiến trình nền.
-  - Tương tác của phiên `INVALID` được **bảo toàn** nhưng không tính vào bất kỳ phép tính nào — [BR-061](what-we-gonna-eat-today_business-rules_v1.7.md).
+  - Tương tác của phiên `INVALID` được **bảo toàn** nhưng không tính vào bất kỳ phép tính nào — [BR-061](what-we-gonna-eat-today_business-rules_v1.8.md).
   - Phiên `INVALID` **không** chặn tạo phiên mới cùng ngày; partial unique index chỉ tính `ACTIVE`/`FINALIZED`.
 
 ### SPEC-035 — Gỡ Dish khỏi Group Dish Pool
 
-- **Nguồn:** `US-004`, `F27`, [BR-005](what-we-gonna-eat-today_business-rules_v1.7.md)
+- **Nguồn:** `US-004`, `F27`, [BR-005](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ groupId, groupDishId }` (yêu cầu quyền Admin)
 - **Đầu ra:** `{ state: INACTIVE }`
 - **Quy tắc:**
@@ -555,7 +555,7 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 > Khi đánh giá Required Rules (`SPEC-016`), nếu một món mang cả 2 tag `MAIN` và `SOUP` (vd: *Bò kho bánh mì*), món này sẽ đóng góp độc lập vào cả 2 quy định `Required MAIN` và `Required SOUP`. Tuyệt đối không phân bổ độc quyền kiểu slot allocation.
 
 > [!IMPORTANT]
-> **Một món chỉ thuộc một chặng (`SPEC-030`):** Quy tắc trên **không** áp cho việc chia chặng. Đếm tag là phép cộng trên một tập đã chốt; chia chặng là phép phân hoạch trên một danh sách sẽ được vuốt. Cho món hai tag xuất hiện ở hai chặng nghĩa là người dùng vuốt nó hai lần và $P$ của [BR-049](what-we-gonna-eat-today_business-rules_v1.7.md) bị đếm trùng.
+> **Một món chỉ thuộc một chặng (`SPEC-030`):** Quy tắc trên **không** áp cho việc chia chặng. Đếm tag là phép cộng trên một tập đã chốt; chia chặng là phép phân hoạch trên một danh sách sẽ được vuốt. Cho món hai tag xuất hiện ở hai chặng nghĩa là người dùng vuốt nó hai lần và $P$ của [BR-049](what-we-gonna-eat-today_business-rules_v1.8.md) bị đếm trùng.
 
 > [!IMPORTANT]
 > **Feature `preference` là feature thứ chín.** `SPEC-024`/`SPEC-025` sống trong `src/features/preference/`. v1.1 mở thêm **hai** chiều phụ thuộc, cả hai phải được khai trong `ALLOWED_CROSS_FEATURE` của `eslint.config.mjs`, bổ sung vào `yarn arch:probe` và ghi vào [Tech Spec §2.3](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) — hiện mới có đúng 5 chiều được phép:

@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-26`
-> - **Upstream:** [Master Plan §16.3](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E8-T0`, `E8-T1`, `E8-T2`, `E8-T4`) • [SDD §8.2](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-026`, `SPEC-027`, `SPEC-028`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-047`, `BR-048`, `BR-062`) • [Ranking Spec §2.3, §2.4](../../what-we-gonna-eat-today_ranking-specification_v1.3.md) • [Decision Log](../../what-we-gonna-eat-today_decision-log_v3.9.md) (`DEC-058`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-123`→`TC-130`)
+> - **Upstream:** [Master Plan §16.3](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E8-T0`, `E8-T1`, `E8-T2`, `E8-T4`) • [SDD §8.2](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-026`, `SPEC-027`, `SPEC-028`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-047`, `BR-048`, `BR-062`) • [Ranking Spec §2.3, §2.4](../../what-we-gonna-eat-today_ranking-specification_v1.3.md) • [Decision Log](../../what-we-gonna-eat-today_decision-log_v3.9.md) (`DEC-058`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-123`→`TC-130`)
 > - **Tiền đề:** E7 xong trọn (S1, S2, S3). `listEligibleDishCards` đã lọc `Cannot Eat`, `list-deck.ts` đã đọc $E$ thật.
 >
 > 🎚️ *Slice thuật toán. Sau slice này deck có đáy — 30 thẻ, trong đó 6 thẻ là món lâu chưa ăn — nhưng màn hình vẫn chưa nói gì về điều đó (S2 mới nói).*
@@ -20,11 +20,11 @@
 | `E8-T2` | Trộn Exploit / Explore theo khối 4+1 | 5 | `ranking.ts`, `list-deck.ts`, `dish-card.ts` | Đúng 6/30 thẻ đến từ luồng Explore, không món nào lặp |
 | `E8-T4` | Ghim bất biến đóng băng | 2 | `*.integration.test.ts`, `BR-048` | Thứ tự deck không đổi qua nhiều lần `listDeck` |
 
-- [ ] `TC-123`→`TC-130` xanh
-- [ ] `TC-126` **đếm** đúng 6/30 thẻ từ luồng Explore, không phải "có ít nhất một" (§1.2)
-- [ ] Có test khẳng định **không id nào xuất hiện hai lần** trong deck (§1.1)
-- [ ] `BR-048` đã ghi rằng v1.1 đóng băng **toàn bộ**, không chỉ `index < cursor` (§1.4)
-- [ ] `yarn verify && yarn arch:probe && yarn test:integration` xanh
+- [x] `TC-123`→`TC-130` xanh
+- [x] `TC-126` **đếm** đúng 6/30 thẻ từ luồng Explore, không phải "có ít nhất một" (§1.2)
+- [x] Có test khẳng định **không id nào xuất hiện hai lần** trong deck (§1.1)
+- [x] `BR-048` đã ghi rằng v1.1 đóng băng **toàn bộ**, không chỉ `index < cursor` (§1.4)
+- [x] `yarn verify && yarn arch:probe && yarn test:integration` xanh
 
 ---
 
@@ -72,7 +72,7 @@ Cả hai mảng đầu vào là **id đã sắp**, không phải object — hàm
 
 ## 1.2 Cắt trần phải SAU khi trộn, và `TC-126` phải ĐẾM
 
-[`BR-062`](../../what-we-gonna-eat-today_business-rules_v1.7.md) và [DEC-058](../../what-we-gonna-eat-today_decision-log_v3.9.md) đã ghi. Nhắc lại vì `E8-T1` (trần) mang số nhỏ hơn `E8-T2` (trộn), và cám dỗ là làm xong `capDeck` rồi cắm luôn vào `list-deck.ts`.
+[`BR-062`](../../what-we-gonna-eat-today_business-rules_v1.8.md) và [DEC-058](../../what-we-gonna-eat-today_decision-log_v3.9.md) đã ghi. Nhắc lại vì `E8-T1` (trần) mang số nhỏ hơn `E8-T2` (trộn), và cám dỗ là làm xong `capDeck` rồi cắm luôn vào `list-deck.ts`.
 
 Thẻ Explore theo định nghĩa là món lâu chưa ăn — nằm ở **đuôi** bảng xếp hạng. Cắt trần trước khi trộn thì tập nguồn của Explore đã bị xoá sạch. Deck vẫn 30 thẻ, vẫn chạy, chỉ là **vĩnh viễn không có món lạ**.
 
@@ -142,7 +142,7 @@ Hành vi thật hôm nay:
 
 Vì sao đáng sửa quy tắc chứ không im lặng: một quy tắc lỏng hơn code thật là chỗ mà lần refactor sau sẽ nới code cho "đúng đặc tả" — và làm hỏng thứ đang chạy tốt. Đặc tả nên mô tả cam kết mạnh nhất mà hệ thống thật sự giữ.
 
-Câu thay thế cho [`BR-048`](../../what-we-gonna-eat-today_business-rules_v1.7.md) §14.3:
+Câu thay thế cho [`BR-048`](../../what-we-gonna-eat-today_business-rules_v1.8.md) §14.3:
 
 > - Deck được materialize **đúng một lần** cho mỗi `(session, user)` và **không bao giờ được sắp xếp lại** trong phiên. Đây là cam kết mạnh hơn "đóng băng thẻ `index < cursor`" và bao hàm nó.
 > - Món mất tư cách giữa phiên (`INACTIVE`, `Cannot Eat`) **rơi khỏi** deck ở lần đọc kế tiếp; món mới thêm vào nhóm **không** chen vào deck đang chạy.

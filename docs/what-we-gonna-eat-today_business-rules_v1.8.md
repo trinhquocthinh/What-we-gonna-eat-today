@@ -2,9 +2,9 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.7` | **Status:** `Active`
+> - **Version:** `1.8` | **Status:** `Active`
 > - **Created:** `2026-07-23` | **Last Updated:** `2026-08-26`
-> - **Supersedes:** `v1.6` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v3.9.md)
+> - **Supersedes:** `v1.7` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v3.9.md)
 > - **Downstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v1.1.md)
 >
 > 📌 *Tài liệu định nghĩa toàn bộ 63 quy tắc nghiệp vụ bất biến (`BR-001` đến `BR-063`) của hệ thống What We Gonna Eat Today. Mỗi quy tắc có mã định danh bất biến dùng làm tham chiếu chuẩn cho PRD, SDD và Test Cases.*
@@ -415,7 +415,9 @@ $$\text{Personal Score} = 0.30 \cdot E + 0.25 \cdot I + 0.10 \cdot C + 0.10 \cdo
 
 ## 14.3 Deck Stability — `BR-048`
 
-- Khi tính toán lại giữa phiên: **Đóng băng toàn bộ các thẻ người dùng đã xem qua (`index < cursor`)**.
+- Deck được materialize **đúng một lần** cho mỗi `(session, user)` và **không bao giờ được sắp xếp lại** trong phiên. Đây là cam kết mạnh hơn "đóng băng thẻ `index < cursor`" và bao hàm nó.
+- Món mất tư cách giữa phiên (`INACTIVE`, `Cannot Eat`) **rơi khỏi** deck ở lần đọc kế tiếp; món mới thêm vào nhóm **không** chen vào deck đang chạy.
+- Đổi `Like` / `Dislike` giữa phiên không đổi thứ tự deck hiện tại — nó có hiệu lực từ phiên sau.
 
 ---
 
@@ -602,6 +604,7 @@ Quy định mâm cơm **không tham gia vào thuật toán tính điểm Ranking
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.8` | 2026-08-26 | §14.3 | Siết `BR-048` (Deck Stability) thành đóng băng toàn phần: deck materialize đúng một lần cho mỗi `(session, user)` và không sắp xếp lại giữa phiên | [DEC-064](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `1.7` | 2026-08-26 | §19.1, §22, §23 | Bổ sung `BR-062` (trần 30 thẻ, thứ tự cắt sau khi trộn Explore) và `BR-063` (chế độ duyệt theo chặng); thêm ngoại lệ `Cannot Eat` cho `BR-056`; hai bất biến mới ở Core Invariants | [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `1.6` | 2026-08-14 | Toàn bộ | Gán mã định danh `BR-ID` ổn định cho tất cả quy tắc nghiệp vụ | Đồng bộ PRD v0.1 |
 | `1.6` | 2026-08-14 | System Tag | Cố định 5 giá trị System Tag cốt lõi | [PRD v0.1](what-we-gonna-eat-today_prd_v1.5.md) |

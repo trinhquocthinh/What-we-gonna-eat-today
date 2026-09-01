@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-26`
-> - **Upstream:** [Master Plan §16.2](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E7-T5`, `E7-T6`, `E7-T7`) • [SDD §8.1](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-014`, `SPEC-017`, `SPEC-024`, `SPEC-025`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-034`, `BR-037`, `BR-043`, `BR-049`, `BR-056`) • [Design Criteria](../../what-we-gonna-eat-today_design-criteria_v1.0.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-121`, `TC-122`)
+> - **Upstream:** [Master Plan §16.2](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E7-T5`, `E7-T6`, `E7-T7`) • [SDD §8.1](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-014`, `SPEC-017`, `SPEC-024`, `SPEC-025`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-034`, `BR-037`, `BR-043`, `BR-049`, `BR-056`) • [Design Criteria](../../what-we-gonna-eat-today_design-criteria_v1.0.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-121`, `TC-122`)
 > - **Ảnh tham chiếu:** [Design §3, §4](../../designs/README.md)
 > - **Tiền đề:** `E7-S2` xong — API ghi được, deck lọc được, tương tác cũ bị xoá đúng.
 >

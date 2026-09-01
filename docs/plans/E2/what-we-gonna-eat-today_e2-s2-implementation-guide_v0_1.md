@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-18` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E2-T3, E2-T4`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-005`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-001, BR-002`) • [Test Cases Spec](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-017→021, TC-097→099, TC-098`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E2-T3, E2-T4`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-005`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-001, BR-002`) • [Test Cases Spec](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-017→021, TC-097→099, TC-098`)
 > - **Tiền đề:** `E2-S1` (Link mời) đã có guide.
 >
 > 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S2 của Epic 2: Chuẩn hoá tên món bỏ dấu tiếng Việt (Level 2), phát hiện trùng lặp món ăn, cờ `forceCreate` và khôi phục Dish Inactive.*

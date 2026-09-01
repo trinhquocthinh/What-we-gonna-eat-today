@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-18`
-> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E2-T5`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-006`, §2.2) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-003`, `BR-008`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-022→025`, `TC-100`, `TC-101`, + `TC-021` theo DEC-024)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E2-T5`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-006`, §2.2) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-003`, `BR-008`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-022→025`, `TC-100`, `TC-101`, + `TC-021` theo DEC-024)
 > - **Tiền đề:** `E1-T5` đã code xong (đúng phụ thuộc Master Plan ghi cho E2-T5 — **không** phụ thuộc E2-T4).
 >
 > 🏷️ *Gán System Tag cho món trong Group: ghi đè toàn bộ, cách ly theo Group, 5 giá trị cố định.*

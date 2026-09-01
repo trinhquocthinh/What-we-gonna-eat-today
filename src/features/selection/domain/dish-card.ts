@@ -13,4 +13,9 @@ export type DishCard = {
    * kỷ luật đã giữ xuyên suốt dự án (domain không chứa chuỗi hiển thị).
    */
   readonly daysSinceLastEaten: number | null
+  /**
+   * E8-T2 — Luồng của thẻ: 'EXPLOIT' hoặc 'EXPLORE'.
+   * Không lưu xuống DB (`session_decks`), được suy lại ở mỗi lần đọc.
+   */
+  readonly lane: 'EXPLOIT' | 'EXPLORE'
 }

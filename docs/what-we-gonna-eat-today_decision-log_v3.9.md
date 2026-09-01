@@ -4,7 +4,7 @@
 >
 > - **Version:** `3.9` | **Status:** `Active`
 > - **Created:** `2026-07-23` | **Last Updated:** `2026-08-26`
-> - **Supersedes:** `v3.8` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md)
+> - **Supersedes:** `v3.8` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 >
 > 📌 *Decision Log ghi lại 61 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
@@ -75,6 +75,7 @@
 | [`DEC-059`](#dec-059--chế-độ-vuốt-theo-chặng-là-cách-chia-deck-không-phải-cách-chốt-bữa) | Chế độ vuốt theo chặng là cách chia deck | 2026-08-26 | `Accepted` | `deck_mode`, `session_courses`, `BR-063`, không đụng `BR-050` |
 | [`DEC-060`](#dec-060--cannot-eat-xoá-tương-tác-cũ-và-tạo-ngoại-lệ-cho-lịch-sử-ăn-mặc-định) | `Cannot Eat` xoá tương tác cũ, ngoại lệ lịch sử ăn | 2026-08-26 | `Accepted` | `BR-034`, ngoại lệ `BR-056`, feature `preference`, rủi ro `R-05` |
 | [`DEC-061`](#dec-061--đánh-số-lại-epic-v12) | Đánh số lại epic v1.2 (`E11`→`E12`…) | 2026-08-26 | `Accepted` | Master Plan §13.2, mã subtask & thư mục `docs/plans/` |
+| [`DEC-064`](#dec-064--v11-đóng-băng-deck-toàn-phần-br-048-được-siết-cho-khớp-code) | v1.1 Đóng Băng Deck Toàn Phần; `BR-048` Được Siết Cho Khớp Code | 2026-08-26 | `Accepted` | `BR-048`, `list-deck.ts`, `session_decks`, `isExploreEligible` |
 ---
 
 # DEC-001 — Selection Session Lifecycle
@@ -1687,10 +1688,51 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-064 — v1.1 Đóng Băng Deck Toàn Phần; `BR-048` Được Siết Cho Khớp Code
+
+- **Ngày:** 2026-08-26
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E8 Slice S1
+
+## Quyết định
+
+1. KHÔNG hiện thực phép tính lại deck giữa phiên. Deck materialize đúng một lần
+   cho mỗi `(session, user)` và không bao giờ được sắp xếp lại.
+2. `BR-048` đổi từ "đóng băng thẻ `index < cursor` khi tính lại" thành cam kết
+   mạnh hơn: không có phép tính lại nào.
+3. Deck co lại dưới trần do lọc thì KHÔNG bù thêm thẻ.
+4. Cờ `lane` KHÔNG lưu vào `session_decks`; nó được suy lại ở mỗi lần đọc bằng
+   `isExploreEligible`.
+
+## Rationale
+
+1. Hành vi đóng băng toàn phần đã tồn tại từ E4 và chưa từng gây vấn đề. `F19`
+   ước lượng 6 giờ cho một cơ chế mà phần lớn đã có — và cơ chế "tính lại có
+   chọn lọc" sẽ cần lưu cursor phía server, tức thêm một lượt ghi vào đường
+   nóng `NFR-02`, để giải quyết một đau chưa ai gặp.
+2. **Một quy tắc lỏng hơn code thật là một cái bẫy.** Nó là chỗ mà lần refactor
+   sau sẽ nới code cho "đúng đặc tả" rồi làm hỏng thứ đang chạy tốt. Đặc tả nên
+   ghi cam kết mạnh nhất mà hệ thống thật sự giữ.
+3. Bù thẻ chính là tính lại. Cho phép nó là mở lại đúng cánh cửa vừa đóng.
+4. `session_decks` lưu mảng id trần. Lưu thêm `lane` là đổi schema cho một thứ
+   suy lại được từ dữ liệu đã có trong tay ở mỗi lần đọc — và nó sẽ đóng băng
+   một nhãn mô tả MÓN, trong khi món đổi trạng thái được (ăn thêm một lần, đổi
+   Like/Dislike). Suy lại lúc đọc thì nhãn luôn đúng với hiện tại.
+
+## Consequence
+
+- `F19` từ 6 giờ còn 2 giờ; bốn giờ chuyển sang `F51` (`E8-T7`) và phần dư.
+- Business Rules lên `v1.8`.
+- Một món đứng ở ô Exploit vẫn có thể mang nhãn `EXPLORE` — nhãn mô tả món,
+   không mô tả ô. Đây là chủ đích, ghi rõ ở `E8-T3` (S2).
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.12` | 2026-08-26 | Bổ sung `DEC-064` (v1.1 Đóng Băng Deck Toàn Phần; `BR-048` Được Siết Cho Khớp Code) cho E8-S1 |
 | `3.11` | 2026-08-31 | Bổ sung `DEC-062` (Tương tác Cannot Eat ở Swipe Card, chặn Undo, số hạng X trong Session Ranking, và ngoại lệ BR-056 khi Finalize) cho E7-S3 |
 | `3.10` | 2026-08-26 | Bổ sung `DEC-063` (`CANNOT_EAT` audit log, tách kiểu enum CSDL vs API input, sửa TC-117) cho E7-S2 |
 | `3.9` | 2026-08-26 | Bổ sung `DEC-056` (re-scope v1.1: thêm `F49`/`F50`, hoãn `F25`/`F28`/`F29`), `DEC-057` (cổng kiểm link tài liệu), `DEC-058` (trần deck 30 thẻ và thứ tự pipeline), `DEC-059` (chế độ vuốt theo chặng), `DEC-060` (`Cannot Eat` xoá tương tác cũ và ngoại lệ `BR-056`), `DEC-061` (đánh số lại epic v1.2) — lập kế hoạch v1.1 |

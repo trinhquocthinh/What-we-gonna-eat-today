@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-26`
-> - **Upstream:** [Master Plan §16.2](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E7-T1`, `E7-T2`) • [SDD §8.1](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-024`, `SPEC-025`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-034`, `BR-037`, `BR-043`) • [Ranking Spec §2.2](../../what-we-gonna-eat-today_ranking-specification_v1.3.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-118`, `TC-119`, `TC-120`)
+> - **Upstream:** [Master Plan §16.2](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E7-T1`, `E7-T2`) • [SDD §8.1](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-024`, `SPEC-025`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-034`, `BR-037`, `BR-043`) • [Ranking Spec §2.2](../../what-we-gonna-eat-today_ranking-specification_v1.3.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-118`, `TC-119`, `TC-120`)
 > - **Tiền đề:** `E7-T0` đã vá xong 64 link gãy, `yarn verify` xanh.
 >
 > 🧱 *Slice mở đầu E7. Không có gì hiện lên màn hình sau slice này — nó dựng bảng, dựng feature thứ chín, và mở khoá số hạng $E$ đã nằm im trong `RANKING_CONFIG` từ E4.*

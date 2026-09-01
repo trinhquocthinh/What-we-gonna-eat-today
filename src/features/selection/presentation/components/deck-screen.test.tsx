@@ -13,6 +13,7 @@ function makeDishes(names: string[]): DishCard[] {
     systemTags: [],
     effectiveInteraction: null,
     daysSinceLastEaten: null,
+    lane: 'EXPLOIT',
   }))
 }
 

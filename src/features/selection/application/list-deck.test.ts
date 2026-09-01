@@ -14,6 +14,7 @@ function makeDishCard(overrides: Partial<DishCard> = {}): DishCard {
     systemTags: [],
     effectiveInteraction: null,
     daysSinceLastEaten: null,
+    lane: 'EXPLOIT',
     ...overrides,
   }
 }
@@ -213,5 +214,74 @@ describe('listDeck — E4-T3/T4', () => {
     // Món LIKE phải đứng trước món DISLIKE
     expect(result.value.items[0]?.dishId).toBe('d-like')
     expect(result.value.items[1]?.dishId).toBe('d-dislike')
+  })
+
+  it('gán đúng cờ lane (EXPLORE vs EXPLOIT) ở mỗi lần đọc', async () => {
+    const dishExplore1 = makeDishCard({ dishId: 'd-never', globalDishId: 'g-never' }) // d = null -> EXPLORE
+    const dishExplore2 = makeDishCard({ dishId: 'd-old', globalDishId: 'g-old' }) // d = 35 -> EXPLORE
+    const dishExploit = makeDishCard({ dishId: 'd-recent', globalDishId: 'g-recent' }) // d = 5 -> EXPLOIT
+    const dishDislike = makeDishCard({ dishId: 'd-dislike', globalDishId: 'g-dislike' }) // d = null nhưng DISLIKE -> EXPLOIT
+
+    const deps = makeDeps({
+      eligible: [dishExplore1, dishExplore2, dishExploit, dishDislike],
+      materialized: ['d-never', 'd-old', 'd-recent', 'd-dislike'],
+      eatingRows: [
+        { globalDishId: 'g-old', eatingDate: '2026-07-15' }, // d = 35 (referenceDate 2026-08-19)
+        { globalDishId: 'g-recent', eatingDate: '2026-08-14' }, // d = 5
+      ],
+      preferencesMap: new Map([['g-dislike', 'DISLIKE']]),
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    const byId = new Map(result.value.items.map((d) => [d.dishId, d]))
+    expect(byId.get('d-never')?.lane).toBe('EXPLORE')
+    expect(byId.get('d-old')?.lane).toBe('EXPLORE')
+    expect(byId.get('d-recent')?.lane).toBe('EXPLOIT')
+    expect(byId.get('d-dislike')?.lane).toBe('EXPLOIT')
+  })
+
+  it('E8-T4 — BR-048: đổi Like/Dislike giữa phiên không thay đổi thứ tự deck đã materialize', async () => {
+    // Session đã materialize thứ tự ['d1', 'd2']
+    const d1 = makeDishCard({ dishId: 'd1', globalDishId: 'g1' })
+    const d2 = makeDishCard({ dishId: 'd2', globalDishId: 'g2' })
+
+    // User đổi Like d2 và Dislike d1 giữa phiên
+    const deps = makeDeps({
+      eligible: [d1, d2],
+      materialized: ['d1', 'd2'],
+      preferencesMap: new Map([
+        ['g1', 'DISLIKE'],
+        ['g2', 'LIKE'],
+      ]),
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    // Thứ tự vẫn giữ nguyên ['d1', 'd2'] vì đã materialize
+    expect(result.value.items.map((d) => d.dishId)).toEqual(['d1', 'd2'])
+  })
+
+  it('TC-126 — 150 món: materialize deck đúng 30 thẻ với trộn 4+1', async () => {
+    const eligible = Array.from({ length: 150 }, (_, i) =>
+      makeDishCard({ dishId: `d-${i}`, globalDishId: `g-${i}` }),
+    )
+    const deps = makeDeps({ eligible })
+
+    const result = await listDeck(deps, { ...BASE_INPUT, pageSize: 30 })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(deps.materializeDeck).toHaveBeenCalledOnce()
+    const materializedArg = (
+      deps.materializeDeck.mock.calls[0] as unknown as [string, string, string[]]
+    )[2]
+    expect(materializedArg).toHaveLength(30)
+    // Không có id nào lặp lại
+    expect(new Set(materializedArg).size).toBe(30)
   })
 })

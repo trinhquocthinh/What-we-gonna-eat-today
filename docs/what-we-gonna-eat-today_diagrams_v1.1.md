@@ -4,7 +4,7 @@
 >
 > - **Version:** `1.1` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
-> - **Supersedes:** `v1.0` | **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md)
+> - **Supersedes:** `v1.0` | **Upstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
 > - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md)
 >
 > 📌 *Tài liệu trực quan hóa toàn diện hệ thống What We Gonna Eat Today: Sơ đồ C4 Context & Container, Sơ đồ thực thể quan hệ ERD (15 bảng v1.0 + 4 bảng v1.1), Flowchart vòng đời phiên chọn món, Sequence Diagram luồng Finalize và chế độ vuốt theo chặng.*
@@ -295,15 +295,15 @@ erDiagram
 
 | Ràng buộc toàn vẹn | Nguồn quy tắc | Tầng thực thi |
 | :--- | :--- | :---: |
-| **Partial Unique:** `(group_id, decision_date)` khi `state IN ('ACTIVE', 'FINALIZED')` | [BR-025](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
-| `UNIQUE(group_id, rule_type, system_tag)` | [BR-012](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
-| `CHECK(minimum_count >= 1)` trên cả `group_rules` và `session_rules` | [BR-012](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
-| `UNIQUE(session_id, participant_id, group_dish_id)` trên `interactions` | [BR-040](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
-| `PRIMARY KEY(final_meal_id, group_dish_id)` (Một món xuất hiện 1 lần trong thực đơn) | [BR-050](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
-| `UNIQUE(group_id, global_dish_id)` trên `group_dishes` | [BR-005](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
-| `UNIQUE(session_id)` trên `final_meals` (Tối đa 1 Final Meal cho mỗi Session) | [BR-025](what-we-gonna-eat-today_business-rules_v1.7.md) | **Database** |
-| Participant bắt buộc phải là Group Member | [BR-026](what-we-gonna-eat-today_business-rules_v1.7.md) | **Application** |
-| Mọi Dish trong Final Meal phải Active tại thời điểm finalize | [BR-050](what-we-gonna-eat-today_business-rules_v1.7.md) | **Application** |
+| **Partial Unique:** `(group_id, decision_date)` khi `state IN ('ACTIVE', 'FINALIZED')` | [BR-025](what-we-gonna-eat-today_business-rules_v1.8.md) | **Database** |
+| `UNIQUE(group_id, rule_type, system_tag)` | [BR-012](what-we-gonna-eat-today_business-rules_v1.8.md) | **Database** |
+| `CHECK(minimum_count >= 1)` trên cả `group_rules` và `session_rules` | [BR-012](what-we-gonna-eat-today_business-rules_v1.8.md) | **Database** |
+| `UNIQUE(session_id, participant_id, group_dish_id)` trên `interactions` | [BR-040](what-we-gonna-eat-today_business-rules_v1.8.md) | **Database** |
+| `PRIMARY KEY(final_meal_id, group_dish_id)` (Một món xuất hiện 1 lần trong thực đơn) | [BR-050](what-we-gonna-eat-today_business-rules_v1.8.md) | **Database** |
+| `UNIQUE(group_id, global_dish_id)` trên `group_dishes` | [BR-005](what-we-gonna-eat-today_business-rules_v1.8.md) | **Database** |
+| `UNIQUE(session_id)` trên `final_meals` (Tối đa 1 Final Meal cho mỗi Session) | [BR-025](what-we-gonna-eat-today_business-rules_v1.8.md) | **Database** |
+| Participant bắt buộc phải là Group Member | [BR-026](what-we-gonna-eat-today_business-rules_v1.8.md) | **Application** |
+| Mọi Dish trong Final Meal phải Active tại thời điểm finalize | [BR-050](what-we-gonna-eat-today_business-rules_v1.8.md) | **Application** |
 
 ## 3.2 Các quyết định đồng bộ Schema
 
@@ -466,7 +466,7 @@ sequenceDiagram
 
 # 5b. Sơ đồ tuần tự chế độ vuốt theo chặng (v1.1)
 
-`F50` · [SPEC-029, SPEC-030](what-we-gonna-eat-today_sdd_v1.3.md) · [BR-063](what-we-gonna-eat-today_business-rules_v1.7.md)
+`F50` · [SPEC-029, SPEC-030](what-we-gonna-eat-today_sdd_v1.3.md) · [BR-063](what-we-gonna-eat-today_business-rules_v1.8.md)
 
 ```mermaid
 sequenceDiagram

@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-21`
-> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T7`, `E6-T8`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-016`, `SPEC-017`, `SPEC-018`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-050`, `BR-056`) • [Design Criteria §4](../../what-we-gonna-eat-today_design-criteria_v1.0.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`MS-01`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E6-T7`, `E6-T8`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-016`, `SPEC-017`, `SPEC-018`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-050`, `BR-056`) • [Design Criteria §4](../../what-we-gonna-eat-today_design-criteria_v1.0.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`MS-01`)
 > - **Ảnh tham chiếu:** [s11-01-bua-hom-nay.png](../../designs/screenshots/s11-01-bua-hom-nay.png) • [s12-02-lich-su.png](../../designs/screenshots/s12-02-lich-su.png) • [s04-04-da-chot.png](../../designs/screenshots/s04-04-da-chot.png)
 > - **Tiền đề:** E5 đã xong trọn (mốc M5) — `finalizeSession` chạy đủ 7 bước, `eating_history` có dữ liệu thật.
 >

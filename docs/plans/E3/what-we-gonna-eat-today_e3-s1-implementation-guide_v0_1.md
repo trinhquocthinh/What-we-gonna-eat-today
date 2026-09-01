@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
-> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E3-T1`, `E3-T2`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-008`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-021`, `BR-025`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-030→035`) • Mockup `docs/designs/designs/S-07 S-08 Quy dinh va Mo phien.dc.html`
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E3-T1`, `E3-T2`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-008`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-021`, `BR-025`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-030→035`) • Mockup `docs/designs/designs/S-07 S-08 Quy dinh va Mo phien.dc.html`
 > - **Tiền đề:** `E1-T7` đã code (`startSession` rút gọn). Slice này **sửa** chữ ký của nó — chưa route nào gọi nên an toàn.
 >
 > 🚦 *Slice đầu tiên của E3. Cơ chế bắt đầu phiên: revalidate 4 bước + hiện lỗi đúng tại hàng. Nối dây tạo/bắt đầu phiên vào `app/` lần đầu tiên.*

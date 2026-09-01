@@ -4,7 +4,7 @@
 >
 > - **Version:** `1.3` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
-> - **Supersedes:** `v1.2` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v3.9.md)
+> - **Supersedes:** `v1.2` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v3.9.md)
 > - **Downstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)
 >
 > 📌 *Tài liệu đặc tả chi tiết thuật toán sắp xếp Personal Candidate Deck cho từng thành viên và thuật toán chấm điểm đồng thuận Session Ranking cho người tổ chức (Creator).*
@@ -59,7 +59,7 @@ flowchart TD
 ```
 
 > [!CAUTION]
-> **Thứ tự Stage 3 → Stage 4 là bắt buộc, không được đảo.** Thẻ Explore theo định nghĩa là món lâu chưa ăn, tức nằm ở **đuôi** bảng xếp hạng Stage 2. Cắt trần trước khi trộn thì tập nguồn của luồng Explore đã bị xoá sạch — deck vẫn chạy, vẫn đủ 30 thẻ, chỉ là **không bao giờ có món lạ**. Không có test nào ở tầng trên bắt được lỗi này; phải có test riêng khẳng định đúng 6 trong 30 thẻ đến từ luồng Explore. Xem [`BR-062`](what-we-gonna-eat-today_business-rules_v1.7.md) và [`DEC-058`](what-we-gonna-eat-today_decision-log_v3.9.md).
+> **Thứ tự Stage 3 → Stage 4 là bắt buộc, không được đảo.** Thẻ Explore theo định nghĩa là món lâu chưa ăn, tức nằm ở **đuôi** bảng xếp hạng Stage 2. Cắt trần trước khi trộn thì tập nguồn của luồng Explore đã bị xoá sạch — deck vẫn chạy, vẫn đủ 30 thẻ, chỉ là **không bao giờ có món lạ**. Không có test nào ở tầng trên bắt được lỗi này; phải có test riêng khẳng định đúng 6 trong 30 thẻ đến từ luồng Explore. Xem [`BR-062`](what-we-gonna-eat-today_business-rules_v1.8.md) và [`DEC-058`](what-we-gonna-eat-today_decision-log_v3.9.md).
 
 ## 2.1 Stage 1 — Lọc cứng (Hard Filter)
 
@@ -67,12 +67,12 @@ Một món ăn bị loại bỏ hoàn toàn khỏi Eligible Set nếu vi phạm 
 
 | Điều kiện loại trừ | Nguồn quy tắc |
 | :--- | :--- |
-| Trạng thái món trong nhóm là `INACTIVE` | [BR-005](what-we-gonna-eat-today_business-rules_v1.7.md) |
-| Người dùng đánh dấu `Cannot Eat` đối với món này | [BR-034](what-we-gonna-eat-today_business-rules_v1.7.md) |
-| Món ăn nằm trong `Blacklist` của người dùng | [BR-035](what-we-gonna-eat-today_business-rules_v1.7.md) |
+| Trạng thái món trong nhóm là `INACTIVE` | [BR-005](what-we-gonna-eat-today_business-rules_v1.8.md) |
+| Người dùng đánh dấu `Cannot Eat` đối với món này | [BR-034](what-we-gonna-eat-today_business-rules_v1.8.md) |
+| Món ăn nằm trong `Blacklist` của người dùng | [BR-035](what-we-gonna-eat-today_business-rules_v1.8.md) |
 
 > [!NOTE]
-> Ràng buộc của thành viên khác **không** lọc Deck của người dùng này ([BR-033](what-we-gonna-eat-today_business-rules_v1.7.md)).
+> Ràng buộc của thành viên khác **không** lọc Deck của người dùng này ([BR-033](what-we-gonna-eat-today_business-rules_v1.8.md)).
 
 ## 2.2 Stage 2 — Điểm số cá nhân (Personal Score)
 
@@ -82,7 +82,7 @@ $$\text{Score} = w_{\text{explicit}} \cdot E + w_{\text{implicit}} \cdot I + w_{
 
 - Đặt `Like` $\to E = +1$
 - `Neutral` / Chưa đặt $\to E = 0$
-- Đặt `Dislike` $\to E = -1$ *(Dislike chỉ hạ điểm xếp hạng, không loại món khỏi Deck - [BR-037](what-we-gonna-eat-today_business-rules_v1.7.md))*
+- Đặt `Dislike` $\to E = -1$ *(Dislike chỉ hạ điểm xếp hạng, không loại món khỏi Deck - [BR-037](what-we-gonna-eat-today_business-rules_v1.8.md))*
 
 ### Thành phần $I$ — Sở thích suy diễn (Implicit Preference $\in [-1, 1]$)
 
@@ -116,7 +116,7 @@ $$R = \max\left(0, 1 - \frac{d}{7}\right)$$
 | $d \ge 7$ hoặc Chưa từng ăn | `0.00` |
 
 > [!IMPORTANT]
-> **Multi-source Collapse:** Ăn cùng 1 món ở 2 nhóm khác nhau trong cùng 1 ngày chỉ tính là **1 lần ăn duy nhất** khi tính Recency Penalty ([BR-056](what-we-gonna-eat-today_business-rules_v1.7.md)).
+> **Multi-source Collapse:** Ăn cùng 1 món ở 2 nhóm khác nhau trong cùng 1 ngày chỉ tính là **1 lần ăn duy nhất** khi tính Recency Penalty ([BR-056](what-we-gonna-eat-today_business-rules_v1.8.md)).
 
 ## 2.3 Stage 3 — Xen kẽ Khai thác / Khám phá (Exploit/Explore Interleave)
 
@@ -147,7 +147,7 @@ Chỉ chạy khi phiên có `deck_mode = COURSE` (`BR-063`). Với `deck_mode = 
   > Nhóm cấu hình 3 chặng ⇒ 10 thẻ mỗi chặng. Nếu chặng `SOUP` chỉ có 4 món thì 26 thẻ còn lại chia cho hai chặng kia (13 + 13).
 
 - Người dùng duyệt hết chặng hiện tại mới sang chặng kế tiếp; quay lại chặng trước vẫn được.
-- Chia chặng **không** tác động tới Session Ranking hay luồng chốt bữa — xem §3 và [`BR-050`](what-we-gonna-eat-today_business-rules_v1.7.md).
+- Chia chặng **không** tác động tới Session Ranking hay luồng chốt bữa — xem §3 và [`BR-050`](what-we-gonna-eat-today_business-rules_v1.8.md).
 
 ## 2.6 Stage 6 — Phân trang & Con trỏ (Paging & Cursor)
 

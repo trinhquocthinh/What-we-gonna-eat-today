@@ -93,6 +93,7 @@ async function listEligibleDishCards(
     systemTags: [],
     effectiveInteraction: row.effectiveType,
     daysSinceLastEaten: null,
+    lane: 'EXPLOIT' as const,
   }))
 }
 

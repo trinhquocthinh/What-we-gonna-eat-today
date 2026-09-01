@@ -114,6 +114,77 @@ export function buildDeck(input: BuildDeckInput, config: RankingConfig): string[
 }
 
 /**
+ * BR-047 — điều kiện vào luồng Explore. Dùng ở HAI chỗ và phải là CÙNG một
+ * hàm: `list-deck` chia luồng lúc dựng deck, và gắn `lane` cho từng thẻ ở mỗi
+ * lần đọc. Hai bản sao của cùng một vị từ là chỗ chúng sẽ lệch nhau.
+ */
+export function isExploreEligible(
+  input: { readonly daysSinceLastEaten: number | null; readonly explicit: number },
+  config: RankingConfig,
+): boolean {
+  if (input.explicit < 0) return false // Dislike — BR-047 loại trừ
+  return input.daysSinceLastEaten === null || input.daysSinceLastEaten >= config.explore.staleDays
+}
+
+/**
+ * BR-047 — mỗi khối `blockSize` vị trí: (blockSize - 1) thẻ Exploit + 1 thẻ
+ * Explore ở vị trí cuối khối.
+ *
+ * HAI LUỒNG CHỒNG NHAU (Guide §1.1): món chưa từng ăn có R = 0 nên vừa đứng
+ * đầu Exploit vừa đứng đầu Explore. `used` là thứ giữ cho mỗi món chỉ vào deck
+ * một lần — bỏ nó đi thì deck có món lặp và không test nào ở tầng trên bắt được.
+ *
+ * Luồng nào cạn thì vị trí đó lấy từ luồng còn lại — không để trống.
+ */
+export function blendExploitExplore(input: {
+  readonly exploit: readonly string[]
+  readonly explore: readonly string[]
+  readonly blockSize: number
+}): string[] {
+  const blockSize = Math.max(1, input.blockSize)
+  const used = new Set<string>()
+  let exploitIdx = 0
+  let exploreIdx = 0
+
+  function nextExploit(): string | null {
+    while (exploitIdx < input.exploit.length) {
+      const id = input.exploit[exploitIdx++]!
+      if (!used.has(id)) {
+        used.add(id)
+        return id
+      }
+    }
+    return null
+  }
+
+  function nextExplore(): string | null {
+    while (exploreIdx < input.explore.length) {
+      const id = input.explore[exploreIdx++]!
+      if (!used.has(id)) {
+        used.add(id)
+        return id
+      }
+    }
+    return null
+  }
+
+  const result: string[] = []
+  while (true) {
+    const isExplorePos = (result.length + 1) % blockSize === 0
+    const candidate = isExplorePos
+      ? (nextExplore() ?? nextExploit())
+      : (nextExploit() ?? nextExplore())
+
+    if (candidate === null) {
+      break
+    }
+    result.push(candidate)
+  }
+
+  return result
+}
+
+/**
  * SPEC-014 — số đếm thô của MỘT món trong MỘT phiên.
  *
  * `cannotEatCount` ($X$): SỐ NGƯỜI trong phiên đã khai `Cannot Eat` món này (BR-034).

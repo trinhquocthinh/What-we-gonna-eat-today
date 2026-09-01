@@ -5,7 +5,7 @@
 > - **Version:** `1.4` | **Status:** `Approved`
 > - **Last Updated:** `2026-08-14` | **Supersedes:** `v1.3`
 > - **Upstream:** Khảo sát hành vi & Nhu cầu thực tế
-> - **Downstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)
+> - **Downstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)
 
 ---
 

@@ -7,8 +7,8 @@ import { failure } from '@/shared/errors'
 import type { Result } from '@/shared/result'
 import { err, ok } from '@/shared/result'
 
-import { getDeckPage } from '../domain/deck-page'
-import { buildDeck } from '../domain/ranking'
+import { capDeck, getDeckPage } from '../domain/deck-page'
+import { blendExploitExplore, buildDeck, isExploreEligible } from '../domain/ranking'
 import { RANKING_CONFIG } from '../domain/ranking-config'
 import type { DishCard, SelectionRepository } from './selection-repository'
 
@@ -112,10 +112,23 @@ export async function listDeck(
       }
     })
 
-    const built = buildDeck(
+    const ordered = buildDeck(
       { sessionId: input.sessionId, userId: input.userId, eligible: rankingInputs },
       RANKING_CONFIG,
     )
+
+    // BR-047 — chia hai luồng TỪ danh sách đã sắp, giữ nguyên thứ tự tương đối.
+    // Hai luồng CHỒNG NHAU (Guide §1.1) — `blendExploitExplore` khử trùng bằng Set.
+    const byId = new Map(rankingInputs.map((r) => [r.dishId, r]))
+    const explore = ordered.filter((id) => isExploreEligible(byId.get(id)!, RANKING_CONFIG))
+
+    // Thứ tự BẮT BUỘC: trộn TRƯỚC, cắt trần SAU (BR-062, DEC-058, Guide §1.2).
+    const blended = blendExploitExplore({
+      exploit: ordered,
+      explore,
+      blockSize: RANKING_CONFIG.explore.blockSize,
+    })
+    const built = capDeck(blended, RANKING_CONFIG.deck.maxCards)
 
     const materialized = await deps.selection.materializeDeck(input.sessionId, input.userId, built)
     orderedDishIds =
@@ -128,14 +141,20 @@ export async function listDeck(
   const orderedCards = orderedDishIds
     .map((dishId) => eligibleById.get(dishId))
     .filter((dish): dish is DishCard => dish !== undefined)
-    .map((dish) => ({
-      ...dish,
-      // MỚI — S4. Tính từ CÙNG `eatingByDish` đã đọc ở trên, không query thêm.
-      daysSinceLastEaten: daysSinceLastEaten({
+    .map((dish) => {
+      const d = daysSinceLastEaten({
         eatingDates: eatingByDish.get(dish.globalDishId) ?? [],
         referenceDate: input.referenceDate,
-      }),
-    }))
+      })
+      const explicit = explicitPreferenceScore(preferences.get(dish.globalDishId) ?? null)
+      return {
+        ...dish,
+        daysSinceLastEaten: d,
+        lane: isExploreEligible({ daysSinceLastEaten: d, explicit }, RANKING_CONFIG)
+          ? ('EXPLORE' as const)
+          : ('EXPLOIT' as const),
+      }
+    })
 
   const page = getDeckPage(orderedCards, input.cursor, input.pageSize)
   return ok({ items: [...page.items], nextCursor: page.nextCursor })

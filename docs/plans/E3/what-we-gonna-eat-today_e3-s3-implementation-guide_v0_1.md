@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
-> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E3-T5`, `E3-T6`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-013`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-026`, `BR-044`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-054→057`) • Mockup `docs/designs/designs/S-04 Trang nhom.dc.html`, `docs/designs/designs/S-09 Deck vuot prototype.dc.html`
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E3-T5`, `E3-T6`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-013`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-026`, `BR-044`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-054→057`) • Mockup `docs/designs/designs/S-04 Trang nhom.dc.html`, `docs/designs/designs/S-09 Deck vuot prototype.dc.html`
 > - **Tiền đề bắt buộc:** `S1` (`E3-T1`) và `S2` (`E3-T3`/`E3-T4`) đã code.
 >
 > 🏁 *Slice cuối của E3 — mốc M3. Nối một UI đã có sẵn (E1-T8) vào backend thật, và dựng trạng thái "phiên đang mở" trên trang chủ nhóm.*

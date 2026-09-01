@@ -42,9 +42,14 @@ export type RankingConfig = {
     readonly blockSize: number
     readonly staleDays: number
   }
-  /** `pageSize` dùng từ S2 (E4-T4, SPEC-011). */
+  /** `pageSize` dùng từ S2 (E4-T4, SPEC-011). `maxCards` dùng từ S1 (E8-T1, BR-062). */
   readonly deck: {
     readonly pageSize: number
+    /**
+     * BR-062 + Ranking Spec §5 — Trần 30 thẻ mỗi người mỗi phiên.
+     * Chia hết cho `blockSize = 5` => đúng 24 Exploit + 6 Explore, không có khối cụt ở cuối.
+     */
+    readonly maxCards: number
   }
   /** E5-T6 — SPEC-014 Session Ranking. Chưa hàm nào đọc ở E4. */
   readonly sessionRanking: {
@@ -77,6 +82,7 @@ export const RANKING_CONFIG: RankingConfig = {
   },
   deck: {
     pageSize: 20,
+    maxCards: 30,
   },
   sessionRanking: {
     aSwipeRight: 1.0,

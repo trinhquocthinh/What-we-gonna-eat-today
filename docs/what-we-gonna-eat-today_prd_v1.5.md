@@ -4,7 +4,7 @@
 >
 > - **Version:** `1.5` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
-> - **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md) • [Ranking Specification](what-we-gonna-eat-today_ranking-specification_v1.3.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v3.9.md)
+> - **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md) • [Ranking Specification](what-we-gonna-eat-today_ranking-specification_v1.3.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v3.9.md)
 > - **Downstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 
 ---
@@ -69,7 +69,7 @@
 # 3. Epic và User Stories
 
 > [!NOTE]
-> Mọi quy tắc nghiệp vụ được dẫn chiếu trực tiếp bằng mã định danh ổn định `BR-xxx` từ [Business Rules v1.4](what-we-gonna-eat-today_business-rules_v1.7.md).
+> Mọi quy tắc nghiệp vụ được dẫn chiếu trực tiếp bằng mã định danh ổn định `BR-xxx` từ [Business Rules v1.4](what-we-gonna-eat-today_business-rules_v1.8.md).
 
 ## E1 — Group và thành viên
 

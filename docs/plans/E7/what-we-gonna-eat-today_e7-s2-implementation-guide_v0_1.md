@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-26`
-> - **Upstream:** [Master Plan §16.2](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E7-T4`, `E7-T3`) • [SDD §8.1](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-024`, `SPEC-025`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-034`, `BR-037`) • [Decision Log](../../what-we-gonna-eat-today_decision-log_v3.9.md) (`DEC-015`, `DEC-025`, `DEC-055`, `DEC-060`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-113`→`TC-117`, `TC-120`)
+> - **Upstream:** [Master Plan §16.2](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E7-T4`, `E7-T3`) • [SDD §8.1](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-024`, `SPEC-025`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-034`, `BR-037`) • [Decision Log](../../what-we-gonna-eat-today_decision-log_v3.9.md) (`DEC-015`, `DEC-025`, `DEC-055`, `DEC-060`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-113`→`TC-117`, `TC-120`)
 > - **Tiền đề:** `E7-S1` xong — hai bảng chạy được, `explicitPreferenceScore` đã nối vào `computePersonalScore`, ESLint cho phép 7 chiều.
 >
 > 🔌 *Slice nối dây. Sau slice này ràng buộc và sở thích ghi được qua API, món `Cannot Eat` biến khỏi deck, và tương tác cũ của nó bị xoá — nhưng vẫn chưa có nút nào trên màn hình bấm được (S3 mới có).*

@@ -4,7 +4,7 @@
 >
 > - **Version:** `1.2` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-14`
-> - **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Diagrams](what-we-gonna-eat-today_diagrams_v1.1.md) • [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md) • [Ranking Spec](what-we-gonna-eat-today_ranking-specification_v1.3.md)
+> - **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Diagrams](what-we-gonna-eat-today_diagrams_v1.1.md) • [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md) • [Ranking Spec](what-we-gonna-eat-today_ranking-specification_v1.3.md)
 > - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • [Test Cases](what-we-gonna-eat-today_test-cases-specification_v1.1.md) • [Setup & Ops Guide](what-we-gonna-eat-today_setup-and-ops-guide_v1.2.md)
 >
 > 📌 *Tài liệu đặc tả kiến trúc kỹ thuật, ranh giới tầng, mô hình dữ liệu, cơ chế API và cổng chất lượng cho 17 tính năng cốt lõi của phiên bản v1.0.*
@@ -192,7 +192,7 @@ eating_history(id, user_id, global_dish_id, eating_date, source_final_meal_id, c
 
 ## 3.2 Ba quyết định thiết kế quan trọng
 
-1. **Ràng buộc duy nhất của Session được ép ở tầng DB ([BR-025](what-we-gonna-eat-today_business-rules_v1.7.md)):**
+1. **Ràng buộc duy nhất của Session được ép ở tầng DB ([BR-025](what-we-gonna-eat-today_business-rules_v1.8.md)):**
 
    ```sql
    CREATE UNIQUE INDEX selection_sessions_active_per_group_date

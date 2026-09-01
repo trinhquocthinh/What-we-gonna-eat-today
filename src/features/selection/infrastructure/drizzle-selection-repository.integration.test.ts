@@ -16,6 +16,9 @@ import {
   users,
 } from '@/shared/db/schema'
 
+import { drizzleHistoryRepository } from '@/features/history/infrastructure/drizzle-history-repository'
+import { drizzlePreferenceRepository } from '@/features/preference/infrastructure/drizzle-preference-repository'
+import { listDeck } from '../application/list-deck'
 import { recordInteraction } from '../application/record-interaction'
 import { drizzleSelectionRepository } from './drizzle-selection-repository'
 
@@ -466,5 +469,156 @@ describe('listEligibleDishCards — SPEC-024 (TC-113, TC-116)', () => {
     await db.delete(selectionSessions).where(eq(selectionSessions.id, sessionId2))
     await db.delete(groupMembers).where(eq(groupMembers.groupId, groupId2))
     await db.delete(groups).where(eq(groups.id, groupId2))
+  })
+})
+
+async function seedActiveSessionWithMultipleDishes(count: number) {
+  const db = getDb()
+  const userId = crypto.randomUUID()
+  const groupId = crypto.randomUUID()
+  const sessionId = crypto.randomUUID()
+  const participantId = crypto.randomUUID()
+  const dishIds: { globalDishId: string; groupDishId: string }[] = []
+
+  await db.insert(users).values({
+    id: userId,
+    provider: 'test',
+    providerSubject: `integration-${userId}`,
+    email: `${userId}@example.test`,
+    displayName: 'Integration Test User',
+  })
+  await db.insert(groups).values({ id: groupId, name: 'Integration Test Group', timezone: 'UTC' })
+  await db.insert(groupMembers).values({ groupId, userId, isAdmin: true })
+  await db.insert(selectionSessions).values({
+    id: sessionId,
+    groupId,
+    decisionDate: '2026-08-17',
+    creatorUserId: userId,
+    state: 'ACTIVE',
+  })
+  await db.insert(participants).values({ id: participantId, sessionId, userId, state: 'ACTIVE' })
+
+  for (let i = 0; i < count; i += 1) {
+    const globalDishId = crypto.randomUUID()
+    const groupDishId = crypto.randomUUID()
+    await db.insert(globalDishes).values({
+      id: globalDishId,
+      name: `Món tích hợp ${i}`,
+      normalizedName: `mon tich hop ${i}`,
+      createdByUserId: userId,
+      createdFromGroupId: groupId,
+    })
+    await db.insert(groupDishes).values({ id: groupDishId, groupId, globalDishId, state: 'ACTIVE' })
+    dishIds.push({ globalDishId, groupDishId })
+  }
+
+  return { userId, groupId, sessionId, participantId, dishIds }
+}
+
+async function cleanupMultiple(
+  seed: Awaited<ReturnType<typeof seedActiveSessionWithMultipleDishes>>,
+) {
+  const db = getDb()
+  await db.delete(sessionDecks).where(eq(sessionDecks.sessionId, seed.sessionId))
+  for (const dish of seed.dishIds) {
+    await db.delete(groupDishes).where(eq(groupDishes.id, dish.groupDishId))
+    await db.delete(globalDishes).where(eq(globalDishes.id, dish.globalDishId))
+  }
+  await db.delete(participants).where(eq(participants.sessionId, seed.sessionId))
+  await db.delete(selectionSessions).where(eq(selectionSessions.id, seed.sessionId))
+  await db
+    .delete(groupMembers)
+    .where(and(eq(groupMembers.groupId, seed.groupId), eq(groupMembers.userId, seed.userId)))
+  await db.delete(groups).where(eq(groups.id, seed.groupId))
+  await db.delete(users).where(eq(users.id, seed.userId))
+}
+
+describe('E8-T4 — Ghim bất biến đóng băng deck (TC-129, TC-130)', () => {
+  it('TC-129: Gọi listDeck hai lần liên tiếp -> Thứ tự giống hệt; session_decks có đúng một dòng', async () => {
+    const seed = await seedActiveSessionWithMultipleDishes(5)
+    cleanupQueue.push(() => cleanupMultiple(seed))
+
+    const deps = {
+      selection: drizzleSelectionRepository,
+      history: drizzleHistoryRepository,
+      preferences: drizzlePreferenceRepository,
+    }
+
+    const input = {
+      sessionId: seed.sessionId,
+      userId: seed.userId,
+      cursor: 0,
+      pageSize: 20,
+      referenceDate: '2026-08-17',
+    }
+
+    const first = await listDeck(deps, input)
+    const second = await listDeck(deps, input)
+
+    expect(first.ok).toBe(true)
+    expect(second.ok).toBe(true)
+    if (!first.ok || !second.ok) throw new Error('unreachable')
+
+    expect(first.value.items.map((d) => d.dishId)).toEqual(second.value.items.map((d) => d.dishId))
+
+    const db = getDb()
+    const deckRows = await db
+      .select()
+      .from(sessionDecks)
+      .where(and(eq(sessionDecks.sessionId, seed.sessionId), eq(sessionDecks.userId, seed.userId)))
+    expect(deckRows).toHaveLength(1)
+  })
+
+  it('TC-130: Gọi listDeck, thêm món mới vào nhóm, gọi lại -> Món mới không xuất hiện; thứ tự cũ không đổi', async () => {
+    const seed = await seedActiveSessionWithMultipleDishes(3)
+    cleanupQueue.push(() => cleanupMultiple(seed))
+
+    const deps = {
+      selection: drizzleSelectionRepository,
+      history: drizzleHistoryRepository,
+      preferences: drizzlePreferenceRepository,
+    }
+
+    const input = {
+      sessionId: seed.sessionId,
+      userId: seed.userId,
+      cursor: 0,
+      pageSize: 20,
+      referenceDate: '2026-08-17',
+    }
+
+    const first = await listDeck(deps, input)
+    expect(first.ok).toBe(true)
+    if (!first.ok) throw new Error('unreachable')
+    const originalOrder = first.value.items.map((d) => d.dishId)
+
+    // Thêm món mới vào group
+    const db = getDb()
+    const newGlobalDishId = crypto.randomUUID()
+    const newGroupDishId = crypto.randomUUID()
+    await db.insert(globalDishes).values({
+      id: newGlobalDishId,
+      name: 'Món mới chen ngang',
+      normalizedName: 'mon moi chen ngang',
+      createdByUserId: seed.userId,
+      createdFromGroupId: seed.groupId,
+    })
+    await db.insert(groupDishes).values({
+      id: newGroupDishId,
+      groupId: seed.groupId,
+      globalDishId: newGlobalDishId,
+      state: 'ACTIVE',
+    })
+    seed.dishIds.push({ globalDishId: newGlobalDishId, groupDishId: newGroupDishId })
+
+    const second = await listDeck(deps, input)
+    expect(second.ok).toBe(true)
+    if (!second.ok) throw new Error('unreachable')
+
+    const secondOrder = second.value.items.map((d) => d.dishId)
+    // Món mới không xuất hiện trong deck đang chạy
+    expect(secondOrder).not.toContain(newGroupDishId)
+    // Thứ tự cũ giữ nguyên
+    expect(secondOrder).toEqual(originalOrder)
   })
 })

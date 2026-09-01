@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-26`
-> - **Upstream:** [Master Plan §16.3](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E8-T3`, `E8-T5`, `E8-T7`, `E8-T6`) • [SDD §8.2](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-027`, `SPEC-036`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-047`, `BR-062` — `S1` bump lên `v1.8` khi sửa `BR-048`) • [Design Criteria](../../what-we-gonna-eat-today_design-criteria_v1.0.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-145`, `TC-146`) • `NFR-01`, `NFR-02`, `NFR-03`
+> - **Upstream:** [Master Plan §16.3](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E8-T3`, `E8-T5`, `E8-T7`, `E8-T6`) • [SDD §8.2](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-027`, `SPEC-036`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-047`, `BR-062` — `S1` bump lên `v1.8` khi sửa `BR-048`) • [Design Criteria](../../what-we-gonna-eat-today_design-criteria_v1.0.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-145`, `TC-146`) • `NFR-01`, `NFR-02`, `NFR-03`
 > - **Tiền đề:** `E8-S1` xong — deck có trần 30 thẻ, `DishCard.lane` được gán ở mỗi lần đọc. **Và E7-S3 đã commit** (§1.1).
 >
 > 🧭 *Slice khép E8. Sau slice này người vuốt biết mình đang ở đâu, biết còn bao xa, thấy được món nào là món lâu chưa ăn — và mở lại app thì tiếp tục đúng chỗ đang dở.*

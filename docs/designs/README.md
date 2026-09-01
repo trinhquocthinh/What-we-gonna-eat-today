@@ -4,7 +4,7 @@
 >
 > - **Version:** `1.0` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Design Criteria](../what-we-gonna-eat-today_design-criteria_v1.0.md) • [PRD](../what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.7.md)
+> - **Upstream:** [Design Criteria](../what-we-gonna-eat-today_design-criteria_v1.0.md) • [PRD](../what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](../what-we-gonna-eat-today_business-rules_v1.8.md)
 > - **Downstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v2.1.md) • Tầng Presentation (`src/features/*/presentation`)
 >
 > 📌 *Cẩm nang bàn giao thiết kế giao diện v1.0: Danh mục 13 màn hình hoàn thiện (`S-01` đến `S-13`), hệ thống Design Tokens màu sắc/typography, các ràng buộc trải nghiệm người dùng (UX) và quy tắc chuyển đổi sang Next.js App Router.*

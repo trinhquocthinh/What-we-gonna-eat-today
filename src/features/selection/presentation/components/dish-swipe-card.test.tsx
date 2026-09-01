@@ -11,6 +11,7 @@ const DISH: DishCard = {
   systemTags: [],
   effectiveInteraction: null,
   daysSinceLastEaten: null,
+  lane: 'EXPLOIT',
 }
 
 describe('DishSwipeCard', () => {

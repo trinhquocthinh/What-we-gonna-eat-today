@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-18` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (E2-T1, E2-T2) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-003`, `SPEC-004`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-006→008`) • [Test Cases Spec](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-011→016, TC-112`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (E2-T1, E2-T2) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-003`, `SPEC-004`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-006→008`) • [Test Cases Spec](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-011→016, TC-112`)
 > - **Tiền đề:** E1-T1 → E1-T11 đã hoàn thành (S1→S6).
 >
 > 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S1 của Epic 2: Tạo link mời tham gia nhóm (bảo mật Token Hash SHA-256) và xử lý giao dịch tham gia nhóm an toàn.*

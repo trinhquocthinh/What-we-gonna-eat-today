@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-20`
-> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E5-T7`, `E5-T8`, `E5-T9` — **Cột mốc M5**) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-014`, `SPEC-015`, `SPEC-016`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-050`, `BR-051`) • [Design](../../designs/README.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-063`→`TC-066`, `TC-061`, `TC-072`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E5-T7`, `E5-T8`, `E5-T9` — **Cột mốc M5**) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-014`, `SPEC-015`, `SPEC-016`) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-050`, `BR-051`) • [Design](../../designs/README.md) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-063`→`TC-066`, `TC-061`, `TC-072`)
 > - **Ảnh tham chiếu:** [s10-01-tong-hop.png](../../designs/screenshots/s10-01-tong-hop.png)
 > - **Tiền đề:** S3 đã code (`listSessionRanking`, `finalizeSession` đủ 7 bước).
 >

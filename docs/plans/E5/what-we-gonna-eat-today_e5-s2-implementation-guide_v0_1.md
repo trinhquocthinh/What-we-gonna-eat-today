@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-20`
-> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E5-T3`, `E5-T4`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-016` bước 2, `SPEC-022`, §8 Independent Tag Counting) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) (§3.1 dòng 165–167) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-013`, `BR-015`, `BR-016`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-072`, `TC-073`, `TC-090`→`TC-094`, `TC-110`, `TC-035`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E5-T3`, `E5-T4`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-016` bước 2, `SPEC-022`, §8 Independent Tag Counting) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) (§3.1 dòng 165–167) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-013`, `BR-015`, `BR-016`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-072`, `TC-073`, `TC-090`→`TC-094`, `TC-110`, `TC-035`)
 > - **Tiền đề:** S1 đã code (`group_rules`, `shared/domain/system-tag.ts`), `E3-T1` đã code (`startSession`).
 >
 > 🧊 *Slice đóng băng. Một hàm thuần trả về "còn thiếu gì", và một câu SQL chạy đúng chỗ trong giao dịch Start. Không có UI.*

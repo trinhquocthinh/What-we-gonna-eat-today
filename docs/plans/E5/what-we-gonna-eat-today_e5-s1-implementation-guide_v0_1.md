@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-20`
-> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E5-T1`, `E5-T1b`, `E5-T2`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-021`) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) (§3.1 dòng 159–161) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.7.md) (`BR-010`→`BR-013`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-085`→`TC-089`) • [Design](../../designs/README.md)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E5-T1`, `E5-T1b`, `E5-T2`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-021`) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) (§3.1 dòng 159–161) • [Business Rules](../../what-we-gonna-eat-today_business-rules_v1.8.md) (`BR-010`→`BR-013`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-085`→`TC-089`) • [Design](../../designs/README.md)
 > - **Tiền đề:** `E2-T5` đã code (`group_dish_tags`, `SystemTag` domain), `E1-T3` đã code (`assertGroupAccess`).
 >
 > 📏 *Slice mở đầu E5. Sau slice này Group Admin đặt được quy định "phải có ít nhất 1 món canh" — nhưng chưa có gì kiểm tra nó. Việc kiểm tra là S2/S3.*

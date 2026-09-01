@@ -4,7 +4,7 @@
 >
 > - **Version:** `1.1` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
-> - **Supersedes:** `v1.0` | **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.7.md)
+> - **Supersedes:** `v1.0` | **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
 > - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • Bộ mã kiểm thử tự động Vitest
 >
 > 📌 *Tài liệu đặc tả toàn diện 150 ca kiểm thử tự động (`TC-001` đến `TC-150`) và 5 kịch bản kiểm thử khói thủ công (Smoke Tests): 112 ca cho 17 tính năng v1.0, 38 ca cho 12 tính năng v1.1.*
