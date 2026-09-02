@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { HistoryRepository } from '@/features/history/application/history-repository'
 import type { PreferenceKind } from '@/features/preference/domain/explicit-preference'
 import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
+import type { SystemTag } from '@/shared/domain/system-tag'
+
 import { listDeck } from './list-deck'
 import type { DishCard, SelectionRepository } from './selection-repository'
 
@@ -25,6 +27,10 @@ function makeDeps(
     materialized?: readonly string[] | null
     eatingRows?: { globalDishId: string; eatingDate: string }[]
     preferencesMap?: Map<string, PreferenceKind>
+    sessionCourses?: {
+      deckMode: 'FREE' | 'COURSE'
+      courses: readonly SystemTag[]
+    }
   } = {},
 ) {
   const materializeDeck = vi.fn(async () => ({ outcome: 'MATERIALIZED' as const }))
@@ -33,6 +39,10 @@ function makeDeps(
     listEligibleDishCards: vi.fn(async () => overrides.eligible ?? [makeDishCard()]),
     findMaterializedDeck: vi.fn(async () => overrides.materialized ?? null),
     materializeDeck,
+    findSessionCourses: vi.fn(
+      async () => overrides.sessionCourses ?? { deckMode: 'FREE' as const, courses: [] },
+    ),
+    listSessionCourses: vi.fn(async () => overrides.sessionCourses?.courses ?? []),
   }
   const history: HistoryRepository = {
     findEatingDates: vi.fn(async () => overrides.eatingRows ?? []),
@@ -283,5 +293,39 @@ describe('listDeck — E4-T3/T4', () => {
     expect(materializedArg).toHaveLength(30)
     // Không có id nào lặp lại
     expect(new Set(materializedArg).size).toBe(30)
+  })
+
+  it('COURSE mode: chia đúng các chặng và blend explore trong từng chặng', async () => {
+    const stapleDishes = Array.from({ length: 15 }, (_, i) =>
+      makeDishCard({ dishId: `s-${i}`, globalDishId: `gs-${i}`, systemTags: ['STAPLE'] }),
+    )
+    const mainDishes = Array.from({ length: 15 }, (_, i) =>
+      makeDishCard({ dishId: `m-${i}`, globalDishId: `gm-${i}`, systemTags: ['MAIN'] }),
+    )
+    const soupDishes = Array.from({ length: 15 }, (_, i) =>
+      makeDishCard({ dishId: `so-${i}`, globalDishId: `gso-${i}`, systemTags: ['SOUP'] }),
+    )
+
+    const deps = makeDeps({
+      eligible: [...stapleDishes, ...mainDishes, ...soupDishes],
+      sessionCourses: {
+        deckMode: 'COURSE',
+        courses: ['STAPLE', 'MAIN', 'SOUP'],
+      },
+    })
+
+    const result = await listDeck(deps, { ...BASE_INPUT, pageSize: 30 })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(deps.materializeDeck).toHaveBeenCalledOnce()
+    const materializedArg = (
+      deps.materializeDeck.mock.calls[0] as unknown as [string, string, string[]]
+    )[2]
+    expect(materializedArg).toHaveLength(30)
+    // 10 STAPLE đầu, 10 MAIN kế tiếp, 10 SOUP cuối
+    expect(materializedArg.slice(0, 10).every((id) => id.startsWith('s-'))).toBe(true)
+    expect(materializedArg.slice(10, 20).every((id) => id.startsWith('m-'))).toBe(true)
+    expect(materializedArg.slice(20, 30).every((id) => id.startsWith('so-'))).toBe(true)
   })
 })

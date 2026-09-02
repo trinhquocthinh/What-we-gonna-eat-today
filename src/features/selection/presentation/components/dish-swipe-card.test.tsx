@@ -94,6 +94,25 @@ describe('DishSwipeCard', () => {
 
     expect(screen.queryByText('Đổi vị')).not.toBeInTheDocument()
   })
+
+  it('E9-T0: thẻ có systemTags: ["SOUP"] hiện nhãn "Canh", không hiện "Trong danh mục"', () => {
+    const soupDish: DishCard = {
+      ...DISH,
+      systemTags: ['SOUP'],
+    }
+    render(
+      <DishSwipeCard
+        dish={soupDish}
+        lastEatenLabel="Chưa từng ăn"
+        explanation="Món này đang có trong danh mục của nhóm."
+        upcomingNames={[]}
+        onCommit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getAllByText('Canh').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Trong danh mục')).not.toBeInTheDocument()
+  })
 })
 
 describe('DIRECTION_STYLES — bất biến thiết kế', () => {

@@ -8,6 +8,7 @@ import type { Result } from '@/shared/result'
 import { err, ok } from '@/shared/result'
 
 import { capDeck, getDeckPage } from '../domain/deck-page'
+import { splitIntoCourses } from '../domain/course-deck'
 import { blendExploitExplore, buildDeck, isExploreEligible } from '../domain/ranking'
 import { RANKING_CONFIG } from '../domain/ranking-config'
 import type { DishCard, SelectionRepository } from './selection-repository'
@@ -122,13 +123,36 @@ export async function listDeck(
     const byId = new Map(rankingInputs.map((r) => [r.dishId, r]))
     const explore = ordered.filter((id) => isExploreEligible(byId.get(id)!, RANKING_CONFIG))
 
-    // Thứ tự BẮT BUỘC: trộn TRƯỚC, cắt trần SAU (BR-062, DEC-058, Guide §1.2).
-    const blended = blendExploitExplore({
-      exploit: ordered,
-      explore,
-      blockSize: RANKING_CONFIG.explore.blockSize,
-    })
-    const built = capDeck(blended, RANKING_CONFIG.deck.maxCards)
+    const sessionDeckConfig = await deps.selection.findSessionCourses(input.sessionId)
+    const tagsByDishId = new Map(eligible.map((d) => [d.dishId, d.systemTags]))
+
+    // DEC-066 / Guide §1.2 & §5.2 — Pipeline rẽ nhánh theo deckMode:
+    // - FREE: blendExploitExplore → capDeck(30)
+    // - COURSE: splitIntoCourses (cắt hạn mức TRONG TỪNG CHẶNG) → blendExploitExplore trong từng chặng → flatMap
+    const built =
+      sessionDeckConfig.deckMode === 'COURSE'
+        ? splitIntoCourses({
+            orderedDishIds: ordered,
+            tagsByDishId,
+            courses: sessionDeckConfig.courses,
+            maxCards: RANKING_CONFIG.deck.maxCards,
+          }).flatMap((course) =>
+            blendExploitExplore({
+              exploit: course.dishIds,
+              explore: course.dishIds.filter((id) =>
+                isExploreEligible(byId.get(id)!, RANKING_CONFIG),
+              ),
+              blockSize: RANKING_CONFIG.explore.blockSize,
+            }),
+          )
+        : capDeck(
+            blendExploitExplore({
+              exploit: ordered,
+              explore,
+              blockSize: RANKING_CONFIG.explore.blockSize,
+            }),
+            RANKING_CONFIG.deck.maxCards,
+          )
 
     const materialized = await deps.selection.materializeDeck(input.sessionId, input.userId, built)
     orderedDishIds =

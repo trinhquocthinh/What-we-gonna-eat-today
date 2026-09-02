@@ -79,6 +79,12 @@ function makeFakeSelectionRepository(options: {
     async listRankingParticipantUserIds() {
       return options.participantUserIds ?? ['u1', 'u2', 'u3', 'u4']
     },
+    async findSessionCourses(): Promise<never> {
+      throw new Error('không dùng')
+    },
+    async listSessionCourses(): Promise<never> {
+      throw new Error('không dùng')
+    },
   }
 
   return repository

@@ -1,3 +1,5 @@
+import type { SystemTag } from '@/shared/domain/system-tag'
+
 import type { ParticipantState, SessionState } from '../domain/session'
 
 export type SessionSummary = {
@@ -70,12 +72,16 @@ export interface SessionRepository {
   createDraftWithCreatorParticipant(input: NewSessionDraft): Promise<SessionSummary>
 
   /**
-   * SPEC-008 rút gọn — một UPDATE có điều kiện `WHERE id=$1 AND state='DRAFT'`.
-   * Dựa vào `selection_sessions_active_per_group_date` để bắt race (TC-107),
-   * KHÔNG tự SELECT rồi so sánh state trước (Tech Spec §3.2 — race condition
-   * ngay cả với hai người dùng).
+   * SPEC-008 rút gọn + SPEC-029. Snapshot session_rules và session_courses
+   * (nếu deckMode='COURSE') trong cùng batch có guard state='DRAFT'.
    */
-  startDraft(sessionId: string): Promise<StartDraftOutcome>
+  startDraft(
+    sessionId: string,
+    config?: {
+      deckMode?: 'FREE' | 'COURSE'
+      courses?: readonly SystemTag[]
+    },
+  ): Promise<StartDraftOutcome>
 
   /**
    * THÊM Ở S5 — trang deck (`app/sessions/[sessionId]/page.tsx`) cần

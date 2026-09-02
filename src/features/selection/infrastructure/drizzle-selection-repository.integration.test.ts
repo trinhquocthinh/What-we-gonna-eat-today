@@ -5,6 +5,7 @@ import { getDb } from '@/shared/db/client'
 import {
   globalDishes,
   groupDishes,
+  groupDishTags,
   groupMembers,
   groups,
   interactionEvents,
@@ -620,5 +621,83 @@ describe('E8-T4 — Ghim bất biến đóng băng deck (TC-129, TC-130)', () =>
     expect(secondOrder).not.toContain(newGroupDishId)
     // Thứ tự cũ giữ nguyên
     expect(secondOrder).toEqual(originalOrder)
+  })
+})
+
+describe('listEligibleDishCards — E9-T0 (TC-151)', () => {
+  it('TC-151: trả systemTags theo thứ tự chuẩn, món không có tag trả []', async () => {
+    const seed = await seedActiveSessionWithDish()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // seed.groupDishId: "Món tích hợp" -> không gắn tag nào
+
+    // Món 2: "Bún chả" -> gắn MAIN rồi STAPLE (thứ tự chèn ngược chuẩn)
+    const bunChaGlobalId = crypto.randomUUID()
+    const bunChaGroupId = crypto.randomUUID()
+    await db.insert(globalDishes).values({
+      id: bunChaGlobalId,
+      name: 'Bún chả',
+      normalizedName: 'bun cha',
+      createdByUserId: seed.userId,
+      createdFromGroupId: seed.groupId,
+    })
+    await db.insert(groupDishes).values({
+      id: bunChaGroupId,
+      groupId: seed.groupId,
+      globalDishId: bunChaGlobalId,
+      state: 'ACTIVE',
+    })
+    await db.insert(groupDishTags).values([
+      { groupDishId: bunChaGroupId, systemTag: 'MAIN' },
+      { groupDishId: bunChaGroupId, systemTag: 'STAPLE' },
+    ])
+
+    // Món 3: "Canh chua" -> gắn SOUP
+    const canhChuaGlobalId = crypto.randomUUID()
+    const canhChuaGroupId = crypto.randomUUID()
+    await db.insert(globalDishes).values({
+      id: canhChuaGlobalId,
+      name: 'Canh chua',
+      normalizedName: 'canh chua',
+      createdByUserId: seed.userId,
+      createdFromGroupId: seed.groupId,
+    })
+    await db.insert(groupDishes).values({
+      id: canhChuaGroupId,
+      groupId: seed.groupId,
+      globalDishId: canhChuaGlobalId,
+      state: 'ACTIVE',
+    })
+    await db.insert(groupDishTags).values([{ groupDishId: canhChuaGroupId, systemTag: 'SOUP' }])
+
+    const cards = await drizzleSelectionRepository.listEligibleDishCards(
+      seed.sessionId,
+      seed.participantId,
+      seed.userId,
+    )
+
+    const noTagCard = cards.find((c) => c.dishId === seed.groupDishId)
+    const bunChaCard = cards.find((c) => c.dishId === bunChaGroupId)
+    const canhChuaCard = cards.find((c) => c.dishId === canhChuaGroupId)
+
+    expect(noTagCard).toBeDefined()
+    expect(noTagCard?.systemTags).toEqual([])
+
+    expect(bunChaCard).toBeDefined()
+    // Thứ tự chuẩn của SYSTEM_TAGS: STAPLE đứng trước MAIN
+    expect(bunChaCard?.systemTags).toEqual(['STAPLE', 'MAIN'])
+
+    expect(canhChuaCard).toBeDefined()
+    expect(canhChuaCard?.systemTags).toEqual(['SOUP'])
+
+    // Dọn dẹp records bổ sung
+    await db
+      .delete(groupDishTags)
+      .where(inArray(groupDishTags.groupDishId, [bunChaGroupId, canhChuaGroupId]))
+    await db.delete(groupDishes).where(inArray(groupDishes.id, [bunChaGroupId, canhChuaGroupId]))
+    await db
+      .delete(globalDishes)
+      .where(inArray(globalDishes.id, [bunChaGlobalId, canhChuaGlobalId]))
   })
 })

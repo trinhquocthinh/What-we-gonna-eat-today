@@ -10,6 +10,7 @@ import {
   interactions,
   participants,
   selectionSessions,
+  sessionCourses,
   sessionDecks,
   userDishConstraints,
 } from '@/shared/db/schema'
@@ -53,10 +54,14 @@ async function listEligibleDishCards(
       globalDishId: globalDishes.id,
       name: globalDishes.name,
       effectiveType: interactions.type,
+      systemTags: sql<
+        string[]
+      >`coalesce(json_agg(distinct ${groupDishTags.systemTag}) filter (where ${groupDishTags.systemTag} is not null), '[]'::json)`,
     })
     .from(groupDishes)
     .innerJoin(globalDishes, eq(globalDishes.id, groupDishes.globalDishId))
     .innerJoin(selectionSessions, eq(selectionSessions.groupId, groupDishes.groupId))
+    .leftJoin(groupDishTags, eq(groupDishTags.groupDishId, groupDishes.id))
     .leftJoin(
       interactions,
       and(
@@ -84,13 +89,14 @@ async function listEligibleDishCards(
         ),
       ),
     )
+    .groupBy(groupDishes.id, globalDishes.id, globalDishes.name, interactions.type)
     .orderBy(groupDishes.id)
 
   return rows.map((row) => ({
     dishId: row.dishId,
     globalDishId: row.globalDishId,
     name: row.name,
-    systemTags: [],
+    systemTags: toSystemTags(row.systemTags),
     effectiveInteraction: row.effectiveType,
     daysSinceLastEaten: null,
     lane: 'EXPLOIT' as const,
@@ -381,6 +387,40 @@ async function listRankingParticipantUserIds(sessionId: string): Promise<string[
   return rows.map((row) => row.userId)
 }
 
+async function findSessionCourses(sessionId: string): Promise<{
+  readonly deckMode: 'FREE' | 'COURSE'
+  readonly courses: readonly SystemTag[]
+}> {
+  const db = getDb()
+  const [sessionRows, courseRows] = await Promise.all([
+    db
+      .select({ deckMode: selectionSessions.deckMode })
+      .from(selectionSessions)
+      .where(eq(selectionSessions.id, sessionId))
+      .limit(1),
+    db
+      .select({ systemTag: sessionCourses.systemTag })
+      .from(sessionCourses)
+      .where(eq(sessionCourses.sessionId, sessionId))
+      .orderBy(sessionCourses.position),
+  ])
+
+  return {
+    deckMode: sessionRows[0]?.deckMode ?? 'FREE',
+    courses: courseRows.map((r) => r.systemTag),
+  }
+}
+
+async function listSessionCourses(sessionId: string): Promise<readonly SystemTag[]> {
+  const rows = await getDb()
+    .select({ systemTag: sessionCourses.systemTag })
+    .from(sessionCourses)
+    .where(eq(sessionCourses.sessionId, sessionId))
+    .orderBy(sessionCourses.position)
+
+  return rows.map((r) => r.systemTag)
+}
+
 export const drizzleSelectionRepository: SelectionRepository = {
   findParticipant,
   listEligibleDishCards,
@@ -393,4 +433,6 @@ export const drizzleSelectionRepository: SelectionRepository = {
   countInteractionsByDish,
   countCannotEatByDish,
   listRankingParticipantUserIds,
+  findSessionCourses,
+  listSessionCourses,
 }

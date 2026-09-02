@@ -10,12 +10,14 @@ import { drizzleSessionRepository } from '@/features/session/infrastructure/driz
 import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
 import type { StartSessionFormState } from '@/features/session/presentation/components/start-session-screen'
 import { messageFor } from '@/shared/errors'
+import { isSystemTag, type SystemTag } from '@/shared/domain/system-tag'
 
 import { requireGroupContext } from '../../group-access'
 
 export async function openSessionAction(
   groupId: string,
   _previousState: StartSessionFormState,
+  formData?: FormData,
 ): Promise<StartSessionFormState> {
   const { group, user } = await requireGroupContext(groupId)
   const decisionDate = resolveDecisionDate(new Date(), group.timezone)
@@ -59,6 +61,12 @@ export async function openSessionAction(
     members.map((m) => m.userId),
   )
 
+  const deckMode = formData?.get('deckMode') === 'COURSE' ? 'COURSE' : 'FREE'
+  const rawCourses = formData?.getAll('courses') ?? []
+  const courses: SystemTag[] = rawCourses
+    .filter((c): c is string => typeof c === 'string')
+    .filter(isSystemTag)
+
   const result = await startSession(
     {
       sessions: drizzleSessionRepository,
@@ -67,6 +75,7 @@ export async function openSessionAction(
     },
     sessionId,
     user.id,
+    { deckMode, courses },
   )
 
   if (!result.ok) {

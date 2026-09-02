@@ -102,6 +102,21 @@ export interface SelectionRepository {
    */
   countCannotEatByDish(sessionId: string): Promise<Map<string, number>>
 
+  /**
+   * SPEC-029 — chặng đã đóng băng của phiên, theo `position` tăng dần kèm `deckMode`.
+   * Mảng `courses` rỗng khi phiên `FREE`.
+   */
+  findSessionCourses(sessionId: string): Promise<{
+    readonly deckMode: 'FREE' | 'COURSE'
+    readonly courses: readonly SystemTag[]
+  }>
+
+  /**
+   * SPEC-029 — chặng đã đóng băng của phiên, theo `position` tăng dần.
+   * Mảng RỖNG = phiên FREE (không có dòng nào).
+   */
+  listSessionCourses(sessionId: string): Promise<readonly SystemTag[]>
+
   /** $T$ của SPEC-014 và đồng thời tập người để đếm $H$. ACTIVE hoặc
    *  COMPLETED — `REMOVED` không tính (BR-026). */
   listRankingParticipantUserIds(sessionId: string): Promise<string[]>

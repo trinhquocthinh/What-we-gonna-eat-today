@@ -11,6 +11,7 @@ import {
   interactions,
   participants,
   selectionSessions,
+  sessionCourses,
   sessionRules,
   users,
 } from '@/shared/db/schema'
@@ -57,6 +58,7 @@ async function cleanupGroupAndUser(groupId: string, userIds: string | string[]) 
 
   const sessionIds = sessionRows.map((s) => s.id)
   if (sessionIds.length > 0) {
+    await db.delete(sessionCourses).where(inArray(sessionCourses.sessionId, sessionIds))
     await db.delete(sessionRules).where(inArray(sessionRules.sessionId, sessionIds))
     await db.delete(interactions).where(inArray(interactions.sessionId, sessionIds))
     await db.delete(participants).where(inArray(participants.sessionId, sessionIds))
@@ -633,5 +635,112 @@ describe('SPEC-022 / E5-T4 — Snapshot Session Rules lúc Start (integration)',
       .from(sessionRules)
       .where(eq(sessionRules.sessionId, second))
     expect(orphaned).toEqual([])
+  })
+})
+
+describe('SPEC-029 / E9-T1 — Snapshot Session Courses lúc Start (integration)', () => {
+  it('TC-131: Start COURSE 3 chặng -> session_courses đúng 3 dòng, position 0->2, ghi cùng giao dịch với session_rules', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([
+      { systemTag: 'MAIN', minimumCount: 1 },
+    ])
+
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const outcome = await drizzleSessionRepository.startDraft(draft, {
+      deckMode: 'COURSE',
+      courses: ['STAPLE', 'MAIN', 'SOUP'],
+    })
+
+    expect(outcome.outcome).toBe('STARTED')
+
+    const db = getDb()
+    const sessionRow = await db
+      .select({ deckMode: selectionSessions.deckMode, state: selectionSessions.state })
+      .from(selectionSessions)
+      .where(eq(selectionSessions.id, draft))
+      .limit(1)
+
+    expect(sessionRow[0]?.deckMode).toBe('COURSE')
+    expect(sessionRow[0]?.state).toBe('ACTIVE')
+
+    const courses = await db
+      .select({ position: sessionCourses.position, systemTag: sessionCourses.systemTag })
+      .from(sessionCourses)
+      .where(eq(sessionCourses.sessionId, draft))
+      .orderBy(sessionCourses.position)
+
+    expect(courses).toHaveLength(3)
+    expect(courses).toEqual([
+      { position: 0, systemTag: 'STAPLE' },
+      { position: 1, systemTag: 'MAIN' },
+      { position: 2, systemTag: 'SOUP' },
+    ])
+
+    const rules = await db.select().from(sessionRules).where(eq(sessionRules.sessionId, draft))
+    expect(rules).toHaveLength(1)
+  })
+
+  it('TC-133: Đổi Group Rule sau khi phiên ACTIVE -> session_courses không đổi', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([
+      { systemTag: 'MAIN', minimumCount: 1 },
+    ])
+
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const outcome = await drizzleSessionRepository.startDraft(draft, {
+      deckMode: 'COURSE',
+      courses: ['MAIN', 'SOUP'],
+    })
+    expect(outcome.outcome).toBe('STARTED')
+
+    // Đổi Group Rule
+    const db = getDb()
+    await db.delete(groupRules).where(eq(groupRules.groupId, groupId))
+    await db.insert(groupRules).values({
+      groupId,
+      systemTag: 'SIDE',
+      minimumCount: 2,
+      ruleType: 'REQUIRED',
+    })
+
+    const courses = await db
+      .select({ position: sessionCourses.position, systemTag: sessionCourses.systemTag })
+      .from(sessionCourses)
+      .where(eq(sessionCourses.sessionId, draft))
+      .orderBy(sessionCourses.position)
+
+    expect(courses).toEqual([
+      { position: 0, systemTag: 'MAIN' },
+      { position: 1, systemTag: 'SOUP' },
+    ])
+  })
+
+  it('Guard DRAFT: startDraft trên session đã ACTIVE -> NOT_DRAFT và không dòng session_courses nào được ghi', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([])
+
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const first = await drizzleSessionRepository.startDraft(draft, {
+      deckMode: 'COURSE',
+      courses: ['MAIN', 'SOUP'],
+    })
+    expect(first.outcome).toBe('STARTED')
+
+    // Lần hai với cấu hình khác
+    const second = await drizzleSessionRepository.startDraft(draft, {
+      deckMode: 'COURSE',
+      courses: ['STAPLE', 'DESSERT'],
+    })
+    expect(second.outcome).toBe('NOT_DRAFT')
+
+    const db = getDb()
+    const courses = await db
+      .select({ position: sessionCourses.position, systemTag: sessionCourses.systemTag })
+      .from(sessionCourses)
+      .where(eq(sessionCourses.sessionId, draft))
+      .orderBy(sessionCourses.position)
+
+    // Vẫn nguyên 2 dòng của lần đầu
+    expect(courses).toEqual([
+      { position: 0, systemTag: 'MAIN' },
+      { position: 1, systemTag: 'SOUP' },
+    ])
   })
 })

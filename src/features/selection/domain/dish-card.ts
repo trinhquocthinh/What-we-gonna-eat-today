@@ -1,3 +1,5 @@
+import type { SystemTag } from '@/shared/domain/system-tag'
+
 import type { InteractionType } from './interaction'
 
 export type DishLane = 'EXPLOIT' | 'EXPLORE'
@@ -6,8 +8,7 @@ export type DishCard = {
   readonly dishId: string
   readonly globalDishId: string
   readonly name: string
-  /** Luôn rỗng ở S5 — `group_dish_tags` là E2-T5, chưa tồn tại. */
-  readonly systemTags: readonly string[]
+  readonly systemTags: readonly SystemTag[]
   readonly effectiveInteraction: InteractionType | null
   /**
    * MỚI — S4. `null` = chưa từng ăn. Dữ liệu THÔ, không phải câu chữ — câu

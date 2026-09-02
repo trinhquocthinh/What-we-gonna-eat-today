@@ -2,6 +2,8 @@
 
 import type { ReactElement } from 'react'
 
+import { SYSTEM_TAG_LABELS } from '@/shared/ui/system-tag-label'
+
 import type { DishCard } from '../../domain/dish-card'
 import { useSwipeGesture } from './use-swipe-gesture'
 import type { SwipeDirection } from '../../domain/swipe-gesture'
@@ -73,7 +75,7 @@ export function DishSwipeCard({
       <div className="flex min-h-7.5 items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-chip bg-surface-sunken px-3 py-1.5 text-caption font-medium text-ink-muted">
-            {dish.systemTags[0] ?? 'Trong danh mục'}
+            {dish.systemTags[0] ? SYSTEM_TAG_LABELS[dish.systemTags[0]] : 'Trong danh mục'}
           </span>
           {dish.lane === 'EXPLORE' ? (
             <span className="rounded-full bg-accent-soft px-3 py-1.5 text-caption font-medium text-accent">
@@ -99,7 +101,7 @@ export function DishSwipeCard({
               key={tag}
               className="rounded-full bg-surface-sunken px-3 py-1.5 text-caption font-medium text-ink-muted"
             >
-              {tag}
+              {SYSTEM_TAG_LABELS[tag]}
             </span>
           ))}
         </div>

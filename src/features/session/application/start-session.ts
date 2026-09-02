@@ -1,3 +1,4 @@
+import type { SystemTag } from '@/shared/domain/system-tag'
 import type { Failure } from '@/shared/errors'
 import { failure } from '@/shared/errors'
 import type { Result } from '@/shared/result'
@@ -8,6 +9,11 @@ import type { SessionRepository, SessionSummary } from './session-repository'
 export type InvalidParticipant = {
   readonly userId: string
   readonly displayName: string
+}
+
+export type StartSessionConfig = {
+  readonly deckMode?: 'FREE' | 'COURSE'
+  readonly courses?: readonly SystemTag[]
 }
 
 export type StartSessionDeps = {
@@ -46,7 +52,20 @@ export async function startSession(
   deps: StartSessionDeps,
   sessionId: string,
   callerId: string,
+  config?: StartSessionConfig,
 ): Promise<Result<SessionSummary, Failure>> {
+  const deckMode = config?.deckMode ?? 'FREE'
+  const courses = config?.courses ?? []
+
+  if (deckMode === 'COURSE') {
+    if (courses.length === 0) {
+      return err(failure('ERR_VALIDATION', { field: 'courses' }))
+    }
+    if (new Set(courses).size !== courses.length) {
+      return err(failure('ERR_VALIDATION', { field: 'courses' }))
+    }
+  }
+
   const session = await deps.sessions.findForStart(sessionId)
 
   if (session !== null) {
@@ -67,7 +86,10 @@ export async function startSession(
     }
   }
 
-  const outcome = await deps.sessions.startDraft(sessionId)
+  const outcome = await deps.sessions.startDraft(sessionId, {
+    deckMode,
+    courses: deckMode === 'COURSE' ? courses : [],
+  })
 
   if (outcome.outcome === 'NOT_DRAFT') {
     return err(failure('ERR_SESSION_NOT_DRAFT', { sessionId }))

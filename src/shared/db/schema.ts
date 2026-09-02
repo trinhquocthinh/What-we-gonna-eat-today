@@ -301,6 +301,10 @@ export const sessionState = pgEnum('session_state', ['DRAFT', 'ACTIVE', 'FINALIZ
  *  `REMOVED` là F25 (ngoài v1.0, SPEC-009 nói rõ). */
 export const participantState = pgEnum('participant_state', ['ACTIVE', 'COMPLETED', 'REMOVED'])
 
+/** BR-063 — hai chế độ duyệt. `FREE` là mặc định: phiên tạo bằng đường cũ
+ *  chạy y như trước, không migration dữ liệu nào. */
+export const deckMode = pgEnum('deck_mode', ['FREE', 'COURSE'])
+
 /**
  * Tech Spec §3.1, §3.2, §3.3. Hai index KHÁC NHAU trên cùng cặp cột — mỗi cái
  * một việc:
@@ -336,6 +340,7 @@ export const selectionSessions = pgTable(
       .notNull()
       .references(() => users.id),
     state: sessionState('state').notNull().default('DRAFT'),
+    deckMode: deckMode('deck_mode').notNull().default('FREE'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     startedAt: timestamp('started_at', { withTimezone: true }),
     finalizedAt: timestamp('finalized_at', { withTimezone: true }),
@@ -403,6 +408,32 @@ export const sessionRules = pgTable(
 )
 
 export type SessionRule = typeof sessionRules.$inferSelect
+
+/**
+ * SPEC-029 — bản sao đông cứng danh sách chặng tại thời điểm Start, cùng khuôn
+ * `session_rules` (DEC-044): không cột `id`, khoá tự nhiên `(session_id, position)`.
+ *
+ * `position` bắt đầu từ 0 và liên tục — thứ tự Creator sắp, KHÔNG phải thứ tự
+ * chuẩn của SYSTEM_TAGS.
+ */
+export const sessionCourses = pgTable(
+  'session_courses',
+  {
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => selectionSessions.id),
+    position: integer('position').notNull(),
+    systemTag: systemTag('system_tag').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.sessionId, table.position] }),
+    // Một tag không được xuất hiện hai lần trong cùng phiên — nếu không,
+    // quy tắc "chặng đầu tiên khớp" (§1.5) có hai đáp án.
+    uniqueIndex('session_courses_session_tag_unique').on(table.sessionId, table.systemTag),
+  ],
+)
+
+export type SessionCourse = typeof sessionCourses.$inferSelect
 
 /**
  * SDD §2.2. Không có giá trị `NONE` — "None" = không tồn tại row (xem
