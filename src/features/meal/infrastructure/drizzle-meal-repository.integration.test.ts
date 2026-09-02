@@ -16,6 +16,7 @@ import {
   groups,
   participants,
   selectionSessions,
+  sessionCourses,
   sessionRules,
   userDishConstraints,
   users,
@@ -98,6 +99,10 @@ async function cleanup(seed: Seed) {
   await db
     .delete(sessionRules)
     .where(eq(sessionRules.sessionId, seed.sessionId))
+    .catch(() => {})
+  await db
+    .delete(sessionCourses)
+    .where(eq(sessionCourses.sessionId, seed.sessionId))
     .catch(() => {})
   await db
     .delete(groupRules)
@@ -535,5 +540,55 @@ describe('findFinalMeal — E6-T7 (S-11)', () => {
   it('SessionId không tồn tại trả về null', async () => {
     const result = await drizzleMealRepository.findFinalMeal(crypto.randomUUID())
     expect(result).toBeNull()
+  })
+
+  it('TC-138: BR-050 — Chốt bữa sau phiên COURSE hoạt động y hệt phiên FREE', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+
+    const db = getDb()
+    // Đổi sang deckMode = 'COURSE' và chèn các dòng session_courses
+    await db
+      .update(selectionSessions)
+      .set({ deckMode: 'COURSE' })
+      .where(eq(selectionSessions.id, seed.sessionId))
+
+    await db.insert(sessionCourses).values([
+      { sessionId: seed.sessionId, position: 0, systemTag: 'MAIN' },
+      { sessionId: seed.sessionId, position: 1, systemTag: 'SOUP' },
+    ])
+
+    const draft = await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      {
+        sessionId: seed.sessionId,
+        userId: seed.creatorId,
+        dishIds: [seed.dish1.groupDishId, seed.dish2.groupDishId],
+      },
+    )
+    expect(draft.ok).toBe(true)
+
+    const finalize = await finalizeSession(
+      {
+        meal: drizzleMealRepository,
+        rules: drizzleRuleRepository,
+        preferences: drizzlePreferenceRepository,
+      },
+      { sessionId: seed.sessionId, userId: seed.creatorId },
+    )
+    expect(finalize.ok).toBe(true)
+
+    const session = await db
+      .select({ state: selectionSessions.state })
+      .from(selectionSessions)
+      .where(eq(selectionSessions.id, seed.sessionId))
+    expect(session[0]?.state).toBe('FINALIZED')
+
+    // 2 Dish × 2 Participant = 4 dòng eating_history
+    const historyRows = await db
+      .select()
+      .from(eatingHistory)
+      .where(eq(eatingHistory.sourceFinalMealId, finalize.ok ? finalize.value.finalMealId : ''))
+    expect(historyRows).toHaveLength(4)
   })
 })

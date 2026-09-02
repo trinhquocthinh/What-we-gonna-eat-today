@@ -328,4 +328,76 @@ describe('listDeck — E4-T3/T4', () => {
     expect(materializedArg.slice(10, 20).every((id) => id.startsWith('m-'))).toBe(true)
     expect(materializedArg.slice(20, 30).every((id) => id.startsWith('so-'))).toBe(true)
   })
+
+  it('TC-137: FREE mode -> courses === null; items y hệt trước E9', async () => {
+    const deps = makeDeps({
+      eligible: [makeDishCard({ dishId: 'd1' }), makeDishCard({ dishId: 'd2' })],
+      sessionCourses: { deckMode: 'FREE', courses: [] },
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.courses).toBeNull()
+    expect(result.value.items).toHaveLength(2)
+  })
+
+  it('COURSE mode 3 chặng -> courses 3 phần tử, tổng count = items.length', async () => {
+    const staple = [makeDishCard({ dishId: 's1', systemTags: ['STAPLE'] })]
+    const main = [
+      makeDishCard({ dishId: 'm1', systemTags: ['MAIN'] }),
+      makeDishCard({ dishId: 'm2', systemTags: ['MAIN'] }),
+    ]
+    const soup = [makeDishCard({ dishId: 'so1', systemTags: ['SOUP'] })]
+
+    const deps = makeDeps({
+      eligible: [...staple, ...main, ...soup],
+      sessionCourses: {
+        deckMode: 'COURSE',
+        courses: ['STAPLE', 'MAIN', 'SOUP'],
+      },
+    })
+
+    const result = await listDeck(deps, { ...BASE_INPUT, pageSize: 10 })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.courses).toEqual([
+      { systemTag: 'STAPLE', count: 1 },
+      { systemTag: 'MAIN', count: 2 },
+      { systemTag: 'SOUP', count: 1 },
+    ])
+    const totalCount = result.value.courses?.reduce((acc, c) => acc + c.count, 0)
+    expect(totalCount).toBe(result.value.items.length)
+  })
+
+  it('món bị Cannot Eat giữa phiên: count của chặng chứa nó giảm 1, chặng khác không đổi', async () => {
+    // Giả lập session đã materialize 4 món: s1, m1, m2, so1
+    const staple = makeDishCard({ dishId: 's1', systemTags: ['STAPLE'] })
+    const main1 = makeDishCard({ dishId: 'm1', systemTags: ['MAIN'] })
+    const soup = makeDishCard({ dishId: 'so1', systemTags: ['SOUP'] })
+
+    // m2 bị Cannot Eat nên không còn trong eligible (không có trong mảng eligible truyền vào)
+    const deps = makeDeps({
+      eligible: [staple, main1, soup],
+      materialized: ['s1', 'm1', 'm2', 'so1'],
+      sessionCourses: {
+        deckMode: 'COURSE',
+        courses: ['STAPLE', 'MAIN', 'SOUP'],
+      },
+    })
+
+    const result = await listDeck(deps, { ...BASE_INPUT, pageSize: 10 })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    // main giảm từ 2 xuống 1, staple và soup vẫn 1
+    expect(result.value.courses).toEqual([
+      { systemTag: 'STAPLE', count: 1 },
+      { systemTag: 'MAIN', count: 1 },
+      { systemTag: 'SOUP', count: 1 },
+    ])
+    expect(result.value.items.map((d) => d.dishId)).toEqual(['s1', 'm1', 'so1'])
+  })
 })

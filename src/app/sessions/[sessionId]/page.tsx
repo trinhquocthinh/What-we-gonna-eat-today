@@ -76,6 +76,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
       sessionId={sessionId}
       dateCaption={formatVietnameseDateShort(session.decisionDate)}
       dishes={deck.value.items}
+      courses={deck.value.courses}
       initialParticipantState={participantState}
       groupHref={`/groups/${session.groupId}`}
     />

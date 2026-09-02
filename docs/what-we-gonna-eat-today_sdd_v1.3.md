@@ -501,22 +501,31 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 ### SPEC-031 — Đánh giá Preferred Rule (cảnh báo mềm)
 
 - **Nguồn:** `US-019`, `F22`, [BR-014](what-we-gonna-eat-today_business-rules_v1.8.md), [BR-052](what-we-gonna-eat-today_business-rules_v1.8.md)
-- **Đầu vào:** `{ selectedDishTags: SystemTag[][], sessionRules: SessionRule[] }`
-- **Đầu ra:** `{ blocking: RuleViolation[], warnings: RuleViolation[] }`
+- **Tên hàm:** `evaluateRules` — đổi từ `evaluateRequired`, vì nó nay đánh giá cả hai loại luật
+- **Đầu vào:** `{ rules: SessionRule[], dishes: TaggedDish[], targetDishCount: number | null }`
+- **Đầu ra:** `{ blocking: RuleShortfall[], warnings: RuleWarning[] }`
 - **Quy tắc:**
   - `REQUIRED` thiếu $\to$ `blocking`, chặn Finalize. `PREFERRED` thiếu $\to$ `warnings`, **không** chặn.
-  - Vẫn áp Independent Tag Counting của §9 cho cả hai loại.
-  - Hàm thuần; `finalizeSession` chỉ đọc `blocking.length === 0` để quyết định cho qua hay không.
+  - **Trường `satisfied` bị xoá.** Người gọi đọc `blocking.length === 0`. Giữ nó thì tên trường nói dối: một nháp có `warnings` vẫn "satisfied", và người đọc lướt sẽ hiểu ngược.
+  - **`RuleWarning` là union có thẻ**, không phải một hình dạng duy nhất:
+    - `{ kind: 'PREFERRED_SHORTFALL', systemTag, minimumCount, actual, missing }`
+    - `{ kind: 'TARGET_COUNT', direction: 'OVER' | 'UNDER', target, actual }`
+
+    Lệch Target Count **không gắn System Tag nào**. Ép nó vào hình dạng của `RuleShortfall` buộc phải bịa một `systemTag` giả, và `ruleShortfallPhrase` tra thẳng `TAG_IN_SENTENCE[systemTag]` sẽ in ra một cụm từ vô nghĩa.
+  - Vẫn áp Independent Tag Counting của §9 cho cả hai loại. Vòng lặp ngoài **phải** theo `rules`; lọc thành hai mảng rồi chạy hai vòng lặp có thân giống nhau là chỗ chúng sẽ lệch.
+  - Hàm thuần, chạy ở **cả** client (`FinalizeBar`, `BR-051` Live Composition Feedback) lẫn server (`finalizeSession` bước 6) — không đọc `Date`, không đọc config toàn cục.
 
 ### SPEC-032 — Target Dish Count
 
-- **Nguồn:** `F23`, [BR-011](what-we-gonna-eat-today_business-rules_v1.8.md)
+- **Nguồn:** `F23`, [BR-011](what-we-gonna-eat-today_business-rules_v1.8.md), [BR-015](what-we-gonna-eat-today_business-rules_v1.8.md)
+- **Lưu trữ:** **hai cột nullable** — `groups.target_dish_count` (cấu hình) và `selection_sessions.target_dish_count` (bản đông cứng lúc Start)
 - **Đầu vào:** `{ selectedCount: number, targetCount: number | null }`
-- **Đầu ra:** `RuleViolation | null`
+- **Đầu ra:** `RuleWarning | null` với `kind: 'TARGET_COUNT'`
 - **Quy tắc:**
-  - `targetCount = null` (nhóm chưa đặt) $\to$ không cảnh báo.
+  - `targetCount = null` (nhóm chưa đặt) $\to$ không cảnh báo. **Không** dùng `DEFAULT 0`: nó biến "chưa đặt" thành "mục tiêu 0 món" và cảnh báo mọi bữa.
   - Lệch theo cả hai chiều đều cảnh báo, và cảnh báo nói rõ chiều lệch.
   - Luôn là cảnh báo mềm, không bao giờ chặn — đây là con số gợi ý, không phải quy chuẩn.
+  - **Đông cứng lúc Start**, cùng lý lẽ `BR-015` đã áp cho Session Rule: Admin đổi cấu hình giữa phiên không được đổi luật của phiên đang chạy. Giá trị đọc từ `groups` **trước** `db.batch()` rồi truyền vào, và set trong chính câu UPDATE của `startDraft` — không thêm câu lệnh nào vào batch.
 
 ### SPEC-033 — Lưu vết cảnh báo lúc chốt bữa
 
@@ -534,23 +543,34 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 - **Nguồn:** `US-010`, `F26`, [BR-055](what-we-gonna-eat-today_business-rules_v1.8.md)
 - **Đầu vào:** `{ groupId, referenceDate }`
-- **Đầu ra:** `{ invalidatedSessionIds: string[] }`
+- **Đầu ra:** `void`
 - **Quy tắc:**
-  - Phiên `DRAFT` hoặc `ACTIVE` có `decision_date < referenceDate` chuyển sang `INVALID`.
-  - `referenceDate` quy đổi theo timezone của Group qua `SPEC-018`, **không** dùng `new Date()` tại chỗ.
-  - Xét **lười** khi mở phiên mới, không cần cron. Quy mô sản phẩm không biện minh nổi cho một tiến trình nền.
-  - Tương tác của phiên `INVALID` được **bảo toàn** nhưng không tính vào bất kỳ phép tính nào — [BR-061](what-we-gonna-eat-today_business-rules_v1.8.md).
+  - Phiên `DRAFT` hoặc `ACTIVE` có `decision_date < referenceDate` chuyển sang `INVALID`. Phiên `FINALIZED` của ngày cũ **không** bị đụng — một bữa đã chốt hôm qua là dữ liệu đúng.
+  - **Hai điểm xét, không phải một:**
+    1. **Quét lười** ở Group Hub — một `UPDATE` **idempotent** (không đọc-rồi-ghi, chạy lần hai không khớp dòng nào). Đó là điều kiện duy nhất khiến gọi nó trong render của một Server Component là hợp lệ.
+    2. **Chốt chặn** trong `SPEC-016` bước 1: `session.decision_date < hôm nay` $\to$ `ERR_SESSION_NOT_ACTIVE`, **độc lập với nhịp quét**.
+  - Không cron, không tiến trình nền. Quy mô sản phẩm không biện minh nổi cho chúng.
+  - `referenceDate` quy đổi theo timezone của Group qua `SPEC-018`.
+  - Tương tác của phiên `INVALID` được **bảo toàn** — [BR-061](what-we-gonna-eat-today_business-rules_v1.8.md). Việc "không tính vào phép nào" **tự đúng bằng cấu trúc**: `countInteractionsByDish` và `listRankingParticipantUserIds` đều lọc theo một `sessionId`, nên tương tác của phiên này không bao giờ lọt sang phiên khác. Không cần viết gì, nhưng cần một test ghim.
   - Phiên `INVALID` **không** chặn tạo phiên mới cùng ngày; partial unique index chỉ tính `ACTIVE`/`FINALIZED`.
+
+> [!CAUTION]
+> **Quét đơn thuần là không đủ.** Phiên `ACTIVE` bỏ dở từ hôm qua không hiện trên Group Hub và không chặn gì, nhưng vẫn mở được qua `/sessions/<id>` và **vẫn chốt được** — `SPEC-016` bước 1 vốn chỉ kiểm `state`. Chốt nó hôm nay ghi `eating_history` mang ngày **hôm qua**, và `SPEC-020` trừ điểm những món cả nhà thật ra chưa ăn, suốt bảy ngày. Đó là lý do phải có điểm xét thứ hai. Xem [`DEC-068`](what-we-gonna-eat-today_decision-log_v3.9.md).
 
 ### SPEC-035 — Gỡ Dish khỏi Group Dish Pool
 
 - **Nguồn:** `US-004`, `F27`, [BR-005](what-we-gonna-eat-today_business-rules_v1.8.md)
-- **Đầu vào:** `{ groupId, groupDishId }` (yêu cầu quyền Admin)
-- **Đầu ra:** `{ state: INACTIVE }`
+- **Đầu vào:** `{ groupId, groupDishId, requestedByUserId }` — yêu cầu quyền **Admin** ([BR-008](what-we-gonna-eat-today_business-rules_v1.8.md)), cùng khuôn `SPEC-006`
+- **Đầu ra:** `void`
 - **Quy tắc:**
   - Chuyển `ACTIVE` $\to$ `INACTIVE`, **không** xoá dòng — lịch sử ăn và tương tác cũ vẫn phải tra ngược được.
-  - Món `INACTIVE` biến khỏi phần đuôi chưa xem của deck đang chạy; phần đã xem giữ nguyên (`SPEC-028`).
-  - Thêm lại là tạo dòng mới, **không** khôi phục tag cũ — `F46` ngoài phạm vi theo [DEC-009](what-we-gonna-eat-today_decision-log_v3.9.md).
+  - Món `INACTIVE` biến khỏi phần đuôi chưa xem của deck đang chạy; phần đã xem giữ nguyên (`SPEC-028`, `TC-108`). Không viết cơ chế mới cho việc này.
+  - **Thêm lại hồi sinh CHÍNH DÒNG CŨ**, không tạo dòng mới: `group_dishes_group_global_unique(group_id, global_dish_id)` khiến dòng thứ hai không tồn tại được, và `reactivateGroupDish` chỉ lật `state` (`TC-020`).
+  - Gỡ món **không** đụng `group_dish_tags`, nên thêm lại thì nhãn còn nguyên. Xoá nhãn khi gỡ sẽ khiến món thêm lại rơi vào "Chưa phân nhãn" — đúng thứ [`DEC-053`](what-we-gonna-eat-today_decision-log_v3.9.md) đã chống cho luồng dùng lại món.
+  - Gỡ hết món của nhóm thì `SPEC-007` chặn mở phiên bằng `ERR_GROUP_HAS_NO_DISH` — `countActiveInGroup` giữ nguyên nghĩa.
+
+> [!NOTE]
+> Phiên bản trước của spec này ghi *"Thêm lại là tạo dòng mới"*. Sai: unique index trên `(group_id, global_dish_id)` không cho phép, và `TC-020` khẳng định ngược lại. `F46` ("khôi phục metadata khi thêm lại") nói về một bài toán khác và vẫn ngoài phạm vi — nó không mô tả hành vi của `group_dishes`.
 
 ---
 
@@ -577,6 +597,8 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.3` | 2026-09-02 | §8.5 | `SPEC-034` bổ sung điểm xét thứ hai (chốt chặn ở `SPEC-016`) — quét đơn thuần không ngăn được phiên hôm qua chốt vào hôm nay; `SPEC-035` sửa câu sai *"thêm lại là tạo dòng mới"* (unique index không cho phép, `TC-020` khẳng định ngược lại) và ghi quyền Admin | [DEC-068](what-we-gonna-eat-today_decision-log_v3.9.md), E11 Guide §1.2 |
+| `1.3` | 2026-09-02 | §8.4 | `SPEC-031` đổi tên hàm sang `evaluateRules`, xoá `satisfied`, `RuleWarning` thành union có thẻ (lệch Target Count không gắn tag nên không ép được vào `RuleShortfall`); `SPEC-032` ghi rõ hai cột nullable và điểm đông cứng lúc Start | [DEC-067](what-we-gonna-eat-today_decision-log_v3.9.md), E10-S1 Guide §1.3 |
 | `1.3` | 2026-08-26 | §1.2, §8.2 | Bổ sung `SPEC-036` (suy vị trí tiếp tục, `F51`); viết lại `SPEC-028` cho khớp hành vi thật — đóng băng toàn phần thay vì tính lại có chọn lọc, cơ chế chưa từng được xây | E8-S1 Guide §1.4, `DEC-064`, `DEC-065` |
 | `1.3` | 2026-08-26 | §1.2, §8, §9 | Bổ sung §8 với `SPEC-024`→`SPEC-035` cho 11 tính năng v1.1; ba lưu ý kiến trúc mới (một món một chặng, feature `preference`) | [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md) → [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `0.2` | 2026-08-14 | §1, §6, §7 | Kéo `F17`, `F20`, `F21` vào v1.0; thêm `SPEC-020→022` | Quyết định mở rộng baseline v1.0 |

@@ -262,4 +262,166 @@ describe('S-09 Deck vuốt', () => {
     expect(screen.getByText('Món 13')).toBeInTheDocument()
     expect(screen.getByText('13 / 30')).toBeInTheDocument()
   })
+
+  describe('E9-T5 — Giao diện duyệt theo chặng', () => {
+    const COURSES_3 = [
+      { systemTag: 'STAPLE' as const, count: 2 },
+      { systemTag: 'MAIN' as const, count: 3 },
+      { systemTag: 'SOUP' as const, count: 2 },
+    ]
+
+    const DISHES_7 = makeDishes([
+      'Cơm tấm',
+      'Bún bò',
+      'Thịt kho',
+      'Gà rán',
+      'Cá chiên',
+      'Canh chua',
+      'Canh rau',
+    ])
+
+    it('courses === null: màn hình y hệt trước E9, không có tiêu đề chặng, tiến trình tổng', () => {
+      render(
+        <DeckScreen
+          sessionId="s1"
+          dateCaption="Thứ Ba 18/8"
+          dishes={DISHES_7}
+          courses={null}
+          initialParticipantState="ACTIVE"
+          groupHref="/groups/g1"
+        />,
+      )
+
+      expect(screen.getByText('Bữa tối · Thứ Ba 18/8')).toBeInTheDocument()
+      expect(screen.getByText('1 / 7')).toBeInTheDocument()
+      expect(screen.queryByText(/Chặng/)).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Quay lại chặng trước' })).not.toBeInTheDocument()
+    })
+
+    it('3 chặng [2, 3, 2] thẻ, cursor = 0: Tiêu đề "Chặng 1/3", tiến trình 1 / 2', () => {
+      render(
+        <DeckScreen
+          sessionId="s1"
+          dateCaption="Thứ Ba 18/8"
+          dishes={DISHES_7}
+          courses={COURSES_3}
+          initialParticipantState="ACTIVE"
+          groupHref="/groups/g1"
+        />,
+      )
+
+      expect(screen.getByText(/Chặng 1\/3/)).toBeInTheDocument()
+      expect(screen.getByText('1 / 2')).toBeInTheDocument()
+      // Chưa vượt mốc chặng đầu nên không có nút "Quay lại chặng trước"
+      expect(screen.queryByRole('button', { name: 'Quay lại chặng trước' })).not.toBeInTheDocument()
+    })
+
+    it('vuốt tới cursor = 2: Tiêu đề "Chặng 2/3", tiến trình 1 / 3, tự chuyển chặng', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({ effectiveInteraction: 'SWIPE_RIGHT' }),
+        }),
+      )
+
+      render(
+        <DeckScreen
+          sessionId="s1"
+          dateCaption="Thứ Ba 18/8"
+          dishes={DISHES_7}
+          courses={COURSES_3}
+          initialParticipantState="ACTIVE"
+          groupHref="/groups/g1"
+        />,
+      )
+
+      // Vuốt thẻ 1 (Cơm tấm)
+      await userEvent.click(screen.getByRole('button', { name: 'Đề xuất Cơm tấm' }))
+      // Vuốt thẻ 2 (Bún bò)
+      await userEvent.click(await screen.findByRole('button', { name: 'Đề xuất Bún bò' }))
+
+      // Sang thẻ 3 (Thịt kho) — cursor = 2, đầu chặng 2 (MAIN)
+      expect(await screen.findByText('Thịt kho')).toBeInTheDocument()
+      expect(screen.getByText(/Chặng 2\/3/)).toBeInTheDocument()
+      expect(screen.getByText('1 / 3')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Quay lại chặng trước' })).toBeInTheDocument()
+
+      vi.unstubAllGlobals()
+    })
+
+    it('cursor = 4, bấm "Quay lại chặng trước" -> cursor = 2, không gọi fetch', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ effectiveInteraction: 'SWIPE_RIGHT' }),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      render(
+        <DeckScreen
+          sessionId="s1"
+          dateCaption="Thứ Ba 18/8"
+          dishes={DISHES_7}
+          courses={COURSES_3}
+          initialParticipantState="ACTIVE"
+          groupHref="/groups/g1"
+        />,
+      )
+
+      // Vuốt 4 thẻ: 0 -> 1 -> 2 -> 3 -> 4 (Cá chiên, thẻ thứ 3 của chặng 2)
+      await userEvent.click(screen.getByRole('button', { name: 'Đề xuất Cơm tấm' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Đề xuất Bún bò' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Đề xuất Thịt kho' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Đề xuất Gà rán' }))
+
+      expect(await screen.findByText('Cá chiên')).toBeInTheDocument()
+      expect(screen.getByText('3 / 3')).toBeInTheDocument()
+
+      const fetchCallCountBefore = fetchSpy.mock.calls.length
+
+      // Bấm "Quay lại chặng trước"
+      await userEvent.click(screen.getByRole('button', { name: 'Quay lại chặng trước' }))
+
+      // Về đầu chặng 2 (Thịt kho, cursor = 2)
+      expect(await screen.findByText('Thịt kho')).toBeInTheDocument()
+      expect(screen.getByText('1 / 3')).toBeInTheDocument()
+      // Không gửi request nào
+      expect(fetchSpy.mock.calls.length).toBe(fetchCallCountBefore)
+
+      vi.unstubAllGlobals()
+    })
+
+    it('vuốt hết 7 thẻ: màn hết thẻ, không kẹt ở ranh giới chặng cuối', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({ effectiveInteraction: 'SWIPE_RIGHT' }),
+        }),
+      )
+
+      render(
+        <DeckScreen
+          sessionId="s1"
+          dateCaption="Thứ Ba 18/8"
+          dishes={DISHES_7}
+          courses={COURSES_3}
+          initialParticipantState="ACTIVE"
+          groupHref="/groups/g1"
+        />,
+      )
+
+      for (let i = 0; i < 7; i++) {
+        const dish = DISHES_7[i]!
+        await userEvent.click(await screen.findByRole('button', { name: `Đề xuất ${dish.name}` }))
+      }
+
+      expect(
+        await screen.findByText('Bạn đã xem hết 7 món được chọn cho hôm nay.'),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Đã đề xuất 7 món. Xong lượt của mình chứ?')).toBeInTheDocument()
+
+      vi.unstubAllGlobals()
+    })
+  })
 })

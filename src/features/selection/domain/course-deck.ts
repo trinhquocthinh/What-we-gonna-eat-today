@@ -5,6 +5,12 @@ export type CourseDeck = {
   readonly dishIds: readonly string[]
 }
 
+export type CourseBoundary = {
+  readonly systemTag: SystemTag
+  /** Số thẻ của chặng này trong mảng phẳng. */
+  readonly count: number
+}
+
 /**
  * SPEC-030 — Tìm chặng đầu tiên khớp với một trong các tag của món
  * theo thứ tự Creator sắp xếp (S1 §1.5).

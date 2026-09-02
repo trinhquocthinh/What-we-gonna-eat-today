@@ -1,4 +1,5 @@
 import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
+import { drizzleRuleRepository } from '@/features/rule/infrastructure/drizzle-rule-repository'
 import { StartSessionScreen } from '@/features/session/presentation/components/start-session-screen'
 import { resolveDecisionDate } from '@/features/session/domain/decision-date'
 import { formatVietnameseDate } from '@/shared/time/format-vietnamese-date'
@@ -30,11 +31,21 @@ export default async function NewSessionPage({ params }: NewSessionPageProps) {
 
   const decisionDate = resolveDecisionDate(new Date(), group.timezone)
 
-  const members = await drizzleMembershipRepository.listActiveMembers(groupId)
+  const [members, groupRules] = await Promise.all([
+    drizzleMembershipRepository.listActiveMembers(groupId),
+    // DEC-059 mục 2 & Guide §1.3: Required Rule là GỢI Ý (mâm cơm hợp lệ cần gì),
+    // chặng là "tối nay muốn duyệt qua những gì" — hai khái niệm khác nhau.
+    // Giá trị lưu vào session_courses là thứ Creator chốt, không phải con trỏ
+    // tới group_rules. Bỏ bớt chặng cho bữa lẩu vẫn được mà không đổi luật nhóm.
+    // listGroupRules đã sắp theo thứ tự chuẩn SYSTEM_TAGS của mâm cơm Việt.
+    drizzleRuleRepository.listGroupRules(groupId),
+  ])
+
   const ordered = [
     ...members.filter((m) => m.userId === user.id),
     ...members.filter((m) => m.userId !== user.id),
   ]
+  const defaultCourses = groupRules.map((r) => r.systemTag)
 
   return (
     <StartSessionScreen
@@ -44,6 +55,7 @@ export default async function NewSessionPage({ params }: NewSessionPageProps) {
         displayName: m.displayName,
         error: null,
       }))}
+      defaultCourses={defaultCourses}
       blockText={null}
       action={openSessionAction.bind(null, groupId)}
     />

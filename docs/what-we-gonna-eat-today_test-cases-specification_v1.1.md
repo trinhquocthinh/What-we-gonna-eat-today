@@ -7,7 +7,7 @@
 > - **Supersedes:** `v1.0` | **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
 > - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • Bộ mã kiểm thử tự động Vitest
 >
-> 📌 *Tài liệu đặc tả toàn diện 152 ca kiểm thử tự động (`TC-001` đến `TC-152`) và 5 kịch bản kiểm thử khói thủ công (Smoke Tests): 112 ca cho 17 tính năng v1.0, 40 ca cho 12 tính năng v1.1.*
+> 📌 *Tài liệu đặc tả toàn diện 158 ca kiểm thử tự động (`TC-001` đến `TC-158`) và 5 kịch bản kiểm thử khói thủ công (Smoke Tests): 112 ca cho 17 tính năng v1.0, 46 ca cho 12 tính năng v1.1.*
 
 ---
 
@@ -16,7 +16,7 @@
 1. [Quy ước & Kỷ luật kiểm thử (Test Conventions)](#1-quy-ước--kỷ-luật-kiểm-thử-test-conventions)
 2. [Ma trận Test Cases ánh xạ từ SDD (TC-001 → TC-094)](#2-ma-trận-test-cases-ánh-xạ-từ-sdd-tc-001--tc-094)
 3. [Test Cases bổ sung — Biên và Trường hợp âm (TC-095 → TC-112)](#3-test-cases-bổ-sung--biên-và-trường-hợp-âm-tc-095--tc-112)
-3b. [Test Cases v1.1 (TC-113 → TC-152)](#3b-test-cases-v11-tc-113--tc-152)
+3b. [Test Cases v1.1 (TC-113 → TC-158)](#3b-test-cases-v11-tc-113--tc-158)
 4. [Kịch bản kiểm thử khói thủ công trên thiết bị di động (Smoke Tests)](#4-kịch-bản-kiểm-thử-khói-thủ-công-trên-thiết-bị-di-động-smoke-tests)
 5. [Bảng ma trận truy vết (Traceability Matrices)](#5-bảng-ma-trận-truy-vết-traceability-matrices)
 6. [Lịch sử thay đổi (Change History)](#6-lịch-sử-thay-đổi-change-history)
@@ -289,7 +289,7 @@ src/features/selection/
 
 ---
 
-# 3b. Test Cases v1.1 (TC-113 → TC-152)
+# 3b. Test Cases v1.1 (TC-113 → TC-158)
 
 Ánh xạ 1–1 với `SPEC-024` → `SPEC-035` của [SDD §8](what-we-gonna-eat-today_sdd_v1.3.md).
 
@@ -349,9 +349,15 @@ src/features/selection/
 | `TC-139` | `SPEC-031` | **Then chốt** | `D` | Thiếu 1 `REQUIRED` và 1 `PREFERRED` | `blocking` có 1 phần tử, `warnings` có 1; chỉ `blocking` chặn Finalize |
 | `TC-140` | `SPEC-033` | Biên | `I` | Chốt bữa không có cảnh báo nào | `finalize_warnings` **không** thêm dòng nào |
 | `TC-141` | `SPEC-034` | Thuận | `I` | Phiên `ACTIVE` của hôm qua, mở phiên hôm nay | Phiên cũ chuyển `INVALID`; tương tác cũ được bảo toàn; phiên mới tạo được |
-| `TC-142` | `SPEC-035` | Biên | `I` | Gỡ món rồi thêm lại | Dòng cũ giữ `INACTIVE`, dòng mới **không** kế thừa tag cũ |
+| `TC-142` | `SPEC-035` | Biên | `I` | Gỡ món rồi thêm lại | **Cùng một dòng** `group_dishes` lật `ACTIVE` → `INACTIVE` → `ACTIVE`; unique index không cho dòng thứ hai; nhãn còn nguyên |
+| `TC-156` | `SPEC-034` | **Then chốt** | `A` | Phiên `ACTIVE`, `decisionDate` = hôm qua, quét **chưa chạy** | `finalizeSession` trả `ERR_SESSION_NOT_ACTIVE`; `commitFinalize` **không** được gọi — chốt chặn độc lập với nhịp quét |
+| `TC-157` | `SPEC-034` | Hồi quy | `I` | Phiên có 5 dòng `interactions` → quét chuyển `INVALID` | `interactions` **vẫn đúng 5 dòng** (`BR-061` — bảo toàn, không xoá) |
+| `TC-158` | `SPEC-035` | Âm | `A` | Member (không phải Admin) gọi gỡ món | Trả `ERR_NOT_GROUP_ADMIN`, không ghi gì |
 | `TC-143` | `SPEC-032` | Thuận | `D` | `targetCount = 4`, nháp có 6 món | Cảnh báo mềm nêu rõ chiều lệch (thừa 2), **không** chặn Finalize |
 | `TC-144` | `SPEC-032` | Biên | `D` | `targetCount = null` (nhóm chưa đặt) | Không sinh cảnh báo nào |
+| `TC-153` | `SPEC-021` | Thuận | `A` | Rule set gồm `REQUIRED MAIN 1` **và** `PREFERRED MAIN 2` — cùng tag, khác loại | Hợp lệ, ghi đủ hai dòng; khoá khử trùng là cặp `(ruleType, systemTag)` chứ không phải tag đơn |
+| `TC-154` | `SPEC-022` | Hồi quy | `I` | Nhóm có 1 luật `REQUIRED` + 1 luật `PREFERRED`, Start phiên | `session_rules` có **đủ hai dòng** mà **không** sửa đường ghi nào — `buildSnapshotStatement` vốn không lọc `ruleType` |
+| `TC-155` | `SPEC-031` | **Then chốt** | `D` | Còn cảnh báo mềm; bấm "Chốt bữa" lần đầu, rồi **đổi tập món**, rồi bấm lần nữa | Lần đầu **không** submit (nhãn đổi thành "Vẫn chốt · …"); đổi món **reset** cờ xác nhận nên lần bấm kế tiếp lại chỉ là nhịp một |
 
 > [!CAUTION]
 > **5 Test Cases then chốt của v1.1** — mỗi cái canh một lỗi mà không tầng nào phía trên bắt được:
@@ -383,12 +389,12 @@ Chạy trước mỗi lần Deploy Production trên **điện thoại thật s�
 ### 5.1 Phủ sóng SPEC $\to$ Test Cases
 
 Toàn bộ **22 SPEC** của v1.0 đều có độ bao phủ kiểm thử:
-`SPEC-001` (TC-001→003) • `SPEC-002` (TC-008→010, 095, 096) • `SPEC-003` (TC-011, 012) • `SPEC-004` (TC-013→016, 112) • `SPEC-005` (TC-017→021, 097→099) • `SPEC-006` (TC-022→025, 100, 101) • `SPEC-007` (TC-026→029) • `SPEC-008` (TC-030→035, 107) • `SPEC-009` (TC-036→039) • `SPEC-010` (TC-040→044, 102, 108, 151) • `SPEC-011` (TC-045→047, 103, 104) • `SPEC-012` (TC-048→053, 105, 106) • `SPEC-013` (TC-054→057) • `SPEC-014` (TC-058→062, 111, 121) • `SPEC-015` (TC-063→066) • `SPEC-016` (TC-067→075, 109, 110) • `SPEC-017` (TC-076→078) • `SPEC-018` (TC-004, 005) • `SPEC-019` (TC-006, 007) • `SPEC-020` (TC-079→084) • `SPEC-021` (TC-085→090) • `SPEC-022` (TC-091→094).
+`SPEC-001` (TC-001→003) • `SPEC-002` (TC-008→010, 095, 096) • `SPEC-003` (TC-011, 012) • `SPEC-004` (TC-013→016, 112) • `SPEC-005` (TC-017→021, 097→099) • `SPEC-006` (TC-022→025, 100, 101) • `SPEC-007` (TC-026→029) • `SPEC-008` (TC-030→035, 107) • `SPEC-009` (TC-036→039) • `SPEC-010` (TC-040→044, 102, 108, 151) • `SPEC-011` (TC-045→047, 103, 104) • `SPEC-012` (TC-048→053, 105, 106) • `SPEC-013` (TC-054→057) • `SPEC-014` (TC-058→062, 111, 121) • `SPEC-015` (TC-063→066) • `SPEC-016` (TC-067→075, 109, 110) • `SPEC-017` (TC-076→078) • `SPEC-018` (TC-004, 005) • `SPEC-019` (TC-006, 007) • `SPEC-020` (TC-079→084) • `SPEC-021` (TC-085→090, 153) • `SPEC-022` (TC-091→094, 154).
 
 ### 5.2 Phủ sóng SPEC v1.1 $\to$ Test Cases
 
 Toàn bộ **13 SPEC** của v1.1 đều có độ bao phủ kiểm thử:
-`SPEC-024` (TC-113→117) • `SPEC-025` (TC-118→120) • `SPEC-026` (TC-123, 124, 126) • `SPEC-027` (TC-125, 127, 128, 147, 148) • `SPEC-028` (TC-129, 130, 149, 150) • `SPEC-036` (TC-145, 146) • `SPEC-029` (TC-131→133) • `SPEC-030` (TC-134→137, 152) • `SPEC-031` (TC-139) • `SPEC-032` (TC-143, 144) • `SPEC-033` (TC-140) • `SPEC-034` (TC-141) • `SPEC-035` (TC-142).
+`SPEC-024` (TC-113→117) • `SPEC-025` (TC-118→120) • `SPEC-026` (TC-123, 124, 126) • `SPEC-027` (TC-125, 127, 128, 147, 148) • `SPEC-028` (TC-129, 130, 149, 150) • `SPEC-036` (TC-145, 146) • `SPEC-029` (TC-131→133) • `SPEC-030` (TC-134→137, 152) • `SPEC-031` (TC-139, 155) • `SPEC-032` (TC-143, 144) • `SPEC-033` (TC-140) • `SPEC-034` (TC-141, 156, 157) • `SPEC-035` (TC-142, 158).
 
 `SPEC-023` (gợi ý catalog chung, bảo trì sau v1.0) chưa có TC trong tài liệu này — nợ kiểm thử đã ghi nhận, không thuộc phạm vi v1.1.
 
@@ -398,6 +404,8 @@ Toàn bộ **13 SPEC** của v1.1 đều có độ bao phủ kiểm thử:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.1` | 2026-09-02 | §3b, §5 | Bổ sung `TC-156` (phiên hôm qua không chốt được dù quét chưa chạy), `TC-157` (`BR-061` — tương tác của phiên `INVALID` giữ nguyên), `TC-158` (chỉ Admin gỡ được món); sửa `TC-142`: thêm lại hồi sinh **chính dòng cũ**, không tạo dòng mới — unique index không cho phép | E11 Guide §1.1, §4.1 |
+| `1.1` | 2026-09-02 | §3b, §5 | Bổ sung `TC-153` (một tag mang cả luật Bắt buộc lẫn Nên có), `TC-154` (Preferred đông cứng qua snapshot mà không sửa đường ghi), `TC-155` (xác nhận hai nhịp và cờ reset khi đổi tập món) | E10-S1/S2 Guide |
 | `1.1` | 2026-09-01 | §3b, §5 | Bổ sung `TC-151` (deck mang System Tag — trước E9 trường này luôn rỗng) và `TC-152` (chặng không rỗng dù top-30 lệch hẳn về một tag — canh thứ tự chia chặng trước cắt trần) | E9-S1 Guide §1.1, §1.2 |
 | `1.1` | 2026-08-26 | §3b, §5.2 | Bổ sung `TC-145`→`TC-150` cho E8: khử trùng hai luồng Exploit/Explore (`TC-147` — hai luồng chồng nhau nên món chưa từng ăn nằm ở cả hai), ghim bất biến đóng băng deck (`TC-149`, `TC-150`), và suy vị trí tiếp tục (`TC-145`, `TC-146` — `F51`) | E8-S1/S2 Guide |
 | `1.1` | 2026-08-26 | §3b | Sửa `TC-117`: hành vi "đặt ràng buộc thay người khác" không biểu diễn được vì `userId` lấy từ phiên đăng nhập, và `ERR_FORBIDDEN` không có trong `ErrorCode` — đổi thành ca khẳng định `userId` trong body bị bỏ qua | E7-S2 Guide §1.4 |

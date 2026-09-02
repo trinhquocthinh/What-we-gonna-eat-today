@@ -2,12 +2,15 @@
 
 import Link from 'next/link'
 import type { ReactElement } from 'react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
+import { SYSTEM_TAG_LABELS } from '@/shared/ui/system-tag-label'
 
 import type { DishCard } from '../../domain/dish-card'
 import type { SwipeDirection } from '../../domain/swipe-gesture'
+import type { CourseBoundary } from './current-course'
+import { currentCourse } from './current-course'
 import { formatExplanation, formatLastEatenLabel } from './dish-explanation'
 import { DishSwipeCard } from './dish-swipe-card'
 import { resumePosition } from './resume-position'
@@ -19,6 +22,7 @@ export type DeckScreenProps = {
   sessionId: string
   dateCaption: string
   dishes: DishCard[]
+  courses?: readonly CourseBoundary[] | null
   initialParticipantState: 'ACTIVE' | 'COMPLETED'
   /** Group Hub — nơi duy nhất hiện "Xem tổng hợp" (Creator) và "ai xong ai
    *  chưa" (mọi Member). Màn "Xong lượt của bạn" từng là NGÕ CỤT: không có
@@ -44,11 +48,15 @@ type ViewState = 'deck' | 'done'
  *
  * E8-S2 kết nối `resumePosition` (F51/SPEC-036), hiển thị lý do explore lane,
  * và cập nhật màn hết thẻ theo trần deck.
+ *
+ * E9-T5 hỗ trợ duyệt theo chặng: tiêu đề chặng, tiến trình trong chặng,
+ * tự chuyển chặng và nút quay lại chặng trước.
  */
 export function DeckScreen({
   sessionId,
   dateCaption,
   dishes,
+  courses = null,
   initialParticipantState,
   groupHref,
 }: DeckScreenProps): ReactElement {
@@ -62,6 +70,20 @@ export function DeckScreen({
   const [sendStatus, setSendStatus] = useState<SendInteractionStatus>('idle')
   const [failedCount, setFailedCount] = useState(0)
 
+  const courseInfo = currentCourse(courses ?? null, cursor)
+
+  const prevCourseTagRef = useRef<string | null>(courseInfo?.systemTag ?? null)
+  const [courseAnnouncement, setCourseAnnouncement] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (courseInfo !== null) {
+      if (prevCourseTagRef.current !== null && prevCourseTagRef.current !== courseInfo.systemTag) {
+        setCourseAnnouncement(`Sang chặng ${SYSTEM_TAG_LABELS[courseInfo.systemTag]}`)
+      }
+      prevCourseTagRef.current = courseInfo.systemTag
+    }
+  }, [courseInfo])
+
   const current = dishes[cursor]
   const isEmpty = view === 'deck' && current === undefined
   const isDeck = view === 'deck' && current !== undefined
@@ -70,8 +92,34 @@ export function DeckScreen({
   const yesCount = marks.filter((m) => m === 'yes').length
   const noCount = marks.filter((m) => m === 'no').length
   const total = dishes.length
-  const progress = `${Math.min(cursor + 1, total)} / ${total}`
-  const progressPercent = total === 0 ? 0 : Math.round((Math.min(cursor, total) / total) * 100)
+
+  const progress =
+    courseInfo !== null
+      ? `${courseInfo.position} / ${courseInfo.count}`
+      : `${Math.min(cursor + 1, total)} / ${total}`
+
+  const progressPercent =
+    courseInfo !== null
+      ? courseInfo.count === 0
+        ? 0
+        : Math.round((courseInfo.position / courseInfo.count) * 100)
+      : total === 0
+        ? 0
+        : Math.round((Math.min(cursor, total) / total) * 100)
+
+  const courseBoundaries: number[] = []
+  let acc = 0
+  for (const c of courses ?? []) {
+    courseBoundaries.push(acc)
+    acc += c.count
+  }
+  const firstCourseCount = courses?.[0]?.count ?? 0
+  const canGoPreviousCourse = courses !== null && courses.length > 0 && cursor >= firstCourseCount
+
+  function handlePreviousCourse() {
+    const prevBoundary = courseBoundaries.filter((b) => b < cursor).pop() ?? 0
+    setCursor(prevBoundary)
+  }
 
   function handleCommit(direction: SwipeDirection, dishId: string) {
     if (direction === 0) return
@@ -169,9 +217,25 @@ export function DeckScreen({
         </div>
       )}
 
+      {courseAnnouncement === null ? null : (
+        <div role="status" aria-live="polite" className="sr-only">
+          {courseAnnouncement}
+        </div>
+      )}
+
       <div className="flex flex-col gap-3 px-4 pb-3 pt-4">
         <div className="flex min-h-6 items-center justify-between gap-3">
-          <span className="text-caption font-medium text-ink-muted">Bữa tối · {dateCaption}</span>
+          {courseInfo !== null ? (
+            <div className="flex flex-col">
+              <span className="text-caption font-semibold text-ink">
+                Chặng {courseInfo.index}/{courseInfo.total} ·{' '}
+                {SYSTEM_TAG_LABELS[courseInfo.systemTag]}
+              </span>
+              <span className="text-caption font-medium text-ink-muted">{dateCaption}</span>
+            </div>
+          ) : (
+            <span className="text-caption font-medium text-ink-muted">Bữa tối · {dateCaption}</span>
+          )}
           <span className="tabular text-caption font-semibold text-ink-muted">{progress}</span>
         </div>
         <div className="h-1 overflow-hidden rounded-full bg-surface-sunken">
@@ -221,14 +285,23 @@ export function DeckScreen({
 
       <div className="flex flex-col gap-3 px-4 pb-8 pt-6">
         {isDeck ? (
-          <SwipeControls
-            currentDishName={current?.name ?? null}
-            canUndo={cursor > 0 && marks[marks.length - 1] !== 'cannot'}
-            onSwipeLeft={() => current !== undefined && handleCommit(-1, current.dishId)}
-            onSwipeRight={() => current !== undefined && handleCommit(1, current.dishId)}
-            onUndo={handleUndo}
-            onFinish={handleFinish}
-          />
+          <>
+            {canGoPreviousCourse ? (
+              <div className="flex justify-center">
+                <Button type="button" variant="quiet" size="sm" onClick={handlePreviousCourse}>
+                  Quay lại chặng trước
+                </Button>
+              </div>
+            ) : null}
+            <SwipeControls
+              currentDishName={current?.name ?? null}
+              canUndo={cursor > 0 && marks[marks.length - 1] !== 'cannot'}
+              onSwipeLeft={() => current !== undefined && handleCommit(-1, current.dishId)}
+              onSwipeRight={() => current !== undefined && handleCommit(1, current.dishId)}
+              onUndo={handleUndo}
+              onFinish={handleFinish}
+            />
+          </>
         ) : null}
 
         {isEmpty ? (

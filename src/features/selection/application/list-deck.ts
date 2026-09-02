@@ -1,3 +1,4 @@
+import type { SystemTag } from '@/shared/domain/system-tag'
 import type { HistoryRepository } from '@/features/history/application/history-repository'
 import { computeRecencyPenalty, daysSinceLastEaten } from '@/features/history/domain/recency'
 import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
@@ -8,10 +9,13 @@ import type { Result } from '@/shared/result'
 import { err, ok } from '@/shared/result'
 
 import { capDeck, getDeckPage } from '../domain/deck-page'
-import { splitIntoCourses } from '../domain/course-deck'
+import type { CourseBoundary } from '../domain/course-deck'
+import { findMatchingCourse, splitIntoCourses } from '../domain/course-deck'
 import { blendExploitExplore, buildDeck, isExploreEligible } from '../domain/ranking'
 import { RANKING_CONFIG } from '../domain/ranking-config'
 import type { DishCard, SelectionRepository } from './selection-repository'
+
+export type { CourseBoundary }
 
 export type ListDeckDeps = {
   readonly selection: SelectionRepository
@@ -37,6 +41,11 @@ export type ListDeckInput = {
 export type ListDeckResult = {
   readonly items: DishCard[]
   readonly nextCursor: number | null
+  /**
+   * `null` khi `deck_mode = FREE` — người gọi không phải rẽ nhánh, chỉ cần
+   * kiểm `=== null` một lần ở tầng presentation (TC-137).
+   */
+  readonly courses: readonly CourseBoundary[] | null
 }
 
 const ACCEPTED_PARTICIPANT_STATES = ['ACTIVE', 'COMPLETED'] as const
@@ -78,12 +87,13 @@ export async function listDeck(
     input.userId,
   )
 
-  // SPEC-020 + SPEC-025 (§4.2): đọc lịch sử ăn VÀ sở thích cá nhân cùng lúc
+  // SPEC-020 + SPEC-025 (§4.2): đọc lịch sử ăn, sở thích cá nhân VÀ cấu hình chặng cùng lúc
   // bằng Promise.all để thoả mãn NFR-01 (≤2.5s)
   const globalDishIds = eligible.map((d) => d.globalDishId)
-  const [eatingRows, preferences] = await Promise.all([
+  const [eatingRows, preferences, sessionDeckConfig] = await Promise.all([
     deps.history.findEatingDates(input.userId, globalDishIds),
     deps.preferences.findPreferencesByGlobalDish(input.userId, globalDishIds),
+    deps.selection.findSessionCourses(input.sessionId),
   ])
   const eatingByDish = groupEatingDatesByDish(eatingRows)
 
@@ -123,7 +133,6 @@ export async function listDeck(
     const byId = new Map(rankingInputs.map((r) => [r.dishId, r]))
     const explore = ordered.filter((id) => isExploreEligible(byId.get(id)!, RANKING_CONFIG))
 
-    const sessionDeckConfig = await deps.selection.findSessionCourses(input.sessionId)
     const tagsByDishId = new Map(eligible.map((d) => [d.dishId, d.systemTags]))
 
     // DEC-066 / Guide §1.2 & §5.2 — Pipeline rẽ nhánh theo deckMode:
@@ -180,6 +189,27 @@ export async function listDeck(
       }
     })
 
+  // E9-T4 / SPEC-030 / TC-137 — Suy ranh giới chặng ở read time:
+  // - FREE: null, presentation dùng tiến trình tổng
+  // - COURSE: đếm số thẻ của từng chặng trong orderedCards (mảng phẳng đã lọc món Cannot Eat)
+  let courses: readonly CourseBoundary[] | null = null
+  if (sessionDeckConfig.deckMode === 'COURSE') {
+    const counts = new Map<SystemTag, number>()
+    for (const tag of sessionDeckConfig.courses) {
+      counts.set(tag, 0)
+    }
+    for (const dish of orderedCards) {
+      const match = findMatchingCourse(dish.systemTags, sessionDeckConfig.courses)
+      if (match !== null && counts.has(match)) {
+        counts.set(match, (counts.get(match) ?? 0) + 1)
+      }
+    }
+    courses = sessionDeckConfig.courses.map((systemTag) => ({
+      systemTag,
+      count: counts.get(systemTag) ?? 0,
+    }))
+  }
+
   const page = getDeckPage(orderedCards, input.cursor, input.pageSize)
-  return ok({ items: [...page.items], nextCursor: page.nextCursor })
+  return ok({ items: [...page.items], nextCursor: page.nextCursor, courses })
 }
