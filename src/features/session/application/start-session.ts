@@ -28,6 +28,7 @@ export type StartSessionDeps = {
     readonly groupId: string
     readonly userIds: readonly string[]
   }) => Promise<readonly InvalidParticipant[]>
+  readonly findGroupTargetDishCount?: (groupId: string) => Promise<number | null>
 }
 
 /**
@@ -68,6 +69,7 @@ export async function startSession(
 
   const session = await deps.sessions.findForStart(sessionId)
 
+  let targetDishCount: number | null = null
   if (session !== null) {
     if (session.state !== 'DRAFT') {
       return err(failure('ERR_SESSION_NOT_DRAFT', { sessionId }))
@@ -84,11 +86,16 @@ export async function startSession(
     if (invalid.length > 0) {
       return err(failure('ERR_PARTICIPANT_NOT_MEMBER', { invalidParticipants: invalid }))
     }
+
+    if (deps.findGroupTargetDishCount) {
+      targetDishCount = await deps.findGroupTargetDishCount(session.groupId)
+    }
   }
 
   const outcome = await deps.sessions.startDraft(sessionId, {
     deckMode,
     courses: deckMode === 'COURSE' ? courses : [],
+    targetDishCount,
   })
 
   if (outcome.outcome === 'NOT_DRAFT') {

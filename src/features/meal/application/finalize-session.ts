@@ -1,7 +1,7 @@
 import { buildDefaultEatingHistory } from '@/features/history/domain/default-eating-history'
 import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
 import type { RuleRepository } from '@/features/rule/application/rule-repository'
-import { evaluateRequired } from '@/features/rule/domain/evaluate'
+import { evaluateRules } from '@/features/rule/domain/evaluate'
 import type { Failure } from '@/shared/errors'
 import { failure } from '@/shared/errors'
 import type { Result } from '@/shared/result'
@@ -68,13 +68,14 @@ export async function finalizeSession(
   // thời điểm một cách CÓ CHỦ Ý: "nhà này đòi mâm cơm có gì" đã chốt lúc Start;
   // "món này là món gì" thì sự thật mới nhất là sự thật đúng.
   const tagsByDish = await deps.meal.findSystemTagsByGroupDish(draft.groupDishIds)
-  const evaluation = evaluateRequired({
+  const evaluation = evaluateRules({
     rules,
     dishes: draft.groupDishIds.map((groupDishId) => ({
       systemTags: tagsByDish.get(groupDishId) ?? [],
     })),
+    targetDishCount: session.targetDishCount ?? null,
   })
-  if (!evaluation.satisfied) {
+  if (evaluation.blocking.length > 0) {
     // TC-072 — phiên GIỮ NGUYÊN `ACTIVE`. Không có lệnh ghi nào đã chạy tới
     // đây, nên "giữ nguyên" là hệ quả của thứ tự bước, không phải của một lệnh
     // rollback nào.
@@ -83,7 +84,7 @@ export async function finalizeSession(
         sessionId: input.sessionId,
         // E5-T9 in "Còn thiếu: 1 món canh" ngay trên nút chốt — chi tiết phải
         // đi kèm mã lỗi, không phải để presentation tự tra lại.
-        shortfalls: evaluation.shortfalls,
+        shortfalls: evaluation.blocking,
       }),
     )
   }

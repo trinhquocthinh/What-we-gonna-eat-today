@@ -12,9 +12,20 @@ import { ruleSentence } from './rule-sentence'
 
 export type RuleFormState = { error: string | null; savedAt: number | null }
 
+export type GroupRuleItem = {
+  systemTag: SystemTag
+  minimumCount: number
+  ruleType: 'REQUIRED' | 'PREFERRED'
+}
+
 export type GroupRulesScreenProps = {
   groupName: string
-  initialRules: readonly { systemTag: SystemTag; minimumCount: number }[]
+  initialRules: readonly {
+    systemTag: SystemTag
+    minimumCount: number
+    ruleType?: 'REQUIRED' | 'PREFERRED'
+  }[]
+  initialTargetDishCount?: number | null
   /** Member vẫn XEM được quy định; chỉ Admin mới thấy nút sửa (BR-010). */
   canEdit: boolean
   action: (state: RuleFormState, formData: FormData) => Promise<RuleFormState>
@@ -23,25 +34,34 @@ export type GroupRulesScreenProps = {
 const EMPTY_STATE: RuleFormState = { error: null, savedAt: null }
 
 /**
- * S-07. CHỈ dựng nhóm "Bắt buộc" — nhóm "Nên có" trong mockup là Preferred
- * Rule (F22, v1.1), và một mục trống mang tiêu đề "Nên có" là lời hứa v1.0
- * không giữ được (Guide §1.4).
+ * S-07 — Quy định bữa ăn (E10-T1 + E10-T3).
  *
- * Danh sách rule sống ở state client, submit một lần cho cả danh sách: SPEC-021
- * là "ghi đè toàn bộ", nên "Gỡ" và "Thêm" là hai cách sửa CÙNG một giá trị chứ
- * không phải hai thao tác server khác nhau.
+ * Hai nhóm: "Bắt buộc" (Required Rule) và "Nên có" (Preferred Rule).
+ * Form sử dụng trường ghép `ruleType:systemTag:minimumCount` để chống lệch hàng.
+ * Kèm ô cấu hình Target Dish Count cho nhóm.
  */
 export function GroupRulesScreen({
   groupName,
   initialRules,
+  initialTargetDishCount = null,
   canEdit,
   action,
 }: GroupRulesScreenProps): ReactElement {
-  const [rules, setRules] = useState(initialRules)
-  const [sheetOpen, setSheetOpen] = useState(false)
+  const [rules, setRules] = useState<readonly GroupRuleItem[]>(() =>
+    initialRules.map((r) => ({
+      systemTag: r.systemTag,
+      minimumCount: r.minimumCount,
+      ruleType: r.ruleType ?? 'REQUIRED',
+    })),
+  )
+  const [sheetType, setSheetType] = useState<'REQUIRED' | 'PREFERRED' | null>(null)
   const [state, formAction, pending] = useActionState(action, EMPTY_STATE)
 
-  const usedTags = new Set(rules.map((rule) => rule.systemTag))
+  const requiredRules = rules.filter((r) => r.ruleType === 'REQUIRED')
+  const preferredRules = rules.filter((r) => r.ruleType === 'PREFERRED')
+
+  const usedRequiredTags = new Set(requiredRules.map((rule) => rule.systemTag))
+  const usedPreferredTags = new Set(preferredRules.map((rule) => rule.systemTag))
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-app flex-col">
@@ -51,33 +71,96 @@ export function GroupRulesScreen({
       </header>
 
       <form action={formAction} className="flex flex-1 flex-col gap-4 px-4">
-        {rules.map((rule) => (
-          <div
-            key={rule.systemTag}
-            className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface-raised px-5 py-4"
-          >
-            <input type="hidden" name="systemTag" value={rule.systemTag} />
-            <input type="hidden" name="minimumCount" value={rule.minimumCount} />
-            <span className="text-subtitle font-semibold text-ink">{ruleSentence(rule)}</span>
-            {canEdit ? (
-              <Button
-                type="button"
-                variant="quiet"
-                size="sm"
-                onClick={() => setRules((current) => current.filter((r) => r !== rule))}
-              >
-                Gỡ
-              </Button>
-            ) : null}
+        {/* Nhóm Bắt buộc */}
+        {requiredRules.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            <h2 className="text-subtitle font-semibold text-ink">Bắt buộc</h2>
+            <div className="flex flex-col gap-2">
+              {requiredRules.map((rule) => (
+                <div
+                  key={`${rule.ruleType}:${rule.systemTag}`}
+                  className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface-raised px-5 py-4"
+                >
+                  <input
+                    type="hidden"
+                    name="rule"
+                    value={`${rule.ruleType}:${rule.systemTag}:${rule.minimumCount}`}
+                  />
+                  <span className="text-subtitle font-semibold text-ink">{ruleSentence(rule)}</span>
+                  {canEdit ? (
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      size="sm"
+                      onClick={() => setRules((current) => current.filter((r) => r !== rule))}
+                    >
+                      Gỡ
+                    </Button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
+        ) : null}
 
+        {/* Nhóm Nên có */}
+        {preferredRules.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            <h2 className="text-subtitle font-semibold text-ink">Nên có</h2>
+            <div className="flex flex-col gap-2">
+              {preferredRules.map((rule) => (
+                <div
+                  key={`${rule.ruleType}:${rule.systemTag}`}
+                  className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface-raised px-5 py-4"
+                >
+                  <input
+                    type="hidden"
+                    name="rule"
+                    value={`${rule.ruleType}:${rule.systemTag}:${rule.minimumCount}`}
+                  />
+                  <span className="text-subtitle font-semibold text-ink">{ruleSentence(rule)}</span>
+                  {canEdit ? (
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      size="sm"
+                      onClick={() => setRules((current) => current.filter((r) => r !== rule))}
+                    >
+                      Gỡ
+                    </Button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Cả hai nhóm rỗng */}
         {rules.length === 0 ? (
           <EmptyStateCard
             title="Chưa có quy định nào"
             description="Chưa có quy định nào. Lúc chốt bữa sẽ không có gì được kiểm tra — thiếu canh hay thiếu món mặn cũng chốt được."
           />
         ) : null}
+
+        {/* Cấu hình Target Dish Count (E10-T3) */}
+        <div className="flex flex-col gap-1 rounded-card border border-border bg-surface-raised p-4">
+          <label htmlFor="targetDishCount" className="text-subtitle font-semibold text-ink">
+            Số món thường ăn mỗi bữa
+          </label>
+          <span className="text-caption text-ink-muted">Để trống nếu nhà mình không cố định</span>
+          <input
+            id="targetDishCount"
+            name="targetDishCount"
+            type="number"
+            min={1}
+            max={20}
+            defaultValue={initialTargetDishCount ?? ''}
+            disabled={!canEdit}
+            placeholder="Ví dụ: 4"
+            className="mt-2 min-h-11 w-full rounded-control border border-border bg-surface px-3 text-body tabular-nums text-ink disabled:opacity-50"
+          />
+        </div>
 
         <p className="text-caption text-ink-muted">
           Quy định chỉ kiểm tra lúc chốt bữa, không chặn ai vuốt.
@@ -87,9 +170,24 @@ export function GroupRulesScreen({
 
         {canEdit ? (
           <div className="mt-auto flex flex-col gap-3 pb-6 pt-3">
-            <Button type="button" variant="secondary" onClick={() => setSheetOpen(true)}>
-              Thêm quy định
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setSheetType('REQUIRED')}
+              >
+                Thêm quy định bắt buộc
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setSheetType('PREFERRED')}
+              >
+                Thêm quy định nên có
+              </Button>
+            </div>
             <Button type="submit" pending={pending}>
               {pending ? 'Đang lưu…' : 'Lưu quy định'}
             </Button>
@@ -97,14 +195,15 @@ export function GroupRulesScreen({
         ) : null}
       </form>
 
-      {sheetOpen ? (
+      {sheetType !== null ? (
         <AddRuleSheet
-          usedTags={usedTags}
-          onAdd={(rule) => {
-            setRules((current) => [...current, rule])
-            setSheetOpen(false)
+          usedTags={sheetType === 'REQUIRED' ? usedRequiredTags : usedPreferredTags}
+          ruleType={sheetType}
+          onAdd={(newRule) => {
+            setRules((current) => [...current, newRule])
+            setSheetType(null)
           }}
-          onClose={() => setSheetOpen(false)}
+          onClose={() => setSheetType(null)}
         />
       ) : null}
     </main>

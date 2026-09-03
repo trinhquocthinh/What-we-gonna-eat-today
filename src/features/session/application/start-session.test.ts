@@ -164,6 +164,24 @@ describe('startSession', () => {
     expect(deps.sessions.startDraft).toHaveBeenCalledWith('s1', {
       deckMode: 'COURSE',
       courses: ['MAIN', 'SOUP'],
+      targetDishCount: null,
+    })
+  })
+
+  it('E10-T3: đọc targetDishCount từ Group và truyền xuống startDraft', async () => {
+    const deps = {
+      ...makeDeps(),
+      findGroupTargetDishCount: vi.fn(async () => 4),
+    }
+
+    const result = await startSession(deps, 's1', 'creator')
+
+    expect(result.ok).toBe(true)
+    expect(deps.findGroupTargetDishCount).toHaveBeenCalledWith('g1')
+    expect(deps.sessions.startDraft).toHaveBeenCalledWith('s1', {
+      deckMode: 'FREE',
+      courses: [],
+      targetDishCount: 4,
     })
   })
 })

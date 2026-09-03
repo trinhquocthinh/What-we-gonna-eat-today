@@ -50,14 +50,19 @@ export type NewUser = typeof users.$inferInsert
 
 /** Tech Spec §3.1. `timezone` là IANA, KHÔNG có default — SPEC-018 nói rõ
  *  "không có giá trị mặc định ẩn; tạo Group phải set". Ghi ở dạng canonical. */
-export const groups = pgTable('groups', {
-  id: uuid('id')
-    .primaryKey()
-    .$defaultFn(() => uuidv7()),
-  name: text('name').notNull(),
-  timezone: text('timezone').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+export const groups = pgTable(
+  'groups',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    name: text('name').notNull(),
+    timezone: text('timezone').notNull(),
+    targetDishCount: integer('target_dish_count'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check('groups_target_dish_count_positive', sql`${table.targetDishCount} >= 1`)],
+)
 
 export const groupMembers = pgTable(
   'group_members',
@@ -341,6 +346,7 @@ export const selectionSessions = pgTable(
       .references(() => users.id),
     state: sessionState('state').notNull().default('DRAFT'),
     deckMode: deckMode('deck_mode').notNull().default('FREE'),
+    targetDishCount: integer('target_dish_count'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     startedAt: timestamp('started_at', { withTimezone: true }),
     finalizedAt: timestamp('finalized_at', { withTimezone: true }),

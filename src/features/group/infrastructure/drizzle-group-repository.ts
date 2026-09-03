@@ -74,7 +74,12 @@ async function listForUser(userId: string): Promise<GroupListItem[]> {
 
 async function findById(groupId: string): Promise<GroupSummary | null> {
   const rows = await getDb()
-    .select({ id: groups.id, name: groups.name, timezone: groups.timezone })
+    .select({
+      id: groups.id,
+      name: groups.name,
+      timezone: groups.timezone,
+      targetDishCount: groups.targetDishCount,
+    })
     .from(groups)
     .where(eq(groups.id, groupId))
     .limit(1)

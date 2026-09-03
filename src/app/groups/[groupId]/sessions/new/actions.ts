@@ -7,7 +7,10 @@ import { startSession } from '@/features/session/application/start-session'
 import { resolveDecisionDate } from '@/features/session/domain/decision-date'
 import { drizzleDishRepository } from '@/features/dish/infrastructure/drizzle-dish-repository'
 import { drizzleSessionRepository } from '@/features/session/infrastructure/drizzle-session-repository'
-import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
+import {
+  drizzleGroupRepository,
+  drizzleMembershipRepository,
+} from '@/features/group/infrastructure/drizzle-group-repository'
 import type { StartSessionFormState } from '@/features/session/presentation/components/start-session-screen'
 import { messageFor } from '@/shared/errors'
 import { isSystemTag, type SystemTag } from '@/shared/domain/system-tag'
@@ -72,6 +75,10 @@ export async function openSessionAction(
       sessions: drizzleSessionRepository,
       findInvalidParticipants: ({ groupId: gid, userIds }) =>
         drizzleMembershipRepository.findInvalidMembers(gid, userIds),
+      findGroupTargetDishCount: async (gid) => {
+        const found = await drizzleGroupRepository.findById(gid)
+        return found?.targetDishCount ?? null
+      },
     },
     sessionId,
     user.id,

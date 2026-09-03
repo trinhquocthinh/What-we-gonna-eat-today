@@ -57,6 +57,7 @@ async function findSessionForMeal(sessionId: string): Promise<SessionForMeal | n
       state: selectionSessions.state,
       decisionDate: selectionSessions.decisionDate,
       groupId: selectionSessions.groupId,
+      targetDishCount: selectionSessions.targetDishCount,
     })
     .from(selectionSessions)
     .where(eq(selectionSessions.id, sessionId))

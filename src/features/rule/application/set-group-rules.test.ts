@@ -30,7 +30,11 @@ describe('setGroupRules', () => {
     )
 
     expect(result.ok).toBe(true)
-    expect(replaceGroupRules).toHaveBeenCalledWith('g1', [{ systemTag: 'SOUP', minimumCount: 1 }])
+    expect(replaceGroupRules).toHaveBeenCalledWith(
+      'g1',
+      [{ systemTag: 'SOUP', minimumCount: 1, ruleType: 'REQUIRED' }],
+      undefined,
+    )
   })
 
   // TC-088 — mảng rỗng vẫn phải GỌI repo (xoá sạch), không được "tối ưu" bỏ qua.
@@ -42,7 +46,7 @@ describe('setGroupRules', () => {
       { groupId: 'g1', rules: [], requestedByUserId: 'u1' },
     )
 
-    expect(replaceGroupRules).toHaveBeenCalledWith('g1', [])
+    expect(replaceGroupRules).toHaveBeenCalledWith('g1', [], undefined)
   })
 
   // TC-086.

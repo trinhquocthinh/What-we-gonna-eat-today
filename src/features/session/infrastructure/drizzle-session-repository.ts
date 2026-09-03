@@ -19,6 +19,7 @@ import type {
   SessionOverview,
   SessionRepository,
   SessionSummary,
+  StartDraftConfig,
   StartDraftOutcome,
 } from '../application/session-repository'
 import type { ParticipantState, SessionState } from '../domain/session'
@@ -87,6 +88,7 @@ const SESSION_SUMMARY_COLUMNS = {
   groupId: selectionSessions.groupId,
   decisionDate: selectionSessions.decisionDate,
   state: selectionSessions.state,
+  targetDishCount: selectionSessions.targetDishCount,
 }
 
 async function findBlockingSessionToday(
@@ -153,14 +155,12 @@ async function createDraftWithCreatorParticipant(input: NewSessionDraft): Promis
  */
 async function startDraft(
   sessionId: string,
-  config?: {
-    deckMode?: 'FREE' | 'COURSE'
-    courses?: readonly SystemTag[]
-  },
+  config?: StartDraftConfig,
 ): Promise<StartDraftOutcome> {
   const db = getDb()
   const deckMode = config?.deckMode ?? 'FREE'
   const courses = deckMode === 'COURSE' ? (config?.courses ?? []) : []
+  const targetDishCount = config?.targetDishCount ?? null
 
   try {
     const courseStatements = buildCourseSnapshotStatements(db, sessionId, courses)
@@ -169,12 +169,13 @@ async function startDraft(
       ...courseStatements,
       db
         .update(selectionSessions)
-        .set({ state: 'ACTIVE', startedAt: new Date(), deckMode })
+        .set({ state: 'ACTIVE', startedAt: new Date(), deckMode, targetDishCount })
         .where(and(eq(selectionSessions.id, sessionId), eq(selectionSessions.state, 'DRAFT')))
         .returning({
           id: selectionSessions.id,
           groupId: selectionSessions.groupId,
           decisionDate: selectionSessions.decisionDate,
+          targetDishCount: selectionSessions.targetDishCount,
         }),
     ])
 
@@ -182,6 +183,7 @@ async function startDraft(
       id: string
       groupId: string
       decisionDate: string
+      targetDishCount: number | null
     }[]
     const updated = rows[0]
     if (updated === undefined) {

@@ -3,7 +3,14 @@ import { ruleShortfallPhrase, TAG_IN_SENTENCE } from '@/shared/ui/system-tag-lab
 
 export { ruleShortfallPhrase }
 
-/** "Phải có ít nhất 1 món canh" — nguyên văn mockup S-07. */
-export function ruleSentence(rule: { systemTag: SystemTag; minimumCount: number }): string {
-  return `Phải có ít nhất ${rule.minimumCount} ${TAG_IN_SENTENCE[rule.systemTag]}`
+/**
+ * "Phải có ít nhất 1 món canh" hoặc "Nên có ít nhất 2 món mặn" — mockup S-07 + E10-T1.
+ */
+export function ruleSentence(rule: {
+  systemTag: SystemTag
+  minimumCount: number
+  ruleType?: 'REQUIRED' | 'PREFERRED'
+}): string {
+  const prefix = rule.ruleType === 'PREFERRED' ? 'Nên có ít nhất' : 'Phải có ít nhất'
+  return `${prefix} ${rule.minimumCount} ${TAG_IN_SENTENCE[rule.systemTag]}`
 }

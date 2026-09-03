@@ -2,6 +2,7 @@ export type GroupSummary = {
   readonly id: string
   readonly name: string
   readonly timezone: string
+  readonly targetDishCount?: number | null
 }
 
 export type GroupListItem = GroupSummary & {

@@ -743,4 +743,30 @@ describe('SPEC-029 / E9-T1 — Snapshot Session Courses lúc Start (integration)
       { position: 1, systemTag: 'SOUP' },
     ])
   })
+
+  // E10-T3: Đông cứng Target Dish Count lúc Start phiên (BR-015)
+  it('E10-T3: Đông cứng Target Dish Count lúc Start phiên (BR-015)', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    const db = getDb()
+
+    // Cấu hình target_dish_count = 4 cho Group
+    await db.update(groups).set({ targetDishCount: 4 }).where(eq(groups.id, groupId))
+
+    const decisionDate = '2026-08-20'
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+
+    // Start session với targetDishCount = 4
+    const started = await drizzleSessionRepository.startDraft(draft, {
+      deckMode: 'FREE',
+      targetDishCount: 4,
+    })
+    expect(started.outcome).toBe('STARTED')
+
+    // Admin đổi target_dish_count của Group thành 6
+    await db.update(groups).set({ targetDishCount: 6 }).where(eq(groups.id, groupId))
+
+    // selection_sessions.target_dish_count vẫn là 4 (đông cứng)
+    const sessionRow = await drizzleSessionRepository.findById(draft)
+    expect(sessionRow?.targetDishCount).toBe(4)
+  })
 })

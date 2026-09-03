@@ -135,14 +135,28 @@ describe('drizzleRuleRepository (Integration)', () => {
     const groupId = await createGroup()
 
     await drizzleRuleRepository.replaceGroupRules(groupId, [
-      { systemTag: 'MAIN', minimumCount: 1 },
-      { systemTag: 'SOUP', minimumCount: 1 },
+      {
+        systemTag: 'MAIN',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
+      {
+        systemTag: 'SOUP',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
     ])
 
     let rules = await drizzleRuleRepository.listGroupRules(groupId)
     expect(rules).toHaveLength(2)
 
-    await drizzleRuleRepository.replaceGroupRules(groupId, [{ systemTag: 'SOUP', minimumCount: 2 }])
+    await drizzleRuleRepository.replaceGroupRules(groupId, [
+      {
+        systemTag: 'SOUP',
+        minimumCount: 2,
+        ruleType: 'REQUIRED',
+      },
+    ])
 
     rules = await drizzleRuleRepository.listGroupRules(groupId)
     expect(rules).toHaveLength(1)
@@ -155,8 +169,16 @@ describe('drizzleRuleRepository (Integration)', () => {
     const groupId = await createGroup()
 
     await drizzleRuleRepository.replaceGroupRules(groupId, [
-      { systemTag: 'MAIN', minimumCount: 1 },
-      { systemTag: 'SOUP', minimumCount: 1 },
+      {
+        systemTag: 'MAIN',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
+      {
+        systemTag: 'SOUP',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
     ])
 
     await drizzleRuleRepository.replaceGroupRules(groupId, [])
@@ -169,9 +191,21 @@ describe('drizzleRuleRepository (Integration)', () => {
     const groupId = await createGroup()
 
     await drizzleRuleRepository.replaceGroupRules(groupId, [
-      { systemTag: 'SOUP', minimumCount: 1 },
-      { systemTag: 'STAPLE', minimumCount: 1 },
-      { systemTag: 'MAIN', minimumCount: 2 },
+      {
+        systemTag: 'SOUP',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
+      {
+        systemTag: 'STAPLE',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
+      {
+        systemTag: 'MAIN',
+        minimumCount: 2,
+        ruleType: 'REQUIRED',
+      },
     ])
 
     const rules = await drizzleRuleRepository.listGroupRules(groupId)
@@ -203,8 +237,16 @@ describe('drizzleRuleRepository (Integration)', () => {
   it('TC-091: Group có 2 rule, Session DRAFT -> buildSnapshotStatement chép đúng 2 rule', async () => {
     const { groupId, sessionId } = await createGroupAndSession('DRAFT')
     await drizzleRuleRepository.replaceGroupRules(groupId, [
-      { systemTag: 'MAIN', minimumCount: 1 },
-      { systemTag: 'SOUP', minimumCount: 2 },
+      {
+        systemTag: 'MAIN',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
+      {
+        systemTag: 'SOUP',
+        minimumCount: 2,
+        ruleType: 'REQUIRED',
+      },
     ])
 
     const db = getDb()
@@ -213,8 +255,8 @@ describe('drizzleRuleRepository (Integration)', () => {
     const rows = await drizzleRuleRepository.listSessionRules(sessionId)
     expect(rows).toHaveLength(2)
     expect(rows).toEqual([
-      { systemTag: 'MAIN', minimumCount: 1 },
-      { systemTag: 'SOUP', minimumCount: 2 },
+      { systemTag: 'MAIN', minimumCount: 1, ruleType: 'REQUIRED' },
+      { systemTag: 'SOUP', minimumCount: 2, ruleType: 'REQUIRED' },
     ])
   })
 
@@ -232,8 +274,16 @@ describe('drizzleRuleRepository (Integration)', () => {
   it('TC-094: Chạy snapshot lần 2 khi Session đã ACTIVE -> vẫn 2 dòng', async () => {
     const { groupId, sessionId } = await createGroupAndSession('DRAFT')
     await drizzleRuleRepository.replaceGroupRules(groupId, [
-      { systemTag: 'MAIN', minimumCount: 1 },
-      { systemTag: 'SOUP', minimumCount: 1 },
+      {
+        systemTag: 'MAIN',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
+      {
+        systemTag: 'SOUP',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
     ])
 
     const db = getDb()
@@ -256,33 +306,68 @@ describe('drizzleRuleRepository (Integration)', () => {
   it('TC-093: Sau snapshot, Admin đổi Group Rule -> session_rules không đổi', async () => {
     const { groupId, sessionId } = await createGroupAndSession('DRAFT')
     await drizzleRuleRepository.replaceGroupRules(groupId, [
-      { systemTag: 'MAIN', minimumCount: 1 },
-      { systemTag: 'SOUP', minimumCount: 1 },
+      {
+        systemTag: 'MAIN',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
+      {
+        systemTag: 'SOUP',
+        minimumCount: 1,
+        ruleType: 'REQUIRED',
+      },
     ])
 
     const db = getDb()
     await buildSnapshotStatement(db, sessionId)
 
     // Đổi rule của Group
-    await drizzleRuleRepository.replaceGroupRules(groupId, [{ systemTag: 'SIDE', minimumCount: 3 }])
+    await drizzleRuleRepository.replaceGroupRules(groupId, [
+      {
+        systemTag: 'SIDE',
+        minimumCount: 3,
+        ruleType: 'REQUIRED',
+      },
+    ])
 
     const sessionRulesList = await drizzleRuleRepository.listSessionRules(sessionId)
     expect(sessionRulesList).toEqual([
-      { systemTag: 'MAIN', minimumCount: 1 },
-      { systemTag: 'SOUP', minimumCount: 1 },
+      { systemTag: 'MAIN', minimumCount: 1, ruleType: 'REQUIRED' },
+      { systemTag: 'SOUP', minimumCount: 1, ruleType: 'REQUIRED' },
     ])
   })
 
-  it('listSessionRules chỉ trả rule REQUIRED, không trả PREFERRED', async () => {
+  // TC-154: Nhóm có 1 Required + 1 Preferred -> Start phiên -> session_rules có đủ hai dòng, không sửa đường ghi nào
+  it('TC-154: Nhóm có 1 Required + 1 Preferred -> Start phiên -> session_rules có đủ hai dòng, listSessionRules trả cả hai loại', async () => {
+    const { groupId, sessionId } = await createGroupAndSession('DRAFT')
+    await drizzleRuleRepository.replaceGroupRules(groupId, [
+      { ruleType: 'REQUIRED', systemTag: 'SOUP', minimumCount: 1 },
+      { ruleType: 'PREFERRED', systemTag: 'MAIN', minimumCount: 2 },
+    ])
+
+    const db = getDb()
+    await buildSnapshotStatement(db, sessionId)
+
+    const rules = await drizzleRuleRepository.listSessionRules(sessionId)
+    expect(rules).toEqual([
+      { ruleType: 'REQUIRED', systemTag: 'SOUP', minimumCount: 1 },
+      { ruleType: 'PREFERRED', systemTag: 'MAIN', minimumCount: 2 },
+    ])
+  })
+
+  it('listSessionRules trả cả hai loại, REQUIRED đứng trước', async () => {
     const { sessionId } = await createGroupAndSession('DRAFT')
     const db = getDb()
 
     await db.insert(sessionRules).values([
+      { sessionId, ruleType: 'PREFERRED', systemTag: 'STAPLE', minimumCount: 1 },
       { sessionId, ruleType: 'REQUIRED', systemTag: 'SOUP', minimumCount: 1 },
-      { sessionId, ruleType: 'PREFERRED', systemTag: 'MAIN', minimumCount: 1 },
     ])
 
     const rules = await drizzleRuleRepository.listSessionRules(sessionId)
-    expect(rules).toEqual([{ systemTag: 'SOUP', minimumCount: 1 }])
+    expect(rules).toEqual([
+      { ruleType: 'REQUIRED', systemTag: 'SOUP', minimumCount: 1 },
+      { ruleType: 'PREFERRED', systemTag: 'STAPLE', minimumCount: 1 },
+    ])
   })
 })

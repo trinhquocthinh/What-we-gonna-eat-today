@@ -1765,10 +1765,85 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-066 — Chế Độ Chặng Cắt Trần TRONG TỪNG CHẶNG, Không Cắt Chung Rồi Chia
+
+- **Ngày:** 2026-09-01
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E9 Slice S1
+
+## Quyết định
+
+1. Pipeline dựng deck rẽ nhánh theo `deck_mode`. `COURSE` chia theo tag TRƯỚC,
+   rồi trộn Explore và cắt hạn mức TRONG TỪNG CHẶNG.
+2. `session_decks` vẫn lưu một mảng id phẳng; nhóm theo chặng suy lại ở mỗi
+   lần đọc.
+3. Món không khớp chặng nào bị loại khỏi deck ở chế độ `COURSE`.
+4. Snapshot `session_courses` dùng `INSERT … SELECT` với guard `state='DRAFT'`,
+   không dùng `INSERT … VALUES`.
+
+## Rationale
+
+1. Personal Score ở v1.1 chỉ có hai số hạng ($E$, $R$), nên một nhóm vừa ăn
+   canh hôm qua sẽ đẩy TOÀN BỘ món canh xuống đuôi bảng cùng lúc. Cắt trần 30
+   trước khi chia thì chặng Canh rỗng, dù danh mục có 15 món canh. Deck vẫn
+   chạy, vẫn đủ thẻ — đây là lỗi im lặng, cùng lớp với "cắt trần trước khi trộn
+   Explore" của `DEC-058`, chỉ ở một tầng cao hơn.
+2. Lưu phẳng giữ nguyên bất biến đóng băng của `BR-048`/`DEC-064` và không cần
+   migration cho `session_decks`. `SPEC-030` đã chốt một món chỉ thuộc một
+   chặng, nên phép nhóm là xác định — suy lại rẻ hơn lưu thêm.
+3. Chọn ba chặng nghĩa là tối nay chỉ duyệt ba loại món đó. Nhét món không
+   khớp vào cuối là phá chính điều Creator vừa yêu cầu.
+4. Guard nằm trong SELECT là toàn bộ cơ chế cách ly của `startDraft`
+   (`buildSnapshotStatement` nói rõ). Một câu VALUES ghi cả khi session không
+   còn DRAFT — hai người bấm cùng lúc thì cấu hình của người thua đè lên phiên
+   của người thắng.
+
+## Consequence
+
+- `list-deck.ts` có đúng một chỗ rẽ nhánh theo `deck_mode`; mọi tầng trên không
+  biết chế độ nào đang bật.
+- `blendExploitExplore` chạy trong từng chặng, nên tỉ lệ 4+1 của `BR-047` là tỉ
+  lệ theo KHỐI chứ không theo deck — đã đúng theo định nghĩa, ghi lại cho rõ.
+- `SPEC-030` và Ranking Spec §2.5 được cập nhật khớp thứ tự pipeline mới.
+
+---
+
+# DEC-067 — Mô Hình Hai Loại Cảnh Báo Và Phân Tách Cấu Hình Luật
+
+- **Ngày:** 2026-09-02
+- **Trạng thái:** Accepted
+- **Bối cảnh:** E10 Slice S1 — `E10-T1`, `E10-T2`, `E10-T3`
+
+## Quyết định
+
+1. **Một hàm duy nhất:** `evaluateRules` thay thế hoàn toàn `evaluateRequired`. Không duy trì hai hàm song song trong domain.
+2. **`RuleWarning` là union có thẻ:** `{ kind: 'PREFERRED_SHORTFALL' } & RuleShortfall` và `{ kind: 'TARGET_COUNT', direction, target, actual }`. Hai loại cảnh báo có bản chất khác nhau: một loại gắn với một System Tag cụ thể, một loại là thuộc tính của cả mâm cơm.
+3. **Loại bỏ `satisfied`:** `RuleEvaluation` chỉ gồm `{ blocking, warnings }`. Hàm gọi tự quyết định: `blocking.length === 0` nghĩa là đủ điều kiện chốt; `warnings.length > 0` nghĩa là có cảnh báo cần xác nhận.
+4. **Target Dish Count là nullable ở cả hai bảng:** `groups.target_dish_count` và `selection_sessions.target_dish_count`. Không dùng giá trị mặc định `0` (vốn sẽ biến mọi bữa ăn thành vi phạm Target Count).
+5. **Duy trì Independent Tag Counting:** Không sửa logic đếm của SDD §8. Luật Preferred được đếm độc lập y hệt luật Required; một món đa tag thoả mãn đồng thời cả hai loại luật.
+
+## Rationale
+
+1. Hai hàm riêng biệt (`evaluateRequired` và `evaluatePreferred`) sẽ đòi hỏi hai lượt duyệt danh sách món, hai lần lọc và phân tích tag, dẫn tới nguy cơ logic đếm bị lệch nhau theo thời gian.
+2. Cảnh báo lệch số lượng món (`TARGET_COUNT`) không liên quan tới bất kỳ System Tag nào, việc ép nó vào cùng hình dạng với `RuleShortfall` (vốn có `systemTag`) sẽ tạo ra các trường vô nghĩa hoặc nullable giả tạo.
+3. Boolean `satisfied` trước đây là nguồn gốc gây hiểu nhầm: "satisfied" nhưng vẫn có thể có warning mềm. Tách bạch `blocking` (chặn cứng) và `warnings` (mềm) giúp tầng trình bày và các use case kiểm soát chính xác nghiệp vụ.
+4. Target Dish Count là cấu hình tuỳ chọn của gia đình; nhiều nhà ăn uống linh hoạt không có số lượng cố định. Giá trị `null` biểu thị rõ "không áp dụng", tránh sinh cảnh báo giả.
+5. Independent Tag Counting là nguyên lý cốt lõi của quy định mâm cơm Việt Nam: một món canh chua cá vừa là món chính vừa là món canh, cần được tính cho cả hai mục tiêu dinh dưỡng.
+
+## Consequence
+
+- Callers của `evaluateRequired` (`finalizeSession`, `FinalizeBar`) chuyển sang dùng `evaluateRules`.
+- `groups` và `selection_sessions` được bổ sung cột `target_dish_count integer` (nullable), kèm check constraint `>= 1` cho `groups`.
+- `session_rules` được snapshot tự nhiên cho cả hai loại luật `REQUIRED` và `PREFERRED`.
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.15` | 2026-09-02 | Bổ sung `DEC-067` (Mô Hình Hai Loại Cảnh Báo Và Phân Tách Cấu Hình Luật) cho E10-S1 |
+| `3.14` | 2026-09-01 | Bổ sung `DEC-066` (Chế Độ Chặng Cắt Trần TRONG TỪNG CHẶNG, Không Cắt Chung Rồi Chia) cho E9-S1 |
 | `3.13` | 2026-08-26 | Bổ sung `DEC-065` (Vị Trí Tiếp Tục Suy Ở Client, Không Lưu Server) cho E8-S2 |
 | `3.12` | 2026-08-26 | Bổ sung `DEC-064` (v1.1 Đóng Băng Deck Toàn Phần; `BR-048` Được Siết Cho Khớp Code) cho E8-S1 |
 | `3.11` | 2026-08-31 | Bổ sung `DEC-062` (Tương tác Cannot Eat ở Swipe Card, chặn Undo, số hạng X trong Session Ranking, và ngoại lệ BR-056 khi Finalize) cho E7-S3 |

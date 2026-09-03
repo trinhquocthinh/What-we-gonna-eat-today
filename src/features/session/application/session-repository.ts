@@ -6,11 +6,14 @@ export type SessionSummary = {
   readonly id: string
   readonly groupId: string
   readonly decisionDate: string
-  // Rộng hơn 'DRAFT' | 'ACTIVE' có chủ ý: `findById` (thêm ở S5 — xem
-  // Implementation Guide S5 §…) có thể trả về Session ở bất kỳ state nào,
-  // không chỉ hai state mà `createDraftWithCreatorParticipant`/`startDraft`
-  // tự tạo ra. Dùng chung một type thay vì tách `SessionRecord` riêng.
   readonly state: SessionState
+  readonly targetDishCount?: number | null
+}
+
+export type StartDraftConfig = {
+  readonly deckMode?: 'FREE' | 'COURSE'
+  readonly courses?: readonly SystemTag[]
+  readonly targetDishCount?: number | null
 }
 
 export type SessionForStart = {
@@ -75,13 +78,7 @@ export interface SessionRepository {
    * SPEC-008 rút gọn + SPEC-029. Snapshot session_rules và session_courses
    * (nếu deckMode='COURSE') trong cùng batch có guard state='DRAFT'.
    */
-  startDraft(
-    sessionId: string,
-    config?: {
-      deckMode?: 'FREE' | 'COURSE'
-      courses?: readonly SystemTag[]
-    },
-  ): Promise<StartDraftOutcome>
+  startDraft(sessionId: string, config?: StartDraftConfig): Promise<StartDraftOutcome>
 
   /**
    * THÊM Ở S5 — trang deck (`app/sessions/[sessionId]/page.tsx`) cần

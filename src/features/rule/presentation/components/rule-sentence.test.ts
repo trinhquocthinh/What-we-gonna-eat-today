@@ -17,6 +17,15 @@ describe('ruleSentence', () => {
   it('định dạng đúng số lượng > 1', () => {
     expect(ruleSentence({ systemTag: 'SOUP', minimumCount: 2 })).toBe('Phải có ít nhất 2 món canh')
   })
+
+  it('định dạng đúng câu cho PREFERRED rule ("Nên có ít nhất")', () => {
+    expect(ruleSentence({ systemTag: 'MAIN', minimumCount: 2, ruleType: 'PREFERRED' })).toBe(
+      'Nên có ít nhất 2 món mặn',
+    )
+    expect(ruleSentence({ systemTag: 'SOUP', minimumCount: 1, ruleType: 'PREFERRED' })).toBe(
+      'Nên có ít nhất 1 món canh',
+    )
+  })
 })
 
 describe('ruleShortfallPhrase', () => {

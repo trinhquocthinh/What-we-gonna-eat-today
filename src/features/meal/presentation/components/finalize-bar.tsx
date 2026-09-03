@@ -2,7 +2,7 @@
 
 import type { ReactElement } from 'react'
 
-import { evaluateRequired, type RequiredRule } from '@/features/rule/domain/evaluate'
+import { evaluateRules, type RequiredRule } from '@/features/rule/domain/evaluate'
 import {
   ruleSentence,
   ruleShortfallPhrase,
@@ -23,7 +23,7 @@ export type FinalizeBarProps = {
  * vì chúng là MỘT câu nói với người dùng: "đây là những gì bạn chọn, và đây là
  * chỗ còn thiếu".
  *
- * `evaluateRequired` chạy Ở ĐÂY, tại client, mỗi lần render — BR-051 Live
+ * `evaluateRules` chạy Ở ĐÂY, tại client, mỗi lần render — BR-051 Live
  * Composition Feedback đòi dòng "Còn thiếu" đổi NGAY khi bấm Chọn, không chờ
  * round-trip. Hàm thuần ở `rule/domain` nên chạy được ở client; chiều
  * `meal → rule` đã có sẵn trong ALLOWED_CROSS_FEATURE từ E0 (Guide §1.4).
@@ -39,7 +39,7 @@ export function FinalizeBar({
   pending,
   error,
 }: FinalizeBarProps): ReactElement {
-  const evaluation = evaluateRequired({ rules, dishes: selectedDishes })
+  const evaluation = evaluateRules({ rules, dishes: selectedDishes, targetDishCount: null })
   const isEmpty = selectedDishes.length === 0
 
   return (
@@ -53,7 +53,7 @@ export function FinalizeBar({
       {rules.length === 0 ? null : (
         <ul className="flex flex-col gap-1">
           {rules.map((rule) => {
-            const shortfall = evaluation.shortfalls.find((s) => s.systemTag === rule.systemTag)
+            const shortfall = evaluation.blocking.find((s) => s.systemTag === rule.systemTag)
             return (
               <li
                 key={rule.systemTag}
@@ -79,7 +79,7 @@ export function FinalizeBar({
           bấm ra lỗi — Design Criteria §5, và `Button` đã có sẵn prop này. Một
           nút chết không nói cho người dùng biết vì sao nó chết. */}
       <input type="hidden" name="intent" value="finalize" />
-      <Button type="submit" pending={pending} muted={isEmpty || !evaluation.satisfied}>
+      <Button type="submit" pending={pending} muted={isEmpty || evaluation.blocking.length > 0}>
         {pending ? 'Đang chốt…' : isEmpty ? 'Chọn món để chốt' : 'Chốt bữa'}
       </Button>
     </div>

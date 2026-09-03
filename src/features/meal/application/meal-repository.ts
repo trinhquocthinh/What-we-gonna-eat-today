@@ -5,6 +5,7 @@ export type SessionForMeal = {
   readonly creatorUserId: string
   readonly state: 'DRAFT' | 'ACTIVE' | 'FINALIZED' | 'INVALID'
   readonly decisionDate: string
+  readonly targetDishCount?: number | null
 }
 
 export type DraftDish = {
