@@ -35,6 +35,7 @@ export type FinalizeMealScreenProps = {
   ranked: readonly SummaryDish[]
   untouched: readonly SummaryDish[]
   rules: readonly RequiredRule[]
+  targetDishCount?: number | null | undefined
   closeHref: string
   action: (state: FinalizeFormState, formData: FormData) => Promise<FinalizeFormState>
 }
@@ -63,6 +64,7 @@ export function FinalizeMealScreen({
   ranked,
   untouched,
   rules,
+  targetDishCount = null,
   closeHref,
   action,
 }: FinalizeMealScreenProps): ReactElement {
@@ -156,6 +158,7 @@ export function FinalizeMealScreen({
         <FinalizeBar
           selectedDishes={selectedDishes}
           rules={rules}
+          targetDishCount={targetDishCount}
           pending={pending}
           error={state.error}
         />

@@ -6,6 +6,7 @@ import { drizzleRuleRepository } from '@/features/rule/infrastructure/drizzle-ru
 import { getDb } from '@/shared/db/client'
 import {
   eatingHistory,
+  finalizeWarnings,
   finalMealItems,
   finalMeals,
   globalDishes,
@@ -125,6 +126,10 @@ async function cleanup(seed: Seed) {
     await db.delete(finalMealItems).where(eq(finalMealItems.finalMealId, row.id))
   }
   await db.delete(finalMeals).where(eq(finalMeals.sessionId, seed.sessionId))
+  await db
+    .delete(finalizeWarnings)
+    .where(eq(finalizeWarnings.sessionId, seed.sessionId))
+    .catch(() => {})
   await db.delete(participants).where(eq(participants.sessionId, seed.sessionId))
   await db.delete(selectionSessions).where(eq(selectionSessions.id, seed.sessionId))
   await db
@@ -314,10 +319,12 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
     await drizzleMealRepository.commitFinalize({
       sessionId: seed.sessionId,
       eatingHistoryRows: rows,
+      warningRows: [],
     })
     await drizzleMealRepository.commitFinalize({
       sessionId: seed.sessionId,
       eatingHistoryRows: rows,
+      warningRows: [],
     })
 
     const historyRows = await getDb()
@@ -444,6 +451,14 @@ describe('TC-109 — rollback thật khi một dòng eating_history lỗi', () =
             sourceFinalMealId: crypto.randomUUID(),
           },
         ],
+        warningRows: [
+          {
+            kind: 'PREFERRED_SHORTFALL',
+            systemTag: 'SOUP',
+            expected: 1,
+            actual: 0,
+          },
+        ],
       }),
     ).rejects.toThrow()
 
@@ -455,6 +470,140 @@ describe('TC-109 — rollback thật khi một dòng eating_history lỗi', () =
       .from(selectionSessions)
       .where(eq(selectionSessions.id, seed.sessionId))
     expect(session[0]?.state).toBe('ACTIVE')
+
+    // Và KHÔNG dòng finalize_warnings nào sót lại trong database
+    const warnings = await getDb()
+      .select()
+      .from(finalizeWarnings)
+      .where(eq(finalizeWarnings.sessionId, seed.sessionId))
+    expect(warnings).toHaveLength(0)
+  })
+})
+
+describe('E10-T4 — Lưu vết cảnh báo bị bỏ qua (finalize_warnings)', () => {
+  it('TC-140: Chốt bữa sạch (đủ mọi rule và Target Count) -> finalize_warnings không có dòng nào', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // Cấu hình target_dish_count = 2 cho session
+    await db
+      .update(selectionSessions)
+      .set({ targetDishCount: 2 })
+      .where(eq(selectionSessions.id, seed.sessionId))
+
+    // Snapshot rule SOUP >= 1 (REQUIRED)
+    await db.insert(sessionRules).values({
+      sessionId: seed.sessionId,
+      ruleType: 'REQUIRED',
+      systemTag: 'SOUP',
+      minimumCount: 1,
+    })
+
+    // Dish1 mang SOUP, Dish2 mang MAIN -> Đủ SOUP, 2 món = 2
+    await db.insert(groupDishTags).values([
+      { groupDishId: seed.dish1.groupDishId, systemTag: 'SOUP' },
+      { groupDishId: seed.dish2.groupDishId, systemTag: 'MAIN' },
+    ])
+
+    await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      {
+        sessionId: seed.sessionId,
+        userId: seed.creatorId,
+        dishIds: [seed.dish1.groupDishId, seed.dish2.groupDishId],
+      },
+    )
+
+    const finalize = await finalizeSession(
+      {
+        meal: drizzleMealRepository,
+        rules: drizzleRuleRepository,
+        preferences: drizzlePreferenceRepository,
+      },
+      { sessionId: seed.sessionId, userId: seed.creatorId },
+    )
+
+    expect(finalize.ok).toBe(true)
+
+    const warnings = await db
+      .select()
+      .from(finalizeWarnings)
+      .where(eq(finalizeWarnings.sessionId, seed.sessionId))
+    expect(warnings).toHaveLength(0)
+  })
+
+  it('Chốt bữa thiếu 1 Preferred + lệch Target Count -> finalize_warnings ghi đúng 2 dòng, systemTag null ở TARGET_COUNT', async () => {
+    const seed = await seedActiveSessionWithTwoDishes()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // Cấu hình target_dish_count = 4 cho session (nhưng chỉ chọn 2 món -> lệch)
+    await db
+      .update(selectionSessions)
+      .set({ targetDishCount: 4 })
+      .where(eq(selectionSessions.id, seed.sessionId))
+
+    // Snapshot: REQUIRED MAIN >= 1, PREFERRED SOUP >= 1
+    await db.insert(sessionRules).values([
+      {
+        sessionId: seed.sessionId,
+        ruleType: 'REQUIRED',
+        systemTag: 'MAIN',
+        minimumCount: 1,
+      },
+      {
+        sessionId: seed.sessionId,
+        ruleType: 'PREFERRED',
+        systemTag: 'SOUP',
+        minimumCount: 1,
+      },
+    ])
+
+    // Cả 2 món đều là MAIN (thỏa REQUIRED MAIN, thiếu PREFERRED SOUP)
+    await db.insert(groupDishTags).values([
+      { groupDishId: seed.dish1.groupDishId, systemTag: 'MAIN' },
+      { groupDishId: seed.dish2.groupDishId, systemTag: 'MAIN' },
+    ])
+
+    await saveFinalMealDraft(
+      { meal: drizzleMealRepository },
+      {
+        sessionId: seed.sessionId,
+        userId: seed.creatorId,
+        dishIds: [seed.dish1.groupDishId, seed.dish2.groupDishId],
+      },
+    )
+
+    const finalize = await finalizeSession(
+      {
+        meal: drizzleMealRepository,
+        rules: drizzleRuleRepository,
+        preferences: drizzlePreferenceRepository,
+      },
+      { sessionId: seed.sessionId, userId: seed.creatorId },
+    )
+
+    expect(finalize.ok).toBe(true)
+
+    const warnings = await db
+      .select()
+      .from(finalizeWarnings)
+      .where(eq(finalizeWarnings.sessionId, seed.sessionId))
+
+    expect(warnings).toHaveLength(2)
+
+    const prefWarning = warnings.find((w) => w.kind === 'PREFERRED_SHORTFALL')
+    expect(prefWarning).toBeDefined()
+    expect(prefWarning?.systemTag).toBe('SOUP')
+    expect(prefWarning?.expected).toBe(1)
+    expect(prefWarning?.actual).toBe(0)
+
+    const targetWarning = warnings.find((w) => w.kind === 'TARGET_COUNT')
+    expect(targetWarning).toBeDefined()
+    expect(targetWarning?.systemTag).toBeNull()
+    expect(targetWarning?.expected).toBe(4)
+    expect(targetWarning?.actual).toBe(2)
   })
 })
 

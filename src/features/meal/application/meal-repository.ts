@@ -66,11 +66,14 @@ export interface MealRepository {
   resolveGlobalDishIds(groupDishIds: readonly string[]): Promise<Map<string, string>>
 
   /**
-   * NGUYÊN TỬ — CHỈ hai việc: UPDATE session sang FINALIZED, và INSERT toàn
-   * bộ dòng `eating_history`. KHÔNG validate gì (đó là việc của
-   * `finalizeSession` ở application, chạy TRƯỚC khi gọi hàm này). Tách riêng
-   * để TC-109 gọi thẳng được với dữ liệu cố ý sai — xem Implementation Guide
-   * §2.5.
+   * NGUYÊN TỬ — UPDATE session sang FINALIZED, INSERT toàn bộ dòng
+   * `eating_history`, và INSERT `finalize_warnings` (nếu có cảnh báo). KHÔNG
+   * validate gì (đó là việc của `finalizeSession` ở application, chạy TRƯỚC
+   * khi gọi hàm này). Tách riêng để TC-109 gọi thẳng được với dữ liệu cố ý
+   * sai — xem Implementation Guide §2.5.
+   *
+   * GHI CHÚ: `finalize_warnings` cố ý chưa có phía đọc ở v1.1 (Guide §1.5),
+   * dành cho F40 ở v1.2 kèm banner S-11 ("Mẹ đã biết thiếu canh và vẫn chốt").
    */
   commitFinalize(input: {
     sessionId: string
@@ -79,6 +82,16 @@ export interface MealRepository {
       globalDishId: string
       eatingDate: string
       sourceFinalMealId: string
+    }[]
+    /**
+     * BR-053 — cảnh báo mềm còn tồn tại tại thời điểm chốt. RỖNG là giá trị
+     * hợp lệ và thường gặp: chốt bữa đúng chuẩn thì không ghi dòng nào (TC-140).
+     */
+    warningRows: readonly {
+      kind: 'PREFERRED_SHORTFALL' | 'TARGET_COUNT'
+      systemTag: SystemTag | null
+      expected: number
+      actual: number
     }[]
   }): Promise<void>
 

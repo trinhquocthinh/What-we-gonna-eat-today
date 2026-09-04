@@ -4,6 +4,7 @@ import { uuidv7 } from 'uuidv7'
 import { getDb } from '@/shared/db/client'
 import {
   eatingHistory,
+  finalizeWarnings,
   finalMealItems,
   finalMeals,
   globalDishes,
@@ -197,6 +198,12 @@ async function commitFinalize(input: {
     eatingDate: string
     sourceFinalMealId: string
   }[]
+  warningRows: readonly {
+    kind: 'PREFERRED_SHORTFALL' | 'TARGET_COUNT'
+    systemTag: SystemTag | null
+    expected: number
+    actual: number
+  }[]
 }): Promise<void> {
   const db = getDb()
 
@@ -205,41 +212,64 @@ async function commitFinalize(input: {
     .set({ state: 'FINALIZED', finalizedAt: new Date() })
     .where(and(eq(selectionSessions.id, input.sessionId), eq(selectionSessions.state, 'ACTIVE')))
 
-  if (input.eatingHistoryRows.length === 0) {
-    // `db.batch` cần tuple ≥1 phần tử — nháp có thể hợp lệ với 0 Participant
-    // (lý thuyết: Session không có Participant nào ngoài Creator đã bị remove
-    // — hiếm nhưng không phải bất khả). Chỉ UPDATE, không batch.
+  const batchStatements: Array<Parameters<typeof db.batch>[0][number]> = [updateSession]
+
+  if (input.eatingHistoryRows.length > 0) {
+    batchStatements.push(
+      db
+        .insert(eatingHistory)
+        .values(
+          input.eatingHistoryRows.map((row) => ({
+            id: uuidv7(),
+            userId: row.userId,
+            globalDishId: row.globalDishId,
+            eatingDate: row.eatingDate,
+            sourceFinalMealId: row.sourceFinalMealId,
+          })),
+        )
+        // TC-077 — idempotent theo `finalMealId`: gọi lại với cùng dữ liệu
+        // KHÔNG nhân đôi. Đây là cơ chế graceful cho trùng lặp HỢP LỆ; TC-109
+        // ép lỗi bằng vi phạm KHOÁ NGOẠI (global_dish_id không tồn tại), một
+        // loại lỗi mà onConflictDoNothing không xử lý — batch vẫn thất bại
+        // thật ở tình huống đó.
+        .onConflictDoNothing({
+          target: [
+            eatingHistory.userId,
+            eatingHistory.globalDishId,
+            eatingHistory.eatingDate,
+            eatingHistory.sourceFinalMealId,
+          ],
+        }),
+    )
+  }
+
+  if (input.warningRows.length > 0) {
+    batchStatements.push(
+      db.insert(finalizeWarnings).values(
+        input.warningRows.map((row) => ({
+          sessionId: input.sessionId,
+          kind: row.kind,
+          systemTag: row.systemTag,
+          expected: row.expected,
+          actual: row.actual,
+        })),
+      ),
+    )
+  }
+
+  if (batchStatements.length === 1) {
+    // `db.batch` cần tuple ≥1 phần tử ngoài updateSession — nếu không có row
+    // nào cần insert, chỉ UPDATE, không batch.
     await updateSession
     return
   }
 
-  await db.batch([
-    updateSession,
-    db
-      .insert(eatingHistory)
-      .values(
-        input.eatingHistoryRows.map((row) => ({
-          id: uuidv7(),
-          userId: row.userId,
-          globalDishId: row.globalDishId,
-          eatingDate: row.eatingDate,
-          sourceFinalMealId: row.sourceFinalMealId,
-        })),
-      )
-      // TC-077 — idempotent theo `finalMealId`: gọi lại với cùng dữ liệu
-      // KHÔNG nhân đôi. Đây là cơ chế graceful cho trùng lặp HỢP LỆ; TC-109
-      // ép lỗi bằng vi phạm KHOÁ NGOẠI (global_dish_id không tồn tại), một
-      // loại lỗi mà onConflictDoNothing không xử lý — batch vẫn thất bại
-      // thật ở tình huống đó.
-      .onConflictDoNothing({
-        target: [
-          eatingHistory.userId,
-          eatingHistory.globalDishId,
-          eatingHistory.eatingDate,
-          eatingHistory.sourceFinalMealId,
-        ],
-      }),
-  ])
+  await db.batch(
+    batchStatements as unknown as readonly [
+      Parameters<typeof db.batch>[0][number],
+      ...Parameters<typeof db.batch>[0][number][],
+    ],
+  )
 }
 
 async function findFinalMeal(sessionId: string): Promise<FinalMealView | null> {

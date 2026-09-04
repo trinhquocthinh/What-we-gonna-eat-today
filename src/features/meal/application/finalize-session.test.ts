@@ -16,7 +16,7 @@ function makeFakeMealRepository(options: {
   tagsByDish?: Map<string, SystemTag[]>
   findTagsCalls?: string[][]
 }) {
-  const commitCalls: Array<{ sessionId: string; eatingHistoryRows: readonly unknown[] }> = []
+  const commitCalls: Array<Parameters<MealRepository['commitFinalize']>[0]> = []
 
   const repository: MealRepository = {
     async findSessionForMeal() {
@@ -326,7 +326,7 @@ describe('SPEC-016 — Finalize', () => {
     expect(result.ok).toBe(true)
     expect(fakeMeal.commitCalls).toHaveLength(1)
     // (u1, d1), (u1, d2), (u2, d2) -> 3 rows, (u2, d1) bị bỏ qua
-    const rows = fakeMeal.commitCalls[0]?.eatingHistoryRows as Array<{
+    const rows = fakeMeal.commitCalls[0]?.eatingHistoryRows as ReadonlyArray<{
       userId: string
       globalDishId: string
     }>
@@ -343,5 +343,118 @@ describe('SPEC-016 — Finalize', () => {
     expect(rows).not.toContainEqual(
       expect.objectContaining({ userId: 'u2', globalDishId: 'global-d1' }),
     )
+  })
+
+  it('E10-T4 / TC-140: Chốt bữa sạch -> commitFinalize nhận warningRows rỗng', async () => {
+    const fakeMeal = makeFakeMealRepository({
+      session: {
+        id: 's1',
+        creatorUserId: 'creator-1',
+        state: 'ACTIVE',
+        decisionDate: '2026-08-14',
+        targetDishCount: 2,
+      },
+      draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1', 'd2'] },
+      tagsByDish: new Map([
+        ['d1', ['MAIN']],
+        ['d2', ['SOUP']],
+      ]),
+    })
+    const fakeRules = makeFakeRuleRepository({
+      rules: [
+        { systemTag: 'MAIN', minimumCount: 1, ruleType: 'REQUIRED' },
+        { systemTag: 'SOUP', minimumCount: 1, ruleType: 'PREFERRED' },
+      ],
+    })
+    const fakePreferences = makeFakePreferenceRepository()
+
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
+
+    expect(result.ok).toBe(true)
+    expect(fakeMeal.commitCalls).toHaveLength(1)
+    expect(fakeMeal.commitCalls[0]?.warningRows).toEqual([])
+  })
+
+  it('E10-T4: Chốt bữa có cảnh báo Preferred và Target Count -> commitFinalize nhận đúng warningRows', async () => {
+    const fakeMeal = makeFakeMealRepository({
+      session: {
+        id: 's1',
+        creatorUserId: 'creator-1',
+        state: 'ACTIVE',
+        decisionDate: '2026-08-14',
+        targetDishCount: 4, // chọn 2 món nhưng target là 4 -> TARGET_COUNT warning
+      },
+      draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1', 'd2'] },
+      tagsByDish: new Map([
+        ['d1', ['MAIN']],
+        ['d2', ['MAIN']], // cả 2 món đều MAIN, thiếu SOUP preferred
+      ]),
+    })
+    const fakeRules = makeFakeRuleRepository({
+      rules: [
+        { systemTag: 'MAIN', minimumCount: 1, ruleType: 'REQUIRED' },
+        { systemTag: 'SOUP', minimumCount: 1, ruleType: 'PREFERRED' },
+      ],
+    })
+    const fakePreferences = makeFakePreferenceRepository()
+
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
+
+    expect(result.ok).toBe(true)
+    expect(fakeMeal.commitCalls).toHaveLength(1)
+    expect(fakeMeal.commitCalls[0]?.warningRows).toEqual([
+      {
+        kind: 'PREFERRED_SHORTFALL',
+        systemTag: 'SOUP',
+        expected: 1,
+        actual: 0,
+      },
+      {
+        kind: 'TARGET_COUNT',
+        systemTag: null,
+        expected: 4,
+        actual: 2,
+      },
+    ])
+  })
+
+  it('E10-T4: Chốt bữa có blocking rule -> trả lỗi ERR_REQUIRED_RULE_FAILED, commitFinalize không được gọi', async () => {
+    const fakeMeal = makeFakeMealRepository({
+      session: {
+        id: 's1',
+        creatorUserId: 'creator-1',
+        state: 'ACTIVE',
+        decisionDate: '2026-08-14',
+        targetDishCount: 2,
+      },
+      draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1', 'd2'] },
+      tagsByDish: new Map([
+        ['d1', ['SIDE']],
+        ['d2', ['SIDE']],
+      ]),
+    })
+    const fakeRules = makeFakeRuleRepository({
+      rules: [
+        { systemTag: 'MAIN', minimumCount: 1, ruleType: 'REQUIRED' }, // Thiếu MAIN -> blocking
+      ],
+    })
+    const fakePreferences = makeFakePreferenceRepository()
+
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error.code).toBe('ERR_REQUIRED_RULE_FAILED')
+    }
+    expect(fakeMeal.commitCalls).toHaveLength(0)
   })
 })

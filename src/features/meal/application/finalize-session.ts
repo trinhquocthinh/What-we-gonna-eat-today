@@ -121,7 +121,17 @@ export async function finalizeSession(
     cannotEatPairs,
   })
 
-  await deps.meal.commitFinalize({ sessionId: input.sessionId, eatingHistoryRows })
+  const warningRows = evaluation.warnings.map((w) =>
+    w.kind === 'PREFERRED_SHORTFALL'
+      ? { kind: w.kind, systemTag: w.systemTag, expected: w.minimumCount, actual: w.actual }
+      : { kind: w.kind, systemTag: null, expected: w.target, actual: w.actual },
+  )
+
+  await deps.meal.commitFinalize({
+    sessionId: input.sessionId,
+    eatingHistoryRows,
+    warningRows,
+  })
 
   return ok({ finalMealId: draft.finalMealId })
 }

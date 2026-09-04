@@ -627,6 +627,40 @@ export type FinalMeal = typeof finalMeals.$inferSelect
 export type FinalMealItem = typeof finalMealItems.$inferSelect
 export type EatingHistory = typeof eatingHistory.$inferSelect
 
+export const finalizeWarningKind = pgEnum('finalize_warning_kind', [
+  'PREFERRED_SHORTFALL',
+  'TARGET_COUNT',
+])
+
+/**
+ * BR-053 — nhật ký cảnh báo mềm bị bỏ qua lúc chốt bữa. APPEND-ONLY, cùng
+ * tinh thần `interaction_events` (DEC-025): ghi lại cái ĐÃ XẢY RA, không phải
+ * trạng thái để đọc ngược.
+ *
+ * KHÔNG chứa lỗi chặn: `blocking` làm `finalizeSession` dừng ở bước 6, không
+ * bao giờ tới `commitFinalize` (Guide §1.4).
+ *
+ * `systemTag` NULL khi `kind = 'TARGET_COUNT'` — cảnh báo đó nói về cả mâm,
+ * không về một loại món.
+ */
+export const finalizeWarnings = pgTable('finalize_warnings', {
+  id: uuid('id')
+    .primaryKey()
+    .$defaultFn(() => uuidv7()),
+  sessionId: uuid('session_id')
+    .notNull()
+    .references(() => selectionSessions.id),
+  kind: finalizeWarningKind('kind').notNull(),
+  systemTag: systemTag('system_tag'),
+  /** `minimumCount` với PREFERRED_SHORTFALL; `target` với TARGET_COUNT. */
+  expected: integer('expected').notNull(),
+  actual: integer('actual').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type FinalizeWarning = typeof finalizeWarnings.$inferSelect
+export type NewFinalizeWarning = typeof finalizeWarnings.$inferInsert
+
 /** Tech Spec dòng 135. SPEC-003/004 — DB CHỈ lưu hash, không bao giờ lưu token
  *  thô. `usedAt`/`usedByUserId` cùng null (chưa dùng) hoặc cùng khác null (đã
  *  dùng) — không có nửa vời; use case luôn set cả hai cùng lúc trong một câu
