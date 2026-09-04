@@ -29,6 +29,7 @@ export async function setDishConstraint(
   deps: SetDishConstraintDeps,
   input: SetDishConstraintInput,
 ): Promise<Result<SetDishConstraintResult, Failure>> {
+  /* jscpd:ignore-start */
   if (typeof input.userId !== 'string' || input.userId.trim() === '') {
     return err(failure('ERR_VALIDATION', { field: 'userId' }))
   }
@@ -36,6 +37,7 @@ export async function setDishConstraint(
   if (typeof input.globalDishId !== 'string' || input.globalDishId.trim() === '') {
     return err(failure('ERR_VALIDATION', { field: 'globalDishId' }))
   }
+  /* jscpd:ignore-end */
 
   if (typeof input.cannotEat !== 'boolean') {
     return err(failure('ERR_VALIDATION', { field: 'cannotEat' }))

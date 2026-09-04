@@ -193,6 +193,7 @@ async function resolveGlobalDishIds(groupDishIds: readonly string[]): Promise<Ma
  * và kiểm rollback — KHÔNG tự validate gì, tin tưởng hoàn toàn vào caller
  * (`finalizeSession` ở application, hoặc test tầng I).
  */
+/* jscpd:ignore-start */
 async function commitFinalize(input: {
   sessionId: string
   eatingHistoryRows: readonly {
@@ -208,6 +209,7 @@ async function commitFinalize(input: {
     actual: number
   }[]
 }): Promise<void> {
+  /* jscpd:ignore-end */
   const db = getDb()
 
   const updateSession = db

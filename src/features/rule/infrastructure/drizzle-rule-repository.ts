@@ -21,13 +21,17 @@ async function listGroupRules(groupId: string): Promise<GroupRuleRecord[]> {
     .from(groupRules)
     .where(eq(groupRules.groupId, groupId))
 
-  // Sắp ở TS chứ không ORDER BY: REQUIRED trước PREFERRED, sau đó theo thứ tự mâm cơm `SYSTEM_TAGS`.
-  return rows.sort((a, b) => {
-    if (a.ruleType !== b.ruleType) {
-      return a.ruleType === 'REQUIRED' ? -1 : 1
-    }
-    return (TAG_ORDER.get(a.systemTag) ?? 0) - (TAG_ORDER.get(b.systemTag) ?? 0)
-  })
+  return rows.sort(compareRules)
+}
+
+function compareRules<T extends { ruleType: 'REQUIRED' | 'PREFERRED'; systemTag: SystemTag }>(
+  a: T,
+  b: T,
+): number {
+  if (a.ruleType !== b.ruleType) {
+    return a.ruleType === 'REQUIRED' ? -1 : 1
+  }
+  return (TAG_ORDER.get(a.systemTag) ?? 0) - (TAG_ORDER.get(b.systemTag) ?? 0)
 }
 
 /**
@@ -126,12 +130,7 @@ async function listSessionRules(sessionId: string): Promise<SessionRule[]> {
     .from(sessionRules)
     .where(eq(sessionRules.sessionId, sessionId))
 
-  return rows.sort((a, b) => {
-    if (a.ruleType !== b.ruleType) {
-      return a.ruleType === 'REQUIRED' ? -1 : 1
-    }
-    return (TAG_ORDER.get(a.systemTag) ?? 0) - (TAG_ORDER.get(b.systemTag) ?? 0)
-  })
+  return rows.sort(compareRules)
 }
 
 export const drizzleRuleRepository: RuleRepository = {

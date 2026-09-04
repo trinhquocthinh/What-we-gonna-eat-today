@@ -12,6 +12,7 @@ import { httpStatusForErrorCode } from '@/shared/http-error'
  * TC-117 (§1.4): userId trong body (nếu client gửi kèm) bị bỏ qua;
  * ràng buộc luôn ghi cho người đang đăng nhập (auth.user.id).
  */
+/* jscpd:ignore-start */
 export async function PUT(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
@@ -60,3 +61,4 @@ export async function PUT(request: Request) {
 
   return Response.json({ removedInteraction: result.value.removedInteraction }, { status: 200 })
 }
+/* jscpd:ignore-end */

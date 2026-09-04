@@ -71,69 +71,19 @@ export function GroupRulesScreen({
       </header>
 
       <form action={formAction} className="flex flex-1 flex-col gap-4 px-4">
-        {/* Nhóm Bắt buộc */}
-        {requiredRules.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            <h2 className="text-subtitle font-semibold text-ink">Bắt buộc</h2>
-            <div className="flex flex-col gap-2">
-              {requiredRules.map((rule) => (
-                <div
-                  key={`${rule.ruleType}:${rule.systemTag}`}
-                  className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface-raised px-5 py-4"
-                >
-                  <input
-                    type="hidden"
-                    name="rule"
-                    value={`${rule.ruleType}:${rule.systemTag}:${rule.minimumCount}`}
-                  />
-                  <span className="text-subtitle font-semibold text-ink">{ruleSentence(rule)}</span>
-                  {canEdit ? (
-                    <Button
-                      type="button"
-                      variant="quiet"
-                      size="sm"
-                      onClick={() => setRules((current) => current.filter((r) => r !== rule))}
-                    >
-                      Gỡ
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        <RuleSection
+          title="Bắt buộc"
+          rules={requiredRules}
+          canEdit={canEdit}
+          onRemove={(r) => setRules((current) => current.filter((item) => item !== r))}
+        />
 
-        {/* Nhóm Nên có */}
-        {preferredRules.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            <h2 className="text-subtitle font-semibold text-ink">Nên có</h2>
-            <div className="flex flex-col gap-2">
-              {preferredRules.map((rule) => (
-                <div
-                  key={`${rule.ruleType}:${rule.systemTag}`}
-                  className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface-raised px-5 py-4"
-                >
-                  <input
-                    type="hidden"
-                    name="rule"
-                    value={`${rule.ruleType}:${rule.systemTag}:${rule.minimumCount}`}
-                  />
-                  <span className="text-subtitle font-semibold text-ink">{ruleSentence(rule)}</span>
-                  {canEdit ? (
-                    <Button
-                      type="button"
-                      variant="quiet"
-                      size="sm"
-                      onClick={() => setRules((current) => current.filter((r) => r !== rule))}
-                    >
-                      Gỡ
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        <RuleSection
+          title="Nên có"
+          rules={preferredRules}
+          canEdit={canEdit}
+          onRemove={(r) => setRules((current) => current.filter((item) => item !== r))}
+        />
 
         {/* Cả hai nhóm rỗng */}
         {rules.length === 0 ? (
@@ -207,5 +157,60 @@ export function GroupRulesScreen({
         />
       ) : null}
     </main>
+  )
+}
+
+function RuleRow({
+  rule,
+  canEdit,
+  onRemove,
+}: {
+  rule: GroupRuleItem
+  canEdit: boolean
+  onRemove: (rule: GroupRuleItem) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface-raised px-5 py-4">
+      <input
+        type="hidden"
+        name="rule"
+        value={`${rule.ruleType}:${rule.systemTag}:${rule.minimumCount}`}
+      />
+      <span className="text-subtitle font-semibold text-ink">{ruleSentence(rule)}</span>
+      {canEdit ? (
+        <Button type="button" variant="quiet" size="sm" onClick={() => onRemove(rule)}>
+          Gỡ
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+function RuleSection({
+  title,
+  rules,
+  canEdit,
+  onRemove,
+}: {
+  title: string
+  rules: GroupRuleItem[]
+  canEdit: boolean
+  onRemove: (rule: GroupRuleItem) => void
+}) {
+  if (rules.length === 0) return null
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className="text-subtitle font-semibold text-ink">{title}</h2>
+      <div className="flex flex-col gap-2">
+        {rules.map((rule) => (
+          <RuleRow
+            key={`${rule.ruleType}:${rule.systemTag}`}
+            rule={rule}
+            canEdit={canEdit}
+            onRemove={onRemove}
+          />
+        ))}
+      </div>
+    </div>
   )
 }

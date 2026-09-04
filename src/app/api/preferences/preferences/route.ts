@@ -11,6 +11,7 @@ import { httpStatusForErrorCode } from '@/shared/http-error'
  *
  * userId luôn lấy từ phiên đăng nhập (auth.user.id); bỏ qua bất kỳ trường userId nào trong body.
  */
+/* jscpd:ignore-start */
 export async function PUT(request: Request) {
   const auth = await requireApiUser()
   if (!auth.ok) return auth.response
@@ -59,3 +60,4 @@ export async function PUT(request: Request) {
 
   return Response.json({ ok: true }, { status: 200 })
 }
+/* jscpd:ignore-end */

@@ -203,7 +203,10 @@ async function addExistingGlobalDishToGroup(input: {
  * cũng là chỗ mảng được sắp về THỨ TỰ CHUẨN, vì `array_agg` không đảm bảo thứ
  * tự.
  */
-async function listActiveInGroup(groupId: string): Promise<GroupDishListItem[]> {
+async function listByStateInGroup(
+  groupId: string,
+  state: typeof ACTIVE | typeof INACTIVE,
+): Promise<GroupDishListItem[]> {
   const rows = await getDb()
     .select({
       id: groupDishes.id,
@@ -215,7 +218,7 @@ async function listActiveInGroup(groupId: string): Promise<GroupDishListItem[]> 
     .from(groupDishes)
     .innerJoin(globalDishes, eq(globalDishes.id, groupDishes.globalDishId))
     .leftJoin(groupDishTags, eq(groupDishTags.groupDishId, groupDishes.id))
-    .where(and(eq(groupDishes.groupId, groupId), eq(groupDishes.state, ACTIVE)))
+    .where(and(eq(groupDishes.groupId, groupId), eq(groupDishes.state, state)))
     .groupBy(groupDishes.id, globalDishes.name, groupDishes.createdAt)
     .orderBy(asc(groupDishes.createdAt))
 
@@ -226,27 +229,12 @@ async function listActiveInGroup(groupId: string): Promise<GroupDishListItem[]> 
   }))
 }
 
-async function listInactiveInGroup(groupId: string): Promise<GroupDishListItem[]> {
-  const rows = await getDb()
-    .select({
-      id: groupDishes.id,
-      name: globalDishes.name,
-      systemTags: sql<
-        string[]
-      >`coalesce(json_agg(${groupDishTags.systemTag}) filter (where ${groupDishTags.systemTag} is not null), '[]'::json)`,
-    })
-    .from(groupDishes)
-    .innerJoin(globalDishes, eq(globalDishes.id, groupDishes.globalDishId))
-    .leftJoin(groupDishTags, eq(groupDishTags.groupDishId, groupDishes.id))
-    .where(and(eq(groupDishes.groupId, groupId), eq(groupDishes.state, INACTIVE)))
-    .groupBy(groupDishes.id, globalDishes.name, groupDishes.createdAt)
-    .orderBy(asc(groupDishes.createdAt))
+async function listActiveInGroup(groupId: string): Promise<GroupDishListItem[]> {
+  return listByStateInGroup(groupId, ACTIVE)
+}
 
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    systemTags: toSystemTags(row.systemTags),
-  }))
+async function listInactiveInGroup(groupId: string): Promise<GroupDishListItem[]> {
+  return listByStateInGroup(groupId, INACTIVE)
 }
 
 /**
