@@ -8,6 +8,7 @@ function makeDeps(overrides: Partial<PreferenceRepository> = {}) {
     setConstraint: vi.fn(async () => ({ removedInteraction: false })),
     setPreference: vi.fn(async () => undefined),
     findConstrainedGlobalDishIds: vi.fn(async () => new Set<string>()),
+    findCannotEatPairs: vi.fn(async () => new Set<string>()),
     findPreferencesByGlobalDish: vi.fn(async () => new Map()),
     ...overrides,
   }

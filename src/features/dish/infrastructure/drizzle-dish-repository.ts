@@ -210,6 +210,7 @@ async function listByStateInGroup(
   const rows = await getDb()
     .select({
       id: groupDishes.id,
+      globalDishId: groupDishes.globalDishId,
       name: globalDishes.name,
       systemTags: sql<
         string[]
@@ -224,6 +225,7 @@ async function listByStateInGroup(
 
   return rows.map((row) => ({
     id: row.id,
+    globalDishId: row.globalDishId,
     name: row.name,
     systemTags: toSystemTags(row.systemTags),
   }))

@@ -18,6 +18,7 @@ function makeDeps(
   overrides: {
     session?: SessionForStart | null
     invalidParticipants?: { userId: string; displayName: string }[]
+    targetDishCount?: number | null
     startOutcome?: 'STARTED' | 'NOT_DRAFT' | 'ALREADY_EXISTS_TODAY'
   } = {},
 ) {
@@ -37,7 +38,12 @@ function makeDeps(
     }),
   }
   const findInvalidParticipants = vi.fn(async () => overrides.invalidParticipants ?? [])
-  return { sessions: sessions as SessionRepository, findInvalidParticipants }
+  const findGroupTargetDishCount = vi.fn(async () => overrides.targetDishCount ?? null)
+  return {
+    sessions: sessions as SessionRepository,
+    findInvalidParticipants,
+    findGroupTargetDishCount,
+  }
 }
 
 describe('startSession', () => {

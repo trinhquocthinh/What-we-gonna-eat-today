@@ -8,7 +8,10 @@ config({ path: '.env', quiet: true })
 import { createSession } from '../src/features/session/application/create-session'
 import { startSession } from '../src/features/session/application/start-session'
 import { resolveDecisionDate } from '../src/shared/time/decision-date'
-import { drizzleMembershipRepository } from '../src/features/group/infrastructure/drizzle-group-repository'
+import {
+  drizzleGroupRepository,
+  drizzleMembershipRepository,
+} from '../src/features/group/infrastructure/drizzle-group-repository'
 import { drizzleDishRepository } from '../src/features/dish/infrastructure/drizzle-dish-repository'
 import { drizzleSessionRepository } from '../src/features/session/infrastructure/drizzle-session-repository'
 import { getDb } from '../src/shared/db/client'
@@ -85,6 +88,8 @@ async function main() {
           sessions: drizzleSessionRepository,
           findInvalidParticipants: ({ groupId, userIds }) =>
             drizzleMembershipRepository.findInvalidMembers(groupId, userIds),
+          findGroupTargetDishCount: async (id) =>
+            (await drizzleGroupRepository.findById(id))?.targetDishCount ?? null,
         },
         sessionId,
         creator.userId,
@@ -125,6 +130,8 @@ async function main() {
         sessions: drizzleSessionRepository,
         findInvalidParticipants: ({ groupId, userIds }) =>
           drizzleMembershipRepository.findInvalidMembers(groupId, userIds),
+        findGroupTargetDishCount: async (id) =>
+          (await drizzleGroupRepository.findById(id))?.targetDishCount ?? null,
       },
       sessionId,
       creator.userId,

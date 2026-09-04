@@ -411,16 +411,6 @@ async function findSessionCourses(sessionId: string): Promise<{
   }
 }
 
-async function listSessionCourses(sessionId: string): Promise<readonly SystemTag[]> {
-  const rows = await getDb()
-    .select({ systemTag: sessionCourses.systemTag })
-    .from(sessionCourses)
-    .where(eq(sessionCourses.sessionId, sessionId))
-    .orderBy(sessionCourses.position)
-
-  return rows.map((r) => r.systemTag)
-}
-
 export const drizzleSelectionRepository: SelectionRepository = {
   findParticipant,
   listEligibleDishCards,
@@ -434,5 +424,4 @@ export const drizzleSelectionRepository: SelectionRepository = {
   countCannotEatByDish,
   listRankingParticipantUserIds,
   findSessionCourses,
-  listSessionCourses,
 }

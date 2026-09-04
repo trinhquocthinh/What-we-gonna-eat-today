@@ -257,4 +257,67 @@ describe('DishCatalogScreen (S-05)', () => {
     expect(await screen.findByRole('status')).toBeDefined()
     expect(screen.getByText('Đã thêm lại Thịt kho tàu vào nhóm.')).toBeDefined()
   })
+
+  describe('M3-T6 — khai báo sở thích cá nhân ở màn danh mục', () => {
+    const PREFS = [
+      { groupDishId: '1', globalDishId: 'gld-1', preference: 'LIKE' as const, cannotEat: false },
+      { groupDishId: '2', globalDishId: 'gld-2', preference: null, cannotEat: true },
+      { groupDishId: '3', globalDishId: 'gld-3', preference: null, cannotEat: false },
+    ]
+
+    it('mỗi món có đủ ba nút, mang trạng thái từ server', () => {
+      render(
+        <DishCatalogScreen
+          groupId="g1"
+          groupName="Nhà Bảy Hiền"
+          dishes={DISHES}
+          dishPreferences={PREFS}
+          action={vi.fn()}
+        />,
+      )
+
+      expect(screen.getByRole('button', { name: 'Thích Cá basa kho tiêu' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+      expect(
+        screen.getByRole('button', { name: 'Không ăn được Canh chua cá lóc' }),
+      ).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('button', { name: 'Thích Gà chiên nước mắm' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      )
+    })
+
+    // BR-043 — khai báo cá nhân là của MỌI Member, khác hẳn `canEdit` (sửa nhãn,
+    // gỡ món) vốn chỉ của Admin. Trộn hai quyền này là lỗi E11-T2 vừa sửa xong.
+    it('Member không phải Admin vẫn khai báo được, dù không thấy nút "Gỡ"', () => {
+      render(
+        <DishCatalogScreen
+          groupId="g1"
+          groupName="Nhà Bảy Hiền"
+          dishes={DISHES}
+          dishPreferences={PREFS}
+          canEdit={false}
+          action={vi.fn()}
+        />,
+      )
+
+      expect(screen.getByRole('button', { name: 'Thích Cá basa kho tiêu' })).toBeDefined()
+      expect(screen.queryByRole('button', { name: 'Gỡ' })).toBeNull()
+    })
+
+    it('không truyền dishPreferences: màn hình y hệt trước M3, không có nút nào', () => {
+      render(
+        <DishCatalogScreen
+          groupId="g1"
+          groupName="Nhà Bảy Hiền"
+          dishes={DISHES}
+          action={vi.fn()}
+        />,
+      )
+
+      expect(screen.queryByRole('button', { name: /^Thích / })).toBeNull()
+    })
+  })
 })

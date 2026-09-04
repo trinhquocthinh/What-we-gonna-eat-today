@@ -42,7 +42,6 @@ function makeDeps(
     findSessionCourses: vi.fn(
       async () => overrides.sessionCourses ?? { deckMode: 'FREE' as const, courses: [] },
     ),
-    listSessionCourses: vi.fn(async () => overrides.sessionCourses?.courses ?? []),
   }
   const history: HistoryRepository = {
     findEatingDates: vi.fn(async () => overrides.eatingRows ?? []),
@@ -53,6 +52,7 @@ function makeDeps(
     setConstraint: vi.fn(async () => ({ removedInteraction: false })),
     setPreference: vi.fn(async () => undefined),
     findConstrainedGlobalDishIds: vi.fn(async () => new Set<string>()),
+    findCannotEatPairs: vi.fn(async () => new Set<string>()),
     findPreferencesByGlobalDish: vi.fn(async () => overrides.preferencesMap ?? new Map()),
   }
   return {
@@ -399,5 +399,36 @@ describe('listDeck — E4-T3/T4', () => {
       { systemTag: 'SOUP', count: 1 },
     ])
     expect(result.value.items.map((d) => d.dishId)).toEqual(['s1', 'm1', 'so1'])
+  })
+
+  // M3-T4 — thứ tự deck đông cứng trong `session_decks`, tag thì không.
+  it('Admin gỡ nhãn một món giữa phiên: tổng ranh giới vẫn bằng số thẻ, không món nào mất chặng', async () => {
+    const staple = makeDishCard({ dishId: 's1', systemTags: ['STAPLE'] })
+    // s2 vốn là STAPLE lúc materialize; Admin vừa gỡ sạch nhãn của nó.
+    const retagged = makeDishCard({ dishId: 's2', systemTags: [] })
+    const main1 = makeDishCard({ dishId: 'm1', systemTags: ['MAIN'] })
+    const soup = makeDishCard({ dishId: 'so1', systemTags: ['SOUP'] })
+
+    const deps = makeDeps({
+      eligible: [staple, retagged, main1, soup],
+      materialized: ['s1', 's2', 'm1', 'so1'],
+      sessionCourses: {
+        deckMode: 'COURSE',
+        courses: ['STAPLE', 'MAIN', 'SOUP'],
+      },
+    })
+
+    const result = await listDeck(deps, { ...BASE_INPUT, pageSize: 10 })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+
+    const total = result.value.courses?.reduce((acc, c) => acc + c.count, 0)
+    expect(total).toBe(result.value.items.length)
+    expect(result.value.courses).toEqual([
+      { systemTag: 'STAPLE', count: 2 },
+      { systemTag: 'MAIN', count: 1 },
+      { systemTag: 'SOUP', count: 1 },
+    ])
   })
 })

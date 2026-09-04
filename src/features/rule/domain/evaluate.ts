@@ -1,14 +1,19 @@
 import type { SystemTag } from '@/shared/domain/system-tag'
 
-/** Một quy định trong phiên (đã snapshot từ Group Rule sang session_rules). */
+/**
+ * Một quy định trong phiên (đã snapshot từ Group Rule sang `session_rules`).
+ *
+ * M3-T11 — `ruleType` BẮT BUỘC. Nó từng optional với mặc định `'REQUIRED'` từ
+ * hồi `E10-T1` mới bật Preferred Rule, và mặc định đó rơi về nhánh CHẶN CỨNG:
+ * một chỗ đọc quên chọn cột `rule_type` sẽ biến mọi luật "nên có" thành luật
+ * "phải có", chặn chốt bữa mà không lỗi nào đỏ. Mọi writer nay đều cấp giá trị,
+ * nên để optional chỉ còn là chừa sẵn chỗ cho lỗi đó.
+ */
 export type SessionRule = {
   readonly systemTag: SystemTag
   readonly minimumCount: number
-  readonly ruleType?: 'REQUIRED' | 'PREFERRED'
+  readonly ruleType: 'REQUIRED' | 'PREFERRED'
 }
-
-/** Tương thích ngược với các caller cũ nếu có */
-export type RequiredRule = SessionRule
 
 /** Món trong nháp Final Meal, kèm System Tag **hiện tại** của nó (BR-052 — chứ
  *  không phải tag lúc Start; xem S3 §…). Không cần `dishId`: hàm này chỉ đếm. */
@@ -16,9 +21,15 @@ export type TaggedDish = {
   readonly systemTags: readonly SystemTag[]
 }
 
-/** Vi phạm luật Bắt buộc — CHẶN chốt bữa (BR-052). Giữ nguyên hình dạng cũ
- *  để `ruleShortfallPhrase` và `TC-072` không phải đổi. */
+/** Một luật chưa đạt. Trường cũ giữ nguyên tên và ý nghĩa để
+ *  `ruleShortfallPhrase` và `TC-072` không phải đổi.
+ *
+ *  M3-T2 THÊM `ruleType`: từ `E10-T1`, khoá khử trùng của Rule Set là cặp
+ *  `(ruleType, systemTag)` — một tag mang được cả `REQUIRED` lẫn `PREFERRED`.
+ *  Thiếu trường này thì `systemTag` không còn định danh được luật nào sinh ra
+ *  shortfall, và presentation buộc phải đoán. */
 export type RuleShortfall = {
+  readonly ruleType: 'REQUIRED' | 'PREFERRED'
   readonly systemTag: SystemTag
   readonly minimumCount: number
   readonly actual: number
@@ -78,6 +89,7 @@ export function evaluateRules(input: {
 
     if (actual < rule.minimumCount) {
       const shortfall: RuleShortfall = {
+        ruleType: rule.ruleType,
         systemTag: rule.systemTag,
         minimumCount: rule.minimumCount,
         actual,

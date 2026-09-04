@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { SystemTag } from '@/shared/domain/system-tag'
 
-import { findMatchingCourse, splitIntoCourses } from './course-deck'
+import { deriveCourseBoundaries, findMatchingCourse, splitIntoCourses } from './course-deck'
 
 describe('course-deck — SPEC-030 / BR-063', () => {
   it('TC-134 — 3 chặng, mỗi chặng dư món: mỗi chặng đúng 10 thẻ', () => {
@@ -213,5 +213,73 @@ describe('course-deck — SPEC-030 / BR-063', () => {
     expect(findMatchingCourse(['STAPLE', 'MAIN'], ['STAPLE', 'MAIN'])).toBe('STAPLE')
     expect(findMatchingCourse(['DESSERT'], ['MAIN', 'SOUP'])).toBeNull()
     expect(findMatchingCourse([], ['MAIN', 'SOUP'])).toBeNull()
+  })
+
+  describe('deriveCourseBoundaries (M3-T4)', () => {
+    const COURSES: SystemTag[] = ['STAPLE', 'MAIN', 'SOUP']
+
+    it('tag không đổi: ranh giới đúng như đếm theo tag', () => {
+      const orderedDishTags: SystemTag[][] = [
+        ['STAPLE'],
+        ['STAPLE'],
+        ['MAIN'],
+        ['MAIN'],
+        ['MAIN'],
+        ['SOUP'],
+      ]
+
+      expect(deriveCourseBoundaries({ orderedDishTags, courses: COURSES })).toEqual([
+        { systemTag: 'STAPLE', count: 2 },
+        { systemTag: 'MAIN', count: 3 },
+        { systemTag: 'SOUP', count: 1 },
+      ])
+    })
+
+    // Thứ tự phẳng đã đông cứng trong `session_decks`; tag thì không. Admin sửa
+    // nhãn giữa phiên không được phép làm tổng ranh giới lệch khỏi số thẻ.
+    it('một món bị gỡ hết nhãn giữa phiên: tổng ranh giới vẫn bằng số thẻ', () => {
+      const orderedDishTags: SystemTag[][] = [
+        ['STAPLE'],
+        [], // vốn là STAPLE, Admin vừa gỡ nhãn
+        ['MAIN'],
+        ['SOUP'],
+      ]
+
+      const result = deriveCourseBoundaries({ orderedDishTags, courses: COURSES })
+
+      expect(result.reduce((sum, c) => sum + c.count, 0)).toBe(4)
+      expect(result).toEqual([
+        { systemTag: 'STAPLE', count: 2 },
+        { systemTag: 'MAIN', count: 1 },
+        { systemTag: 'SOUP', count: 1 },
+      ])
+    })
+
+    it('một món đổi nhãn về chặng TRƯỚC: không kéo ranh giới lùi lại', () => {
+      const orderedDishTags: SystemTag[][] = [
+        ['STAPLE'],
+        ['MAIN'],
+        ['STAPLE'], // vốn là MAIN, Admin vừa đổi nhãn
+        ['SOUP'],
+      ]
+
+      const result = deriveCourseBoundaries({ orderedDishTags, courses: COURSES })
+
+      expect(result.reduce((sum, c) => sum + c.count, 0)).toBe(4)
+      expect(result).toEqual([
+        { systemTag: 'STAPLE', count: 1 },
+        { systemTag: 'MAIN', count: 2 },
+        { systemTag: 'SOUP', count: 1 },
+      ])
+    })
+
+    it('deck rỗng hoặc không có chặng nào', () => {
+      expect(deriveCourseBoundaries({ orderedDishTags: [], courses: COURSES })).toEqual([
+        { systemTag: 'STAPLE', count: 0 },
+        { systemTag: 'MAIN', count: 0 },
+        { systemTag: 'SOUP', count: 0 },
+      ])
+      expect(deriveCourseBoundaries({ orderedDishTags: [['MAIN']], courses: [] })).toEqual([])
+    })
   })
 })

@@ -391,6 +391,92 @@ describe('S-09 Deck vuốt', () => {
       vi.unstubAllGlobals()
     })
 
+    it('M3-T1 — quay lại chặng rồi vuốt tiếp: số món đề xuất không đếm trùng', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({ effectiveInteraction: 'SWIPE_RIGHT' }),
+        }),
+      )
+
+      render(
+        <DeckScreen
+          sessionId="s1"
+          dateCaption="Thứ Ba 18/8"
+          dishes={DISHES_7}
+          courses={COURSES_3}
+          initialParticipantState="ACTIVE"
+          groupHref="/groups/g1"
+        />,
+      )
+
+      // Vuốt 4 thẻ (cursor = 4, đang ở chặng 2)
+      for (let i = 0; i < 4; i++) {
+        const dish = DISHES_7[i]!
+        await userEvent.click(await screen.findByRole('button', { name: `Đề xuất ${dish.name}` }))
+      }
+
+      // Quay lại đầu chặng 2 (cursor = 2) — `marks` phải cắt về đúng 2 phần tử,
+      // nếu không thì 5 lượt vuốt tiếp theo cộng dồn lên 9.
+      await userEvent.click(screen.getByRole('button', { name: 'Quay lại chặng trước' }))
+      expect(await screen.findByText('Thịt kho')).toBeInTheDocument()
+
+      // Vuốt nốt 5 thẻ còn lại của deck
+      for (let i = 2; i < 7; i++) {
+        const dish = DISHES_7[i]!
+        await userEvent.click(await screen.findByRole('button', { name: `Đề xuất ${dish.name}` }))
+      }
+
+      expect(
+        await screen.findByText('Bạn đã xem hết 7 món được chọn cho hôm nay.'),
+      ).toBeInTheDocument()
+      // 7 thẻ trong deck ⇒ nhiều nhất 7 món được đề xuất, không phải 9.
+      expect(screen.getByText('Đã đề xuất 7 món. Xong lượt của mình chứ?')).toBeInTheDocument()
+
+      vi.unstubAllGlobals()
+    })
+
+    it('M3-T1 — Hoàn tác sau khi quay lại chặng đọc đúng thẻ ngay trước cursor', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ effectiveInteraction: 'SWIPE_RIGHT' }),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      render(
+        <DeckScreen
+          sessionId="s1"
+          dateCaption="Thứ Ba 18/8"
+          dishes={DISHES_7}
+          courses={COURSES_3}
+          initialParticipantState="ACTIVE"
+          groupHref="/groups/g1"
+        />,
+      )
+
+      for (let i = 0; i < 4; i++) {
+        const dish = DISHES_7[i]!
+        await userEvent.click(await screen.findByRole('button', { name: `Đề xuất ${dish.name}` }))
+      }
+
+      await userEvent.click(screen.getByRole('button', { name: 'Quay lại chặng trước' }))
+      expect(await screen.findByText('Thịt kho')).toBeInTheDocument()
+
+      fetchSpy.mockClear()
+      await userEvent.click(screen.getByRole('button', { name: 'Hoàn tác lượt vuốt vừa rồi' }))
+
+      // Lùi về thẻ ngay trước `cursor` (index 1 — 'Bún bò'), và UNDO gửi cho đúng thẻ đó.
+      expect(await screen.findByText('Bún bò')).toBeInTheDocument()
+      const undoCall = fetchSpy.mock.calls.find(
+        (call) => JSON.parse(String((call[1] as RequestInit).body)).action === 'UNDO',
+      )
+      expect(undoCall).toBeDefined()
+      expect(JSON.parse(String((undoCall![1] as RequestInit).body)).dishId).toBe('dish-1')
+
+      vi.unstubAllGlobals()
+    })
+
     it('vuốt hết 7 thẻ: màn hết thẻ, không kẹt ở ranh giới chặng cuối', async () => {
       vi.stubGlobal(
         'fetch',
@@ -423,5 +509,33 @@ describe('S-09 Deck vuốt', () => {
 
       vi.unstubAllGlobals()
     })
+  })
+
+  // M3-T7 / R-05 — khai báo mất trong im lặng là đúng thứ E7 tồn tại để ngăn.
+  it('M3-T7 — ghi Cannot Eat thất bại: toast nói thật thay vì hứa suông', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({}) }),
+    )
+
+    render(
+      <DeckScreen
+        sessionId="s1"
+        dateCaption="Thứ Ba 18/8"
+        dishes={makeDishes(['Cá basa kho tiêu', 'Canh chua'])}
+        initialParticipantState="ACTIVE"
+        groupHref="/groups/g1"
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tôi không ăn được món này' }))
+
+    expect(
+      await screen.findByText(
+        'Chưa lưu được "không ăn được Cá basa kho tiêu". Thử lại ở màn Danh mục món.',
+      ),
+    ).toBeInTheDocument()
+
+    vi.unstubAllGlobals()
   })
 })

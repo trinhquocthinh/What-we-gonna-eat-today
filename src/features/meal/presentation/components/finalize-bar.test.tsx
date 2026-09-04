@@ -1,17 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { RequiredRule } from '@/features/rule/domain/evaluate'
+import type { SessionRule } from '@/features/rule/domain/evaluate'
 import type { SystemTag } from '@/shared/domain/system-tag'
 
 import { FinalizeBar } from './finalize-bar'
 
-const RULES: readonly RequiredRule[] = [
+const RULES: readonly SessionRule[] = [
   { systemTag: 'MAIN', minimumCount: 1, ruleType: 'REQUIRED' },
   { systemTag: 'SOUP', minimumCount: 1, ruleType: 'REQUIRED' },
 ]
 
-const PREFERRED_RULES: readonly RequiredRule[] = [
+const PREFERRED_RULES: readonly SessionRule[] = [
   { systemTag: 'MAIN', minimumCount: 1, ruleType: 'REQUIRED' },
   { systemTag: 'SOUP', minimumCount: 1, ruleType: 'PREFERRED' },
 ]
@@ -254,5 +254,31 @@ describe('FinalizeBar (S-10 Dải đáy — E5-T8 + E5-T9 + E10-T5)', () => {
     const button = screen.getByRole('button', { name: 'Chốt bữa' })
     fireEvent.click(button)
     expect(handleSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  // M3-T2 — cùng một tag mang cả hai loại luật (E10-T1). Hai dòng phải nói hai
+  // chuyện khác nhau; khớp chỉ bằng `systemTag` thì cả hai dòng cùng đọc một
+  // shortfall và một trong hai luôn sai.
+  const SOUP_BOTH: readonly SessionRule[] = [
+    { systemTag: 'SOUP', minimumCount: 1, ruleType: 'REQUIRED' },
+    { systemTag: 'SOUP', minimumCount: 2, ruleType: 'PREFERRED' },
+  ]
+
+  it('M3-T2: SOUP REQUIRED>=1 + PREFERRED>=2, mâm 0 canh -> hai dòng nói hai chuyện', () => {
+    render(
+      <FinalizeBar selectedDishes={[MAIN_DISH]} rules={SOUP_BOTH} pending={false} error={null} />,
+    )
+
+    expect(screen.getByText(/Phải có ít nhất 1 món canh · còn thiếu 1 món canh/)).toBeDefined()
+    expect(screen.getByText(/Nên có ít nhất 2 món canh · nên có thêm 2 món canh/)).toBeDefined()
+  })
+
+  it('M3-T2: SOUP REQUIRED>=1 + PREFERRED>=2, mâm 1 canh -> REQUIRED đã đủ', () => {
+    render(
+      <FinalizeBar selectedDishes={[SOUP_DISH]} rules={SOUP_BOTH} pending={false} error={null} />,
+    )
+
+    expect(screen.getByText(/Phải có ít nhất 1 món canh · đã đủ/)).toBeDefined()
+    expect(screen.getByText(/Nên có ít nhất 2 món canh · nên có thêm 1 món canh/)).toBeDefined()
   })
 })

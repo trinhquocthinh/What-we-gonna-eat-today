@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
 import type { RuleRepository } from '@/features/rule/application/rule-repository'
-import type { RequiredRule } from '@/features/rule/domain/evaluate'
+import type { SessionRule } from '@/features/rule/domain/evaluate'
 import type { SystemTag } from '@/shared/domain/system-tag'
 
 import type { MealRepository, SessionForMeal } from './meal-repository'
@@ -64,7 +64,7 @@ function makeFakeMealRepository(options: {
 
 function makeFakeRuleRepository(
   options: {
-    rules?: RequiredRule[]
+    rules?: SessionRule[]
     listSessionRulesCalls?: string[]
   } = {},
 ) {
@@ -98,6 +98,17 @@ function makeFakePreferenceRepository(
     },
     async findConstrainedGlobalDishIds(userId: string) {
       return options.constraintsByUser?.get(userId) ?? new Set()
+    },
+    async findCannotEatPairs(userIds: readonly string[], globalDishIds: readonly string[]) {
+      const pairs = new Set<string>()
+      for (const userId of userIds) {
+        for (const globalDishId of options.constraintsByUser?.get(userId) ?? []) {
+          if (globalDishIds.includes(globalDishId)) {
+            pairs.add(`${userId}:${globalDishId}`)
+          }
+        }
+      }
+      return pairs
     },
     async findPreferencesByGlobalDish(): Promise<never> {
       throw new Error('không dùng trong finalize')
@@ -225,7 +236,7 @@ describe('SPEC-016 — Finalize', () => {
       ]),
     })
     const fakeRules = makeFakeRuleRepository({
-      rules: [{ systemTag: 'SOUP', minimumCount: 1 }],
+      rules: [{ systemTag: 'SOUP', minimumCount: 1, ruleType: 'REQUIRED' }],
     })
     const fakePreferences = makeFakePreferenceRepository()
 
@@ -238,7 +249,7 @@ describe('SPEC-016 — Finalize', () => {
     if (!result.ok) {
       expect(result.error.code).toBe('ERR_REQUIRED_RULE_FAILED')
       expect(result.error.details?.shortfalls).toEqual([
-        { systemTag: 'SOUP', minimumCount: 1, actual: 0, missing: 1 },
+        { ruleType: 'REQUIRED', systemTag: 'SOUP', minimumCount: 1, actual: 0, missing: 1 },
       ])
     }
     expect(fakeMeal.commitCalls).toHaveLength(0)
@@ -252,8 +263,8 @@ describe('SPEC-016 — Finalize', () => {
     })
     const fakeRules = makeFakeRuleRepository({
       rules: [
-        { systemTag: 'MAIN', minimumCount: 1 },
-        { systemTag: 'SOUP', minimumCount: 1 },
+        { systemTag: 'MAIN', minimumCount: 1, ruleType: 'REQUIRED' },
+        { systemTag: 'SOUP', minimumCount: 1, ruleType: 'REQUIRED' },
       ],
     })
     const fakePreferences = makeFakePreferenceRepository()
@@ -275,7 +286,7 @@ describe('SPEC-016 — Finalize', () => {
       tagsByDish: new Map([['d1', ['MAIN']]]),
     })
     const fakeRules = makeFakeRuleRepository({
-      rules: [{ systemTag: 'MAIN', minimumCount: 1 }],
+      rules: [{ systemTag: 'MAIN', minimumCount: 1, ruleType: 'REQUIRED' }],
       listSessionRulesCalls,
     })
     const fakePreferences = makeFakePreferenceRepository()
@@ -298,7 +309,7 @@ describe('SPEC-016 — Finalize', () => {
       findTagsCalls,
     })
     const fakeRules = makeFakeRuleRepository({
-      rules: [{ systemTag: 'SOUP', minimumCount: 1 }],
+      rules: [{ systemTag: 'SOUP', minimumCount: 1, ruleType: 'REQUIRED' }],
     })
     const fakePreferences = makeFakePreferenceRepository()
 

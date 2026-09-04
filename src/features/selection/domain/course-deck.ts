@@ -132,3 +132,47 @@ export function splitIntoCourses(input: {
     dishIds: (groupedByCourse.get(course) ?? []).slice(0, quotas[index] ?? 0),
   }))
 }
+
+/**
+ * M3-T4 — Suy ranh giới chặng từ THỨ TỰ ĐÃ ĐÔNG CỨNG, không phải từ tag hiện tại.
+ *
+ * Thứ tự phẳng của deck nằm trong `session_decks` và không đổi nữa (`BR-048`);
+ * System Tag của món thì Admin sửa được bất cứ lúc nào. Bản trước đếm ranh giới
+ * bằng `findMatchingCourse` trên tag hiện tại, nên sửa nhãn giữa phiên phá vỡ
+ * bất biến mà `currentCourse` dựa vào — tổng các `count` không còn bằng số thẻ,
+ * và món mất hết nhãn thì rơi ra khỏi mọi chặng, kéo tiêu đề chặng biến mất
+ * giữa deck.
+ *
+ * Ở đây con trỏ chặng CHỈ TIẾN, không lùi: mỗi thẻ thuộc đúng một chặng, các
+ * chặng luôn liền khối, và tổng luôn bằng `orderedDishTags.length`. Thẻ không
+ * khớp chặng nào — hoặc khớp một chặng đã đi qua — nằm lại chặng đang mở, đúng
+ * vị trí vật lý của nó trong deck.
+ *
+ * Tag không đổi (trường hợp thường) cho kết quả y hệt cách đếm cũ.
+ */
+export function deriveCourseBoundaries(input: {
+  /** Tag hiện tại của từng thẻ, theo đúng thứ tự đã đông cứng của deck. */
+  readonly orderedDishTags: readonly (readonly SystemTag[])[]
+  /** Thứ tự Creator sắp. */
+  readonly courses: readonly SystemTag[]
+}): CourseBoundary[] {
+  const { orderedDishTags, courses } = input
+
+  if (courses.length === 0) {
+    return []
+  }
+
+  const counts = new Array<number>(courses.length).fill(0)
+  let current = 0
+
+  for (const tags of orderedDishTags) {
+    const match = findMatchingCourse(tags, courses)
+    const index = match === null ? -1 : courses.indexOf(match)
+    if (index > current) {
+      current = index
+    }
+    counts[current] = (counts[current] ?? 0) + 1
+  }
+
+  return courses.map((systemTag, index) => ({ systemTag, count: counts[index] ?? 0 }))
+}

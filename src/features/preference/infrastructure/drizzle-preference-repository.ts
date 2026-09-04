@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
 import { getDb } from '@/shared/db/client'
@@ -20,9 +20,20 @@ import type { PreferenceKind } from '../domain/explicit-preference'
  * không ở trong phiên ACTIVE nào, hoặc nhóm không có món này, hoặc có mà
  * chưa vuốt — cả ba đều là trạng thái bình thường, không phải lỗi.
  *
- * Lưu ý v1.0: một User thuộc đúng một Group (DEC-004) và một Group có tối đa
- * một phiên ACTIVE mỗi ngày (BR-025), nên kết quả tối đa một dòng. Khi F43
- * multi-group vào, hàm này cần trả mảng hoặc xử lý nhiều nhóm.
+ * M3-T3 — `ORDER BY decision_date DESC` là BẮT BUỘC, không phải trang trí.
+ *
+ * Bản trước dựa vào giả định "mỗi user tối đa một phiên ACTIVE" (một User thuộc
+ * đúng một Group theo DEC-004, một Group tối đa một phiên mỗi ngày theo BR-025)
+ * nên dùng `.limit(1)` trần. Giả định đó SAI: `E11` cho thấy phiên bỏ dở của hôm
+ * qua vẫn mang state `ACTIVE` cho tới khi quét lười ở Group Hub chạy
+ * (`invalidateExpiredSessions`), trong khi phiên hôm nay đã mở — hai phiên
+ * ACTIVE cùng lúc. Không có `ORDER BY` thì `.limit(1)` chọn dòng tuỳ planner:
+ * `BR-034` xoá nhầm tương tác của phiên cũ, $P$ của phiên hôm nay không giảm,
+ * và không cổng nào bắt được vì nó đúng khoảng một nửa số lần chạy.
+ *
+ * Phiên có `decision_date` mới nhất là phiên người dùng đang thật sự vuốt.
+ *
+ * Khi F43 multi-group vào, hàm này cần trả mảng hoặc xử lý nhiều nhóm.
  */
 async function findActiveSwipeForGlobalDish(input: {
   userId: string
@@ -57,6 +68,7 @@ async function findActiveSwipeForGlobalDish(input: {
       ),
     )
     .where(and(eq(participants.userId, input.userId), sql`${participants.state} <> 'REMOVED'`))
+    .orderBy(desc(selectionSessions.decisionDate))
     .limit(1)
 
   return rows[0] ?? null
@@ -166,6 +178,38 @@ async function findConstrainedGlobalDishIds(userId: string): Promise<ReadonlySet
   return new Set(rows.map((row) => row.globalDishId))
 }
 
+/**
+ * M3-T9 — xem doc ở `PreferenceRepository.findCannotEatPairs`.
+ *
+ * Lọc CẢ HAI chiều (`user_id IN …` và `global_dish_id IN …`) chứ không chỉ theo
+ * người: bữa tối có 3 món, còn ràng buộc cả đời của một người có thể có hàng
+ * chục. Kéo về những cặp không liên quan rồi lọc trong bộ nhớ là trả tiền băng
+ * thông cho dữ liệu không ai đọc.
+ */
+async function findCannotEatPairs(
+  userIds: readonly string[],
+  globalDishIds: readonly string[],
+): Promise<ReadonlySet<string>> {
+  if (userIds.length === 0 || globalDishIds.length === 0) {
+    return new Set()
+  }
+
+  const rows = await getDb()
+    .select({
+      userId: userDishConstraints.userId,
+      globalDishId: userDishConstraints.globalDishId,
+    })
+    .from(userDishConstraints)
+    .where(
+      and(
+        inArray(userDishConstraints.userId, [...userIds]),
+        inArray(userDishConstraints.globalDishId, [...globalDishIds]),
+      ),
+    )
+
+  return new Set(rows.map((row) => `${row.userId}:${row.globalDishId}`))
+}
+
 async function findPreferencesByGlobalDish(
   userId: string,
   globalDishIds: readonly string[],
@@ -198,5 +242,6 @@ export const drizzlePreferenceRepository: PreferenceRepository = {
   setConstraint,
   setPreference,
   findConstrainedGlobalDishIds,
+  findCannotEatPairs,
   findPreferencesByGlobalDish,
 }

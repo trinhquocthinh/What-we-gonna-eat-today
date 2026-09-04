@@ -10,6 +10,8 @@ import { groupDishesByTag } from '../../domain/dish-group'
 import { normalizeDishName } from '../../domain/normalize-name'
 import type { SystemTag } from '../../domain/system-tag'
 import { AddDishSheet } from './add-dish-sheet'
+import type { DishPreferenceKind } from './dish-preference-controls'
+import { DishPreferenceControls } from './dish-preference-controls'
 import { DishRow } from './dish-row'
 import { DishSearchField } from './dish-search-field'
 import { EditDishSheet } from './edit-dish-sheet'
@@ -56,6 +58,16 @@ export type DishCatalogScreenProps = {
   groupId: string
   dishes: { id: string; name: string; systemTags: readonly SystemTag[] }[]
   inactiveDishes?: readonly { id: string; name: string; systemTags?: readonly SystemTag[] }[]
+  /** M3-T6 — trạng thái Like/Dislike/Cannot Eat của CHÍNH người đang xem, tra
+   *  theo `group_dishes.id`. Đọc ở `app/` rồi truyền xuống (M3-T5): feature
+   *  `dish` không có chiều nào tới `preference`, và không cần có. Vắng mặt thì
+   *  màn hình vẫn chạy y như trước — hàng nút đơn giản là không hiện. */
+  dishPreferences?: readonly {
+    groupDishId: string
+    globalDishId: string
+    preference: DishPreferenceKind | null
+    cannotEat: boolean
+  }[]
   canEdit?: boolean
   action: (state: AddDishFormState, formData: FormData) => Promise<AddDishFormState>
   editAction?: (state: EditDishFormState, formData: FormData) => Promise<EditDishFormState>
@@ -73,6 +85,7 @@ export function DishCatalogScreen({
   groupId,
   dishes,
   inactiveDishes = [],
+  dishPreferences = [],
   canEdit = true,
   action,
   editAction = defaultEditAction,
@@ -159,6 +172,11 @@ export function DishCatalogScreen({
     visibleDishes.length === 0 &&
     visibleInactiveDishes.length === 0
   const groups = useMemo(() => groupDishesByTag(visibleDishes), [visibleDishes])
+
+  const preferenceByDishId = useMemo(
+    () => new Map(dishPreferences.map((p) => [p.groupDishId, p])),
+    [dishPreferences],
+  )
 
   // Toast SUY RA từ state và tương tác: mở sheet là toast ẩn.
   const toast =
@@ -255,6 +273,18 @@ export function DishCatalogScreen({
                           </Button>
                         ) : undefined
                       }
+                      footer={(() => {
+                        const pref = preferenceByDishId.get(dish.id)
+                        return pref === undefined ? undefined : (
+                          <DishPreferenceControls
+                            key={pref.globalDishId}
+                            dishName={dish.name}
+                            globalDishId={pref.globalDishId}
+                            preference={pref.preference}
+                            cannotEat={pref.cannotEat}
+                          />
+                        )
+                      })()}
                     />
                   ))}
                 </ul>

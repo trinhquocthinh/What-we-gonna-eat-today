@@ -11,8 +11,9 @@ describe('RANKING_CONFIG', () => {
    */
   it('trọng số khớp Ranking Spec §5', () => {
     expect(RANKING_CONFIG.personalRanking.wRecency).toBe(0.25)
+    expect(RANKING_CONFIG.personalRanking.wExplicit).toBe(0.3)
+    expect(RANKING_CONFIG.explore).toEqual({ ratio: 0.2, blockSize: 5, staleDays: 30 })
     expect(RANKING_CONFIG.history.cooldownWindowDays).toBe(7)
-    expect(RANKING_CONFIG.deck.pageSize).toBe(20)
     expect(RANKING_CONFIG.deck.maxCards).toBe(30)
     expect(RANKING_CONFIG.sessionRanking).toEqual({
       aSwipeRight: 1.0,

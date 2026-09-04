@@ -28,7 +28,15 @@ export type StartSessionDeps = {
     readonly groupId: string
     readonly userIds: readonly string[]
   }) => Promise<readonly InvalidParticipant[]>
-  readonly findGroupTargetDishCount?: (groupId: string) => Promise<number | null>
+  /**
+   * M3-T11 — BẮT BUỘC, không còn optional.
+   *
+   * `E10-T3` đông cứng `groups.target_dish_count` vào phiên ngay trong
+   * `startDraft`. Khi dependency này optional, một caller quên truyền nó vẫn
+   * biên dịch được và phiên lặng lẽ mở với `targetDishCount = null` — tức
+   * `F23` tự tắt cho đường mở phiên đó, và không test nào ở tầng trên bắt được.
+   */
+  readonly findGroupTargetDishCount: (groupId: string) => Promise<number | null>
 }
 
 /**
@@ -87,9 +95,7 @@ export async function startSession(
       return err(failure('ERR_PARTICIPANT_NOT_MEMBER', { invalidParticipants: invalid }))
     }
 
-    if (deps.findGroupTargetDishCount) {
-      targetDishCount = await deps.findGroupTargetDishCount(session.groupId)
-    }
+    targetDishCount = await deps.findGroupTargetDishCount(session.groupId)
   }
 
   const outcome = await deps.sessions.startDraft(sessionId, {

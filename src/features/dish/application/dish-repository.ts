@@ -12,6 +12,10 @@ export type GroupDishSummary = {
  */
 export type GroupDishListItem = GroupDishSummary & {
   readonly systemTags: readonly SystemTag[]
+  /** M3-T5 — Sở thích và ràng buộc cá nhân khoá theo `global_dishes.id`, không
+   *  theo `group_dishes.id`: chúng theo NGƯỜI qua mọi nhóm (SPEC-024/025). Màn
+   *  Danh mục cần id này để tra trạng thái Like/Dislike/Cannot Eat của từng dòng. */
+  readonly globalDishId: string
 }
 
 /** E2-T4 cần biết state để phân biệt ACTIVE (lỗi TC-099) và INACTIVE

@@ -104,19 +104,13 @@ export async function finalizeSession(
     .map((id) => globalDishIdByGroupDishId.get(id))
     .filter((id): id is string => id !== undefined)
 
-  const participantConstraints = await Promise.all(
-    participantUserIds.map(async (userId) => {
-      const constrainedDishIds = await deps.preferences.findConstrainedGlobalDishIds(userId)
-      return { userId, constrainedDishIds }
-    }),
+  // M3-T9 — MỘT truy vấn cho cả nhóm. Bản trước gọi
+  // `findConstrainedGlobalDishIds` một lần cho mỗi participant (N+1), đúng lối
+  // viết mà E7-S3 Guide §4.2 cấm bằng chữ khi dựng `countCannotEatByDish`.
+  const cannotEatPairs = await deps.preferences.findCannotEatPairs(
+    participantUserIds,
+    globalDishIds,
   )
-
-  const cannotEatPairs = new Set<string>()
-  for (const { userId, constrainedDishIds } of participantConstraints) {
-    for (const globalDishId of constrainedDishIds) {
-      cannotEatPairs.add(`${userId}:${globalDishId}`)
-    }
-  }
 
   const eatingHistoryRows = buildDefaultEatingHistory({
     participantUserIds,

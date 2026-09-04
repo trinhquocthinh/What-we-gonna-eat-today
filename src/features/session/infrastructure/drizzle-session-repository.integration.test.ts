@@ -103,7 +103,11 @@ describe('SPEC-007 — Tạo Session (integration)', () => {
     )
     if (!first.ok) throw new Error('setup thất bại: không tạo được Session đầu tiên')
     const started = await startSession(
-      { sessions: drizzleSessionRepository, findInvalidParticipants: async () => [] },
+      {
+        sessions: drizzleSessionRepository,
+        findInvalidParticipants: async () => [],
+        findGroupTargetDishCount: async () => null,
+      },
       first.value.id,
       userId,
     )
@@ -314,12 +318,20 @@ describe('BR-025 — race condition khi Start (TC-107)', () => {
         // toàn bộ test fail ở đúng chỗ cần quan sát nhất.
         const [outcomeA, outcomeB] = await Promise.allSettled([
           startSession(
-            { sessions: drizzleSessionRepository, findInvalidParticipants: async () => [] },
+            {
+              sessions: drizzleSessionRepository,
+              findInvalidParticipants: async () => [],
+              findGroupTargetDishCount: async () => null,
+            },
             first.value.id,
             userId,
           ),
           startSession(
-            { sessions: drizzleSessionRepository, findInvalidParticipants: async () => [] },
+            {
+              sessions: drizzleSessionRepository,
+              findInvalidParticipants: async () => [],
+              findGroupTargetDishCount: async () => null,
+            },
             second.value.id,
             userId,
           ),

@@ -54,9 +54,6 @@ function makeFakeSelectionRepository(options: {
     async findSessionCourses(): Promise<never> {
       throw new Error('không dùng trong test này')
     },
-    async listSessionCourses(): Promise<never> {
-      throw new Error('không dùng trong test này')
-    },
   }
 
   return {

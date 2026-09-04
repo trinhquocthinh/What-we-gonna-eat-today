@@ -2,11 +2,11 @@
 
 > **Document Metadata**
 >
-> - **Version:** `2.1` | **Status:** `Active (v1.1 Planning)` | **Release:** `R2`
-> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
-> - **Supersedes:** `v2.0` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
+> - **Version:** `2.2` | **Status:** `Active (v1.1 đã xong — sẵn sàng lập kế hoạch v1.2)` | **Release:** `R2`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-09-04`
+> - **Supersedes:** `v2.1` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
 >
-> 📌 *Tài liệu này là cẩm nang thực thi hằng ngày. **v1.0 đã phát hành:** 56 subtask, 121 giờ cơ sở. **v1.1 đang mở:** 33 subtask, 81 giờ cơ sở ([§16](#16-v11--chi-tiết-thi-công)). Mỗi subtask được thiết kế để hoàn thành trong một buổi ngồi (1 đến 4 giờ).*
+> 📌 *Tài liệu này là cẩm nang thực thi hằng ngày. **v1.0 đã phát hành:** 56 subtask, 121 giờ cơ sở. **v1.1 đã xong:** 45 subtask, 96.5 giờ cơ sở ([§16](#16-v11--chi-tiết-thi-công)) — 33 subtask kế hoạch cộng 12 subtask của `M3` sinh ra từ đợt rà soát khép phiên bản. Mỗi subtask được thiết kế để hoàn thành trong một buổi ngồi (1 đến 4 giờ).*
 
 ---
 
@@ -36,6 +36,7 @@
     - [16.5 E10 — Chốt bữa có hướng dẫn mềm](#165-e10--chốt-bữa-có-hướng-dẫn-mềm)
     - [16.6 E11 — Vận hành tối thiểu](#166-e11--vận-hành-tối-thiểu)
     - [16.7 Đường găng và rủi ro v1.1](#167-đường-găng-và-rủi-ro-v11)
+    - [16.8 M3 — Khép v1.1](#168-m3--khép-v11)
 
 ---
 
@@ -56,9 +57,10 @@
 | **E7** | Ràng buộc và sở thích cá nhân | 8 | 19.25 | `[x]` ✅ Xong |
 | **E8** | Deck ngắn và có nhịp | 8 | 17.25 | `[x]` ✅ Xong |
 | **E9** | Chế độ vuốt theo chặng | 6 | 18 | `[x]` ✅ Xong |
-| **E10** | Chốt bữa có hướng dẫn mềm | 5 | 16 | `[ ]` Chưa bắt đầu |
-| **E11** | Vận hành tối thiểu | 2 | 8.5 | `[ ]` Chưa bắt đầu |
-| | **— Tổng v1.1 —** | **33** | **81** | |
+| **E10** | Chốt bữa có hướng dẫn mềm | 5 | 16 | `[x]` ✅ Xong |
+| **E11** | Vận hành tối thiểu | 2 | 8.5 | `[x]` ✅ Xong |
+| **M3** | Khép v1.1 — vá lỗi rà soát & `F16` | 12 | 15.5 | `[x]` ✅ Xong |
+| | **— Tổng v1.1 —** | **45** | **96.5** | |
 
 > [!TIP]
 > Cột trạng thái dùng để theo dõi tiến độ. Nếu sau ba tuần chưa có ô nào được tick, vấn đề không nằm ở kế hoạch mà ở nhịp độ thực thi.
@@ -382,7 +384,9 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 | **E9** | Chế độ vuốt theo chặng | **`F50` Guided Course Mode** | 18h |
 | **E10** | Chốt bữa có hướng dẫn mềm | `F22` Preferred Rule, `F23` Target Dish Count, `F24` Lưu vết cảnh báo | 16h |
 | **E11** | Vận hành tối thiểu | `F26` Phiên hết hạn, `F27` Gỡ Dish | 8.5h |
-| | | **Tổng v1.1** | **81h** |
+| | | **Tổng kế hoạch** | **81h** |
+| **M3** | Khép v1.1 — vá lỗi rà soát & phần còn thiếu của `F16` | — (xem [§16.8](#168-m3--khép-v11)) | 15.5h |
+| | | **Tổng v1.1 thực tế** | **96.5h** |
 
 **Ba thay đổi so với kế hoạch cũ:**
 
@@ -401,6 +405,19 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 | **E13** | Học sở thích tự động | `F30` Implicit Preference, `F31` Blacklist, `F32` Whitelist, `F39` Reset | 21h |
 | **E14** | Linh hoạt, bổ trợ và sửa dữ liệu | `F35` Override Session Rule, `F36` Nguồn mua, `F37` Descriptive Tag, `F38` Phản hồi trực tiếp, `F40` Sửa Final Meal, `F41` Huỷ phiên, **`F25` Gỡ Participant**, **`F28` Sửa lịch sử ăn**, **`F29` UI phát hiện trùng** | 45h |
 | | | **Tổng v1.2** | **89h** |
+
+> [!NOTE]
+> **Hai thứ v1.1 để lại làm đầu vào cho v1.2** (đợt rà soát `2026-09-04`, xem [§16.8](#168-m3--khép-v11)):
+>
+> - **`finalize_warnings` là bảng chỉ ghi, chưa ai đọc.** `E10-T4` cố ý dựng nó không kèm phía
+>   đọc, và từ đó nó vẫn đang tích dữ liệu không ai xem được. Ứng viên tự nhiên cho `E14` —
+>   ghép cùng `F40` Sửa Final Meal, nơi câu hỏi *"tối đó nhà mình lệch chuẩn ở đâu"* mới có chỗ
+>   để hỏi.
+> - **Màn tổng hợp liệt kê TRỌN danh mục dưới mục "Chưa ai chọn",** trong khi từ `E8` deck chặn
+>   ở 30 thẻ. Nhóm 150 món ⇒ 120+ dòng món chưa ai từng nhìn thấy trong phiên. Đây là **quyết
+>   định sản phẩm**, không phải lỗi: trần deck giới hạn thứ được ĐỀ XUẤT, còn Creator lúc chốt
+>   bữa vẫn có quyền chọn bất cứ món nào trong nhà. Chốt lại ở `E14` cùng `F40`, không sửa vội
+>   trong một slice bảo trì.
 
 ---
 
@@ -428,6 +445,8 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `2.2` | 2026-09-04 | §1, §13.1, §16.8 | Thi công `M3` — slice khép v1.1 sinh từ đợt rà soát toàn bộ E7→E11: 4 lỗi logic (`marks` gãy bất biến khi quay chặng, khớp luật sai loại sau khi `E10-T1` cho một tag hai loại luật, `limit(1)` không `ORDER BY` khi hai phiên cùng `ACTIVE`, ranh giới chặng đếm theo tag hiện tại), phần còn thiếu của `E7-T5` (`F16` chưa có đường vào từ giao diện nên số hạng $E$ chết trên production), bỏ N+1 lúc chốt bữa, chặn ngõ cụt phiên quá hạn, và đưa `presentation/` vào phép đo coverage. v1.1: 81h kế hoạch → 96.5h thực tế | Rà soát v1.1 `2026-09-04` |
+| `2.2` | 2026-09-04 | §1 | Đánh dấu `E10` và `E11` đã xong — hai epic đã commit từ `2026-09-02`/`2026-09-04` nhưng §1 còn ghi "Chưa bắt đầu" trong khi §16.5/§16.6 đã tick đủ `[x]`; sửa tổng giờ ở §13.1 cho khớp §1 | `DEC-067`, `DEC-068` |
 | `2.1` | 2026-09-01 | §1, §13, §16.4 | Chốt kế hoạch thi công E9: chia 2 slice kèm 2 Implementation Guide; bổ sung `E9-T0` (deck chưa bao giờ mang System Tag — tiền đề của `E9-T3`, đồng thời sửa lỗi nhãn trên thẻ vuốt sống từ E1); `E9-T3` cắt trần TRONG TỪNG CHẶNG chứ không cắt chung rồi chia; `E9-T4` bỏ tham số `courseIndex`; E9 17h → 18h, tổng v1.1 80.5h | E9-S1/S2 Guide, `DEC-066` |
 | `2.1` | 2026-08-26 | §1, §13, §16.3 | Chốt kế hoạch thi công E8: chia 2 slice kèm 2 Implementation Guide; `E8-T4` từ 6h còn 2h (deck vốn đã đóng băng toàn phần — `DEC-064`); bổ sung `E8-T7` (`F51` tiếp tục đúng chỗ đang vuốt) và `E8-T0`; E8 19h → 17.25h, tổng v1.1 79.5h; đánh dấu E7 đã xong | E8-S1/S2 Guide, `DEC-064`, `DEC-065` |
 | `2.1` | 2026-08-26 | §1, §13, §16.2 | Chốt kế hoạch thi công E7: chia 3 slice kèm 3 Implementation Guide; bổ sung `E7-T0` (vá 64 link gãy sau khi guide E6 chuyển thư mục); ghi rõ thứ tự `T4→T3` ở S2 và `T7→T6→T5` ở S3 | E7-S1/S2/S3 Guide |
@@ -705,3 +724,47 @@ deck có điểm dừng).
 > **Điểm kiểm tra sau `E8`:** vuốt thật ba phiên liên tiếp trên máy thật. Nếu không phiên nào
 > đưa ra một món bạn quên mất là nhà mình có, thì `F18` chưa chạy đúng — và không có `F18`
 > chạy đúng thì `F49` chỉ là một cái trần chặn người dùng khỏi chính danh mục của họ.
+
+---
+
+## 16.8 M3 — Khép v1.1
+
+**15.5 giờ · 3 slice · 12 subtask**
+
+> [!NOTE]
+> `M3` ở đây là **slice bảo trì thứ ba**, tiếp nối `M1` (danh mục món, sau v1.0) và `M2`
+> (cross-link tài liệu). Nó KHÔNG phải "Cột mốc M3" của [§9](#9-đường-găng-critical-path) —
+> mốc đó là lúc `E3` xong. Hai cách dùng chữ `M` này đã sống cạnh nhau từ `M1`; đọc theo ngữ
+> cảnh "slice" hay "cột mốc".
+
+Sinh ra từ đợt rà soát toàn bộ v1.1 ngày `2026-09-04`. Mọi cổng chất lượng khi đó **đều xanh**
+(612 test, coverage 98.46%, `knip`/`jscpd`/`arch:probe` sạch) — và đúng vì thế mà slice này
+tồn tại: cái nó tìm ra là những thứ cổng chất lượng **không với tới**.
+
+| ID | Tiêu đề | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :---: | :--- | :--- |
+| `[x] M3-T1` | Giữ bất biến `marks.length === cursor` | 2 | "Quay lại chặng trước" cắt `marks` cùng lúc với `cursor`; vuốt tiếp sau khi quay chặng KHÔNG đếm trùng số món đề xuất | `src/features/selection/presentation/components/deck-screen.tsx` |
+| `[x] M3-T2` | Khớp luật ↔ cảnh báo theo `(ruleType, systemTag)` | 2 | `RuleShortfall` mang `ruleType`; một tag có cả `REQUIRED` lẫn `PREFERRED` thì hai dòng nói hai chuyện khác nhau | `src/features/rule/domain/evaluate.ts`, `src/features/meal/presentation/components/finalize-bar.tsx` |
+| `[x] M3-T3` | `findActiveSwipeForGlobalDish` chọn đúng phiên | 1.5 | `ORDER BY decision_date DESC`; hai phiên `ACTIVE` cùng lúc (ca `E11` mở ra) thì chỉ tương tác của phiên mới nhất bị xoá; `BR-061` giữ nguyên phiên cũ | `src/features/preference/infrastructure/drizzle-preference-repository.ts` |
+| `[x] M3-T4` | Ranh giới chặng suy từ thứ tự đã đông cứng | 1 | `deriveCourseBoundaries` cắt khối theo thứ tự đã ghim, không đếm theo tag hiện tại; tổng ranh giới LUÔN bằng số thẻ dù Admin sửa nhãn giữa phiên | `src/features/selection/domain/course-deck.ts`, `list-deck.ts` |
+| `[x] M3-T5` | Nạp trạng thái sở thích cho màn Danh mục | 1.5 | `GroupDishListItem` mang `globalDishId`; `dishes/page.tsx` đọc sở thích + ràng buộc ở `app/`, KHÔNG khai chiều `dish → preference` — `arch:probe` vẫn đúng 7 chiều | `src/app/groups/[groupId]/dishes/page.tsx`, `src/features/dish/**` |
+| `[x] M3-T6` | Nút Like / Dislike / Cannot Eat trên từng dòng món | 2.5 | `DishPreferenceControls` với `aria-pressed` + nhãn chữ (`E6-T6`); mọi Member khai được dù không phải Admin; bấm lại nút đang bật ⇒ Neutral (`BR-037`) | `src/features/dish/presentation/components/dish-preference-controls.tsx`, `dish-row.tsx` |
+| `[x] M3-T7` | Gửi có retry, không fire-and-forget | 1 | Vòng retry rút về `shared/http/send-json-with-retry.ts`; `handleCannotEat` thôi nuốt lỗi — thất bại thì toast nói thật (`R-05`) | `src/shared/http/**`, `deck-screen.tsx`, `send-interaction.ts` |
+| `[x] M3-T8` | `presentation/` vào phép đo coverage | 1 | `coverage.include` thêm `src/features/*/presentation/**`; ngưỡng RIÊNG 70% (thấp hơn 80% của `domain`/`application`); đã kiểm cổng đỏ được | `vitest.config.mts` |
+| `[x] M3-T9` | Bỏ N+1 lúc chốt bữa | 1 | `findCannotEatPairs` — MỘT truy vấn cho cả nhóm, đúng khuôn `countCannotEatByDish` mà E7-S3 Guide §4.2 đã chỉ định; `TC-122` vẫn xanh | `src/features/preference/**`, `src/features/meal/application/finalize-session.ts` |
+| `[x] M3-T10` | Chặn ngõ cụt phiên quá hạn | 1 | `sessionClosedReason` (hàm thuần, nhận `today` làm tham số) + `ClosedSessionScreen`; `/sessions/[id]` KHÔNG dựng deck cho phiên đã đóng. Chỉ ĐỌC, không thêm lượt ghi vào đường tải deck (`NFR-01`) | `src/features/session/**`, `src/app/sessions/[sessionId]/page.tsx` |
+| `[x] M3-T11` | Siết kiểu và dọn mã chết | 0.5 | `SessionRule.ruleType` và `findGroupTargetDishCount` bỏ `?`; xoá `listSessionCourses` và `RANKING_CONFIG.deck.pageSize`; alias `RequiredRule` → `SessionRule` | nhiều file |
+| `[x] M3-T12` | Đồng bộ tài liệu với mã | 0.5 | §1 tick `E10`/`E11`; §13.1, §15 và §16.8 khớp nhau; `yarn docs:links` xanh | `docs/**` |
+
+> [!IMPORTANT]
+> **Vì sao `M3-T6` là subtask quan trọng nhất của slice.** `E7-T5` được tick `[x]` từ 2026-08-26
+> với DoD *"màn danh mục hiện trạng thái Like/Dislike/Cannot Eat mỗi món"*, nhưng màn danh mục
+> chưa bao giờ có nút nào. `setDishPreference` và `/api/preferences/preferences` không có caller
+> production — nên `explicitPreferenceScore` luôn trả `0`, và số hạng $E$ (trọng số `0.3`, LỚN
+> NHẤT trong ranking cá nhân) chết trên production suốt v1.1. `F16` là một nửa lời hứa *"gợi ý
+> đúng người"*; nó chỉ thật sự được giao ở đây.
+
+> [!CAUTION]
+> **Ba trong bốn lỗi logic nằm ở `presentation/` — lớp duy nhất không được đo.** Đó là lý do
+> `M3-T8` không phải việc dọn dẹp mà là việc phòng ngừa: một phép đo không chạm tới chỗ hỏng
+> là một phép đo đang trấn an nhầm chỗ.

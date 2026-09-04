@@ -4,7 +4,7 @@ import Link from 'next/link'
 import type { ReactElement } from 'react'
 import { useActionState, useMemo, useState } from 'react'
 
-import type { RequiredRule } from '@/features/rule/domain/evaluate'
+import type { SessionRule } from '@/features/rule/domain/evaluate'
 import type { SystemTag } from '@/shared/domain/system-tag'
 import { EmptyStateCard } from '@/shared/ui/empty-state-card'
 import { SYSTEM_TAG_LABELS } from '@/shared/ui/system-tag-label'
@@ -34,7 +34,7 @@ export type FinalizeMealScreenProps = {
   progressCaption: string
   ranked: readonly SummaryDish[]
   untouched: readonly SummaryDish[]
-  rules: readonly RequiredRule[]
+  rules: readonly SessionRule[]
   targetDishCount?: number | null | undefined
   closeHref: string
   action: (state: FinalizeFormState, formData: FormData) => Promise<FinalizeFormState>

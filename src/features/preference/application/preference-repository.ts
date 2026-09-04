@@ -23,10 +23,26 @@ export interface PreferenceRepository {
   }): Promise<void>
 
   /**
-   * SPEC-024 — tập món user không ăn được, để `list-deck` và `finalizeSession`
-   * dùng. Trả `Set` chứ không mảng: cả hai người gọi đều chỉ hỏi "có hay không".
+   * SPEC-024 — tập món MỘT user không ăn được. Trả `Set` chứ không mảng: người
+   * gọi chỉ hỏi "có hay không".
    */
   findConstrainedGlobalDishIds(userId: string): Promise<ReadonlySet<string>>
+
+  /**
+   * BR-056 / M3-T9 — cặp `(user, món)` có khai `Cannot Eat`, cho `finalizeSession`.
+   *
+   * MỘT truy vấn cho CẢ nhóm, không phải `findConstrainedGlobalDishIds` gọi N
+   * lần cho N người: đó là lối viết mà E7-S3 Guide §4.2 đã cấm bằng chữ khi
+   * dựng `countCannotEatByDish`, và đường chốt bữa còn nhạy hơn đường xếp hạng.
+   *
+   * Khoá là `${userId}:${globalDishId}` — CẶP, không phải một trong hai: người
+   * B không ăn được cá vẫn được ghi là đã ăn canh trong cùng bữa đó. Cặp không
+   * có mặt nghĩa là không khai; người gọi dùng `.has()`.
+   */
+  findCannotEatPairs(
+    userIds: readonly string[],
+    globalDishIds: readonly string[],
+  ): Promise<ReadonlySet<string>>
 
   /**
    * SPEC-025 — $E$ theo món, cho Stage 2. Món không có dòng KHÔNG có mặt

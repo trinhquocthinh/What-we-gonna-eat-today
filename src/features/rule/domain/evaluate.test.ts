@@ -28,7 +28,9 @@ describe('evaluateRules (E10-T2)', () => {
     })
 
     expect(result).toEqual({
-      blocking: [{ systemTag: 'SOUP', minimumCount: 1, actual: 0, missing: 1 }],
+      blocking: [
+        { ruleType: 'REQUIRED', systemTag: 'SOUP', minimumCount: 1, actual: 0, missing: 1 },
+      ],
       warnings: [],
     })
   })
@@ -58,7 +60,9 @@ describe('evaluateRules (E10-T2)', () => {
       targetDishCount: null,
     })
 
-    expect(result.blocking).toEqual([{ systemTag: 'MAIN', minimumCount: 2, actual: 1, missing: 1 }])
+    expect(result.blocking).toEqual([
+      { ruleType: 'REQUIRED', systemTag: 'MAIN', minimumCount: 2, actual: 1, missing: 1 },
+    ])
     expect(result.warnings).toEqual([])
   })
 
@@ -101,11 +105,12 @@ describe('evaluateRules (E10-T2)', () => {
       targetDishCount: null,
     })
     expect(shortfallBoth.blocking).toEqual([
-      { systemTag: 'MAIN', minimumCount: 1, actual: 0, missing: 1 },
+      { ruleType: 'REQUIRED', systemTag: 'MAIN', minimumCount: 1, actual: 0, missing: 1 },
     ])
     expect(shortfallBoth.warnings).toEqual([
       {
         kind: 'PREFERRED_SHORTFALL',
+        ruleType: 'PREFERRED',
         systemTag: 'SOUP',
         minimumCount: 1,
         actual: 0,
@@ -179,6 +184,55 @@ describe('evaluateRules (E10-T2)', () => {
         direction: 'UNDER',
         target: 4,
         actual: 2,
+      },
+    ])
+  })
+
+  // M3-T2 — Từ E10-T1 một tag mang được CẢ HAI loại luật (khoá khử trùng là
+  // cặp `(ruleType, systemTag)`). Shortfall phải nói rõ nó thuộc luật nào,
+  // nếu không presentation chỉ còn `systemTag` để khớp và sẽ khớp nhầm dòng.
+  it('cùng tag SOUP mang cả REQUIRED >=1 lẫn PREFERRED >=2: mỗi bên mang ruleType của mình', () => {
+    const prefSoup2: SessionRule = { systemTag: 'SOUP', minimumCount: 2, ruleType: 'PREFERRED' }
+
+    const result = evaluateRules({
+      rules: [SOUP, prefSoup2],
+      dishes: [{ systemTags: ['MAIN'] }],
+      targetDishCount: null,
+    })
+
+    expect(result.blocking).toEqual([
+      { ruleType: 'REQUIRED', systemTag: 'SOUP', minimumCount: 1, actual: 0, missing: 1 },
+    ])
+    expect(result.warnings).toEqual([
+      {
+        kind: 'PREFERRED_SHORTFALL',
+        ruleType: 'PREFERRED',
+        systemTag: 'SOUP',
+        minimumCount: 2,
+        actual: 0,
+        missing: 2,
+      },
+    ])
+  })
+
+  it('cùng tag SOUP, mâm có 1 canh: REQUIRED đã đủ, PREFERRED còn thiếu 1', () => {
+    const prefSoup2: SessionRule = { systemTag: 'SOUP', minimumCount: 2, ruleType: 'PREFERRED' }
+
+    const result = evaluateRules({
+      rules: [SOUP, prefSoup2],
+      dishes: [{ systemTags: ['SOUP'] }],
+      targetDishCount: null,
+    })
+
+    expect(result.blocking).toEqual([])
+    expect(result.warnings).toEqual([
+      {
+        kind: 'PREFERRED_SHORTFALL',
+        ruleType: 'PREFERRED',
+        systemTag: 'SOUP',
+        minimumCount: 2,
+        actual: 1,
+        missing: 1,
       },
     ])
   })

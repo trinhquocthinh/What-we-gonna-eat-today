@@ -3,7 +3,7 @@
 import type { ReactElement } from 'react'
 import { useState } from 'react'
 
-import { evaluateRules, type RequiredRule } from '@/features/rule/domain/evaluate'
+import { evaluateRules, type SessionRule } from '@/features/rule/domain/evaluate'
 import {
   ruleSentence,
   ruleShortfallPhrase,
@@ -14,7 +14,7 @@ import { InlineError } from '@/shared/ui/inline-error'
 
 export type FinalizeBarProps = {
   selectedDishes: readonly { dishId: string; name: string; systemTags: readonly SystemTag[] }[]
-  rules: readonly RequiredRule[]
+  rules: readonly SessionRule[]
   targetDishCount?: number | null | undefined
   pending: boolean
   error: string | null
@@ -97,9 +97,19 @@ export function FinalizeBar({
       {rules.length === 0 ? null : (
         <ul className="flex flex-col gap-1">
           {rules.map((rule) => {
-            const shortfall = evaluation.blocking.find((s) => s.systemTag === rule.systemTag)
+            // M3-T2 — khớp theo CẶP `(ruleType, systemTag)`, không phải mỗi tag.
+            // Từ `E10-T1` một tag mang được cả hai loại luật, nên khớp bằng tag
+            // làm hai dòng cùng đọc một shortfall: dòng REQUIRED hiện "nên có
+            // thêm…", dòng PREFERRED hiện "còn thiếu…". Cặp này là khoá khử
+            // trùng của Rule Set nên nó định danh đúng một luật.
+            const shortfall = evaluation.blocking.find(
+              (s) => s.ruleType === rule.ruleType && s.systemTag === rule.systemTag,
+            )
             const prefWarning = evaluation.warnings.find(
-              (w) => w.kind === 'PREFERRED_SHORTFALL' && w.systemTag === rule.systemTag,
+              (w) =>
+                w.kind === 'PREFERRED_SHORTFALL' &&
+                w.ruleType === rule.ruleType &&
+                w.systemTag === rule.systemTag,
             )
 
             let borderClass = 'border-yes text-ink-muted'
@@ -115,7 +125,7 @@ export function FinalizeBar({
 
             return (
               <li
-                key={`${rule.ruleType ?? 'REQUIRED'}-${rule.systemTag}`}
+                key={`${rule.ruleType}-${rule.systemTag}`}
                 className={`border-l-2 pl-3 text-caption ${borderClass}`}
               >
                 {ruleSentence(rule)} · {statusText}

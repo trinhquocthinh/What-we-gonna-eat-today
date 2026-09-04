@@ -4,6 +4,7 @@ import Link from 'next/link'
 import type { ReactElement } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
+import { sendJsonWithRetry } from '@/shared/http/send-json-with-retry'
 import { Button } from '@/shared/ui/button'
 import { SYSTEM_TAG_LABELS } from '@/shared/ui/system-tag-label'
 
@@ -116,9 +117,19 @@ export function DeckScreen({
   const firstCourseCount = courses?.[0]?.count ?? 0
   const canGoPreviousCourse = courses !== null && courses.length > 0 && cursor >= firstCourseCount
 
+  /**
+   * M3-T1 — `marks` PHẢI cắt cùng lúc với `cursor`.
+   *
+   * `marks` là mảng chỉ-thêm, đánh chỉ số ngầm theo `cursor`: `resume-position.ts`
+   * dựng nó cho đúng tiền tố `[0, cursor)` và cả màn hình dựa vào bất biến
+   * `marks.length === cursor`. Lùi `cursor` mà giữ nguyên `marks` làm gãy bất
+   * biến đó — mỗi lượt vuốt sau khi quay chặng lại cộng thêm một phần tử, nên
+   * `yesCount` đếm trùng (vượt cả số thẻ trong deck) và `handleUndo` pop nhầm.
+   */
   function handlePreviousCourse() {
     const prevBoundary = courseBoundaries.filter((b) => b < cursor).pop() ?? 0
     setCursor(prevBoundary)
+    setMarks((m) => m.slice(0, prevBoundary))
   }
 
   function handleCommit(direction: SwipeDirection, dishId: string) {
@@ -136,19 +147,33 @@ export function DeckScreen({
     })
   }
 
+  /**
+   * M3-T7 — có retry và KHÔNG nuốt lỗi.
+   *
+   * Bản trước là `fetch(...).catch(() => {})`: mạng rớt thì khai báo biến mất
+   * mà toast vẫn hứa "Sẽ không hiện lại". Đó đúng là rủi ro `R-05` — hệ thống
+   * nói một đằng, lưu một nẻo — mà cả `E7` sinh ra để đóng. Lượt vuốt đã có
+   * `sendInteractionWithRetry` từ E1-T9; khai báo `Cannot Eat` quan trọng hơn
+   * một lượt vuốt chứ không kém.
+   *
+   * Con trỏ VẪN tiến ngay (lạc quan, đúng tinh thần vuốt). Chỉ lời hứa trong
+   * toast mới đợi kết quả thật.
+   */
   function handleCannotEat(dish: DishCard) {
     setMarks((m) => [...m, 'cannot'])
     setCursor((c) => c + 1)
     setToastMessage(`Sẽ không hiện lại ${dish.name} với bạn.`)
 
-    void fetch('/api/preferences/constraints', {
+    void sendJsonWithRetry({
+      url: '/api/preferences/constraints',
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        globalDishId: dish.globalDishId,
-        cannotEat: true,
-      }),
-    }).catch(() => {})
+      body: { globalDishId: dish.globalDishId, cannotEat: true },
+      onStatusChange: () => {},
+    }).then((result) => {
+      if (!result.ok) {
+        setToastMessage(`Chưa lưu được "không ăn được ${dish.name}". Thử lại ở màn Danh mục món.`)
+      }
+    })
   }
 
   function handleUndo() {

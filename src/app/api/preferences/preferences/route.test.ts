@@ -14,6 +14,7 @@ vi.mock('@/features/preference/infrastructure/drizzle-preference-repository', ()
     setConstraint: vi.fn(),
     setPreference: vi.fn(),
     findConstrainedGlobalDishIds: vi.fn(),
+    findCannotEatPairs: vi.fn(),
     findPreferencesByGlobalDish: vi.fn(),
   },
 }))

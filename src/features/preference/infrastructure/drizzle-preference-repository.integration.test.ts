@@ -305,4 +305,135 @@ describe('drizzlePreferenceRepository — integration', () => {
     )
     expect(emptyConstraints.size).toBe(0)
   })
+
+  // M3-T3 — Trước E11, phiên bỏ dở của hôm qua vẫn mang state ACTIVE cho tới
+  // khi quét lười ở Group Hub chạy. Nên "tối đa một phiên ACTIVE mỗi user" là
+  // một giả định SAI, và `.limit(1)` không `ORDER BY` chọn dòng tuỳ ý.
+  it('M3-T3: hai phiên ACTIVE (hôm qua + hôm nay) → chỉ tương tác của phiên MỚI NHẤT bị xoá', async () => {
+    const seed = await seedPreferenceTestData()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // Phiên bỏ dở của hôm qua — vẫn ACTIVE vì quét lười chưa chạy.
+    //
+    // Chọn id sắp TRƯỚC id phiên hôm nay: chỉ mục `participants_session_user_unique`
+    // sắp theo `session_id`, nên không có `ORDER BY` thì `.limit(1)` gặp phiên CŨ
+    // trước. Đây là thứ biến một lỗi tuỳ hứng theo planner thành một lỗi xác định.
+    let staleSessionId = crypto.randomUUID()
+    while (staleSessionId >= seed.sessionId) {
+      staleSessionId = crypto.randomUUID()
+    }
+    const staleParticipantId = crypto.randomUUID()
+    cleanupQueue.push(async () => {
+      await db.delete(interactionEvents).where(eq(interactionEvents.sessionId, staleSessionId))
+      await db.delete(interactions).where(eq(interactions.sessionId, staleSessionId))
+      await db.delete(participants).where(eq(participants.sessionId, staleSessionId))
+      await db.delete(selectionSessions).where(eq(selectionSessions.id, staleSessionId))
+    })
+
+    await db.insert(selectionSessions).values({
+      id: staleSessionId,
+      groupId: seed.groupId,
+      decisionDate: '2026-08-25',
+      creatorUserId: seed.userId1,
+      state: 'ACTIVE',
+    })
+
+    // Xoá rồi ghi lại dòng participant của phiên HÔM NAY sau dòng của phiên cũ,
+    // để thứ tự vật lý trong heap đặt phiên CŨ lên trước. Không có `ORDER BY`
+    // thì `.limit(1)` đi theo đúng thứ tự này — đó là điều kiện làm lỗi hiện ra
+    // một cách xác định thay vì tuỳ hứng theo planner.
+    await db.delete(participants).where(eq(participants.id, seed.participantId1))
+    await db.insert(participants).values({
+      id: staleParticipantId,
+      sessionId: staleSessionId,
+      userId: seed.userId1,
+      state: 'ACTIVE',
+    })
+    await db.insert(participants).values({
+      id: seed.participantId1,
+      sessionId: seed.sessionId,
+      userId: seed.userId1,
+      state: 'ACTIVE',
+    })
+
+    // Cùng một người vuốt phải cùng một món ở CẢ HAI phiên.
+    await db.insert(interactions).values([
+      {
+        id: crypto.randomUUID(),
+        sessionId: staleSessionId,
+        participantId: staleParticipantId,
+        groupDishId: seed.groupDishId,
+        type: 'SWIPE_RIGHT',
+      },
+      {
+        id: crypto.randomUUID(),
+        sessionId: seed.sessionId,
+        participantId: seed.participantId1,
+        groupDishId: seed.groupDishId,
+        type: 'SWIPE_RIGHT',
+      },
+    ])
+
+    const result = await drizzlePreferenceRepository.setConstraint({
+      userId: seed.userId1,
+      globalDishId: seed.globalDishId,
+      cannotEat: true,
+    })
+    expect(result.removedInteraction).toBe(true)
+
+    // Phiên HÔM NAY (decision_date mới hơn) là phiên bị trừ.
+    const todayCounts = await drizzleSelectionRepository.countInteractionsByDish(seed.sessionId)
+    expect(todayCounts.find((c) => c.groupDishId === seed.groupDishId)?.proposedCount).toBe(0)
+
+    // BR-061 — tương tác của phiên cũ giữ nguyên, không bị đụng tới.
+    const staleCounts = await drizzleSelectionRepository.countInteractionsByDish(staleSessionId)
+    expect(staleCounts.find((c) => c.groupDishId === seed.groupDishId)?.proposedCount).toBe(1)
+  })
+
+  // M3-T9 — một truy vấn cho cả nhóm, thay cho N lần gọi theo từng người.
+  it('M3-T9: findCannotEatPairs trả đúng cặp (người, món), lọc theo cả hai chiều', async () => {
+    const seed = await seedPreferenceTestData()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    // Người 1 không ăn được món của bữa; người 2 chỉ khai cho một món KHÁC.
+    const otherGlobalDishId = crypto.randomUUID()
+    cleanupQueue.push(async () => {
+      // `cleanupQueue` chạy LIFO nên hàm này chạy TRƯỚC `cleanup(seed)`; phải tự
+      // gỡ ràng buộc trỏ tới món này rồi mới xoá được món.
+      await db
+        .delete(userDishConstraints)
+        .where(eq(userDishConstraints.globalDishId, otherGlobalDishId))
+      await db.delete(globalDishes).where(eq(globalDishes.id, otherGlobalDishId))
+    })
+    await db.insert(globalDishes).values({
+      id: otherGlobalDishId,
+      name: 'Món Ngoài Bữa',
+      normalizedName: `món ngoài bữa ${otherGlobalDishId}`,
+      createdByUserId: seed.userId1,
+      createdFromGroupId: seed.groupId,
+    })
+
+    await db.insert(userDishConstraints).values([
+      { userId: seed.userId1, globalDishId: seed.globalDishId },
+      { userId: seed.userId2, globalDishId: otherGlobalDishId },
+    ])
+
+    const pairs = await drizzlePreferenceRepository.findCannotEatPairs(
+      [seed.userId1, seed.userId2],
+      [seed.globalDishId],
+    )
+
+    expect(pairs.has(`${seed.userId1}:${seed.globalDishId}`)).toBe(true)
+    // Món ngoài bữa không được kéo về — lọc theo cả `global_dish_id`.
+    expect(pairs.size).toBe(1)
+
+    expect(await drizzlePreferenceRepository.findCannotEatPairs([], [seed.globalDishId])).toEqual(
+      new Set(),
+    )
+    expect(await drizzlePreferenceRepository.findCannotEatPairs([seed.userId1], [])).toEqual(
+      new Set(),
+    )
+  })
 })
