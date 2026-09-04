@@ -1838,10 +1838,29 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-068 — Tự Động Đóng Phiên Quá Hạn & Quản Lý Danh Mục Món Vận Hành Tối Thiểu (E11)
+
+**Ngày quyết định:** 2026-09-04 | **Trạng thái:** Accepted
+
+## Quyết định
+
+1. **Di chuyển `resolveDecisionDate` sang `src/shared/time/decision-date.ts`**: Cả hai feature `session` và `meal` đều cần hàm quy đổi ngày quyết định theo múi giờ IANA. `features/meal` không được phép import chéo `features/session` (`eslint.config.mjs`). `shared/time/` là nơi hợp lý cho các tiện ích thời gian dùng chung.
+2. **Chốt chặn kép cho phiên quá hạn**:
+   - Quét lười (Lazy invalidation) tại Group Hub (`groups/[groupId]/page.tsx`): gọi `invalidateExpiredSessions(groupId, decisionDate)` một câu UPDATE idempotent thuần trước khi kiểm tra phiên mở.
+   - Chốt chặn độc lập tại use case `finalizeSession` (bước 1): so sánh `session.decisionDate < today` (quy đổi qua `resolveDecisionDate(new Date(), session.groupTimeZone)`) và trả về `ERR_SESSION_NOT_ACTIVE` nếu đã quá hạn. Điều này đảm bảo an toàn kể cả khi người dùng giữ tab cũ hoặc chưa kích hoạt quét lười.
+3. **Bảo tồn tương tác của phiên INVALID**: `invalidateExpiredSessions` chỉ chuyển `state = 'INVALID'`, bảo tồn nguyên vẹn các dòng tương tác trong `interactions` (`BR-061`) để phục vụ thuật toán học ngầm (F30) sau này.
+4. **Gỡ món (Deactivate) đối xứng với thêm lại (Reactivate)**:
+   - Thao tác gỡ món (`deactivateGroupDish`) chỉ cập nhật `group_dishes.state = 'INACTIVE'`, KHÔNG xoá dòng và KHÔNG xoá nhãn trong `group_dish_tags` (đối xứng với `reactivateGroupDish` và tuân thủ `DEC-053`).
+   - Danh sách món đã gỡ được đọc riêng qua `listInactiveInGroup` (không làm phình `listActiveInGroup`).
+   - Phân quyền: Chỉ Admin mới thấy các nút "Gỡ", "Thêm lại" và mở sheet chỉnh sửa nhãn món (`canEdit`).
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.16` | 2026-09-04 | Bổ sung `DEC-068` (Tự Động Đóng Phiên Quá Hạn & Quản Lý Danh Mục Món Vận Hành Tối Thiểu) cho E11 |
 | `3.15` | 2026-09-02 | Bổ sung `DEC-067` (Mô Hình Hai Loại Cảnh Báo Và Phân Tách Cấu Hình Luật) cho E10-S1 |
 | `3.14` | 2026-09-01 | Bổ sung `DEC-066` (Chế Độ Chặng Cắt Trần TRONG TỪNG CHẶNG, Không Cắt Chung Rồi Chia) cho E9-S1 |
 | `3.13` | 2026-08-26 | Bổ sung `DEC-065` (Vị Trí Tiếp Tục Suy Ở Client, Không Lưu Server) cho E8-S2 |

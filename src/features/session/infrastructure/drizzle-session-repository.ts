@@ -1,4 +1,4 @@
-import { and, eq, inArray, ne, sql } from 'drizzle-orm'
+import { and, eq, inArray, lt, ne, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
 import { buildSnapshotStatement } from '@/features/rule/infrastructure/drizzle-rule-repository'
@@ -369,6 +369,28 @@ async function findSessionOverview(sessionId: string): Promise<SessionOverview |
   }
 }
 
+/**
+ * SPEC-034 / BR-055 — đóng mọi phiên quá hạn của một Group.
+ *
+ * IDEMPOTENT: một câu UPDATE thuần, không đọc-rồi-ghi, không phụ thuộc trạng
+ * thái trước đó. Chạy lần thứ hai không khớp dòng nào. Đó là lý do DUY NHẤT
+ * khiến gọi nó trong render của một Server Component là hợp lệ (Guide §1.4) —
+ * đừng thêm bước đọc nào vào đây.
+ */
+async function invalidateExpiredSessions(groupId: string, referenceDate: string): Promise<void> {
+  const db = getDb()
+  await db
+    .update(selectionSessions)
+    .set({ state: 'INVALID' })
+    .where(
+      and(
+        eq(selectionSessions.groupId, groupId),
+        inArray(selectionSessions.state, ['DRAFT', 'ACTIVE']),
+        lt(selectionSessions.decisionDate, referenceDate),
+      ),
+    )
+}
+
 export const drizzleSessionRepository: SessionRepository = {
   findBlockingSessionToday,
   createDraftWithCreatorParticipant,
@@ -381,4 +403,5 @@ export const drizzleSessionRepository: SessionRepository = {
   findParticipantState,
   setParticipantState,
   findSessionOverview,
+  invalidateExpiredSessions,
 }

@@ -7,7 +7,7 @@ config({ path: '.env', quiet: true })
 
 import { createSession } from '../src/features/session/application/create-session'
 import { startSession } from '../src/features/session/application/start-session'
-import { resolveDecisionDate } from '../src/features/session/domain/decision-date'
+import { resolveDecisionDate } from '../src/shared/time/decision-date'
 import { drizzleMembershipRepository } from '../src/features/group/infrastructure/drizzle-group-repository'
 import { drizzleDishRepository } from '../src/features/dish/infrastructure/drizzle-dish-repository'
 import { drizzleSessionRepository } from '../src/features/session/infrastructure/drizzle-session-repository'

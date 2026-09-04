@@ -444,3 +444,126 @@ describe('drizzleDishRepository — searchGlobalDishes (SPEC-023)', () => {
     expect(found).toHaveLength(2)
   })
 })
+
+describe('drizzleDishRepository — E11-T2: deactivateGroupDish & listInactiveInGroup', () => {
+  async function seedGroupWithDishes(names: string[]) {
+    const db = getDb()
+    const user = makeUser({ id: uuidv7(), email: `test-${uuidv7()}@example.com` })
+    const group = makeGroup({ id: uuidv7(), name: 'Nhà Test E11', creatorUserId: user.id })
+
+    cleanupQueue.push(() => cleanupEntities({ userIds: [user.id], groupIds: [group.id] }))
+
+    await db.insert(users).values({ ...user, provider: 'test', providerSubject: `test-${user.id}` })
+    await db.insert(groups).values([group])
+
+    const dishes = []
+    for (const name of names) {
+      const d = await drizzleDishRepository.createGlobalDishAndAddToPool({
+        groupId: group.id,
+        name,
+        normalizedName: normalizeDishName(name),
+        creatorUserId: user.id,
+        systemTags: ['MAIN'],
+      })
+      dishes.push(d)
+    }
+
+    return { user, group, dishes }
+  }
+
+  it('TC-142: Gỡ món -> state = "INACTIVE", dòng vẫn còn; thêm lại -> state = "ACTIVE", không dòng mới', async () => {
+    const { group, dishes } = await seedGroupWithDishes(['Cá basa kho tiêu', 'Canh chua cá lóc'])
+    const targetDish = dishes[0]!
+
+    // Trước khi gỡ: 2 món active, 0 món inactive
+    const activeBefore = await drizzleDishRepository.listActiveInGroup(group.id)
+    expect(activeBefore).toHaveLength(2)
+    const inactiveBefore = await drizzleDishRepository.listInactiveInGroup(group.id)
+    expect(inactiveBefore).toHaveLength(0)
+
+    // Gỡ món
+    await drizzleDishRepository.deactivateGroupDish(targetDish.id)
+
+    // Sau khi gỡ: 1 món active, 1 món inactive. Dòng trong DB vẫn còn!
+    const activeAfter = await drizzleDishRepository.listActiveInGroup(group.id)
+    expect(activeAfter).toHaveLength(1)
+    expect(activeAfter[0]?.id).not.toBe(targetDish.id)
+
+    const inactiveAfter = await drizzleDishRepository.listInactiveInGroup(group.id)
+    expect(inactiveAfter).toHaveLength(1)
+    expect(inactiveAfter[0]?.id).toBe(targetDish.id)
+    expect(inactiveAfter[0]?.name).toBe('Cá basa kho tiêu')
+    // DEC-053: System tag vẫn được giữ nguyên, không bị xoá
+    expect(inactiveAfter[0]?.systemTags).toEqual(['MAIN'])
+
+    // Thêm lại qua reactivateGroupDish
+    await drizzleDishRepository.reactivateGroupDish(targetDish.id)
+
+    // Trở lại 2 active, 0 inactive
+    const activeRestored = await drizzleDishRepository.listActiveInGroup(group.id)
+    expect(activeRestored).toHaveLength(2)
+    const inactiveRestored = await drizzleDishRepository.listInactiveInGroup(group.id)
+    expect(inactiveRestored).toHaveLength(0)
+
+    // Không sinh thêm dòng mới trong groupDishes
+    const allDishes = await getDb()
+      .select({ id: groupDishes.id })
+      .from(groupDishes)
+      .where(eq(groupDishes.groupId, group.id))
+    expect(allDishes).toHaveLength(2)
+  })
+
+  it('TC-020: Thêm món -> gỡ món -> thêm lại qua addExistingGlobalDishToGroup -> không tạo Global Dish mới', async () => {
+    const { group, dishes } = await seedGroupWithDishes(['Bún chả'])
+    const targetDish = dishes[0]!
+
+    // Tìm globalDishId tương ứng
+    const [row] = await getDb()
+      .select({ globalDishId: groupDishes.globalDishId })
+      .from(groupDishes)
+      .where(eq(groupDishes.id, targetDish.id))
+      .limit(1)
+    expect(row).toBeDefined()
+    const globalDishId = row!.globalDishId
+
+    // Đếm số dòng globalDishes ban đầu
+    const globalDishesBefore = await getDb()
+      .select({ id: globalDishes.id })
+      .from(globalDishes)
+      .where(eq(globalDishes.id, globalDishId))
+    expect(globalDishesBefore).toHaveLength(1)
+
+    // Gỡ món
+    await drizzleDishRepository.deactivateGroupDish(targetDish.id)
+
+    // Thêm lại qua addExistingGlobalDishToGroup (như luồng UI duplicate sheet hoặc search)
+    const reAdded = await drizzleDishRepository.addExistingGlobalDishToGroup({
+      groupId: group.id,
+      globalDishId,
+    })
+    expect(reAdded.id).toBe(targetDish.id)
+
+    // Số dòng globalDishes vẫn là 1, không sinh Global Dish mới
+    const globalDishesAfter = await getDb()
+      .select({ id: globalDishes.id })
+      .from(globalDishes)
+      .where(eq(globalDishes.id, globalDishId))
+    expect(globalDishesAfter).toHaveLength(1)
+
+    // Món đã trở lại ACTIVE
+    const active = await drizzleDishRepository.listActiveInGroup(group.id)
+    expect(active).toHaveLength(1)
+    expect(active[0]?.id).toBe(targetDish.id)
+  })
+
+  it('Gỡ hết món của nhóm -> countActiveInGroup trả về 0', async () => {
+    const { group, dishes } = await seedGroupWithDishes(['Món duy nhất'])
+    const targetDish = dishes[0]!
+
+    expect(await drizzleDishRepository.countActiveInGroup(group.id)).toBe(1)
+
+    await drizzleDishRepository.deactivateGroupDish(targetDish.id)
+
+    expect(await drizzleDishRepository.countActiveInGroup(group.id)).toBe(0)
+  })
+})

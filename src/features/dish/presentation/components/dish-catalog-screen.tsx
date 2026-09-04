@@ -55,23 +55,29 @@ export type DishCatalogScreenProps = {
    *  loại những món nhóm đang có (SPEC-023). */
   groupId: string
   dishes: { id: string; name: string; systemTags: readonly SystemTag[] }[]
+  inactiveDishes?: readonly { id: string; name: string; systemTags?: readonly SystemTag[] }[]
+  canEdit?: boolean
   action: (state: AddDishFormState, formData: FormData) => Promise<AddDishFormState>
   editAction?: (state: EditDishFormState, formData: FormData) => Promise<EditDishFormState>
+  removeAction?: (groupDishId: string) => Promise<{ error: string | null }>
+  reAddAction?: (groupDishId: string) => Promise<{ error: string | null }>
 }
 
 /**
  * S-05. Là client component vì bốn thứ dưới đây là MỘT khối tương tác: nhãn
  * CTA, số đếm, toast, và sheet. Tách chúng ra thì state phải nâng lên một
  * wrapper — đúng thứ này đang là.
- *
- * CỐ Ý chưa có: nhóm "Đã gỡ khỏi nhóm" (F27/v1.1).
  */
 export function DishCatalogScreen({
   groupName,
   groupId,
   dishes,
+  inactiveDishes = [],
+  canEdit = true,
   action,
   editAction = defaultEditAction,
+  removeAction,
+  reAddAction,
 }: DishCatalogScreenProps): ReactElement {
   const [state, formAction, pending] = useActionState(action, ADD_DISH_INITIAL_STATE)
   const [prevActionState, setPrevActionState] = useState(state)
@@ -88,6 +94,8 @@ export function DishCatalogScreen({
     systemTags: readonly SystemTag[]
   } | null>(null)
   const [inGroupReusedName, setInGroupReusedName] = useState<string | null>(null)
+  const [actionToast, setActionToast] = useState<string | null>(null)
+  const [busyDishId, setBusyDishId] = useState<string | null>(null)
 
   // Thêm / dùng lại từ server thành công thì sheet đóng và xoá query. Chỉ đóng khi
   // có tên trả về — thất bại phải giữ sheet mở để lỗi hiện đúng chỗ.
@@ -97,6 +105,7 @@ export function DishCatalogScreen({
       setSheetOpen(false)
       setQuery('')
       setInGroupReusedName(null)
+      setActionToast(null)
     }
   }
 
@@ -108,6 +117,26 @@ export function DishCatalogScreen({
     }
   }
 
+  const handleRemove = async (dishId: string, dishName: string) => {
+    if (!removeAction || busyDishId !== null) return
+    setBusyDishId(dishId)
+    const result = await removeAction(dishId)
+    setBusyDishId(null)
+    if (result.error === null) {
+      setActionToast(`Đã gỡ ${dishName} khỏi nhóm.`)
+    }
+  }
+
+  const handleReAdd = async (dishId: string, dishName: string) => {
+    if (!reAddAction || busyDishId !== null) return
+    setBusyDishId(dishId)
+    const result = await reAddAction(dishId)
+    setBusyDishId(null)
+    if (result.error === null) {
+      setActionToast(`Đã thêm lại ${dishName} vào nhóm.`)
+    }
+  }
+
   const hasDishes = dishes.length > 0
 
   const visibleDishes = useMemo(() => {
@@ -115,20 +144,35 @@ export function DishCatalogScreen({
     return needle === '' ? dishes : dishes.filter((d) => normalizeDishName(d.name).includes(needle))
   }, [dishes, query])
 
-  const noMatch = hasDishes && query.trim() !== '' && visibleDishes.length === 0
+  const visibleInactiveDishes = useMemo(() => {
+    if (!canEdit || inactiveDishes.length === 0) return []
+    const needle = normalizeDishName(query)
+    return needle === ''
+      ? inactiveDishes
+      : inactiveDishes.filter((d) => normalizeDishName(d.name).includes(needle))
+  }, [canEdit, inactiveDishes, query])
+
+  const hasAnyDishes = hasDishes || visibleInactiveDishes.length > 0
+  const noMatch =
+    (hasDishes || inactiveDishes.length > 0) &&
+    query.trim() !== '' &&
+    visibleDishes.length === 0 &&
+    visibleInactiveDishes.length === 0
   const groups = useMemo(() => groupDishesByTag(visibleDishes), [visibleDishes])
 
   // Toast SUY RA từ state và tương tác: mở sheet là toast ẩn.
   const toast =
     isSheetOpen || editingDish !== null
       ? null
-      : inGroupReusedName !== null
-        ? `Dùng lại ${inGroupReusedName} — đã có trong danh mục.`
-        : state.addedDishName !== null
-          ? `Đã thêm ${state.addedDishName} vào danh mục.`
-          : state.reusedDishName !== null
-            ? `Dùng lại ${state.reusedDishName} — đã có trong danh mục.`
-            : null
+      : actionToast !== null
+        ? actionToast
+        : inGroupReusedName !== null
+          ? `Dùng lại ${inGroupReusedName} — đã có trong danh mục.`
+          : state.addedDishName !== null
+            ? `Đã thêm ${state.addedDishName} vào danh mục.`
+            : state.reusedDishName !== null
+              ? `Dùng lại ${state.reusedDishName} — đã có trong danh mục.`
+              : null
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-app flex-col">
@@ -142,11 +186,13 @@ export function DishCatalogScreen({
             {hasDishes ? `${dishes.length} món` : ''}
           </span>
         </div>
-        {hasDishes ? <DishSearchField value={query} onChange={setQuery} /> : null}
+        {hasDishes || inactiveDishes.length > 0 ? (
+          <DishSearchField value={query} onChange={setQuery} />
+        ) : null}
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto px-4 pb-2 pt-1">
-        {!hasDishes ? (
+        {!hasAnyDishes && !hasDishes && inactiveDishes.length === 0 ? (
           <EmptyStateCard
             title="Chưa có món nào."
             description="Thêm những món nhà bạn thật sự hay ăn. Cứ viết như cách cả nhà gọi tên."
@@ -169,31 +215,85 @@ export function DishCatalogScreen({
             </span>
           </div>
         ) : (
-          groups.map((group) => (
-            <section key={group.tag ?? 'untagged'} className="flex flex-col gap-2">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-caption font-medium text-ink-muted">
-                  {group.tag === null ? 'Chưa phân nhãn' : SYSTEM_TAG_LABELS[group.tag]}
-                </span>
-                <span className="text-caption font-medium tabular-nums text-ink-muted">
-                  {group.dishes.length}
-                </span>
-              </div>
-              <ul className="flex flex-col gap-2">
-                {group.dishes.map((dish) => (
-                  <DishRow
-                    key={`${group.tag ?? 'untagged'}-${dish.id}`}
-                    name={dish.name}
-                    meta=""
-                    onClick={() => {
-                      setInGroupReusedName(null)
-                      setEditingDish(dish)
-                    }}
-                  />
-                ))}
-              </ul>
-            </section>
-          ))
+          <>
+            {groups.map((group) => (
+              <section key={group.tag ?? 'untagged'} className="flex flex-col gap-2">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-caption font-medium text-ink-muted">
+                    {group.tag === null ? 'Chưa phân nhãn' : SYSTEM_TAG_LABELS[group.tag]}
+                  </span>
+                  <span className="text-caption font-medium tabular-nums text-ink-muted">
+                    {group.dishes.length}
+                  </span>
+                </div>
+                <ul className="flex flex-col gap-2">
+                  {group.dishes.map((dish) => (
+                    <DishRow
+                      key={`${group.tag ?? 'untagged'}-${dish.id}`}
+                      name={dish.name}
+                      meta=""
+                      onClick={
+                        canEdit
+                          ? () => {
+                              setInGroupReusedName(null)
+                              setActionToast(null)
+                              setEditingDish(dish)
+                            }
+                          : undefined
+                      }
+                      action={
+                        canEdit && removeAction ? (
+                          <Button
+                            type="button"
+                            variant="quiet"
+                            size="sm"
+                            pending={busyDishId === dish.id}
+                            disabled={busyDishId !== null}
+                            onClick={() => handleRemove(dish.id, dish.name)}
+                          >
+                            Gỡ
+                          </Button>
+                        ) : undefined
+                      }
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))}
+
+            {canEdit && visibleInactiveDishes.length > 0 ? (
+              <section className="flex flex-col gap-2">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-caption font-medium text-ink-muted">Đã gỡ khỏi nhóm</span>
+                  <span className="text-caption font-medium tabular-nums text-ink-muted">
+                    {visibleInactiveDishes.length}
+                  </span>
+                </div>
+                <ul className="flex flex-col gap-2">
+                  {visibleInactiveDishes.map((dish) => (
+                    <DishRow
+                      key={`inactive-${dish.id}`}
+                      name={dish.name}
+                      action={
+                        canEdit && reAddAction ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            pending={busyDishId === dish.id}
+                            disabled={busyDishId !== null}
+                            onClick={() => handleReAdd(dish.id, dish.name)}
+                          >
+                            Thêm lại
+                          </Button>
+                        ) : undefined
+                      }
+                    />
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+          </>
         )}
       </div>
 
@@ -209,6 +309,7 @@ export function DishCatalogScreen({
           type="button"
           onClick={() => {
             setInGroupReusedName(null)
+            setActionToast(null)
             setSheetOpen(true)
           }}
         >
@@ -241,7 +342,7 @@ export function DishCatalogScreen({
         />
       ) : null}
 
-      {editingDish !== null ? (
+      {canEdit && editingDish !== null ? (
         <EditDishSheet
           dishId={editingDish.id}
           dishName={editingDish.name}

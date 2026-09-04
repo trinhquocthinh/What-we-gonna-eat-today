@@ -1,7 +1,7 @@
 import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
 import { drizzleRuleRepository } from '@/features/rule/infrastructure/drizzle-rule-repository'
 import { StartSessionScreen } from '@/features/session/presentation/components/start-session-screen'
-import { resolveDecisionDate } from '@/features/session/domain/decision-date'
+import { resolveDecisionDate } from '@/shared/time/decision-date'
 import { formatVietnameseDate } from '@/shared/time/format-vietnamese-date'
 
 import { requireGroupContext } from '../../group-access'

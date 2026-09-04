@@ -17,6 +17,7 @@ function makeFakeMealRepository(options: {
           creatorUserId: 'creator-1',
           state: 'ACTIVE',
           decisionDate: '2026-08-14',
+          groupTimeZone: 'Asia/Ho_Chi_Minh',
         }
       )
     },
@@ -96,6 +97,7 @@ describe('SPEC-015 — Dựng Final Meal nháp (application)', () => {
         creatorUserId: 'someone-else',
         state: 'ACTIVE',
         decisionDate: '2026-08-14',
+        groupTimeZone: 'Asia/Ho_Chi_Minh',
       },
     })
 
@@ -109,7 +111,13 @@ describe('SPEC-015 — Dựng Final Meal nháp (application)', () => {
 
   it('SPEC-015: Session không ACTIVE thì ERR_SESSION_NOT_ACTIVE', async () => {
     const fake = makeFakeMealRepository({
-      session: { id: 's1', creatorUserId: 'creator-1', state: 'DRAFT', decisionDate: '2026-08-14' },
+      session: {
+        id: 's1',
+        creatorUserId: 'creator-1',
+        state: 'DRAFT',
+        decisionDate: '2026-08-14',
+        groupTimeZone: 'Asia/Ho_Chi_Minh',
+      },
     })
 
     const result = await saveFinalMealDraft(

@@ -6,6 +6,7 @@ import type { Failure } from '@/shared/errors'
 import { failure } from '@/shared/errors'
 import type { Result } from '@/shared/result'
 import { err, ok } from '@/shared/result'
+import { resolveDecisionDate } from '@/shared/time/decision-date'
 
 import type { MealRepository } from './meal-repository'
 
@@ -34,9 +35,13 @@ export async function finalizeSession(
   input: FinalizeSessionInput,
 ): Promise<Result<{ finalMealId: string }, Failure>> {
   /* jscpd:ignore-start */
-  // Bước 1: Session ACTIVE.
+  // Bước 1: Session ACTIVE và không quá hạn (DEC-068 / TC-156).
   const session = await deps.meal.findSessionForMeal(input.sessionId)
   if (session === null || session.state !== 'ACTIVE') {
+    return err(failure('ERR_SESSION_NOT_ACTIVE', { sessionId: input.sessionId }))
+  }
+  const today = resolveDecisionDate(new Date(), session.groupTimeZone)
+  if (session.decisionDate < today) {
     return err(failure('ERR_SESSION_NOT_ACTIVE', { sessionId: input.sessionId }))
   }
 

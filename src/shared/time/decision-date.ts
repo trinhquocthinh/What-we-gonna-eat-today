@@ -1,6 +1,11 @@
 import { isValidTimeZone } from '@/shared/time/time-zone'
+
 /**
  * SPEC-018 — Decision Date resolution. Nguồn: BR-020, BR-025.
+ *
+ * Tiện ích thời gian đặt ở `shared/time/` (DEC-068): cả `session`, `meal` và
+ * `app/` đều cần quy đổi ngày theo timezone của Group mà không vi phạm ranh
+ * giới cross-feature.
  *
  * Hàm thuần: nhận `now` làm tham số chứ không tự gọi `new Date()`. Test vì thế
  * không phải mock `Date`, và đây là điều kiện để TC-004/TC-005 kiểm được ranh

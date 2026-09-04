@@ -154,4 +154,17 @@ export interface SessionRepository {
 
   /** MỚI — E3-T6. Một câu JOIN, không round-trip riêng cho từng participant. */
   findSessionOverview(sessionId: string): Promise<SessionOverview | null>
+
+  /**
+   * SPEC-034 / BR-055 — đóng mọi phiên quá hạn của một Group.
+   *
+   * IDEMPOTENT: một câu UPDATE thuần, không đọc-rồi-ghi, không phụ thuộc trạng
+   * thái trước đó. Chạy lần thứ hai không khớp dòng nào. Đó là lý do DUY NHẤT
+   * khiến gọi nó trong render của một Server Component là hợp lệ (Guide §1.4) —
+   * đừng thêm bước đọc nào vào đây.
+   *
+   * `referenceDate` do người gọi quy đổi qua `resolveDecisionDate(now, group.timezone)`;
+   * hàm này không tự biết timezone, cùng kỷ luật đã áp cho `computeRecencyPenalty`.
+   */
+  invalidateExpiredSessions(groupId: string, referenceDate: string): Promise<void>
 }

@@ -4,6 +4,7 @@ import { refresh, revalidatePath } from 'next/cache'
 
 import { addDishToGroup } from '@/features/dish/application/add-dish-to-group'
 import { addExistingDishToGroup } from '@/features/dish/application/add-existing-dish-to-group'
+import { removeDishFromGroup } from '@/features/dish/application/remove-dish-from-group'
 import { setSystemTags } from '@/features/dish/application/set-system-tags'
 import { drizzleDishRepository } from '@/features/dish/infrastructure/drizzle-dish-repository'
 import type {
@@ -134,4 +135,50 @@ export async function setSystemTagsAction(
   revalidatePath(`/groups/${groupId}/dishes`)
   refresh()
   return { error: null, savedAt: Date.now() }
+}
+
+export async function removeDishAction(
+  groupId: string,
+  groupDishId: string,
+): Promise<{ error: string | null }> {
+  // BR-008 / BR-005: chỉ Admin mới gỡ món khỏi nhóm.
+  const { user } = await requireGroupAdminContext(groupId)
+
+  const result = await removeDishFromGroup(
+    {
+      dishes: drizzleDishRepository,
+      assertAdmin: ({ userId, groupId: gid }) =>
+        assertGroupAccess(
+          { memberships: drizzleMembershipRepository },
+          { userId, groupId: gid, requiredRole: 'ADMIN' },
+        ),
+    },
+    {
+      groupId,
+      groupDishId,
+      requestedByUserId: user.id,
+    },
+  )
+
+  if (!result.ok) {
+    return { error: messageFor(result.error) }
+  }
+
+  revalidatePath(`/groups/${groupId}/dishes`)
+  refresh()
+  return { error: null }
+}
+
+export async function reAddDishAction(
+  groupId: string,
+  groupDishId: string,
+): Promise<{ error: string | null }> {
+  // BR-008 / BR-005: chỉ Admin mới thêm lại món vào nhóm.
+  await requireGroupAdminContext(groupId)
+
+  await drizzleDishRepository.reactivateGroupDish(groupDishId)
+
+  revalidatePath(`/groups/${groupId}/dishes`)
+  refresh()
+  return { error: null }
 }

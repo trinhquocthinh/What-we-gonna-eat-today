@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 
 import { createSession } from '@/features/session/application/create-session'
 import { startSession } from '@/features/session/application/start-session'
-import { resolveDecisionDate } from '@/features/session/domain/decision-date'
+import { resolveDecisionDate } from '@/shared/time/decision-date'
 import { drizzleDishRepository } from '@/features/dish/infrastructure/drizzle-dish-repository'
 import { drizzleSessionRepository } from '@/features/session/infrastructure/drizzle-session-repository'
 import {

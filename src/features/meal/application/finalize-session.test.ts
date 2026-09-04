@@ -25,7 +25,8 @@ function makeFakeMealRepository(options: {
           id: 's1',
           creatorUserId: 'creator-1',
           state: 'ACTIVE',
-          decisionDate: '2026-08-14',
+          decisionDate: '2099-08-14',
+          groupTimeZone: 'Asia/Ho_Chi_Minh',
         }
       )
     },
@@ -145,7 +146,8 @@ describe('SPEC-016 — Finalize', () => {
         id: 's1',
         creatorUserId: 'creator-1',
         state: 'FINALIZED',
-        decisionDate: '2026-08-14',
+        decisionDate: '2099-08-14',
+        groupTimeZone: 'Asia/Ho_Chi_Minh',
       },
     })
     const fakeRules = makeFakeRuleRepository()
@@ -166,7 +168,8 @@ describe('SPEC-016 — Finalize', () => {
         id: 's1',
         creatorUserId: 'someone-else',
         state: 'ACTIVE',
-        decisionDate: '2026-08-14',
+        decisionDate: '2099-08-14',
+        groupTimeZone: 'Asia/Ho_Chi_Minh',
       },
     })
     const fakeRules = makeFakeRuleRepository()
@@ -351,7 +354,8 @@ describe('SPEC-016 — Finalize', () => {
         id: 's1',
         creatorUserId: 'creator-1',
         state: 'ACTIVE',
-        decisionDate: '2026-08-14',
+        decisionDate: '2099-08-14',
+        groupTimeZone: 'Asia/Ho_Chi_Minh',
         targetDishCount: 2,
       },
       draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1', 'd2'] },
@@ -384,7 +388,8 @@ describe('SPEC-016 — Finalize', () => {
         id: 's1',
         creatorUserId: 'creator-1',
         state: 'ACTIVE',
-        decisionDate: '2026-08-14',
+        decisionDate: '2099-08-14',
+        groupTimeZone: 'Asia/Ho_Chi_Minh',
         targetDishCount: 4, // chọn 2 món nhưng target là 4 -> TARGET_COUNT warning
       },
       draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1', 'd2'] },
@@ -430,7 +435,8 @@ describe('SPEC-016 — Finalize', () => {
         id: 's1',
         creatorUserId: 'creator-1',
         state: 'ACTIVE',
-        decisionDate: '2026-08-14',
+        decisionDate: '2099-08-14',
+        groupTimeZone: 'Asia/Ho_Chi_Minh',
         targetDishCount: 2,
       },
       draft: { finalMealId: 'final-meal-1', groupDishIds: ['d1', 'd2'] },
@@ -455,6 +461,28 @@ describe('SPEC-016 — Finalize', () => {
     if (!result.ok) {
       expect(result.error.code).toBe('ERR_REQUIRED_RULE_FAILED')
     }
+    expect(fakeMeal.commitCalls).toHaveLength(0)
+  })
+
+  it('TC-156: Session ACTIVE của ngày cũ -> ERR_SESSION_NOT_ACTIVE, commitFinalize không được gọi', async () => {
+    const fakeMeal = makeFakeMealRepository({
+      session: {
+        id: 's1',
+        creatorUserId: 'creator-1',
+        state: 'ACTIVE',
+        decisionDate: '2020-01-01',
+        groupTimeZone: 'Asia/Ho_Chi_Minh',
+      },
+    })
+    const fakeRules = makeFakeRuleRepository()
+    const fakePreferences = makeFakePreferenceRepository()
+
+    const result = await finalizeSession(
+      { meal: fakeMeal.repository, rules: fakeRules, preferences: fakePreferences },
+      INPUT,
+    )
+
+    expect(result.ok === false && result.error.code).toBe('ERR_SESSION_NOT_ACTIVE')
     expect(fakeMeal.commitCalls).toHaveLength(0)
   })
 })

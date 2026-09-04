@@ -5,7 +5,7 @@ import { viewFinalMeal } from '@/features/meal/application/view-final-meal'
 import { drizzleMealRepository } from '@/features/meal/infrastructure/drizzle-meal-repository'
 import { listGroupRules } from '@/features/rule/application/list-group-rules'
 import { drizzleRuleRepository } from '@/features/rule/infrastructure/drizzle-rule-repository'
-import { resolveDecisionDate } from '@/features/session/domain/decision-date'
+import { resolveDecisionDate } from '@/shared/time/decision-date'
 import { drizzleSessionRepository } from '@/features/session/infrastructure/drizzle-session-repository'
 import { describeParticipantRow } from '@/features/session/presentation/components/participant-status'
 import { formatVietnameseDate } from '@/shared/time/format-vietnamese-date'
@@ -27,6 +27,9 @@ export default async function GroupPage({ params }: GroupPageProps) {
   const rules = await listGroupRules({ rules: drizzleRuleRepository }, groupId)
 
   const decisionDate = resolveDecisionDate(new Date(), group.timezone)
+
+  // SPEC-034 / BR-055 — quét lười đóng mọi phiên quá hạn của nhóm (Guide §1.4, §3.2)
+  await drizzleSessionRepository.invalidateExpiredSessions(groupId, decisionDate)
 
   const blockingSession = await drizzleSessionRepository.findBlockingSessionToday(
     groupId,

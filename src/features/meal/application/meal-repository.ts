@@ -6,6 +6,7 @@ export type SessionForMeal = {
   readonly state: 'DRAFT' | 'ACTIVE' | 'FINALIZED' | 'INVALID'
   readonly decisionDate: string
   readonly targetDishCount?: number | null
+  readonly groupTimeZone: string
 }
 
 export type DraftDish = {

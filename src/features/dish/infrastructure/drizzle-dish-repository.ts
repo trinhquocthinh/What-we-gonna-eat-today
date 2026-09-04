@@ -18,6 +18,7 @@ import { toSystemTags, type SystemTag } from '../domain/system-tag'
 // `tsc` canh chỗ này: nếu enum DB và union domain lệch nhau thì phép gán đỏ.
 // Đây là ràng buộc biên dịch DUY NHẤT giữa `schema.ts` và `domain/group-dish.ts`.
 const ACTIVE: GroupDishState = 'ACTIVE'
+const INACTIVE: GroupDishState = 'INACTIVE'
 
 /** KHÔNG lọc `state`: application quyết định — xem `add-dish-to-group.ts`. */
 async function findInGroupByNormalizedName(
@@ -146,6 +147,11 @@ async function reactivateGroupDish(groupDishId: string): Promise<void> {
   await db.update(groupDishes).set({ state: ACTIVE }).where(eq(groupDishes.id, groupDishId))
 }
 
+async function deactivateGroupDish(groupDishId: string): Promise<void> {
+  const db = getDb()
+  await db.update(groupDishes).set({ state: INACTIVE }).where(eq(groupDishes.id, groupDishId))
+}
+
 /**
  * Upsert trên unique index `group_dishes_group_global_unique(groupId, globalDishId)`
  * đã có từ E1-T5. Xử lý gọn cả "chưa từng có row" (INSERT bình thường) và "có
@@ -210,6 +216,29 @@ async function listActiveInGroup(groupId: string): Promise<GroupDishListItem[]> 
     .innerJoin(globalDishes, eq(globalDishes.id, groupDishes.globalDishId))
     .leftJoin(groupDishTags, eq(groupDishTags.groupDishId, groupDishes.id))
     .where(and(eq(groupDishes.groupId, groupId), eq(groupDishes.state, ACTIVE)))
+    .groupBy(groupDishes.id, globalDishes.name, groupDishes.createdAt)
+    .orderBy(asc(groupDishes.createdAt))
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    systemTags: toSystemTags(row.systemTags),
+  }))
+}
+
+async function listInactiveInGroup(groupId: string): Promise<GroupDishListItem[]> {
+  const rows = await getDb()
+    .select({
+      id: groupDishes.id,
+      name: globalDishes.name,
+      systemTags: sql<
+        string[]
+      >`coalesce(json_agg(${groupDishTags.systemTag}) filter (where ${groupDishTags.systemTag} is not null), '[]'::json)`,
+    })
+    .from(groupDishes)
+    .innerJoin(globalDishes, eq(globalDishes.id, groupDishes.globalDishId))
+    .leftJoin(groupDishTags, eq(groupDishTags.groupDishId, groupDishes.id))
+    .where(and(eq(groupDishes.groupId, groupId), eq(groupDishes.state, INACTIVE)))
     .groupBy(groupDishes.id, globalDishes.name, groupDishes.createdAt)
     .orderBy(asc(groupDishes.createdAt))
 
@@ -285,8 +314,10 @@ export const drizzleDishRepository: DishRepository = {
   searchGlobalDishes,
   createGlobalDishAndAddToPool,
   reactivateGroupDish,
+  deactivateGroupDish,
   addExistingGlobalDishToGroup,
   listActiveInGroup,
+  listInactiveInGroup,
   findActiveGroupDish,
   replaceSystemTags,
   countActiveInGroup,

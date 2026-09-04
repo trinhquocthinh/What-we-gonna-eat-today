@@ -20,10 +20,16 @@ function makeThrowingRepo(overrides: Partial<DishRepository> = {}): DishReposito
     async reactivateGroupDish() {
       throw new Error('không dùng trong test này')
     },
+    async deactivateGroupDish() {
+      throw new Error('không dùng trong test này')
+    },
     async addExistingGlobalDishToGroup() {
       throw new Error('không dùng trong test này')
     },
     async listActiveInGroup() {
+      throw new Error('không dùng trong test này')
+    },
+    async listInactiveInGroup() {
       throw new Error('không dùng trong test này')
     },
     async findActiveGroupDish() {

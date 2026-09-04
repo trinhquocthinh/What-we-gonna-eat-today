@@ -10,6 +10,7 @@ import {
   globalDishes,
   groupDishes,
   groupDishTags,
+  groups,
   participants,
   selectionSessions,
   users,
@@ -59,8 +60,10 @@ async function findSessionForMeal(sessionId: string): Promise<SessionForMeal | n
       decisionDate: selectionSessions.decisionDate,
       groupId: selectionSessions.groupId,
       targetDishCount: selectionSessions.targetDishCount,
+      groupTimeZone: groups.timezone,
     })
     .from(selectionSessions)
+    .innerJoin(groups, eq(groups.id, selectionSessions.groupId))
     .where(eq(selectionSessions.id, sessionId))
     .limit(1)
 

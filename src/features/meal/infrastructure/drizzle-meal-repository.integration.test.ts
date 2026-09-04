@@ -27,6 +27,8 @@ import { finalizeSession } from '../application/finalize-session'
 import { saveFinalMealDraft } from '../application/save-final-meal-draft'
 import { drizzleMealRepository } from './drizzle-meal-repository'
 
+const DECISION_DATE = '2099-08-14'
+
 /** Seed: 1 Group, 2 User (Creator + 1 Participant khác), 1 Session ACTIVE, 2 Dish Active. */
 async function seedActiveSessionWithTwoDishes() {
   const db = getDb()
@@ -61,7 +63,7 @@ async function seedActiveSessionWithTwoDishes() {
   await db.insert(selectionSessions).values({
     id: sessionId,
     groupId,
-    decisionDate: '2026-08-14',
+    decisionDate: DECISION_DATE,
     creatorUserId: creatorId,
     state: 'ACTIVE',
   })
@@ -305,13 +307,13 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
       {
         userId: seed.creatorId,
         globalDishId: seed.dish1.globalId,
-        eatingDate: '2026-08-14',
+        eatingDate: DECISION_DATE,
         sourceFinalMealId: draft.value.finalMealId,
       },
       {
         userId: seed.otherUserId,
         globalDishId: seed.dish1.globalId,
-        eatingDate: '2026-08-14',
+        eatingDate: DECISION_DATE,
         sourceFinalMealId: draft.value.finalMealId,
       },
     ]
@@ -447,7 +449,7 @@ describe('TC-109 — rollback thật khi một dòng eating_history lỗi', () =
           {
             userId: seed.creatorId,
             globalDishId: NONEXISTENT_GLOBAL_DISH_ID, // vi phạm FK — KHÔNG bị onConflictDoNothing nuốt
-            eatingDate: '2026-08-14',
+            eatingDate: DECISION_DATE,
             sourceFinalMealId: crypto.randomUUID(),
           },
         ],
@@ -657,7 +659,7 @@ describe('findFinalMeal — E6-T7 (S-11)', () => {
 
     const result = await drizzleMealRepository.findFinalMeal(seed.sessionId)
     expect(result).not.toBeNull()
-    expect(result?.decisionDate).toBe('2026-08-14')
+    expect(result?.decisionDate).toBe(DECISION_DATE)
     expect(result?.finalizedByDisplayName).toBe('Creator')
     expect(result?.finalizedAt).toBeInstanceOf(Date)
     expect(result?.dishes).toHaveLength(2)
