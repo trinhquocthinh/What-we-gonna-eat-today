@@ -2,7 +2,7 @@
 
 > **Document Metadata**
 >
-> - **Version:** `2.2` | **Status:** `Active (v1.1 đã xong — sẵn sàng lập kế hoạch v1.2)` | **Release:** `R2`
+> - **Version:** `2.3` | **Status:** `Active (v1.2 — M4 xong, E13/E14 chờ thi công)` | **Release:** `R3`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-09-04`
 > - **Supersedes:** `v2.1` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
 >
@@ -37,6 +37,11 @@
     - [16.6 E11 — Vận hành tối thiểu](#166-e11--vận-hành-tối-thiểu)
     - [16.7 Đường găng và rủi ro v1.1](#167-đường-găng-và-rủi-ro-v11)
     - [16.8 M3 — Khép v1.1](#168-m3--khép-v11)
+17. [v1.2 — Chi tiết thi công](#17-v12--chi-tiết-thi-công)
+    - [17.1 M4 — Vá khoảng trống đặc tả](#171-m4--vá-khoảng-trống-đặc-tả)
+    - [17.2 E13 — Học sở thích tự động](#172-e13--học-sở-thích-tự-động)
+    - [17.3 E14 — Ba món nợ của v1.1](#173-e14--ba-món-nợ-của-v11)
+    - [17.4 Đường găng và rủi ro v1.2](#174-đường-găng-và-rủi-ro-v12)
 
 ---
 
@@ -61,6 +66,10 @@
 | **E11** | Vận hành tối thiểu | 2 | 8.5 | `[x]` ✅ Xong |
 | **M3** | Khép v1.1 — vá lỗi rà soát & `F16` | 12 | 15.5 | `[x]` ✅ Xong |
 | | **— Tổng v1.1 —** | **45** | **96.5** | |
+| **M4** | Vá khoảng trống đặc tả v1.2 | 4 | 6 | `[x]` ✅ Xong |
+| **E13** | Học sở thích tự động | 8 | 20.5 | `[ ]` Chưa bắt đầu |
+| **E14** | Ba món nợ của v1.1 | 4 | 14 | `[ ]` Chưa bắt đầu |
+| | **— Tổng v1.2 —** | **16** | **40.5** | |
 
 > [!TIP]
 > Cột trạng thái dùng để theo dõi tiến độ. Nếu sau ba tuần chưa có ô nào được tick, vấn đề không nằm ở kế hoạch mà ở nhịp độ thực thi.
@@ -401,10 +410,23 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Epic | Nội dung | Danh sách tính năng | Ước lượng |
 | :--- | :--- | :--- | :---: |
-| **E12** | Chef Role & Khả năng nấu | `F33` Chef Role & Chef Mode, `F34` Khả năng nấu, `F42` Gán/gỡ Chef Role | 23h |
-| **E13** | Học sở thích tự động | `F30` Implicit Preference, `F31` Blacklist, `F32` Whitelist, `F39` Reset | 21h |
-| **E14** | Linh hoạt, bổ trợ và sửa dữ liệu | `F35` Override Session Rule, `F36` Nguồn mua, `F37` Descriptive Tag, `F38` Phản hồi trực tiếp, `F40` Sửa Final Meal, `F41` Huỷ phiên, **`F25` Gỡ Participant**, **`F28` Sửa lịch sử ăn**, **`F29` UI phát hiện trùng** | 45h |
-| | | **Tổng v1.2** | **89h** |
+| **M4** | Vá khoảng trống đặc tả | — (`SPEC-037`→`042`, `TC-159`→`178`, PRD §4) | 6h |
+| **E13** | Học sở thích tự động | `F30` Implicit Preference, `F31` Blacklist, `F32` Whitelist, `F39` Quên sở thích đã học | 20.5h |
+| **E14** | Ba món nợ của v1.1 | **`F25` Gỡ Participant**, **`F28` Sửa lịch sử ăn**, **`F29` polish phát hiện trùng** | 14h |
+| | | **Tổng v1.2** | **40.5h** |
+
+> [!IMPORTANT]
+> **Phạm vi v1.2 cắt ngày 2026-09-04 — từ 89h/16 tính năng còn 40.5h/7 tính năng** ([DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md)). Chi tiết subtask ở [§17](#17-v12--chi-tiết-thi-công). Chín tính năng hoãn sang v1.3, mỗi cái kèm lý do:
+>
+> | Hoãn | Vì sao |
+> | :--- | :--- |
+> | `E12` — `F33` Chef Role, `F34` Khả năng nấu, `F42` Gán/gỡ Chef | Số hạng $C$ chỉ có nghĩa khi ranking đã đủ tín hiệu. Đặt SAU `F30` thì nó cộng vào một công thức đã học được gì đó |
+> | `F35` Override Session Rule | [DEC-042](what-we-gonna-eat-today_decision-log_v3.9.md) — bắt dời snapshot rule từ Start về Draft cộng một bước làm mới; mổ vào `startDraft` và đánh thức `group_rules.overridable` |
+> | `F36` Nguồn mua | Số hạng $S$ — cùng lý lẽ hoãn với $C$ |
+> | `F37` Descriptive Tag, `F38` Phản hồi trực tiếp | **Chưa được đặc tả** — chỉ có tên trong một ô bảng. Lập lịch cho một cái tên là lập lịch cho một ẩn số |
+> | `F40` Sửa Final Meal, `F41` Huỷ phiên | `F41` kéo theo migration `invalid_reason` mà `E11` đã cố ý không làm ([Diagrams §312](what-we-gonna-eat-today_diagrams_v1.1.md)) |
+>
+> **`E12` cố ý để trống, không đánh số lại.** Đánh số lại lần thứ hai (sau `DEC-061`) chỉ tạo churn và làm gãy link chéo; một `E12` bỏ trống chờ v1.3 là trạng thái trung thực.
 
 > [!NOTE]
 > **Hai thứ v1.1 để lại làm đầu vào cho v1.2** (đợt rà soát `2026-09-04`, xem [§16.8](#168-m3--khép-v11)):
@@ -445,6 +467,7 @@ Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `2.3` | 2026-09-04 | §1, §13.2, §17 | Chốt kế hoạch v1.2: cắt phạm vi từ 89h/16 tính năng còn **40.5h/7 tính năng**; bổ sung §17 với `M4` + `E13` + `E14` (16 subtask); `E12` Chef cố ý để trống chờ v1.3. `M4` đã thi công — `SPEC-037`→`042`, `TC-159`→`178`, PRD §4 tách dòng gộp | [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `2.2` | 2026-09-04 | §1, §13.1, §16.8 | Thi công `M3` — slice khép v1.1 sinh từ đợt rà soát toàn bộ E7→E11: 4 lỗi logic (`marks` gãy bất biến khi quay chặng, khớp luật sai loại sau khi `E10-T1` cho một tag hai loại luật, `limit(1)` không `ORDER BY` khi hai phiên cùng `ACTIVE`, ranh giới chặng đếm theo tag hiện tại), phần còn thiếu của `E7-T5` (`F16` chưa có đường vào từ giao diện nên số hạng $E$ chết trên production), bỏ N+1 lúc chốt bữa, chặn ngõ cụt phiên quá hạn, và đưa `presentation/` vào phép đo coverage. v1.1: 81h kế hoạch → 96.5h thực tế | Rà soát v1.1 `2026-09-04` |
 | `2.2` | 2026-09-04 | §1 | Đánh dấu `E10` và `E11` đã xong — hai epic đã commit từ `2026-09-02`/`2026-09-04` nhưng §1 còn ghi "Chưa bắt đầu" trong khi §16.5/§16.6 đã tick đủ `[x]`; sửa tổng giờ ở §13.1 cho khớp §1 | `DEC-067`, `DEC-068` |
 | `2.1` | 2026-09-01 | §1, §13, §16.4 | Chốt kế hoạch thi công E9: chia 2 slice kèm 2 Implementation Guide; bổ sung `E9-T0` (deck chưa bao giờ mang System Tag — tiền đề của `E9-T3`, đồng thời sửa lỗi nhãn trên thẻ vuốt sống từ E1); `E9-T3` cắt trần TRONG TỪNG CHẶNG chứ không cắt chung rồi chia; `E9-T4` bỏ tham số `courseIndex`; E9 17h → 18h, tổng v1.1 80.5h | E9-S1/S2 Guide, `DEC-066` |
@@ -768,3 +791,111 @@ tồn tại: cái nó tìm ra là những thứ cổng chất lượng **không 
 > **Ba trong bốn lỗi logic nằm ở `presentation/` — lớp duy nhất không được đo.** Đó là lý do
 > `M3-T8` không phải việc dọn dẹp mà là việc phòng ngừa: một phép đo không chạm tới chỗ hỏng
 > là một phép đo đang trấn an nhầm chỗ.
+
+---
+
+# 17. v1.2 — Chi tiết thi công
+
+> [!NOTE]
+> **Mục tiêu v1.2:** hệ thống học được khẩu vị nhà mình, và trả ba món nợ của v1.1.
+>
+> v1.1 làm cho gợi ý *đúng người* dựa trên thứ người ta **khai** ra. v1.2 thêm thứ hệ thống
+> **quan sát** được. Phạm vi chốt theo [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md);
+> đặc tả ở [SDD §9](what-we-gonna-eat-today_sdd_v1.3.md) và [Test Cases §3c](what-we-gonna-eat-today_test-cases-specification_v1.1.md).
+
+**Thứ tự thi công:**
+
+```text
+M4 ──► E13-T1 ──► E13-T2 ──► E13-T3 ──► E13-T4 ──► E13-T5 ──► E13-T6/T7/T8
+   └─► E14 (độc lập, chạy song song được sau M4)
+```
+
+## 17.1 M4 — Vá khoảng trống đặc tả
+
+> [!NOTE]
+> Slice tiền đề, cùng lý lẽ `M2` đã viết: **trả nợ trước khi vay thêm**. v1.1 code được ngay
+> vì `SPEC-024`→`036` đã viết TRƯỚC `E7`. Khi mở phạm vi v1.2, SDD **không có SPEC nào**
+> (max `SPEC-036`) và Test Cases **không có TC nào** (max `TC-158`).
+
+| ID | Tiêu đề | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :---: | :--- | :--- |
+| `[x] M4-T1` | PRD §4 — tách dòng gộp `F30→42` | 1 | Mỗi tính năng trong phạm vi có một dòng riêng kèm BR; 9 tính năng hoãn ghi rõ "v1.3" kèm lý do | `docs/..._prd_v1.5.md` (`v1.6`) |
+| `[x] M4-T2` | SDD `SPEC-037`→`SPEC-042` | 3 | Sáu SPEC cho 7 tính năng (`F29` polish `SPEC-005`, không có SPEC riêng); hai lưu ý kiến trúc mới ở §10 | `docs/..._sdd_v1.3.md` (`v1.4`) |
+| `[x] M4-T3` | Test Cases `TC-159`→`TC-178` | 1.5 | 20 TC, 5 ca **then chốt**; `TC-160` canh mốc phân rã 60 ngày, `TC-166` canh ranh giới Blacklist ↔ Cannot Eat | `docs/..._test-cases-specification_v1.1.md` (`v1.2`) |
+| `[x] M4-T4` | Decision Log + Master Plan + Ranking Spec | 0.5 | `DEC-069`; §13.2 và §17 phản ánh phạm vi thật; Ranking Spec §2.6 bỏ `DECK_PAGE_SIZE` cho khớp `M3-T11`; bảng tra cứu DEC vá đủ 7 entry còn thiếu | `docs/**` |
+
+## 17.2 E13 — Học sở thích tự động
+
+**20.5 giờ · `F30`, `F31`, `F32`, `F39` · [SPEC-037 → SPEC-040](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-035`, `BR-036`, `BR-038`**
+
+| ID | Tiêu đề | Nguồn | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[ ] E13-T1` | Schema cờ món cá nhân + mốc quên | [SPEC-038](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md) | 3.5 | `user_dish_constraints` thêm cột `kind`, khoá chính đổi sang `(user_id, global_dish_id, kind)`, migration backfill dòng cũ thành `'CANNOT_EAT'` **chạy được cả hai chiều**; bảng `user_preference_settings`; index `participants(user_id)` và `interactions(participant_id)` | `src/shared/db/schema.ts`, `migrations/**` |
+| `[ ] E13-T2` | Hàm thuần `computeImplicitPreference` | [SPEC-037](what-we-gonna-eat-today_sdd_v1.3.md), `BR-038` | 2.5 | Nguyên văn Ranking Spec §2.2; nhận `referenceDate` qua THAM SỐ; `TC-159`→`TC-162` xanh. Nằm ở `selection/domain/`, **không** phải `preference` — chạy `yarn arch:probe` trước dòng code đầu tiên | `src/features/selection/domain/implicit-preference.ts` |
+| `[ ] E13-T3` | Mở rộng `RankingInput` + `computePersonalScore` | [DEC-036](what-we-gonna-eat-today_decision-log_v3.9.md) | 1.5 | Thêm $w_{\text{implicit}} \cdot I$; `TC-125`→`TC-127` (blend Explore) vẫn xanh | `src/features/selection/domain/ranking.ts` |
+| `[ ] E13-T4` | Truy vấn lịch sử vuốt cho $I$ | [SPEC-037](what-we-gonna-eat-today_sdd_v1.3.md) | 3 | MỘT truy vấn gộp; chỉ phiên `FINALIZED`; tôn trọng `implicit_reset_at`; `TC-163`→`TC-165`, `TC-174` xanh | `src/features/selection/infrastructure/drizzle-selection-repository.ts` |
+| `[ ] E13-T5` | Nối vào `list-deck` | [SPEC-038](what-we-gonna-eat-today_sdd_v1.3.md), [SPEC-039](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | Stage 1 lọc thêm `BLACKLIST`; Stage 2 cộng $I$; `HISTORY_WHITELIST` ép $R = 0$. **Không khai chiều cross-feature mới** | `src/features/selection/application/list-deck.ts` |
+| `[ ] E13-T6` | Use case + Route Handler | [SPEC-038](what-we-gonna-eat-today_sdd_v1.3.md)→[SPEC-040](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | `setDishConstraint` nhận `kind`; `resetImplicitPreference`. Route Handler chứ không Server Action (`DEC-055`); `TC-166`, `TC-168` xanh | `src/features/preference/application/**`, `src/app/api/preferences/**` |
+| `[ ] E13-T7` | Mở rộng khai báo ở màn Danh mục | `E6-T6`, `NFR-03` | 2.5 | `DishPreferenceControls` (M3-T6) thêm hai nút; trạng thái đọc được bằng **chữ**; dùng lại `sendJsonWithRetry` — không fire-and-forget | `src/features/dish/presentation/components/dish-preference-controls.tsx` |
+| `[ ] E13-T8` | Màn cài đặt cá nhân + nút Quên | [SPEC-040](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | Xác nhận **hai nhịp trên chính nút** (khuôn `armed` của `finalize-bar.tsx`, không modal); nói rõ khai báo tự tay được giữ; `TC-171`→`TC-173` xanh | `src/features/preference/presentation/**` |
+
+> [!IMPORTANT]
+> **`E13-T2` là chỗ dễ đặt nhầm feature nhất của cả v1.2.** Tên `BR-038` ("Implicit Preference")
+> kéo người đọc về `preference`, nhưng $I$ suy từ `interactions` — bảng của `selection` — rồi
+> tiêu thụ ngay bởi ranking của `selection`. Đặt ở `preference` sinh ra chiều
+> `preference → selection` chưa từng có. ESLint sẽ bắt, nhưng bắt **sau khi** code đã viết xong.
+
+> [!CAUTION]
+> **`E13-T1` đổi KHOÁ CHÍNH của một bảng đang có dữ liệu thật.** `findConstrainedGlobalDishIds`
+> và `findCannotEatPairs` (M3-T9) phải lọc `kind = 'CANNOT_EAT'` — bỏ sót một chỗ thì Blacklist
+> lặng lẽ mang theo hành vi xoá lượt vuốt của Cannot Eat, thứ `BR-035` cấm bằng chữ. `TC-166`
+> là ca canh đúng chuyện đó.
+
+## 17.3 E14 — Ba món nợ của v1.1
+
+**14 giờ · `F25`, `F28`, `F29` · [SPEC-041, SPEC-042](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-026`, `BR-057`, `BR-060`, `BR-061`**
+
+| ID | Tiêu đề | Nguồn | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[ ] E14-T1` | `F25` Gỡ Participant giữa phiên | [SPEC-041](what-we-gonna-eat-today_sdd_v1.3.md), `BR-020`, `BR-061` | 4 | Creator gỡ được → `state = 'REMOVED'`; **không gỡ được chính Creator**; tương tác cũ giữ nguyên số dòng; `TC-175`→`TC-177` xanh, chạy **qua giao diện thật** | `src/features/session/**`, `src/app/groups/[groupId]/page.tsx` |
+| `[ ] E14-T2` | `F28` Schema lịch sử ăn sửa được | [SPEC-042](what-we-gonna-eat-today_sdd_v1.3.md) | 3 | `source_final_meal_id` chuyển **nullable**; thêm cột `origin`; **dựng lại chỉ mục duy nhất** thành partial index tách hai nhánh — với `NULL`, Postgres coi mọi dòng là khác nhau | `src/shared/db/schema.ts`, `migrations/**` |
+| `[ ] E14-T3` | `F28` Use case + giao diện | `BR-057`, `BR-060` | 5 | Sửa lịch sử **của chính mình**, **chỉ hôm nay**; chốt lại bữa **không ghi đè** dòng `MANUAL`; `TC-178` xanh | `src/features/history/**`, `src/app/groups/[groupId]/history/**` |
+| `[ ] E14-T4` | `F29` Polish phát hiện trùng tên | `BR-001`, `SPEC-005` | 2 | Rà `add-dish-sheet` + `duplicate-sheet` với dữ liệu thật; **không viết bộ chuẩn hoá thứ hai** — `normalizeDishName` là chỗ duy nhất | `src/features/dish/presentation/components/**` |
+
+> [!CAUTION]
+> **`E14-T2` đụng bảng mà Cooldown tin vào.** `computeRecencyPenalty` đọc `eating_history`; một
+> dòng `MANUAL` sai ngày trừ điểm món đó bảy ngày cho chính người vừa gõ nhầm. `BR-057` cho cá
+> nhân *"quyền hạn tối cao"* — nghĩa là không có chốt chặn nghiệp vụ nào phía sau, nên phạm vi
+> phải hẹp bằng **thiết kế** (chỉ chọn từ danh mục, chỉ hôm nay), không bằng lời nhắc.
+
+> [!NOTE]
+> **Phía đọc của `F25` đã đúng từ v1.0.** `'REMOVED'` được lọc đúng ở `countInteractionsByDish`,
+> `listRankingParticipantUserIds`, `listActiveParticipantUserIds` và `recordInteraction`, nhưng
+> chưa dòng production nào **ghi** giá trị đó — đúng khuôn `INACTIVE`/`INVALID` mà `E11` vừa
+> đóng. `E14-T1` chỉ mở đường ghi; `TC-175` là lần đầu phía đọc được kiểm với dữ liệu do ứng
+> dụng tạo ra thay vì do test `INSERT` vào.
+
+## 17.4 Đường găng và rủi ro v1.2
+
+```text
+M4 (6h) ──► E13-T1 ──► E13-T2 ──► E13-T3 ──► E13-T4 ──► E13-T5   [ 18.5 giờ ]
+──────────────────────────────────────────────────────────────────────────
+                                       TỔNG ĐƯỜNG GĂNG: 26.5 giờ
+```
+
+**26.5 trong tổng số 40.5 giờ nằm trên đường găng.** `E14` hoàn toàn nằm ngoài — nếu hết thời
+gian, cắt nó trước, và v1.2 vẫn giao được lời hứa chính là *"hệ thống học được khẩu vị nhà mình"*.
+
+| Rủi ro | Dấu hiệu nhận biết sớm | Phương án xử lý |
+| :--- | :--- | :--- |
+| Đổi khoá chính làm rơi `Cannot Eat` | Sau migration, món đã khai "không ăn được" hiện lại trong deck | Test tích hợp chạy TRƯỚC migration, khẳng định số dòng `kind = 'CANNOT_EAT'` bằng đúng số dòng cũ |
+| $I$ đặt nhầm feature | ESLint đỏ ở `E13-T2` sau khi code đã viết xong | Chạy `yarn arch:probe` NGAY đầu `E13-T2`, trước dòng code đầu tiên |
+| $I$ làm chậm đường tải deck | Deck lần đầu vượt 2.5s trên 4G (`NFR-01`) | Index nằm trong `E13-T1`, không để tới lúc đo mới thêm; `TC-174` canh |
+| Blacklist mang hành vi của Cannot Eat | $P$ giảm khi ai đó bấm Blacklist giữa phiên | `setConstraint` rẽ nhánh theo `kind`; `TC-166` khẳng định $P$ KHÔNG đổi |
+| Học từ phiên đang chạy | Thẻ nhảy thứ tự dưới tay giữa lượt vuốt | `TC-163` — chỉ phiên `FINALIZED`; `BR-048` vẫn đóng băng deck |
+| `F28` sinh dòng sai ngày | Cooldown trừ điểm món cả nhà chưa ăn | Giao diện chỉ chọn món từ danh mục, chỉ hôm nay; không có ô nhập ngày tự do |
+
+> [!TIP]
+> **Điểm kiểm tra sau `E13`:** vuốt phải cùng một món qua ba phiên liên tiếp rồi mở phiên thứ
+> tư **mà không đặt `Like` cho nó**. Nếu món ấy không nổi lên đầu deck thì `F30` chưa chạy
+> đúng — và một `F30` không chạy đúng chỉ là một truy vấn tốn thời gian trên đường tải deck.

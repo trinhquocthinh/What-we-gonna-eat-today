@@ -3,11 +3,11 @@
 > **Document Metadata**
 >
 > - **Version:** `3.9` | **Status:** `Active`
-> - **Created:** `2026-07-23` | **Last Updated:** `2026-08-26`
+> - **Created:** `2026-07-23` | **Last Updated:** `2026-09-04`
 > - **Supersedes:** `v3.8` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 >
-> 📌 *Decision Log ghi lại 61 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
+> 📌 *Decision Log ghi lại 69 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
 
 ---
 
@@ -76,6 +76,13 @@
 | [`DEC-060`](#dec-060--cannot-eat-xoá-tương-tác-cũ-và-tạo-ngoại-lệ-cho-lịch-sử-ăn-mặc-định) | `Cannot Eat` xoá tương tác cũ, ngoại lệ lịch sử ăn | 2026-08-26 | `Accepted` | `BR-034`, ngoại lệ `BR-056`, feature `preference`, rủi ro `R-05` |
 | [`DEC-061`](#dec-061--đánh-số-lại-epic-v12) | Đánh số lại epic v1.2 (`E11`→`E12`…) | 2026-08-26 | `Accepted` | Master Plan §13.2, mã subtask & thư mục `docs/plans/` |
 | [`DEC-064`](#dec-064--v11-đóng-băng-deck-toàn-phần-br-048-được-siết-cho-khớp-code) | v1.1 Đóng Băng Deck Toàn Phần; `BR-048` Được Siết Cho Khớp Code | 2026-08-26 | `Accepted` | `BR-048`, `list-deck.ts`, `session_decks`, `isExploreEligible` |
+| [`DEC-062`](#dec-062--tương-tác-cannot-eat-ở-swipe-card-s-09--hệ-quả-bỏ-qua-lịch-sử-ăn-br-056) | Cannot Eat trên thẻ vuốt; ngoại lệ `BR-056` lúc chốt | 2026-08-31 | `Accepted` | `BR-043`, `deck-screen.tsx`, `buildDefaultEatingHistory` |
+| [`DEC-063`](#dec-063--audit-log-ghi-cannot_eat-và-enum-csdl-rộng-hơn-ô-cửa-nhận-dữ-liệu) | Audit log `CANNOT_EAT`; enum CSDL vs enum API | 2026-08-26 | `Accepted` | `interaction_events`, `interactionAction`, `TC-117` |
+| [`DEC-065`](#dec-065--vị-trí-tiếp-tục-suy-ở-client-không-lưu-server) | Vị trí tiếp tục suy ở client, không thêm cột DB | 2026-08-26 | `Accepted` | `F51`, `SPEC-036`, `resume-position.ts` |
+| [`DEC-066`](#dec-066--chế-độ-chặng-cắt-trần-trong-từng-chặng-không-cắt-chung-rồi-chia) | Chặng cắt trần trong từng chặng | 2026-09-01 | `Accepted` | `SPEC-030`, `BR-063`, `course-deck.ts` |
+| [`DEC-067`](#dec-067--mô-hình-hai-loại-cảnh-báo-và-phân-tách-cấu-hình-luật) | Hai loại cảnh báo; tách cấu hình luật | 2026-09-02 | `Accepted` | `SPEC-031`, `BR-014`, `evaluate.ts` |
+| [`DEC-068`](#dec-068--tự-động-đóng-phiên-quá-hạn--quản-lý-danh-mục-món-vận-hành-tối-thiểu-e11) | Tự động đóng phiên quá hạn; gỡ món khỏi nhóm | 2026-09-04 | `Accepted` | `SPEC-034`, `SPEC-035`, `shared/time/` |
+| [`DEC-069`](#dec-069--cắt-phạm-vi-v12-xuống-7-tính-năng-i-thuộc-selection-quên-là-mốc-thời-gian) | Cắt phạm vi v1.2; $I$ thuộc `selection`; "Quên" là mốc | 2026-09-04 | `Accepted` | PRD §4, SDD §9, TC §3c, Master Plan §13.2 |
 ---
 
 # DEC-001 — Selection Session Lifecycle
@@ -1856,10 +1863,57 @@ hình chưa đủ thì phải quét lại lần hai, mà `E6-T6` chính là mố
 
 ---
 
+# DEC-069 — Cắt Phạm Vi v1.2 Xuống 7 Tính Năng; $I$ Thuộc `selection`, "Quên" Là Mốc Thời Gian
+
+**Ngày quyết định:** 2026-09-04 | **Trạng thái:** Accepted
+
+## Bối cảnh
+
+Master Plan §13.2 đặt v1.2 ở 89 giờ / 3 epic / 16 tính năng. Đợt khảo sát sau khi khép v1.1 (`M3`, commit `ff0d20a`) cho thấy v1.2 **không ở cùng mức sẵn sàng như v1.1**: Business Rules và Ranking Spec đã đủ, nhưng SDD **không có SPEC nào** cho v1.2 (max `SPEC-036`), Test Cases **không có TC nào** (max `TC-158`), và ba tính năng `F37`, `F38`, `F39` chỉ tồn tại dưới dạng tên trong một ô bảng — không Business Rule, không SPEC, không TC, không dòng PRD.
+
+## Quyết định
+
+1. **Phạm vi v1.2 còn 7 tính năng, 40.5 giờ**: `F30` Implicit Preference, `F31` Blacklist, `F32` History Whitelist, `F39` Quên sở thích đã học (E13); `F25` Gỡ Participant, `F28` Sửa lịch sử ăn, `F29` polish phát hiện trùng tên (E14). Chín tính năng còn lại hoãn sang v1.3: toàn bộ `E12` Chef Role (`F33`/`F34`/`F42`), `F35`, `F36`, `F37`, `F38`, `F40`, `F41`.
+2. **Giữ nguyên đánh số `E13`/`E14`, để trống `E12`.** Đánh số lại lần thứ hai (sau `DEC-061`) chỉ tạo churn và làm gãy link chéo.
+3. **`M4` — slice đặc tả đi trước.** Viết `SPEC-037`→`SPEC-042` và `TC-159`→`TC-178`, tách dòng gộp `F30→42` ở PRD §4, TRƯỚC khi chia subtask thi công. Cùng lý lẽ `M2` (`DEC-057`): trả nợ trước khi vay thêm.
+4. **`computeImplicitPreference` thuộc `features/selection`, KHÔNG thuộc `preference`.** $I$ được suy ra từ `interactions` — bảng của `selection` — rồi tiêu thụ ngay bởi ranking của `selection`. `preference` sở hữu thứ người dùng **khai**; `selection` sở hữu thứ hệ thống **quan sát**.
+5. **`F39` là một MỐC THỜI GIAN, không phải lệnh xoá.** Ghi `implicit_reset_at`; `SPEC-037` bỏ qua mọi phiên trước mốc. Không dòng `interactions` nào bị đụng tới.
+6. **Ba cờ cá nhân dùng chung một bảng.** `Cannot Eat`, `Blacklist`, `History Whitelist` cùng hình dạng `(user, global dish, có/không)`; phân biệt bằng cột `kind` trên `user_dish_constraints`, khoá chính đổi sang `(user_id, global_dish_id, kind)`.
+
+## Rationale
+
+**Vì sao cắt `F35`:** [DEC-042](#dec-042--session-rules-snapshot-at-start-not-at-draft-creation) đã ghi sẵn hệ quả — snapshot `group_rules → session_rules` phải dời từ Start về lúc tạo Draft, *cộng thêm* một bước làm mới lúc Start cho phần rule chưa bị override. Đó là mổ vào `startDraft`, giao dịch được test dày nhất repo và cũng là chỗ `E9-T1` vừa nhét snapshot chặng, `E10-T3` vừa nhét `target_dish_count`. Nó còn đánh thức `group_rules.overridable`, cột mà Master Plan §16.5 cảnh báo đừng chạm.
+
+**Vì sao cắt `E12` Chef:** số hạng $C$ chỉ có nghĩa khi ranking đã đủ tín hiệu. Đặt nó SAU `F30` thì nó cộng vào một công thức đã học được gì đó; đặt nó TRƯỚC thì nó là số hạng thứ ba trong một công thức mà hai số hạng đầu vừa mới sống.
+
+**Vì sao cắt `F37`/`F38`:** lập lịch cho một cái tên là lập lịch cho một ẩn số. v1.1 vượt 19% giờ (81h kế hoạch → 96.5h thực tế) **dù mọi tính năng đều đã có SPEC**.
+
+**Vì sao `F39` không xoá dữ liệu:** `SPEC-014` đọc cùng bảng `interactions` để tính Session Ranking. Xoá thật sẽ đổi điểm của các phiên đã chốt trong quá khứ và vi phạm `BR-061` (tương tác cũ phải được bảo toàn kể cả khi không còn được tính). Một mốc thời gian cho đúng hiệu quả người dùng mong đợi với chi phí một cột — và hoàn tác được.
+
+**Vì sao gộp ba cờ vào một bảng:** ba bảng cùng hình dạng là ba đường ghi phải giữ đồng bộ bằng tay. Cái giá phải trả được ghi rõ: mọi truy vấn đang đọc `user_dish_constraints` phải nêu `kind`, và bỏ sót một chỗ thì Blacklist lặng lẽ mang theo hành vi xoá lượt vuốt của `Cannot Eat` — thứ `BR-035` cấm bằng chữ.
+
+## Consequence
+
+- SDD lên `v1.4` với §9 (`SPEC-037`→`SPEC-042`) và §1.3; Test Cases lên `v1.2` với §3c; PRD lên `v1.6` với §4 đã tách dòng.
+- `E13-T1` đổi **khoá chính** của một bảng đang có dữ liệu thật — migration phải chạy được cả hai chiều, và `findConstrainedGlobalDishIds` / `findCannotEatPairs` phải lọc `kind = 'CANNOT_EAT'`.
+- Cần index `participants(user_id)` và `interactions(participant_id)`: truy vấn của `SPEC-037` đi từ user → participants → interactions, và hiện không index nào phục vụ chiều đó.
+- v1.3 thừa hưởng một danh sách đã được giải thích lý do hoãn, không phải một sọt còn lại.
+
+## Affected Documents
+
+- PRD §4 (`v1.6`) — tách dòng gộp `F30→42`
+- SDD §1.3, §9, §10 (`v1.4`) — `SPEC-037`→`SPEC-042` và hai lưu ý kiến trúc mới
+- Test Cases §3c (`v1.2`) — `TC-159`→`TC-178`
+- Master Plan §13.2, §16.9 — phạm vi v1.2 thực tế
+- Ranking Spec §2.6 — sửa `DECK_PAGE_SIZE` cho khớp mã sau `M3-T11`
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.17` | 2026-09-04 | Bổ sung `DEC-069` (Cắt phạm vi v1.2 xuống 7 tính năng; $I$ thuộc `selection`; "Quên" là mốc thời gian; ba cờ cá nhân dùng chung một bảng) — lập kế hoạch v1.2 |
 | `3.16` | 2026-09-04 | Bổ sung `DEC-068` (Tự Động Đóng Phiên Quá Hạn & Quản Lý Danh Mục Món Vận Hành Tối Thiểu) cho E11 |
 | `3.15` | 2026-09-02 | Bổ sung `DEC-067` (Mô Hình Hai Loại Cảnh Báo Và Phân Tách Cấu Hình Luật) cho E10-S1 |
 | `3.14` | 2026-09-01 | Bổ sung `DEC-066` (Chế Độ Chặng Cắt Trần TRONG TỪNG CHẶNG, Không Cắt Chung Rồi Chia) cho E9-S1 |

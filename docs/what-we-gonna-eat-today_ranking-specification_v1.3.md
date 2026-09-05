@@ -2,7 +2,7 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.3` | **Status:** `Approved`
+> - **Version:** `1.4` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
 > - **Supersedes:** `v1.2` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v3.9.md)
 > - **Downstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md)
@@ -87,6 +87,8 @@ $$\text{Score} = w_{\text{explicit}} \cdot E + w_{\text{implicit}} \cdot I + w_{
 
 ### Thành phần $I$ — Sở thích suy diễn (Implicit Preference $\in [-1, 1]$)
 
+> Đặc tả thi công: [SDD `SPEC-037`](what-we-gonna-eat-today_sdd_v1.3.md). Chỉ học từ phiên `FINALIZED`, đọc bảng `interactions` (trạng thái hiệu lực) chứ không phải `interaction_events`, và tôn trọng mốc `implicit_reset_at` của [`SPEC-040`](what-we-gonna-eat-today_sdd_v1.3.md).
+
 Tính từ lịch sử tương tác Swipe của chính User từ các phiên đã `FINALIZED`, có suy giảm theo thời gian (Time Decay):
 
 $$\text{Weight}(t) = 0.5^{\frac{\text{AgeDays}(t)}{\text{HALF\_LIFE\_DAYS}}}$$
@@ -168,7 +170,7 @@ COURSE  Stage 1 → Stage 2 → Stage 5 (chia theo tag) ─┬─ chặng 1: Sta
 ## 2.6 Stage 6 — Phân trang & Con trỏ (Paging & Cursor)
 
 - Deck được materialize và lưu vào `session_decks` ở lần tải đầu tiên.
-- Kích thước trang: `DECK_PAGE_SIZE = 20`. **Khác `maxCards`:** `pageSize` là chuyện tải mạng, `maxCards` là chuyện người dùng phải vuốt bao nhiêu lần. Với trần 30, một deck `FREE` gồm đúng hai trang (20 + 10).
+- **Deck tải trọn một lần, KHÔNG phân trang.** Hằng số `DECK_PAGE_SIZE = 20` từng nằm trong `RANKING_CONFIG` nhưng chưa từng có mã nào đọc: trang deck luôn yêu cầu toàn bộ deck trong một lượt (Tech Spec §3.3 — *"Group ~30-100 Dish, không phân trang ở tầng DB"*), và từ `BR-062` thì deck vốn đã bị chặn ở 30 thẻ. `M3-T11` đã xoá hằng số đó; dòng này sửa theo để spec và mã nói cùng một câu. Cơ chế cắt trang (`getDeckPage` của `SPEC-011`) vẫn còn nguyên và vẫn nhận `pageSize` qua tham số — thứ mất đi chỉ là một hằng số không ai đọc.
 - Khi duyệt hết món: Hiển thị trạng thái hết món và gợi ý nút "Tôi đã chọn xong".
 
 ## 2.7 Quy tắc giải quyết hòa điểm (Tie-Break Hierarchy)
@@ -252,7 +254,6 @@ explore:
   stale_days: 30
 
 deck:
-  page_size: 20         # cỡ một trang tải về
   max_cards: 30         # BR-062 — trần thẻ mỗi người mỗi phiên (24 Exploit + 6 Explore)
 
 session_ranking:
@@ -295,6 +296,7 @@ session_ranking:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.4` | 2026-09-04 | §2.2, §2.6 | Dẫn chiếu `SPEC-037` cho thành phần $I$; sửa §2.6 — `DECK_PAGE_SIZE` chưa từng được đọc và đã bị `M3-T11` xoá khỏi `RANKING_CONFIG`, deck vốn tải trọn một lần | [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `1.3` | 2026-09-01 | §2, §2.5 | Sửa thứ tự Stage 5: ở chế độ `COURSE`, chia chặng chạy **trước** cắt trần, và trộn Explore + cắt hạn mức diễn ra trong từng chặng — cắt chung rồi chia sẽ làm rỗng chặng | [DEC-066](what-we-gonna-eat-today_decision-log_v3.9.md), E9-S1 Guide §1.2 |
 | `1.3` | 2026-08-26 | §2, §5 | Pipeline từ 4 lên 6 Stage: bổ sung Stage 4 (cắt trần `maxCards = 30`) và Stage 5 (chia chặng); ghi rõ thứ tự Stage 3 → Stage 4 không được đảo; §5 thêm `deck.max_cards` | [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `0.2` | 2026-08-14 | Toàn bộ | Chuyển đổi toàn bộ tham chiếu sang hệ thống mã `BR-ID` | Đồng bộ PRD v0.1 |

@@ -2,7 +2,7 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.1` | **Status:** `Approved`
+> - **Version:** `1.2` | **Status:** `Approved`
 > - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
 > - **Supersedes:** `v1.0` | **Upstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
 > - **Downstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md) • Bộ mã kiểm thử tự động Vitest
@@ -17,6 +17,7 @@
 2. [Ma trận Test Cases ánh xạ từ SDD (TC-001 → TC-094)](#2-ma-trận-test-cases-ánh-xạ-từ-sdd-tc-001--tc-094)
 3. [Test Cases bổ sung — Biên và Trường hợp âm (TC-095 → TC-112)](#3-test-cases-bổ-sung--biên-và-trường-hợp-âm-tc-095--tc-112)
 3b. [Test Cases v1.1 (TC-113 → TC-158)](#3b-test-cases-v11-tc-113--tc-158)
+3c. [Test Cases v1.2 (TC-159 → TC-178)](#3c-test-cases-v12-tc-159--tc-178)
 4. [Kịch bản kiểm thử khói thủ công trên thiết bị di động (Smoke Tests)](#4-kịch-bản-kiểm-thử-khói-thủ-công-trên-thiết-bị-di-động-smoke-tests)
 5. [Bảng ma trận truy vết (Traceability Matrices)](#5-bảng-ma-trận-truy-vết-traceability-matrices)
 6. [Lịch sử thay đổi (Change History)](#6-lịch-sử-thay-đổi-change-history)
@@ -370,6 +371,51 @@ src/features/selection/
 
 ---
 
+# 3c. Test Cases v1.2 (TC-159 → TC-178)
+
+Ánh xạ từ [SDD §9](what-we-gonna-eat-today_sdd_v1.3.md). Phạm vi theo [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md).
+
+## 3c.1 E13 — Học sở thích tự động
+
+| TC ID | Nguồn | Loại ca | Tầng | Nội dung kiểm thử | Kết quả kỳ vọng |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| `TC-159` | `SPEC-037` | Thuận | `D` | 1 Swipe Right hôm nay, không có Left | $I = 1/(1+0+3) = 0.25$ — **không** phải $1.0$; $K_{\text{prior}}$ giữ một mẫu đơn lẻ khỏi nói to |
+| `TC-160` | `SPEC-037` | **Then chốt** | `D` | 1 Swipe Right cách **đúng 60 ngày**, so với 1 Swipe Right hôm nay | Lượt cũ đóng góp trọng số $0.5$, lượt mới đóng góp $1.0$ — canh đúng mốc phân rã. Sai hằng số `HALF_LIFE_DAYS` thì chỉ ca này đỏ |
+| `TC-161` | `SPEC-037` | Biên | `D` | Không có lượt vuốt nào | $I = 0$, **không** phải `NaN` — mẫu số luôn $\ge 3$ |
+| `TC-162` | `SPEC-037` | Biên | `D` | $R_w = L_w$ (vuốt phải và trái cân nhau) | $I = 0$ — trung tính, không nghiêng bên nào |
+| `TC-163` | `SPEC-037` | **Then chốt** | `I` | Cùng một món: 1 lượt ở phiên `FINALIZED`, 1 lượt ở phiên `ACTIVE`, 1 lượt ở phiên `INVALID` | Chỉ lượt của phiên `FINALIZED` được tính. Học từ phiên đang chạy nghĩa là deck tự sửa mình giữa lượt vuốt |
+| `TC-164` | `SPEC-037` | Hồi quy | `I` | Vuốt phải rồi **Undo** trong một phiên đã `FINALIZED` | Lượt đó **không** tính vào $I$ — `interactions` giữ trạng thái hiệu lực, khác `interaction_events` |
+| `TC-165` | `SPEC-037` | Biên | `I` | Cùng một Global Dish có mặt ở hai Group qua hai `group_dishes` | $I$ gộp cả hai — nó gắn theo `global_dishes.id`, cùng khuôn `eating_history` |
+| `TC-166` | `SPEC-038` | **Then chốt** | `I` | Đang có `SWIPE_RIGHT` cho món X trong phiên `ACTIVE`, bật Blacklist X | Món biến khỏi deck ở lần tải sau, **nhưng $P$ KHÔNG đổi** — khác hẳn `TC-114` của `Cannot Eat` |
+| `TC-167` | `SPEC-038` | Thuận | `I` | Bật Blacklist rồi tải lại deck | Món bị lọc cứng ở Stage 1, không phải hạ điểm |
+| `TC-168` | `SPEC-038` | Hồi quy | `I` | Bật Blacklist cho món đã khai `Cannot Eat` | Hai dòng cùng `(user, dish)` khác `kind`; gỡ một cái không đụng cái kia |
+| `TC-169` | `SPEC-039` | Thuận | `D` | Món ăn hôm qua ($d = 1$, $R = 0.86$), có trong Whitelist | $R$ ép về $0$; điểm không bị trừ |
+| `TC-170` | `SPEC-039` | Biên | `D` | Món trong Whitelist **và** có `Like` | Hai hiệu ứng cộng dồn, không loại trừ nhau: $E = +1$ vẫn cộng, $R = 0$ vẫn gỡ phạt |
+| `TC-171` | `SPEC-040` | **Then chốt** | `I` | Có lịch sử vuốt; bấm Quên; dựng deck cho phiên **mới** | $I = 0$ cho mọi món, **nhưng số dòng `interactions` KHÔNG đổi** — mốc thời gian, không phải lệnh xoá (`BR-061`) |
+| `TC-172` | `SPEC-040` | Hồi quy | `I` | Bấm Quên khi đang có phiên `ACTIVE` đã materialize deck | Deck phiên đang chạy **không đổi thứ tự** (`BR-048`); chỉ phiên kế tiếp mới khác |
+| `TC-173` | `SPEC-040` | Biên | `A` | Bấm Quên khi đã có `Like`/`Dislike`/`Cannot Eat` | Bốn thứ khai tay **còn nguyên**; chỉ $I$ bị bỏ qua |
+| `TC-174` | `SPEC-037` | Hồi quy | `I` | Deck của nhóm 150 món, người dùng có 500 lượt vuốt lịch sử | Tải deck lần đầu vẫn trong ngưỡng `NFR-01` — canh index `participants(user_id)` và `interactions(participant_id)` |
+
+## 3c.2 E14 — Ba món nợ của v1.1
+
+| TC ID | Nguồn | Loại ca | Tầng | Nội dung kiểm thử | Kết quả kỳ vọng |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| `TC-175` | `SPEC-041` | **Then chốt** | `I` | Participant đã vuốt 5 món, Creator gỡ người đó | $T$ giảm 1, các lượt vuốt thôi tính vào $P$/$N$, **`interactions` vẫn đúng 5 dòng** (`BR-061`) |
+| `TC-176` | `SPEC-041` | Âm | `A` | Creator gỡ **chính mình** | Trả `ERR_VALIDATION`, không ghi gì — `BR-020` buộc Creator luôn là Participant |
+| `TC-177` | `SPEC-041` | Hồi quy | `I` | Gỡ Participant rồi chốt bữa | Người bị gỡ **không** nhận Default Eating History (`SPEC-017` vốn đã lọc `'REMOVED'`) |
+| `TC-178` | `SPEC-042` | **Then chốt** | `I` | Tự thêm một món vào lịch sử ăn hôm nay, rồi Creator chốt lại bữa | Dòng `MANUAL` **không bị ghi đè** (`BR-060`); dòng `DEFAULT` vẫn sinh bình thường |
+
+> [!CAUTION]
+> **4 Test Cases then chốt của v1.2** — mỗi cái canh một lỗi im lặng:
+>
+> - **`TC-160`:** sai `HALF_LIFE_DAYS` thì $I$ vẫn ra số hợp lệ, deck vẫn chạy, chỉ là hệ thống nhớ dai hoặc quên nhanh hơn thiết kế. Không tầng nào phía trên bắt được.
+> - **`TC-163`:** học từ phiên `ACTIVE` khiến deck tự sắp lại mình theo chính những lượt vừa vuốt — người dùng thấy thẻ nhảy dưới tay, đúng thứ `BR-048` sinh ra để ngăn.
+> - **`TC-166`:** nếu Blacklist chép nhầm đường ghi của `Cannot Eat`, nó xoá lượt vuốt và $P$ tụt — cả nhà thấy một món mất phiếu mà không ai bỏ phiếu chống.
+> - **`TC-171`:** "Quên" cài bằng `DELETE` thì Session Ranking của các phiên cũ đổi theo, và `BR-061` bị vi phạm ở một chỗ không ai nghĩ tới lúc bấm nút.
+> - **`TC-175`:** phía đọc của `'REMOVED'` đã đúng từ v1.0 nhưng **chưa từng được chạy thật** — ca này là lần đầu tiên nó được kiểm với dữ liệu do ứng dụng tạo ra, chứ không phải do test `INSERT` vào.
+
+---
+
 # 4. Kịch bản kiểm thử khói thủ công trên thiết bị di động (Smoke Tests)
 
 Chạy trước mỗi lần Deploy Production trên **điện thoại thật sử dụng mạng di động 4G/5G**:
@@ -404,6 +450,7 @@ Toàn bộ **13 SPEC** của v1.1 đều có độ bao phủ kiểm thử:
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.2` | 2026-09-04 | §3c | Bổ sung §3c với `TC-159`→`TC-178` cho 7 tính năng v1.2 (`SPEC-037`→`SPEC-042`); 5 ca then chốt, trong đó `TC-160` canh mốc phân rã 60 ngày và `TC-166` canh ranh giới Blacklist ↔ Cannot Eat | [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `1.1` | 2026-09-02 | §3b, §5 | Bổ sung `TC-156` (phiên hôm qua không chốt được dù quét chưa chạy), `TC-157` (`BR-061` — tương tác của phiên `INVALID` giữ nguyên), `TC-158` (chỉ Admin gỡ được món); sửa `TC-142`: thêm lại hồi sinh **chính dòng cũ**, không tạo dòng mới — unique index không cho phép | E11 Guide §1.1, §4.1 |
 | `1.1` | 2026-09-02 | §3b, §5 | Bổ sung `TC-153` (một tag mang cả luật Bắt buộc lẫn Nên có), `TC-154` (Preferred đông cứng qua snapshot mà không sửa đường ghi), `TC-155` (xác nhận hai nhịp và cờ reset khi đổi tập món) | E10-S1/S2 Guide |
 | `1.1` | 2026-09-01 | §3b, §5 | Bổ sung `TC-151` (deck mang System Tag — trước E9 trường này luôn rỗng) và `TC-152` (chặng không rỗng dù top-30 lệch hẳn về một tag — canh thứ tự chia chặng trước cắt trần) | E9-S1 Guide §1.1, §1.2 |

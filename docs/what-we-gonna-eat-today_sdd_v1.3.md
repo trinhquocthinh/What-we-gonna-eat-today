@@ -2,9 +2,9 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.3` | **Status:** `Approved`
-> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
-> - **Supersedes:** `v1.2` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md) • [Ranking Spec](what-we-gonna-eat-today_ranking-specification_v1.3.md)
+> - **Version:** `1.4` | **Status:** `Approved`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-09-04`
+> - **Supersedes:** `v1.3` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md) • [Ranking Spec](what-we-gonna-eat-today_ranking-specification_v1.3.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Test Cases](what-we-gonna-eat-today_test-cases-specification_v1.1.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 >
 > 📌 *Tài liệu đặc tả chi tiết 36 module kỹ thuật (`SPEC-001` đến `SPEC-036`): 23 spec cho v1.0 và phần bảo trì sau phát hành, 13 spec cho v1.1. Mỗi kịch bản (Scenario) trong tài liệu này ánh xạ 1–1 thành một Test Case tự động.*
@@ -49,8 +49,11 @@
    - [8.3 Chế độ vuốt theo chặng (E9)](#83-chế-độ-vuốt-theo-chặng-epic-e9) — `SPEC-029`, `SPEC-030`
    - [8.4 Chốt bữa có hướng dẫn mềm (E10)](#84-chốt-bữa-có-hướng-dẫn-mềm-epic-e10) — `SPEC-031`, `SPEC-032`, `SPEC-033`
    - [8.5 Vận hành tối thiểu (E11)](#85-vận-hành-tối-thiểu-epic-e11) — `SPEC-034`, `SPEC-035`
-9. [Các điểm lưu ý kiến trúc](#9-các-điểm-lưu-ý-kiến-trúc)
-10. [Lịch sử thay đổi (Change History)](#10-lịch-sử-thay-đổi-change-history)
+9. [Spec — Phiên bản v1.2](#9-spec--phiên-bản-v12)
+   - [9.1 Học sở thích tự động (E13)](#91-học-sở-thích-tự-động-epic-e13) — `SPEC-037`, `SPEC-038`, `SPEC-039`, `SPEC-040`
+   - [9.2 Ba món nợ của v1.1 (E14)](#92-ba-món-nợ-của-v11-epic-e14) — `SPEC-041`, `SPEC-042`
+10. [Các điểm lưu ý kiến trúc](#10-các-điểm-lưu-ý-kiến-trúc)
+11. [Lịch sử thay đổi (Change History)](#11-lịch-sử-thay-đổi-change-history)
 
 ---
 
@@ -98,6 +101,21 @@ Chi tiết ở [§8](#8-spec--phiên-bản-v11). Phạm vi chốt theo [DEC-056]
 | `F24` | Lưu vết Override cảnh báo | E10 | `SPEC-033` |
 | `F26` | Tự động đóng phiên quá hạn | E11 | `SPEC-034` |
 | `F27` | Gỡ Dish khỏi Pool | E11 | `SPEC-035` |
+
+## 1.3 Danh mục 7 tính năng của v1.2
+
+Chi tiết ở [§9](#9-spec--phiên-bản-v12). Phạm vi cắt theo [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md) — 9 tính năng còn lại của Master Plan §13.2 hoãn sang v1.3.
+
+| Mã | Tính năng | Epic | Mã SPEC liên quan |
+| :---: | :--- | :---: | :--- |
+| `F30` | Implicit Preference (học từ lịch sử vuốt) | E13 | `SPEC-037` |
+| `F31` | Blacklist | E13 | `SPEC-038` |
+| `F32` | History Whitelist | E13 | `SPEC-039` |
+| `F39` | Quên sở thích đã học | E13 | `SPEC-040` |
+| `F25` | Gỡ Participant giữa phiên | E14 | `SPEC-041` |
+| `F28` | Điều chỉnh Eating History hôm nay | E14 | `SPEC-042` |
+| `F29` | Phát hiện trùng tên món | E14 | `SPEC-005` (polish, không có SPEC riêng) |
+
 
 ---
 
@@ -574,7 +592,97 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 ---
 
-# 9. Các điểm lưu ý kiến trúc
+# 9. Spec — Phiên bản v1.2
+
+> [!NOTE]
+> `SPEC-037` → `SPEC-042` đặc tả 7 tính năng của v1.2 theo [Master Plan §13.2](what-we-gonna-eat-today_master-plan_v2.1.md). Phạm vi đã được cắt ngày 2026-09-04 — xem [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md). `F29` (phát hiện trùng tên) **không có SPEC riêng**: nó là phần polish của `SPEC-005`, không phải cơ chế mới.
+
+## 9.1 Học sở thích tự động (Epic E13)
+
+### SPEC-037 — Tính Implicit Preference ($I$)
+
+- **Nguồn:** `F30`, [BR-038](what-we-gonna-eat-today_business-rules_v1.8.md), [Ranking Spec §2.2](what-we-gonna-eat-today_ranking-specification_v1.3.md), [DEC-036](what-we-gonna-eat-today_decision-log_v3.9.md)
+- **Đầu vào:** `{ userId, globalDishIds, referenceDate, implicitResetAt: string | null }`
+- **Đầu ra:** `Map<globalDishId, I>` với $I \in [-1, 1]$; món không có lượt vuốt nào **không có mặt** trong Map (người gọi dùng `?? 0`) — cùng khuôn `countRecentEatersByDish` của `SPEC-014`.
+- **Quy tắc:**
+  - Chỉ học từ phiên `FINALIZED`. Phiên `ACTIVE` đang chạy chưa phải một quyết định; phiên `INVALID` là một quyết định đã bị huỷ.
+  - Nguồn dữ liệu là bảng `interactions` (trạng thái **hiệu lực**), **không** phải `interaction_events`. `interaction_events` là nhật ký append-only ghi cả request bị từ chối; học từ nó nghĩa là học cả những lượt vuốt người dùng đã Undo.
+  - Tuổi của một lượt vuốt tính theo `selection_sessions.decision_date`, không theo `interactions.updated_at`: cái đầu là ngày người ta ăn, cái sau đổi mỗi lần đổi ý trong cùng phiên.
+  - $\text{Weight}(t) = 0.5^{\text{AgeDays}(t)/60}$, $R_w = \sum \text{Weight}$ (Swipe Right), $L_w = \sum \text{Weight}$ (Swipe Left), $I = \dfrac{R_w - L_w}{R_w + L_w + 3}$.
+  - $R_w = L_w = 0$ cho $I = 0$, **không** phải `NaN` — mẫu số luôn $\ge K_{\text{prior}} = 3$ nên phép chia không bao giờ chạm 0. Đây cũng là lý do $K_{\text{prior}}$ tồn tại: một món vuốt phải đúng một lần chỉ đạt $I = 0.25$, chứ không nhảy thẳng lên $1.0$.
+  - `implicitResetAt` khác `null` thì **bỏ qua** mọi phiên có `decision_date <= implicitResetAt` (`SPEC-040`).
+  - $I$ gắn theo `global_dishes.id`, không theo `group_dishes.id` — cùng lý lẽ `SPEC-024` và `eating_history`.
+  - Hàm thuần nhận `referenceDate` qua **tham số**, không tự gọi `new Date()` — kỷ luật đã đặt ở `SPEC-020`.
+
+> [!IMPORTANT]
+> $I$ được **suy ra** từ dữ liệu của `selection`, không phải thứ người dùng **khai**. Nó thuộc `src/features/selection/domain/`, KHÔNG thuộc `preference` — đặt nhầm sinh ra chiều `preference → selection` chưa từng có. Xem [§10](#10-các-điểm-lưu-ý-kiến-trúc).
+
+### SPEC-038 — Đánh dấu / gỡ Blacklist
+
+- **Nguồn:** `F31`, [BR-035](what-we-gonna-eat-today_business-rules_v1.8.md), [BR-043](what-we-gonna-eat-today_business-rules_v1.8.md)
+- **Đầu vào:** `{ globalDishId, blacklisted: boolean }` (người gọi là chính chủ)
+- **Đầu ra:** `{ blacklisted: boolean }`
+- **Quy tắc:**
+  - Món bị Blacklist **bị lọc cứng** khỏi deck ở Stage 1, cùng chỗ với `Cannot Eat`.
+  - **KHÔNG xoá tương tác Swipe** đã gửi trong phiên hiện tại — đây là điểm khác duy nhất và cũng là toàn bộ lý do `BR-035` tách khỏi `BR-034`. `Cannot Eat` nói *"tôi không ăn được"*, một sự thật về cơ thể, nên $P$ phải sửa lại cho đúng. Blacklist nói *"đừng gợi ý nữa"*, một sở thích, và nó không làm cho lượt vuốt hôm nay thành sai.
+  - Hệ quả: Blacklist **không** trừ $-1.0$ của $X$ trong `SPEC-014`. Người dùng vẫn đề xuất được món mình đã Blacklist nếu hôm nay họ đổi ý.
+  - Lưu chung bảng với `Cannot Eat`, phân biệt bằng cột `kind` — hai cờ cùng hình dạng `(user, món, có/không)`.
+
+### SPEC-039 — Đánh dấu / gỡ History Whitelist
+
+- **Nguồn:** `F32`, [BR-036](what-we-gonna-eat-today_business-rules_v1.8.md)
+- **Đầu vào:** `{ globalDishId, whitelisted: boolean }` (người gọi là chính chủ)
+- **Đầu ra:** `{ whitelisted: boolean }`
+- **Quy tắc:**
+  - Món trong Whitelist **ép $R = 0$** ở Stage 2, bất kể ăn hôm qua hay hôm nay.
+  - **Không** phải lọc, **không** cộng điểm: nó chỉ gỡ một hình phạt. Món phở của người ngày nào ăn cũng được thôi bị Cooldown đẩy xuống, nhưng cũng không vì thế mà nhảy lên đầu.
+  - Trực giao với `Like`: một người vừa `Like` vừa Whitelist một món là hợp lệ và có nghĩa khác nhau ($E = +1$ cộng điểm; Whitelist gỡ phạt).
+  - Lưu chung bảng với `SPEC-038`, cột `kind` mang giá trị thứ ba.
+
+### SPEC-040 — Quên sở thích đã học (Implicit Reset)
+
+- **Nguồn:** `F39`, [BR-038](what-we-gonna-eat-today_business-rules_v1.8.md), [BR-061](what-we-gonna-eat-today_business-rules_v1.8.md)
+- **Đầu vào:** `{ }` (người gọi là chính chủ; không tham số)
+- **Đầu ra:** `{ implicitResetAt: string }`
+- **Quy tắc:**
+  - Ghi một **mốc thời gian**, KHÔNG xoá dòng nào. `SPEC-037` bỏ qua mọi phiên trước mốc.
+  - Xoá thật sẽ phá Session Ranking của các phiên cũ (`SPEC-014` đọc cùng bảng `interactions`) và vi phạm `BR-061` — tương tác cũ phải được bảo toàn kể cả khi không còn được tính. Một mốc thời gian cho đúng hiệu quả người dùng mong đợi với chi phí một cột.
+  - **Chỉ reset $I$.** Like/Dislike, Cannot Eat, Blacklist, Whitelist **giữ nguyên** — chúng là thứ người dùng tự khai, không phải thứ hệ thống suy ra, nên không thuộc phạm vi "quên".
+  - Deck của phiên **đang chạy không đổi** — nó đã materialize (`SPEC-028` / `BR-048`). Hiệu lực bắt đầu ở phiên kế tiếp, và giao diện phải nói điều đó ra.
+
+## 9.2 Ba món nợ của v1.1 (Epic E14)
+
+### SPEC-041 — Gỡ Participant khỏi phiên
+
+- **Nguồn:** `F25`, [BR-026](what-we-gonna-eat-today_business-rules_v1.8.md), [BR-061](what-we-gonna-eat-today_business-rules_v1.8.md), [BR-020](what-we-gonna-eat-today_business-rules_v1.8.md)
+- **Đầu vào:** `{ sessionId, participantUserId }` (người gọi là Creator)
+- **Đầu ra:** `{ removed: true }`
+- **Quy tắc:**
+  - Chuyển `participants.state` sang `'REMOVED'`. **KHÔNG xoá dòng** — cùng lý lẽ `SPEC-035` với `group_dishes`.
+  - **Không gỡ được chính Creator** (`BR-020`: Creator luôn là Participant). Trả `ERR_VALIDATION`, không phải lỗi quyền — người gọi có quyền, chỉ là mục tiêu không hợp lệ.
+  - Chỉ áp dụng cho phiên `ACTIVE`. Phiên `FINALIZED` đã sinh Eating History; gỡ người khỏi nó là sửa lịch sử, việc của `SPEC-042`.
+  - Tương tác của người bị gỡ **giữ nguyên số dòng** nhưng thôi tính vào $P$, $N$, $T$ của `SPEC-014` (`BR-061`).
+  - Người bị gỡ **không** nhận Default Eating History lúc chốt (`SPEC-017` vốn đã lọc `state <> 'REMOVED'`).
+
+> [!NOTE]
+> Toàn bộ phía ĐỌC của spec này **đã tồn tại từ v1.0** — `countInteractionsByDish`, `listRankingParticipantUserIds`, `listActiveParticipantUserIds` và `recordInteraction` đều đã lọc `'REMOVED'` đúng. Chưa dòng mã production nào **ghi** giá trị đó. Đây đúng khuôn `INACTIVE`/`INVALID` mà `SPEC-034`/`SPEC-035` đã đóng ở E11: spec này chỉ mở đường ghi, và phải có test ghim khẳng định phía đọc vẫn đúng.
+
+### SPEC-042 — Điều chỉnh Eating History cá nhân
+
+- **Nguồn:** `F28`, [BR-057](what-we-gonna-eat-today_business-rules_v1.8.md), [BR-060](what-we-gonna-eat-today_business-rules_v1.8.md)
+- **Đầu vào:** `{ globalDishId, eatingDate, action: ADD | REMOVE }` (người gọi là chính chủ)
+- **Đầu ra:** `{ eatingDate, dishCount }`
+- **Quy tắc:**
+  - **Chỉ ngày hôm nay** theo timezone của Group (`SPEC-018`). `BR-057` cho cá nhân quyền tối cao, nghĩa là không có chốt chặn nghiệp vụ nào phía sau — nên phạm vi phải hẹp bằng thiết kế, không bằng lời nhắc.
+  - Chỉ sửa được lịch sử **của chính mình**. Không ai sửa hộ ai, kể cả Group Admin.
+  - Dòng do người dùng tự thêm mang `origin = 'MANUAL'` và `source_final_meal_id = NULL`; dòng hệ thống sinh mang `origin = 'DEFAULT'` và trỏ tới Final Meal.
+  - `BR-060` — chốt lại bữa (`SPEC-016`) **không ghi đè** dòng `MANUAL`. Người dùng đã nói rồi thì hệ thống không nói lại.
+  - Xoá một dòng `DEFAULT` là hành động hợp lệ: *"cả nhà ăn món đó, tôi thì không"*. Nó khác `Cannot Eat` ở chỗ đây là một lần, còn kia là mãi mãi.
+  - Mọi thay đổi tác động ngay lên $R$ của `SPEC-020` — đó là mục đích, và cũng là lý do giao diện chỉ cho chọn món từ danh mục chứ không cho gõ tự do.
+
+---
+
+# 10. Các điểm lưu ý kiến trúc
 
 > [!IMPORTANT]
 > **Độc lập đếm Tag (Independent Tag Counting):**  
@@ -584,19 +692,26 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 > **Một món chỉ thuộc một chặng (`SPEC-030`):** Quy tắc trên **không** áp cho việc chia chặng. Đếm tag là phép cộng trên một tập đã chốt; chia chặng là phép phân hoạch trên một danh sách sẽ được vuốt. Cho món hai tag xuất hiện ở hai chặng nghĩa là người dùng vuốt nó hai lần và $P$ của [BR-049](what-we-gonna-eat-today_business-rules_v1.8.md) bị đếm trùng.
 
 > [!IMPORTANT]
-> **Feature `preference` là feature thứ chín.** `SPEC-024`/`SPEC-025` sống trong `src/features/preference/`. v1.1 mở thêm **hai** chiều phụ thuộc, cả hai phải được khai trong `ALLOWED_CROSS_FEATURE` của `eslint.config.mjs`, bổ sung vào `yarn arch:probe` và ghi vào [Tech Spec §2.3](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) — hiện mới có đúng 5 chiều được phép:
+> **Feature `preference` là feature thứ chín.** `SPEC-024`/`SPEC-025` sống trong `src/features/preference/`. v1.1 mở thêm **hai** chiều phụ thuộc, cả hai phải được khai trong `ALLOWED_CROSS_FEATURE` của `eslint.config.mjs`, bổ sung vào `yarn arch:probe` và ghi vào [Tech Spec §2.3](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) — hiện có đúng **7** chiều được phép (`selection → history｜dish｜preference`, `meal → rule｜history｜preference`, `session → rule`), trong đó hai chiều dưới đây là của v1.1:
 >
 > - `selection → preference` — `listDeck` lọc cứng món `Cannot Eat` và đọc $E$ để tính điểm.
 > - `meal → preference` — `finalizeSession` cần tập người đã khai `Cannot Eat` để áp ngoại lệ `BR-056`.
 >
 > Chiều thứ hai dễ bị bỏ sót vì `SPEC-017` nằm trong `history`, nhưng hàm thuần `defaultEatingHistory` **nhận** tập ngoại lệ qua tham số chứ không tự truy vấn — nên chỗ phải đọc dữ liệu là `meal`, không phải `history`.
 
+> [!IMPORTANT]
+> **`SPEC-037` KHÔNG mở chiều thứ tám — và đó là điều kiện, không phải may mắn.** Tên `BR-038` ("Implicit Preference") kéo người đọc về feature `preference`, nhưng $I$ được **suy ra** từ `interactions` — bảng của `selection` — rồi tiêu thụ ngay bởi ranking của `selection`. Đặt nó ở `preference` sinh ra chiều `preference → selection` chưa từng có và không nên có: `preference` sở hữu thứ người dùng **khai**, `selection` sở hữu thứ hệ thống **quan sát**. Ranh giới đó là lý do `SPEC-024` và `SPEC-037` không nằm cùng chỗ dù cả hai đều ảnh hưởng tới cùng một công thức.
+
+> [!IMPORTANT]
+> **`SPEC-038`, `SPEC-039` và `SPEC-024` dùng CHUNG một bảng.** Ba cờ `Cannot Eat`, `Blacklist`, `History Whitelist` có cùng hình dạng `(user, global dish, có/không)` và chỉ khác nhau ở **hệ quả**, không ở cách lưu. Ba bảng cùng hình dạng là ba đường ghi phải giữ đồng bộ bằng tay. Cái giá của việc gộp: mọi truy vấn hiện đang đọc `user_dish_constraints` phải nêu rõ `kind` — bỏ sót một chỗ thì Blacklist lặng lẽ mang theo hành vi xoá lượt vuốt của `Cannot Eat`, thứ `BR-035` cấm bằng chữ.
+
 ---
 
-# 10. Lịch sử thay đổi (Change History)
+# 11. Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.4` | 2026-09-04 | §1.3, §9, §10 | Bổ sung §9 với `SPEC-037`→`SPEC-042` cho 7 tính năng v1.2; hai lưu ý kiến trúc mới ($I$ thuộc `selection` chứ không phải `preference`; ba cờ cá nhân dùng chung một bảng). Sửa con số chiều cross-feature ở §10 từ "5" thành "7" — `eslint.config.mjs` đã có 7 chiều từ E7 | [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `1.3` | 2026-09-02 | §8.5 | `SPEC-034` bổ sung điểm xét thứ hai (chốt chặn ở `SPEC-016`) — quét đơn thuần không ngăn được phiên hôm qua chốt vào hôm nay; `SPEC-035` sửa câu sai *"thêm lại là tạo dòng mới"* (unique index không cho phép, `TC-020` khẳng định ngược lại) và ghi quyền Admin | [DEC-068](what-we-gonna-eat-today_decision-log_v3.9.md), E11 Guide §1.2 |
 | `1.3` | 2026-09-02 | §8.4 | `SPEC-031` đổi tên hàm sang `evaluateRules`, xoá `satisfied`, `RuleWarning` thành union có thẻ (lệch Target Count không gắn tag nên không ép được vào `RuleShortfall`); `SPEC-032` ghi rõ hai cột nullable và điểm đông cứng lúc Start | [DEC-067](what-we-gonna-eat-today_decision-log_v3.9.md), E10-S1 Guide §1.3 |
 | `1.3` | 2026-08-26 | §1.2, §8.2 | Bổ sung `SPEC-036` (suy vị trí tiếp tục, `F51`); viết lại `SPEC-028` cho khớp hành vi thật — đóng băng toàn phần thay vì tính lại có chọn lọc, cơ chế chưa từng được xây | E8-S1 Guide §1.4, `DEC-064`, `DEC-065` |

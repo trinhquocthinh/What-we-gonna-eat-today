@@ -2,8 +2,8 @@
 
 > **Document Metadata**
 >
-> - **Version:** `1.5` | **Status:** `Approved`
-> - **Created:** `2026-08-14` | **Last Updated:** `2026-08-26`
+> - **Version:** `1.6` | **Status:** `Approved`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-09-04`
 > - **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md) • [Ranking Specification](what-we-gonna-eat-today_ranking-specification_v1.3.md) • [Decision Log](what-we-gonna-eat-today_decision-log_v3.9.md)
 > - **Downstream:** [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 
@@ -283,22 +283,33 @@
 | `F22` | Preferred Rule & Cảnh báo | E6 | **Should** | `BR-014, 052` | Cảnh báo mềm |
 | `F23` | Target Dish Count & Cảnh báo | E6 | **Should** | `BR-011` | Giới hạn số lượng món |
 | `F24` | Lưu vết Override cảnh báo | E6 | **Should** | `BR-053` | Audit log chốt bữa |
-| `F25` | Gỡ Participant giữa phiên | E4 | **Should** | `BR-026, 061` | Loại trừ người vắng |
+| `F25` | Gỡ Participant giữa phiên | E14 | **Should** | `BR-026, 061` | Loại trừ người vắng — v1.2 ([DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md)) |
 | `F26` | Tự động đóng phiên quá hạn | E4 | **Should** | `BR-055` | Timeout cuối ngày |
 | `F27` | Gỡ Dish khỏi Pool | E2 | **Should** | `BR-005` | Chuyển Inactive món |
-| `F28` | Điều chỉnh Eating History hôm nay | E7 | **Should** | `BR-057` | Sửa lịch sử ăn trong ngày |
-| `F29` | Phát hiện trùng tên món (Bỏ dấu) | E2 | **Should** | `BR-001` | Duplicate detection — hoãn sang v1.2 ([DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md)) |
+| `F28` | Điều chỉnh Eating History hôm nay | E14 | **Should** | `BR-057, 060` | Sửa lịch sử ăn trong ngày — v1.2 ([DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md)) |
+| `F29` | Phát hiện trùng tên món (Bỏ dấu) | E14 | **Should** | `BR-001` | Duplicate detection — v1.2; phần lớn đã có từ `E2-T3` + `M1-T5`, còn lại là polish |
 | `F49` | Trần số thẻ mỗi phiên (30 thẻ) | E5 | **Should** | `BR-062` | Deck có điểm dừng; cắt sau khi trộn Explore |
 | `F50` | Chế độ vuốt theo chặng (Course Mode) | E4 | **Should** | `BR-063` | Creator chọn chặng lúc mở phiên; không đụng luồng chốt bữa |
 | `F51` | Tiếp tục đúng chỗ đang vuốt | E5 | **Should** | — | Mở lại phiên không phải vuốt lại từ đầu; suy từ dữ liệu đã có, không lưu thêm |
-| `F30→42` | Implicit Preference, Chef Mode, v.v. | E12–14 | **Could** | — | Lộ trình v1.2 |
-| `F43→48` | Multi-group, Admin UI, Auto Merge | — | **Won't** | — | Hoãn sau v1.2 |
+| `F30` | Implicit Preference (học từ lịch sử vuốt) | E13 | **Could** | `BR-038` | v1.2 — số hạng $I$; học từ phiên `FINALIZED`, phân rã chu kỳ 60 ngày |
+| `F31` | Blacklist | E13 | **Could** | `BR-035` | v1.2 — lọc cứng khỏi deck nhưng **không** xoá lượt vuốt (khác `F15`) |
+| `F32` | History Whitelist | E13 | **Could** | `BR-036` | v1.2 — ép $R = 0$, gỡ phạt Cooldown cho món ăn hoài không chán |
+| `F39` | Quên sở thích đã học | E13 | **Could** | `BR-038`, `BR-061` | v1.2 — ghi một mốc thời gian, không xoá dòng nào; chỉ reset $I$ |
+| `F33` `F34` `F42` | Chef Role, Khả năng nấu, Gán/gỡ Chef | E12 | **Could** | `BR-027→029` | **Hoãn sang v1.3** ([DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md)) — số hạng $C$ chỉ có nghĩa khi ranking đã đủ tín hiệu |
+| `F35` | Override Session Rule | — | **Could** | `BR-016` | **Hoãn sang v1.3** — bắt dời snapshot rule từ Start về Draft ([DEC-042](what-we-gonna-eat-today_decision-log_v3.9.md)) |
+| `F36` | Nguồn mua (Purchase Source) | — | **Could** | `BR-030` | **Hoãn sang v1.3** — số hạng $S$ |
+| `F37` `F38` | Descriptive Tag, Phản hồi trực tiếp | — | **Could** | — | **Hoãn sang v1.3** — chưa được đặc tả, mới chỉ có tên |
+| `F40` `F41` | Sửa Final Meal, Huỷ phiên | — | **Could** | `BR-058`, `BR-060` | **Hoãn sang v1.3** — `F41` kéo theo migration `invalid_reason` |
+| `F43→48` | Multi-group, Admin UI, Auto Merge | — | **Won't** | — | Hoãn sau v1.3 |
 
 > [!NOTE]
 > Tổng số tính năng **Must Have** ở v1.0 là **17/51 (33%)**, tuân thủ nguyên tắc kỷ luật phạm vi dưới 40%.
 
 > [!IMPORTANT]
 > `F49` và `F50` được bổ sung ngày 2026-08-26 từ phản hồi dùng thật v1.0, **không** phải từ đợt hoạch định ban đầu — xem [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md). Cùng quyết định đó hoãn `F25`, `F28`, `F29` sang v1.2.
+
+> [!IMPORTANT]
+> **Phạm vi v1.2 chốt ngày 2026-09-04** ([DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md)): 7 tính năng (`F30`, `F31`, `F32`, `F39`, `F25`, `F28`, `F29`), 9 tính năng còn lại của Master Plan §13.2 hoãn sang v1.3. Dòng gộp `F30→42` cũ được tách ra ở đây vì lập lịch cho một dòng gộp là lập lịch cho một ẩn số — v1.1 vượt 19% giờ **dù mọi tính năng đều đã có SPEC**.
 
 ---
 
@@ -375,6 +386,7 @@
 
 | Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
 | :---: | :---: | :--- | :--- | :--- |
+| `1.6` | 2026-09-04 | §4 | Tách dòng gộp `F30→42` thành từng tính năng; chốt phạm vi v1.2 gồm 7 tính năng và ghi rõ 9 tính năng hoãn sang v1.3 kèm lý do; cập nhật Epic của `F25`/`F28`/`F29` thành `E14` | [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `1.5` | 2026-08-26 | §4, §6, §9 | Bổ sung `F49` (trần 30 thẻ) và `F50` (vuốt theo chặng) từ phản hồi dùng thật; hoãn `F25`/`F28`/`F29` sang v1.2; vẽ lại phạm vi 3 giai đoạn kèm ước lượng | [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md) |
 | `0.4` | 2026-08-14 | §4, §6 | Nâng `F17`, `F20`, `F21` lên Must-have; v1.0 chốt 17 tính năng | Thống nhất phạm vi MVP chất lượng cao |
 | `0.3` | 2026-08-14 | §6 | Cấu trúc lại lộ trình 3 giai đoạn v1.0, v1.1, v1.2 | Tối ưu hóa thời gian thực thi |
