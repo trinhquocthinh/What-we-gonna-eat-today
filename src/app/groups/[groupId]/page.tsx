@@ -75,6 +75,7 @@ export default async function GroupPage({ params }: GroupPageProps) {
       inviteHref={`/groups/${groupId}/invite`}
       openSessionHref={`/groups/${groupId}/sessions/new`}
       rulesHref={`/groups/${groupId}/rules`}
+      preferencesHref={`/groups/${groupId}/preferences`}
       ruleCount={rules.length}
       activeSession={
         activeSessionOverview === null

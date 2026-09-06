@@ -19,10 +19,12 @@ const BASE = {
   globalDishId: 'gld-1',
   preference: null,
   cannotEat: false,
+  blacklisted: false,
+  historyWhitelisted: false,
 } as const
 
 describe('DishPreferenceControls (M3-T6 — nửa còn thiếu của E7-T5)', () => {
-  it('chưa đặt gì: cả ba nút đều aria-pressed=false', () => {
+  it('chưa đặt gì: cả năm nút đều aria-pressed=false', () => {
     render(<DishPreferenceControls {...BASE} />)
 
     expect(screen.getByRole('button', { name: /Thích Canh chua cá lóc/ })).toHaveAttribute(
@@ -33,10 +35,16 @@ describe('DishPreferenceControls (M3-T6 — nửa còn thiếu của E7-T5)', ()
       'aria-pressed',
       'false',
     )
-    expect(screen.getByRole('button', { name: /Không ăn được Canh chua cá lóc/ })).toHaveAttribute(
+    expect(
+      screen.getByRole('button', { name: /Không ăn được — Canh chua cá lóc/ }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: /Đừng gợi ý — Canh chua cá lóc/ })).toHaveAttribute(
       'aria-pressed',
       'false',
     )
+    expect(
+      screen.getByRole('button', { name: /Ăn hoài không chán — Canh chua cá lóc/ }),
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 
   // E6-T6 — không thông tin nào chỉ truyền tải bằng màu sắc.
@@ -103,13 +111,14 @@ describe('DishPreferenceControls (M3-T6 — nửa còn thiếu của E7-T5)', ()
     const fetchMock = stubOkFetch()
     render(<DishPreferenceControls {...BASE} preference="LIKE" />)
 
-    await userEvent.click(screen.getByRole('button', { name: /Không ăn được Canh chua cá lóc/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Không ăn được — Canh chua cá lóc/ }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     expect(fetchMock.mock.calls[0]![0]).toBe('/api/preferences/constraints')
     expect(JSON.parse(String((fetchMock.mock.calls[0]![1] as RequestInit).body))).toEqual({
       globalDishId: 'gld-1',
-      cannotEat: true,
+      kind: 'CANNOT_EAT',
+      enabled: true,
     })
     // Like vẫn giữ nguyên — hai trạng thái độc lập (Guide §3.3).
     expect(screen.getByRole('button', { name: /Thích Canh chua cá lóc/ })).toHaveAttribute(
@@ -133,5 +142,78 @@ describe('DishPreferenceControls (M3-T6 — nửa còn thiếu của E7-T5)', ()
       'aria-pressed',
       'false',
     )
+  })
+  it.each([
+    ['BLACKLIST', /Đừng gợi ý — Canh chua cá lóc/],
+    ['HISTORY_WHITELIST', /Ăn hoài không chán — Canh chua cá lóc/],
+  ] as const)('E13-T7 — nút %s gửi PUT /constraints với đúng kind', async (kind, name) => {
+    const fetchMock = stubOkFetch()
+    render(<DishPreferenceControls {...BASE} />)
+
+    await userEvent.click(screen.getByRole('button', { name }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(fetchMock.mock.calls[0]![0]).toBe('/api/preferences/constraints')
+    expect(JSON.parse(String((fetchMock.mock.calls[0]![1] as RequestInit).body))).toEqual({
+      globalDishId: 'gld-1',
+      kind,
+      enabled: true,
+    })
+  })
+
+  it('E13-T7 — bấm lại nút cờ đang bật thì gỡ (enabled: false)', async () => {
+    const fetchMock = stubOkFetch()
+    render(<DishPreferenceControls {...BASE} blacklisted />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Đừng gợi ý — Canh chua cá lóc/ }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(JSON.parse(String((fetchMock.mock.calls[0]![1] as RequestInit).body))).toEqual({
+      globalDishId: 'gld-1',
+      kind: 'BLACKLIST',
+      enabled: false,
+    })
+  })
+
+  it('E13-T7 — ba cờ ĐỘC LẬP: bật cái này không tắt cái kia, và cả ba đọc được bằng chữ', async () => {
+    stubOkFetch()
+    render(<DishPreferenceControls {...BASE} cannotEat historyWhitelisted />)
+
+    // Hai cờ có sẵn đều hiện trên dòng chữ, không cái nào bị giấu (Guide §1.3).
+    expect(screen.getByText('Không ăn được · Ăn hoài không chán')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /Đừng gợi ý — Canh chua cá lóc/ }))
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Không ăn được · Đã tắt gợi ý · Ăn hoài không chán'),
+      ).toBeInTheDocument(),
+    )
+    for (const name of [
+      /Không ăn được — Canh chua cá lóc/,
+      /Đừng gợi ý — Canh chua cá lóc/,
+      /Ăn hoài không chán — Canh chua cá lóc/,
+    ]) {
+      expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true')
+    }
+  })
+
+  it('E13-T7 — cờ ghi thất bại: chỉ cờ vừa bấm rollback, hai cờ kia còn nguyên', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({}) }),
+    )
+    render(<DishPreferenceControls {...BASE} cannotEat />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Đừng gợi ý — Canh chua cá lóc/ }))
+
+    await waitFor(() => expect(screen.getByText(/Chưa lưu được/)).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /Đừng gợi ý — Canh chua cá lóc/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(
+      screen.getByRole('button', { name: /Không ăn được — Canh chua cá lóc/ }),
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 })

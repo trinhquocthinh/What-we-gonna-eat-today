@@ -6,14 +6,41 @@ import type { ConstraintKind, PreferenceKind } from '../domain/explicit-preferen
  */
 export interface PreferenceRepository {
   /**
-   * BR-034. Bật/tắt ràng buộc. Trả `true` nếu có một lượt vuốt bị xoá kèm
-   * theo — người gọi cần biết để quyết định thông điệp (S3).
+   * BR-034 / BR-035 / BR-036 — bật/tắt MỘT trong ba cờ cá nhân.
+   *
+   * `removedInteraction` chỉ có thể `true` ở đúng một nhánh:
+   * `kind === 'CANNOT_EAT' && enabled`. Người gọi cần biết để quyết định thông
+   * điệp (E7-S3).
+   *
+   * Blacklist **KHÔNG** xoá lượt vuốt đang có — đây là điểm khác duy nhất giữa
+   * `BR-035` và `BR-034`, và cũng là toàn bộ lý do hai luật tách nhau.
+   * `Cannot Eat` nói *"tôi không ăn được"*, một sự thật về cơ thể, nên $P$ phải
+   * sửa lại cho đúng. Blacklist nói *"đừng gợi ý nữa"*, một sở thích, và nó
+   * không làm cho lượt vuốt hôm nay thành sai. `TC-166` canh đúng chỗ này.
    */
   setConstraint(input: {
     userId: string
     globalDishId: string
-    cannotEat: boolean
+    kind: ConstraintKind
+    enabled: boolean
   }): Promise<{ removedInteraction: boolean }>
+
+  /**
+   * SPEC-040 — ghi MỘT mốc thời gian, KHÔNG xoá dòng nào. `SPEC-037` bỏ qua mọi
+   * phiên có `decision_date` trước mốc.
+   *
+   * Xoá thật sẽ phá Session Ranking của các phiên cũ (`SPEC-014` đọc cùng bảng
+   * `interactions`) và vi phạm `BR-061` — tương tác cũ phải được bảo toàn kể cả
+   * khi không còn được tính. `TC-171` đếm số dòng để ghim điều đó.
+   *
+   * Mốc do **Postgres** sinh (`now()`), không phải `new Date()` ở tầng ứng
+   * dụng: nó được đọ với `decision_date` trong `findImplicitSwipes` (DEC-070),
+   * nên phải cùng một đồng hồ với dữ liệu nó lọc.
+   */
+  resetImplicitPreference(userId: string): Promise<{ implicitResetAt: string }>
+
+  /** Mốc quên hiện tại, cho màn cài đặt cá nhân. `null` = chưa bấm bao giờ. */
+  findImplicitResetAt(userId: string): Promise<string | null>
 
   /** BR-037. `kind: null` = xoá dòng, KHÔNG ghi 'NEUTRAL' (S1 §1.2, TC-120). */
   setPreference(input: {

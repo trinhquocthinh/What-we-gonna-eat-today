@@ -67,7 +67,7 @@
 | **M3** | Khép v1.1 — vá lỗi rà soát & `F16` | 12 | 15.5 | `[x]` ✅ Xong |
 | | **— Tổng v1.1 —** | **45** | **96.5** | |
 | **M4** | Vá khoảng trống đặc tả v1.2 | 4 | 6 | `[x]` ✅ Xong |
-| **E13** | Học sở thích tự động | 8 | 20.5 | `[~]` S1 xong (T1→T5), S2 còn lại |
+| **E13** | Học sở thích tự động | 8 | 20.5 | `[x]` Xong (S1 + S2) |
 | **E14** | Ba món nợ của v1.1 | 4 | 14 | `[ ]` Chưa bắt đầu |
 | | **— Tổng v1.2 —** | **16** | **40.5** | |
 
@@ -835,9 +835,9 @@ M4 ──► E13-T1 ──► E13-T2 ──► E13-T3 ──► E13-T4 ──►
 | `[x] E13-T3` | Mở rộng `RankingInput` + `computePersonalScore` | [DEC-036](what-we-gonna-eat-today_decision-log_v3.9.md) | 1.5 | Thêm $w_{\text{implicit}} \cdot I$; `TC-125`→`TC-127` (blend Explore) vẫn xanh | `src/features/selection/domain/ranking.ts` |
 | `[x] E13-T4` | Truy vấn lịch sử vuốt cho $I$ | [SPEC-037](what-we-gonna-eat-today_sdd_v1.3.md) | 3 | MỘT truy vấn gộp; chỉ phiên `FINALIZED`; tôn trọng `implicit_reset_at`; `TC-163`→`TC-165`, `TC-174` xanh | `src/features/selection/infrastructure/drizzle-selection-repository.ts` |
 | `[x] E13-T5` | Nối vào `list-deck` | [SPEC-038](what-we-gonna-eat-today_sdd_v1.3.md), [SPEC-039](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | Stage 1 lọc thêm `BLACKLIST`; Stage 2 cộng $I$; `HISTORY_WHITELIST` ép $R = 0$ **và VẪN CÓ MẶT trong deck** (ca không mã TC — [E13-S1 Guide §1.1](plans/E13/what-we-gonna-eat-today_e13-s1-implementation-guide_v0_1.md)). **Không khai chiều cross-feature mới** | `src/features/selection/application/list-deck.ts` |
-| `[ ] E13-T6` | Use case + Route Handler | [SPEC-038](what-we-gonna-eat-today_sdd_v1.3.md)→[SPEC-040](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | `setDishConstraint` nhận `kind`; `resetImplicitPreference`. Route Handler chứ không Server Action (`DEC-055`); `TC-166`, `TC-168` xanh | `src/features/preference/application/**`, `src/app/api/preferences/**` |
-| `[ ] E13-T7` | Mở rộng khai báo ở màn Danh mục | `E6-T6`, `NFR-03` | 2.5 | `DishPreferenceControls` (M3-T6) thêm hai nút; trạng thái đọc được bằng **chữ**; dùng lại `sendJsonWithRetry` — không fire-and-forget | `src/features/dish/presentation/components/dish-preference-controls.tsx` |
-| `[ ] E13-T8` | Màn cài đặt cá nhân + nút Quên | [SPEC-040](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | Xác nhận **hai nhịp trên chính nút** (khuôn `armed` của `finalize-bar.tsx`, không modal); nói rõ khai báo tự tay được giữ; `TC-171`→`TC-173` xanh | `src/features/preference/presentation/**` |
+| `[x] E13-T6` | Use case + Route Handler | [SPEC-038](what-we-gonna-eat-today_sdd_v1.3.md)→[SPEC-040](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | `setDishConstraint` nhận `kind`; `resetImplicitPreference`. Route Handler chứ không Server Action (`DEC-055`); `TC-166`, `TC-168` xanh | `src/features/preference/application/**`, `src/app/api/preferences/**` |
+| `[x] E13-T7` | Mở rộng khai báo ở màn Danh mục | `E6-T6`, `NFR-03` | 2.5 | `DishPreferenceControls` (M3-T6) thêm hai nút; trạng thái đọc được bằng **chữ**; dùng lại `sendJsonWithRetry` — không fire-and-forget | `src/features/dish/presentation/components/dish-preference-controls.tsx` |
+| `[x] E13-T8` | Màn cài đặt cá nhân + nút Quên | [SPEC-040](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | Xác nhận **hai nhịp trên chính nút** (khuôn `armed` của `finalize-bar.tsx`, không modal); nói rõ khai báo tự tay được giữ; `TC-171`→`TC-173` xanh. **Kèm đường vào từ Group Hub** — `GroupOverviewScreen` thêm `preferencesHref`, không có nó thì màn mới không tới được ([E13-S2 Guide §5.4](plans/E13/what-we-gonna-eat-today_e13-s2-implementation-guide_v0_1.md)) | `src/features/preference/presentation/**`, `src/app/groups/[groupId]/preferences/**`, `src/features/group/presentation/**` |
 
 > [!IMPORTANT]
 > **`E13-T2` là chỗ dễ đặt nhầm feature nhất của cả v1.2.** Tên `BR-038` ("Implicit Preference")

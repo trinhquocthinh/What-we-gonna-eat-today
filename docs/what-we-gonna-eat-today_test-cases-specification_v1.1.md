@@ -453,6 +453,15 @@ Toàn bộ **13 SPEC** của v1.1 đều có độ bao phủ kiểm thử:
 >
 > *"Món `HISTORY_WHITELIST` **vẫn có mặt** trong deck"* — tầng `I`, sống ở `drizzle-selection-repository.integration.test.ts`. `TC-169` chỉ canh phía tính điểm ($R$ ép về 0) ở tầng `D`, nên nếu mệnh đề `kind` ở Stage 1 bị bỏ sót thì `TC-169` **vẫn xanh** trong khi món Whitelist đã biến khỏi deck. Xem [SDD §10](what-we-gonna-eat-today_sdd_v1.3.md) và [E13-S1 Guide §1.1](plans/E13/what-we-gonna-eat-today_e13-s1-implementation-guide_v0_1.md).
 
+> [!CAUTION]
+> **`TC-166` cần một ca ĐỐI CHỨNG mới có nghĩa** — ghi ở đây vì đó là một tính chất của chính ca kiểm thử, không phải của mã.
+>
+> `TC-166` khẳng định *"bật Blacklist thì $P$ KHÔNG đổi"*, tức là khẳng định một thứ **không xảy ra**. Một ca như thế luôn xanh khi cơ chế bị gỡ mất hoàn toàn — kể cả khi nhánh xoá lượt vuốt của `Cannot Eat` chết hẳn và không cờ nào còn đụng tới `interactions`.
+>
+> Nên `E13-S2` bổ sung một ca đối chứng cạnh nó: cùng tiền đề, nhưng bật `Cannot Eat` → lượt vuốt **bị xoá**, $P$ giảm 1, `interaction_events` có đúng một dòng `CANNOT_EAT`. Hai ca là hai nửa của cùng một bằng chứng, và cái được kiểm là **sự khác nhau** giữa `BR-034` và `BR-035`.
+>
+> Đã kiểm bằng đột biến: đổi điều kiện nhánh thành `if (enabled)` làm **ba** ca đỏ.
+
 ---
 
 # 6. Lịch sử thay đổi (Change History)

@@ -10,6 +10,7 @@ import {
   selectionSessions,
   userDishConstraints,
   userDishPreferences,
+  userPreferenceSettings,
 } from '@/shared/db/schema'
 
 import type { PreferenceRepository } from '../application/preference-repository'
@@ -74,14 +75,24 @@ async function findActiveSwipeForGlobalDish(input: {
   return rows[0] ?? null
 }
 
+/**
+ * BR-034 / BR-035 / BR-036 — xem doc ở `PreferenceRepository.setConstraint`.
+ *
+ * Điều kiện vào nhánh xoá lượt vuốt là **cả hai vế**: `kind === 'CANNOT_EAT'`
+ * VÀ `enabled`. Viết `if (enabled)` rồi mới kiểm `kind` bên trong là mời gọi
+ * một lần refactor sau này kéo nhầm nhánh ra ngoài — và hậu quả im lặng: ai đó
+ * bấm "Đừng gợi ý" giữa phiên thì $P$ của món tụt, cả nhà thấy một món mất
+ * phiếu mà không ai bỏ phiếu chống (E13-S2 Guide §1.1, `TC-166`).
+ */
 async function setConstraint(input: {
   userId: string
   globalDishId: string
-  cannotEat: boolean
+  kind: ConstraintKind
+  enabled: boolean
 }): Promise<{ removedInteraction: boolean }> {
   const db = getDb()
 
-  if (input.cannotEat) {
+  if (input.kind === 'CANNOT_EAT' && input.enabled) {
     const swipe = await findActiveSwipeForGlobalDish({
       userId: input.userId,
       globalDishId: input.globalDishId,
@@ -120,7 +131,18 @@ async function setConstraint(input: {
     return { removedInteraction: swipe !== null }
   }
 
-  // cannotEat === false (DEC-060, TC-115)
+  if (input.enabled) {
+    // BLACKLIST và HISTORY_WHITELIST: ghi cờ, HẾT. Không đọc lượt vuốt, không
+    // xoá gì, không ghi `interaction_events`.
+    await db
+      .insert(userDishConstraints)
+      .values({ userId: input.userId, globalDishId: input.globalDishId, kind: input.kind })
+      .onConflictDoNothing()
+
+    return { removedInteraction: false }
+  }
+
+  // enabled === false (DEC-060, TC-115)
   //
   // E13-T5 — `kind` trong mệnh đề `where` là BẮT BUỘC. Không có nó, bỏ khai
   // "không ăn được" cũng xoá luôn Blacklist và Whitelist của cùng món: ba cờ
@@ -132,11 +154,50 @@ async function setConstraint(input: {
       and(
         eq(userDishConstraints.userId, input.userId),
         eq(userDishConstraints.globalDishId, input.globalDishId),
-        eq(userDishConstraints.kind, 'CANNOT_EAT'),
+        eq(userDishConstraints.kind, input.kind),
       ),
     )
 
   return { removedInteraction: false }
+}
+
+/**
+ * SPEC-040 — xem doc ở `PreferenceRepository.resetImplicitPreference`.
+ *
+ * `now()` của Postgres chứ không `new Date()` của Node, và `.returning()` để
+ * lấy con số THẬT do DB sinh thay vì đoán: mốc này được đọ với `decision_date`
+ * trong `findImplicitSwipes` (DEC-070) nên phải cùng một đồng hồ với dữ liệu
+ * nó lọc.
+ */
+async function resetImplicitPreference(userId: string): Promise<{ implicitResetAt: string }> {
+  const rows = await getDb()
+    .insert(userPreferenceSettings)
+    .values({ userId, implicitResetAt: sql`now()` })
+    .onConflictDoUpdate({
+      target: userPreferenceSettings.userId,
+      set: { implicitResetAt: sql`now()`, updatedAt: sql`now()` },
+    })
+    .returning({ implicitResetAt: userPreferenceSettings.implicitResetAt })
+
+  const value = rows[0]?.implicitResetAt
+  if (value === undefined || value === null) {
+    // Không tới được: `INSERT … ON CONFLICT DO UPDATE` luôn trả đúng một dòng,
+    // và cột vừa được set `now()`. Ném thay vì trả chuỗi rỗng — một mốc rỗng
+    // lọt lên giao diện sẽ hiện thành "Invalid Date" cạnh nút Quên.
+    throw new Error('resetImplicitPreference: upsert không trả về mốc thời gian')
+  }
+
+  return { implicitResetAt: value.toISOString() }
+}
+
+async function findImplicitResetAt(userId: string): Promise<string | null> {
+  const rows = await getDb()
+    .select({ implicitResetAt: userPreferenceSettings.implicitResetAt })
+    .from(userPreferenceSettings)
+    .where(eq(userPreferenceSettings.userId, userId))
+    .limit(1)
+
+  return rows[0]?.implicitResetAt?.toISOString() ?? null
 }
 
 async function setPreference(input: {
@@ -254,6 +315,8 @@ async function findPreferencesByGlobalDish(
 
 export const drizzlePreferenceRepository: PreferenceRepository = {
   setConstraint,
+  resetImplicitPreference,
+  findImplicitResetAt,
   setPreference,
   findConstrainedGlobalDishIds,
   findCannotEatPairs,

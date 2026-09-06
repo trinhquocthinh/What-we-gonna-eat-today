@@ -67,6 +67,8 @@ export type DishCatalogScreenProps = {
     globalDishId: string
     preference: DishPreferenceKind | null
     cannotEat: boolean
+    blacklisted: boolean
+    historyWhitelisted: boolean
   }[]
   canEdit?: boolean
   action: (state: AddDishFormState, formData: FormData) => Promise<AddDishFormState>
@@ -282,6 +284,8 @@ export function DishCatalogScreen({
                             globalDishId={pref.globalDishId}
                             preference={pref.preference}
                             cannotEat={pref.cannotEat}
+                            blacklisted={pref.blacklisted}
+                            historyWhitelisted={pref.historyWhitelisted}
                           />
                         )
                       })()}

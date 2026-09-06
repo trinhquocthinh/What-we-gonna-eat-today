@@ -636,6 +636,13 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
   - Hệ quả: Blacklist **không** trừ $-1.0$ của $X$ trong `SPEC-014`. Người dùng vẫn đề xuất được món mình đã Blacklist nếu hôm nay họ đổi ý.
   - Lưu chung bảng với `Cannot Eat`, phân biệt bằng cột `kind` — hai cờ cùng hình dạng `(user, món, có/không)`.
 
+> [!IMPORTANT]
+> **Chữ ký thi công thật (E13-T6, [DEC-071](what-we-gonna-eat-today_decision-log_v3.9.md)):** `setConstraint({ userId, globalDishId, kind, enabled })` phục vụ CẢ BA cờ, và `PUT /api/preferences/constraints` nhận body `{ globalDishId, kind, enabled }` (đổi từ `{ globalDishId, cannotEat }` — breaking change có chủ ý).
+>
+> Nhánh xoá lượt vuốt vào **chỉ khi `kind === 'CANNOT_EAT' && enabled`** — cả hai vế. Viết `if (enabled)` rồi mới kiểm `kind` bên trong là mời gọi một lần refactor sau kéo nhầm nhánh ra ngoài, và hậu quả im lặng: bấm Blacklist giữa phiên làm $P$ tụt, cả nhà thấy một món mất phiếu mà không ai bỏ phiếu chống.
+>
+> `TC-166` một mình KHÔNG đủ để canh chuyện đó: nó khẳng định một thứ **không** xảy ra, nên vẫn xanh cả khi nhánh `db.batch` chết hẳn. Phải đi kèm một ca đối chứng `Cannot Eat` khẳng định lượt vuốt **bị** xoá.
+
 ### SPEC-039 — Đánh dấu / gỡ History Whitelist
 
 - **Nguồn:** `F32`, [BR-036](what-we-gonna-eat-today_business-rules_v1.8.md)
@@ -657,6 +664,13 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
   - Xoá thật sẽ phá Session Ranking của các phiên cũ (`SPEC-014` đọc cùng bảng `interactions`) và vi phạm `BR-061` — tương tác cũ phải được bảo toàn kể cả khi không còn được tính. Một mốc thời gian cho đúng hiệu quả người dùng mong đợi với chi phí một cột.
   - **Chỉ reset $I$.** Like/Dislike, Cannot Eat, Blacklist, Whitelist **giữ nguyên** — chúng là thứ người dùng tự khai, không phải thứ hệ thống suy ra, nên không thuộc phạm vi "quên".
   - Deck của phiên **đang chạy không đổi** — nó đã materialize (`SPEC-028` / `BR-048`). Hiệu lực bắt đầu ở phiên kế tiếp, và giao diện phải nói điều đó ra.
+
+> [!NOTE]
+> **Thi công (E13-T6/T8, [DEC-071](what-we-gonna-eat-today_decision-log_v3.9.md)):** `POST /api/preferences/implicit-reset` — **POST**, không PUT: mỗi lần bấm dời mốc tới `now()` nên nó không idempotent. Handler nhận **zero tham số**, không đọc body: `SPEC-040` ghi đầu vào là `{ }` và `userId` luôn lấy từ phiên đăng nhập, nên không có chỗ nào để ai đó chỉ định người khác.
+>
+> Mốc do **Postgres** sinh (`now()` + `.returning()`), không phải `new Date()` ở tầng ứng dụng — nó được đọ với `decision_date` trong `findImplicitSwipes` ([DEC-070](what-we-gonna-eat-today_decision-log_v3.9.md)) nên phải cùng một đồng hồ với dữ liệu nó lọc.
+>
+> Hai câu bắt buộc trên màn hình được ghim bằng test: `TC-173` cho "khai báo tự tay giữ nguyên", `TC-172` cho "phiên đang mở không đổi, hiệu lực từ phiên sau".
 
 ## 9.2 Ba món nợ của v1.1 (Epic E14)
 

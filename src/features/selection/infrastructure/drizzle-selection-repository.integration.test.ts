@@ -1039,7 +1039,8 @@ describe('listEligibleDishCards — Stage 1 sau khi có cột kind (TC-167, E13-
     await drizzlePreferenceRepository.setConstraint({
       userId: seed.userId,
       globalDishId: seed.globalDishId,
-      cannotEat: false,
+      kind: 'CANNOT_EAT',
+      enabled: false,
     })
 
     expect(

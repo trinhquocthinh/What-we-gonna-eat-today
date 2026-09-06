@@ -14,6 +14,7 @@ const BASE_PROPS = {
   finalizedMeal: null,
   currentUserId: 'me',
   rulesHref: '/groups/group-1/rules',
+  preferencesHref: '/groups/group-1/preferences',
   ruleCount: 0,
 }
 
@@ -164,5 +165,11 @@ describe('GroupOverviewScreen (S-04)', () => {
     render(<GroupOverviewScreen {...BASE_PROPS} dishCount={0} />)
 
     expect(screen.queryByText('Cá basa kho tiêu')).toBeNull()
+  })
+  it('E13-T8 — có đường vào màn cài đặt cá nhân; không có link này thì màn đó không tới được', () => {
+    render(<GroupOverviewScreen {...BASE_PROPS} />)
+
+    const link = screen.getByRole('link', { name: /Sở thích của bạn/ })
+    expect(link).toHaveAttribute('href', '/groups/group-1/preferences')
   })
 })

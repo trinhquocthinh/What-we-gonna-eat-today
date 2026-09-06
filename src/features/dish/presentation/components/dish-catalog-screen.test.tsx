@@ -260,12 +260,33 @@ describe('DishCatalogScreen (S-05)', () => {
 
   describe('M3-T6 — khai báo sở thích cá nhân ở màn danh mục', () => {
     const PREFS = [
-      { groupDishId: '1', globalDishId: 'gld-1', preference: 'LIKE' as const, cannotEat: false },
-      { groupDishId: '2', globalDishId: 'gld-2', preference: null, cannotEat: true },
-      { groupDishId: '3', globalDishId: 'gld-3', preference: null, cannotEat: false },
+      {
+        groupDishId: '1',
+        globalDishId: 'gld-1',
+        preference: 'LIKE' as const,
+        cannotEat: false,
+        blacklisted: false,
+        historyWhitelisted: false,
+      },
+      {
+        groupDishId: '2',
+        globalDishId: 'gld-2',
+        preference: null,
+        cannotEat: true,
+        blacklisted: false,
+        historyWhitelisted: false,
+      },
+      {
+        groupDishId: '3',
+        globalDishId: 'gld-3',
+        preference: null,
+        cannotEat: false,
+        blacklisted: false,
+        historyWhitelisted: false,
+      },
     ]
 
-    it('mỗi món có đủ ba nút, mang trạng thái từ server', () => {
+    it('mỗi món có đủ năm nút, mang trạng thái từ server', () => {
       render(
         <DishCatalogScreen
           groupId="g1"
@@ -281,8 +302,16 @@ describe('DishCatalogScreen (S-05)', () => {
         'true',
       )
       expect(
-        screen.getByRole('button', { name: 'Không ăn được Canh chua cá lóc' }),
+        screen.getByRole('button', { name: 'Không ăn được — Canh chua cá lóc' }),
       ).toHaveAttribute('aria-pressed', 'true')
+      // E13-T7 — hai nút mới có mặt trên MỌI hàng món, mặc định chưa bật.
+      expect(screen.getByRole('button', { name: 'Đừng gợi ý — Canh chua cá lóc' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      )
+      expect(
+        screen.getByRole('button', { name: 'Ăn hoài không chán — Canh chua cá lóc' }),
+      ).toHaveAttribute('aria-pressed', 'false')
       expect(screen.getByRole('button', { name: 'Thích Gà chiên nước mắm' })).toHaveAttribute(
         'aria-pressed',
         'false',

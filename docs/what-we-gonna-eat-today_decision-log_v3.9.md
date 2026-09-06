@@ -3,11 +3,11 @@
 > **Document Metadata**
 >
 > - **Version:** `3.9` | **Status:** `Active`
-> - **Created:** `2026-07-23` | **Last Updated:** `2026-09-05`
+> - **Created:** `2026-07-23` | **Last Updated:** `2026-09-06`
 > - **Supersedes:** `v3.8` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 >
-> 📌 *Decision Log ghi lại 70 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
+> 📌 *Decision Log ghi lại 71 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
 
 ---
 
@@ -84,6 +84,7 @@
 | [`DEC-068`](#dec-068--tự-động-đóng-phiên-quá-hạn--quản-lý-danh-mục-món-vận-hành-tối-thiểu-e11) | Tự động đóng phiên quá hạn; gỡ món khỏi nhóm | 2026-09-04 | `Accepted` | `SPEC-034`, `SPEC-035`, `shared/time/` |
 | [`DEC-069`](#dec-069--cắt-phạm-vi-v12-xuống-7-tính-năng-i-thuộc-selection-quên-là-mốc-thời-gian) | Cắt phạm vi v1.2; $I$ thuộc `selection`; "Quên" là mốc | 2026-09-04 | `Accepted` | PRD §4, SDD §9, TC §3c, Master Plan §13.2 |
 | [`DEC-070`](#dec-070--mốc-quên-áp-trong-sql-kind-là-tham-số-bắt-buộc-hai-nhịp-đọc-ở-list-deck) | Mốc quên áp trong SQL; `kind` bắt buộc; hai nhịp đọc | 2026-09-05 | `Accepted` | SDD §9.1, TC §5, Master Plan §17.2 |
+| [`DEC-071`](#dec-071--body-route-handler-đổi-hình-dạng-dòng-trạng-thái-thành-danh-sách-màn-quên-cần-đường-vào) | Body Route Handler đổi hình dạng; hai hàng nút; đường vào màn Quên | 2026-09-06 | `Accepted` | SDD §9.1, TC §5.3, Master Plan §17.2 |
 ---
 
 # DEC-001 — Selection Session Lifecycle
@@ -1952,10 +1953,52 @@ Master Plan §13.2 đặt v1.2 ở 89 giờ / 3 epic / 16 tính năng. Đợt kh
 
 ---
 
+# DEC-071 — Body Route Handler Đổi Hình Dạng; Dòng Trạng Thái Thành Danh Sách; Màn Quên Cần Đường Vào
+
+**Ngày quyết định:** 2026-09-06 | **Trạng thái:** Accepted | **Bối cảnh:** E13-S2 (`E13-T6` → `E13-T8`)
+
+## Bối cảnh
+
+S1 mở đường đọc cho ba cờ cá nhân và số hạng $I$. S2 mở đường ghi và giao diện. Ba điểm phải quyết ở mức thấp hơn `SPEC-038`/`SPEC-040`, và cả ba đều lệch khỏi thứ đang có nên phải ghi lại.
+
+## Quyết định
+
+1. **`PUT /api/preferences/constraints` đổi body** từ `{ globalDishId, cannotEat }` sang `{ globalDishId, kind, enabled }` — breaking change, KHÔNG nuôi hình dạng cũ song song.
+2. **Dòng chữ trạng thái ở màn Danh mục tách thành hàm thuần** `constraintStatusText` (`dish/presentation/components/constraint-status.ts`), trả một danh sách nối bằng ` · ` thay cho chuỗi `? :` ưu tiên một nhánh.
+3. **Năm nút chia HAI HÀNG có nhãn** ("Sở thích" / "Gợi ý"), không phải một hàng `flex-wrap`.
+4. **`GroupOverviewScreen` thêm `preferencesHref`** — Master Plan §17.2 không liệt kê file này, nhưng thiếu nó thì `/groups/[groupId]/preferences` không tới được từ đâu cả.
+5. **Nhãn Whitelist là "Ăn hoài không chán"**, không phải "Luôn gợi ý".
+
+## Rationale
+
+1. Client duy nhất là `DishPreferenceControls`, sửa trong cùng slice. Nuôi hai hình dạng body song song là nuôi hai đường ghi phải giữ đồng bộ bằng tay — đúng thứ SDD §10 vừa dạy khi gộp ba cờ vào một bảng. Cái gãy được đo trước: tab mở trước lúc deploy nhận `400`, `sendJsonWithRetry` không retry (4xx), component rollback và hiện *"Chưa lưu được"*. Tải lại trang là xong.
+2. Hình dạng bài toán đã đổi. Trước E13 ba trạng thái loại trừ nhau **về mặt hiển thị**, nên một chuỗi `? :` là đủ. Ba cờ mới thì độc lập — `TC-168` khẳng định chúng cùng tồn tại được ở tầng dữ liệu. Nối thêm hai tầng `? :` sẽ hiện đúng một cờ và giấu hai cờ kia, tức là màn hình nói dối về trạng thái thật. Tách ra hàm thuần cũng kéo nó vào phạm vi đo coverage thay vì để trốn trong một biểu thức JSX.
+3. Năm nút trên một hàng `flex-wrap` xuống dòng theo bề rộng máy, và chỗ ngắt rơi vào giữa hai nhóm có hệ quả khác hẳn nhau — tuỳ thiết bị. Hàng trên cộng/trừ $E$; hàng dưới lọc cứng hoặc gỡ phạt $R$. Hai hàng làm ranh giới ấy cố định và đọc được.
+4. Một màn hình không tới được là một màn hình chưa giao. `F39` sẽ "xong" theo checkbox mà không ai bấm được nút.
+5. "Luôn gợi ý" hứa sai. `SPEC-039` nói rõ Whitelist **không** lọc và **không** cộng điểm — nó chỉ gỡ một hình phạt. Một nhãn hứa nhiều hơn cơ chế là một báo lỗi sẽ tới sau vài ngày dùng.
+
+## Consequence
+
+- `SPEC-038` §9.1 phải ghi chữ ký thật: `setConstraint` nhận `{ kind, enabled }`, và nhánh xoá lượt vuốt vào **chỉ khi** `kind === 'CANNOT_EAT' && enabled`. Điều kiện hai vế này được ghim bằng `TC-166` **cộng một ca đối chứng** `Cannot Eat` — không có ca đối chứng thì `TC-166` vẫn xanh cả khi nhánh `db.batch` chết hẳn, vì nó chỉ khẳng định một thứ KHÔNG xảy ra.
+- `POST /api/preferences/implicit-reset` là Route Handler đầu tiên dùng **POST**. Hai route kia dùng PUT vì chúng đặt một giá trị người gọi tự chọn; ở đây mỗi lần bấm dời mốc tới `now()` nên nó không idempotent, và một `PUT` không idempotent là nói dối về động từ. Handler nhận **zero tham số** — không có body để ai đó chỉ định người khác.
+- `resetImplicitPreference` dùng `now()` của Postgres + `.returning()`, không `new Date()` của Node: mốc này được đọ với `decision_date` trong `findImplicitSwipes` ([DEC-070](#dec-070--mốc-quên-áp-trong-sql-kind-là-tham-số-bắt-buộc-hai-nhịp-đọc-ở-list-deck)) nên phải cùng một đồng hồ với dữ liệu nó lọc.
+- `src/features/preference/presentation/` ra đời — thư mục `presentation/` đầu tiên của feature này.
+- `docs/plans/E13/..._e13-s2-implementation-guide_v0_1.md` §1.1 ghi lại chỗ nguy hiểm nhất của epic để lần sửa sau không kéo nhầm nhánh `db.batch` ra ngoài điều kiện `kind`.
+
+## Affected Documents
+
+- SDD §9.1 (`SPEC-038`, `SPEC-040`) — chữ ký thật của đường ghi
+- Test Cases §5.3 — `TC-166`, `TC-168`, `TC-171` → `TC-173`
+- Master Plan §17.2 — DoD `E13-T8` bổ sung đường vào từ Group Hub
+- [E13-S2 Implementation Guide](plans/E13/what-we-gonna-eat-today_e13-s2-implementation-guide_v0_1.md)
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.19` | 2026-09-06 | Bổ sung `DEC-071` (Body Route Handler đổi hình dạng; dòng trạng thái thành danh sách; hai hàng nút; màn Quên cần đường vào từ Group Hub) cho E13-S2 |
 | `3.18` | 2026-09-05 | Bổ sung `DEC-070` (Mốc quên áp trong SQL; `kind` là tham số bắt buộc; hai nhịp đọc ở `list-deck`; migration `0016` viết tay) cho E13-S1 |
 | `3.17` | 2026-09-04 | Bổ sung `DEC-069` (Cắt phạm vi v1.2 xuống 7 tính năng; $I$ thuộc `selection`; "Quên" là mốc thời gian; ba cờ cá nhân dùng chung một bảng) — lập kế hoạch v1.2 |
 | `3.16` | 2026-09-04 | Bổ sung `DEC-068` (Tự Động Đóng Phiên Quá Hạn & Quản Lý Danh Mục Món Vận Hành Tối Thiểu) cho E11 |

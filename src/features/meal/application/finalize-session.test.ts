@@ -93,6 +93,12 @@ function makeFakePreferenceRepository(
     async setConstraint(): Promise<never> {
       throw new Error('không dùng trong finalize')
     },
+    async resetImplicitPreference(): Promise<never> {
+      throw new Error('không dùng')
+    },
+    async findImplicitResetAt(): Promise<never> {
+      throw new Error('không dùng')
+    },
     async setPreference(): Promise<never> {
       throw new Error('không dùng trong finalize')
     },

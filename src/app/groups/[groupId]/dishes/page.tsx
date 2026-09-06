@@ -33,19 +33,27 @@ export default async function DishesPage({ params }: DishesPageProps) {
   // Đọc ở `app/` chứ KHÔNG khai chiều `dish → preference`: sở thích không phải
   // kiến thức miền của danh mục món, và `app/` vốn là chỗ hai feature gặp nhau
   // (trang này đã gọi `assertGroupAccess` của `group` theo đúng khuôn ấy).
-  const [preferences, constrainedGlobalDishIds] = await Promise.all([
+  // E13-T7 — ba lượt đọc cờ chứ không một. `kind` là tham số BẮT BUỘC từ E13-T5
+  // (SDD §10), nên mỗi loại cờ là một truy vấn riêng. Ba truy vấn có index trên
+  // một bảng nhỏ, chạy ở server component — KHÔNG nằm trên đường nóng của deck
+  // mà `NFR-01` đang canh.
+  const [preferences, cannotEatIds, blacklistedIds, whitelistedIds] = await Promise.all([
     drizzlePreferenceRepository.findPreferencesByGlobalDish(
       user.id,
       dishes.map((dish) => dish.globalDishId),
     ),
     drizzlePreferenceRepository.findConstrainedGlobalDishIds(user.id, 'CANNOT_EAT'),
+    drizzlePreferenceRepository.findConstrainedGlobalDishIds(user.id, 'BLACKLIST'),
+    drizzlePreferenceRepository.findConstrainedGlobalDishIds(user.id, 'HISTORY_WHITELIST'),
   ])
 
   const dishPreferences = dishes.map((dish) => ({
     groupDishId: dish.id,
     globalDishId: dish.globalDishId,
     preference: preferences.get(dish.globalDishId) ?? null,
-    cannotEat: constrainedGlobalDishIds.has(dish.globalDishId),
+    cannotEat: cannotEatIds.has(dish.globalDishId),
+    blacklisted: blacklistedIds.has(dish.globalDishId),
+    historyWhitelisted: whitelistedIds.has(dish.globalDishId),
   }))
 
   return (

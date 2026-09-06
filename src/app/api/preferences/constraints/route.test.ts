@@ -12,6 +12,8 @@ vi.mock('@/app/api/api-auth', () => ({
 vi.mock('@/features/preference/infrastructure/drizzle-preference-repository', () => ({
   drizzlePreferenceRepository: {
     setConstraint: vi.fn(),
+    resetImplicitPreference: vi.fn(),
+    findImplicitResetAt: vi.fn(),
     setPreference: vi.fn(),
     findConstrainedGlobalDishIds: vi.fn(),
     findCannotEatPairs: vi.fn(),
@@ -28,7 +30,7 @@ describe('PUT /api/preferences/constraints', () => {
 
     const request = new Request('http://localhost/api/preferences/constraints', {
       method: 'PUT',
-      body: JSON.stringify({ globalDishId: 'gd-1', cannotEat: true }),
+      body: JSON.stringify({ globalDishId: 'gd-1', kind: 'CANNOT_EAT', enabled: true }),
     })
 
     const response = await PUT(request)
@@ -54,7 +56,7 @@ describe('PUT /api/preferences/constraints', () => {
     expect(json.code).toBe('ERR_VALIDATION')
   })
 
-  it('thiếu globalDishId hoặc cannotEat sai kiểu: trả 400 ERR_VALIDATION', async () => {
+  it('thiếu globalDishId hoặc enabled sai kiểu: trả 400 ERR_VALIDATION', async () => {
     vi.mocked(apiAuth.requireApiUser).mockResolvedValueOnce({
       ok: true,
       user: { id: 'u-auth', email: 'test@example.com', displayName: 'User Auth' },
@@ -62,7 +64,7 @@ describe('PUT /api/preferences/constraints', () => {
 
     const request = new Request('http://localhost/api/preferences/constraints', {
       method: 'PUT',
-      body: JSON.stringify({ globalDishId: '', cannotEat: 'true' }),
+      body: JSON.stringify({ globalDishId: '', kind: 'CANNOT_EAT', enabled: 'true' }),
     })
 
     const response = await PUT(request)
@@ -84,7 +86,8 @@ describe('PUT /api/preferences/constraints', () => {
       method: 'PUT',
       body: JSON.stringify({
         globalDishId: 'gd-1',
-        cannotEat: true,
+        kind: 'CANNOT_EAT',
+        enabled: true,
         userId: 'other-user-id', // cố ý gửi userId của người khác
       }),
     })
@@ -98,7 +101,70 @@ describe('PUT /api/preferences/constraints', () => {
     expect(drizzlePreferenceRepository.setConstraint).toHaveBeenCalledWith({
       userId: 'u-auth',
       globalDishId: 'gd-1',
-      cannotEat: true,
+      kind: 'CANNOT_EAT',
+      enabled: true,
     })
   })
+  it('E13-T6 — kind lạ: trả 400 ERR_VALIDATION, không gọi repository', async () => {
+    vi.mocked(apiAuth.requireApiUser).mockResolvedValueOnce({
+      ok: true,
+      user: { id: 'u-auth', email: 'test@example.com', displayName: 'User Auth' },
+    })
+    vi.mocked(drizzlePreferenceRepository.setConstraint).mockClear()
+
+    const request = new Request('http://localhost/api/preferences/constraints', {
+      method: 'PUT',
+      body: JSON.stringify({ globalDishId: 'gd-1', kind: 'FAVOURITE', enabled: true }),
+    })
+
+    const response = await PUT(request)
+    expect(response.status).toBe(400)
+    expect(drizzlePreferenceRepository.setConstraint).not.toHaveBeenCalled()
+  })
+
+  it('E13-T6 — body cũ `{ cannotEat }` KHÔNG còn được nhận (breaking change có chủ ý)', async () => {
+    // Guide §1.2 — client duy nhất sửa cùng slice. Tab cũ đang mở nhận 400,
+    // `sendJsonWithRetry` không retry (4xx), component rollback và nói ra.
+    vi.mocked(apiAuth.requireApiUser).mockResolvedValueOnce({
+      ok: true,
+      user: { id: 'u-auth', email: 'test@example.com', displayName: 'User Auth' },
+    })
+    vi.mocked(drizzlePreferenceRepository.setConstraint).mockClear()
+
+    const request = new Request('http://localhost/api/preferences/constraints', {
+      method: 'PUT',
+      body: JSON.stringify({ globalDishId: 'gd-1', cannotEat: true }),
+    })
+
+    const response = await PUT(request)
+    expect(response.status).toBe(400)
+    expect(drizzlePreferenceRepository.setConstraint).not.toHaveBeenCalled()
+  })
+
+  it.each(['BLACKLIST', 'HISTORY_WHITELIST'] as const)(
+    'E13-T6 — %s đi qua đúng đường, kind truyền nguyên xuống use case',
+    async (kind) => {
+      vi.mocked(apiAuth.requireApiUser).mockResolvedValueOnce({
+        ok: true,
+        user: { id: 'u-auth', email: 'test@example.com', displayName: 'User Auth' },
+      })
+      vi.mocked(drizzlePreferenceRepository.setConstraint).mockResolvedValueOnce({
+        removedInteraction: false,
+      })
+
+      const request = new Request('http://localhost/api/preferences/constraints', {
+        method: 'PUT',
+        body: JSON.stringify({ globalDishId: 'gd-1', kind, enabled: true }),
+      })
+
+      const response = await PUT(request)
+      expect(response.status).toBe(200)
+      expect(drizzlePreferenceRepository.setConstraint).toHaveBeenCalledWith({
+        userId: 'u-auth',
+        globalDishId: 'gd-1',
+        kind,
+        enabled: true,
+      })
+    },
+  )
 })

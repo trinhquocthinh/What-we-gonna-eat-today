@@ -14,6 +14,7 @@ import {
   selectionSessions,
   userDishConstraints,
   userDishPreferences,
+  userPreferenceSettings,
   users,
 } from '@/shared/db/schema'
 
@@ -153,7 +154,8 @@ describe('drizzlePreferenceRepository — integration', () => {
     const result = await drizzlePreferenceRepository.setConstraint({
       userId: seed.userId1,
       globalDishId: seed.globalDishId,
-      cannotEat: true,
+      kind: 'CANNOT_EAT',
+      enabled: true,
     })
 
     expect(result.removedInteraction).toBe(true)
@@ -199,7 +201,8 @@ describe('drizzlePreferenceRepository — integration', () => {
     await drizzlePreferenceRepository.setConstraint({
       userId: seed.userId1,
       globalDishId: seed.globalDishId,
-      cannotEat: true,
+      kind: 'CANNOT_EAT',
+      enabled: true,
     })
 
     const constrainedBefore = await drizzlePreferenceRepository.findConstrainedGlobalDishIds(
@@ -212,7 +215,8 @@ describe('drizzlePreferenceRepository — integration', () => {
     const result = await drizzlePreferenceRepository.setConstraint({
       userId: seed.userId1,
       globalDishId: seed.globalDishId,
-      cannotEat: false,
+      kind: 'CANNOT_EAT',
+      enabled: false,
     })
 
     expect(result.removedInteraction).toBe(false)
@@ -381,7 +385,8 @@ describe('drizzlePreferenceRepository — integration', () => {
     const result = await drizzlePreferenceRepository.setConstraint({
       userId: seed.userId1,
       globalDishId: seed.globalDishId,
-      cannotEat: true,
+      kind: 'CANNOT_EAT',
+      enabled: true,
     })
     expect(result.removedInteraction).toBe(true)
 
@@ -438,5 +443,274 @@ describe('drizzlePreferenceRepository — integration', () => {
     expect(await drizzlePreferenceRepository.findCannotEatPairs([seed.userId1], [])).toEqual(
       new Set(),
     )
+  })
+})
+
+/**
+ * SPEC-038 / E13-T6 — ranh giới Blacklist ↔ Cannot Eat.
+ *
+ * Hai ca dưới đây là HAI NỬA của cùng một bằng chứng và phải đọc cạnh nhau.
+ * `TC-166` khẳng định một thứ KHÔNG xảy ra, và một ca như thế luôn xanh khi cơ
+ * chế bị gỡ mất hoàn toàn — nên ca đối chứng `Cannot Eat` là bắt buộc.
+ */
+describe('setConstraint rẽ nhánh theo kind — SPEC-038 (TC-166, TC-168)', () => {
+  it('TC-166 (ca then chốt): đang có SWIPE_RIGHT, bật Blacklist → lượt vuốt CÒN NGUYÊN, P KHÔNG đổi', async () => {
+    const seed = await seedPreferenceTestData()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    await db.insert(interactions).values([
+      {
+        id: crypto.randomUUID(),
+        sessionId: seed.sessionId,
+        participantId: seed.participantId1,
+        groupDishId: seed.groupDishId,
+        type: 'SWIPE_RIGHT',
+      },
+      {
+        id: crypto.randomUUID(),
+        sessionId: seed.sessionId,
+        participantId: seed.participantId2,
+        groupDishId: seed.groupDishId,
+        type: 'SWIPE_RIGHT',
+      },
+    ])
+
+    const before = await drizzleSelectionRepository.countInteractionsByDish(seed.sessionId)
+    expect(before.find((r) => r.groupDishId === seed.groupDishId)?.proposedCount).toBe(2)
+
+    await drizzlePreferenceRepository.setConstraint({
+      userId: seed.userId1,
+      globalDishId: seed.globalDishId,
+      kind: 'BLACKLIST',
+      enabled: true,
+    })
+
+    // BR-035 — "đừng gợi ý nữa" là một SỞ THÍCH, và nó không làm cho lượt vuốt
+    // hôm nay thành sai. Khác hẳn `Cannot Eat` ở ca dưới.
+    const after = await drizzleSelectionRepository.countInteractionsByDish(seed.sessionId)
+    expect(after.find((r) => r.groupDishId === seed.groupDishId)?.proposedCount).toBe(2)
+
+    const rows = await db
+      .select({ id: interactions.id })
+      .from(interactions)
+      .where(eq(interactions.sessionId, seed.sessionId))
+    expect(rows).toHaveLength(2)
+
+    // Và KHÔNG ghi dòng audit `CANNOT_EAT` — đó là sự kiện của cờ kia.
+    const events = await db
+      .select({ id: interactionEvents.id })
+      .from(interactionEvents)
+      .where(eq(interactionEvents.sessionId, seed.sessionId))
+    expect(events).toHaveLength(0)
+
+    // Nhưng cờ thì có ghi: món biến khỏi deck ở lần dựng sau (TC-167, đã xanh từ S1).
+    const blacklisted = await drizzlePreferenceRepository.findConstrainedGlobalDishIds(
+      seed.userId1,
+      'BLACKLIST',
+    )
+    expect(blacklisted.has(seed.globalDishId)).toBe(true)
+  })
+
+  it('ĐỐI CHỨNG — cùng tiền đề nhưng bật Cannot Eat: lượt vuốt BỊ XOÁ, P giảm 1', async () => {
+    // Không có ca này thì `TC-166` ở trên vẫn xanh kể cả khi nhánh `db.batch`
+    // chết hẳn — nó chỉ khẳng định một thứ không xảy ra.
+    const seed = await seedPreferenceTestData()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    await db.insert(interactions).values([
+      {
+        id: crypto.randomUUID(),
+        sessionId: seed.sessionId,
+        participantId: seed.participantId1,
+        groupDishId: seed.groupDishId,
+        type: 'SWIPE_RIGHT',
+      },
+      {
+        id: crypto.randomUUID(),
+        sessionId: seed.sessionId,
+        participantId: seed.participantId2,
+        groupDishId: seed.groupDishId,
+        type: 'SWIPE_RIGHT',
+      },
+    ])
+
+    const result = await drizzlePreferenceRepository.setConstraint({
+      userId: seed.userId1,
+      globalDishId: seed.globalDishId,
+      kind: 'CANNOT_EAT',
+      enabled: true,
+    })
+    expect(result.removedInteraction).toBe(true)
+
+    const after = await drizzleSelectionRepository.countInteractionsByDish(seed.sessionId)
+    expect(after.find((r) => r.groupDishId === seed.groupDishId)?.proposedCount).toBe(1)
+
+    const events = await db
+      .select({ action: interactionEvents.action })
+      .from(interactionEvents)
+      .where(eq(interactionEvents.sessionId, seed.sessionId))
+    expect(events.map((e) => e.action)).toEqual(['CANNOT_EAT'])
+  })
+
+  it('TC-168: ba cờ độc lập — gỡ từng cái một, hai cái kia còn nguyên', async () => {
+    const seed = await seedPreferenceTestData()
+    cleanupQueue.push(() => cleanup(seed))
+
+    for (const kind of ['CANNOT_EAT', 'BLACKLIST', 'HISTORY_WHITELIST'] as const) {
+      await drizzlePreferenceRepository.setConstraint({
+        userId: seed.userId1,
+        globalDishId: seed.globalDishId,
+        kind,
+        enabled: true,
+      })
+    }
+
+    const has = async (kind: 'CANNOT_EAT' | 'BLACKLIST' | 'HISTORY_WHITELIST') =>
+      (await drizzlePreferenceRepository.findConstrainedGlobalDishIds(seed.userId1, kind)).has(
+        seed.globalDishId,
+      )
+
+    expect([
+      await has('CANNOT_EAT'),
+      await has('BLACKLIST'),
+      await has('HISTORY_WHITELIST'),
+    ]).toEqual([true, true, true])
+
+    await drizzlePreferenceRepository.setConstraint({
+      userId: seed.userId1,
+      globalDishId: seed.globalDishId,
+      kind: 'BLACKLIST',
+      enabled: false,
+    })
+
+    expect([
+      await has('CANNOT_EAT'),
+      await has('BLACKLIST'),
+      await has('HISTORY_WHITELIST'),
+    ]).toEqual([true, false, true])
+  })
+
+  it('bật Whitelist KHÔNG chạm tới interactions và KHÔNG trả removedInteraction', async () => {
+    const seed = await seedPreferenceTestData()
+    cleanupQueue.push(() => cleanup(seed))
+    const db = getDb()
+
+    await db.insert(interactions).values({
+      id: crypto.randomUUID(),
+      sessionId: seed.sessionId,
+      participantId: seed.participantId1,
+      groupDishId: seed.groupDishId,
+      type: 'SWIPE_RIGHT',
+    })
+
+    const result = await drizzlePreferenceRepository.setConstraint({
+      userId: seed.userId1,
+      globalDishId: seed.globalDishId,
+      kind: 'HISTORY_WHITELIST',
+      enabled: true,
+    })
+
+    expect(result.removedInteraction).toBe(false)
+    const rows = await db
+      .select({ id: interactions.id })
+      .from(interactions)
+      .where(eq(interactions.sessionId, seed.sessionId))
+    expect(rows).toHaveLength(1)
+  })
+})
+
+describe('resetImplicitPreference — SPEC-040 (TC-171)', () => {
+  it('TC-171 (ca then chốt): ghi MỘT mốc, KHÔNG xoá dòng interactions nào', async () => {
+    const seed = await seedPreferenceTestData()
+    cleanupQueue.push(async () => {
+      await getDb()
+        .delete(userPreferenceSettings)
+        .where(inArray(userPreferenceSettings.userId, [seed.userId1, seed.userId2]))
+      await cleanup(seed)
+    })
+    const db = getDb()
+
+    await db.insert(interactions).values({
+      id: crypto.randomUUID(),
+      sessionId: seed.sessionId,
+      participantId: seed.participantId1,
+      groupDishId: seed.groupDishId,
+      type: 'SWIPE_RIGHT',
+    })
+
+    expect(await drizzlePreferenceRepository.findImplicitResetAt(seed.userId1)).toBeNull()
+
+    const { implicitResetAt } = await drizzlePreferenceRepository.resetImplicitPreference(
+      seed.userId1,
+    )
+    expect(typeof implicitResetAt).toBe('string')
+    expect(Number.isNaN(Date.parse(implicitResetAt))).toBe(false)
+
+    // BR-061 — mốc thời gian, KHÔNG phải lệnh xoá.
+    const rows = await db
+      .select({ id: interactions.id })
+      .from(interactions)
+      .where(eq(interactions.sessionId, seed.sessionId))
+    expect(rows).toHaveLength(1)
+
+    expect(await drizzlePreferenceRepository.findImplicitResetAt(seed.userId1)).toBe(
+      implicitResetAt,
+    )
+  })
+
+  it('bấm Quên lần thứ hai dời mốc về sau — upsert chứ không đổ vì trùng khoá', async () => {
+    const seed = await seedPreferenceTestData()
+    cleanupQueue.push(async () => {
+      await getDb()
+        .delete(userPreferenceSettings)
+        .where(inArray(userPreferenceSettings.userId, [seed.userId1, seed.userId2]))
+      await cleanup(seed)
+    })
+
+    const first = await drizzlePreferenceRepository.resetImplicitPreference(seed.userId1)
+    const second = await drizzlePreferenceRepository.resetImplicitPreference(seed.userId1)
+
+    expect(Date.parse(second.implicitResetAt)).toBeGreaterThanOrEqual(
+      Date.parse(first.implicitResetAt),
+    )
+  })
+
+  it('TC-173: Quên KHÔNG đụng Like/Dislike và ba cờ cá nhân', async () => {
+    const seed = await seedPreferenceTestData()
+    cleanupQueue.push(async () => {
+      await getDb()
+        .delete(userPreferenceSettings)
+        .where(inArray(userPreferenceSettings.userId, [seed.userId1, seed.userId2]))
+      await cleanup(seed)
+    })
+
+    await drizzlePreferenceRepository.setPreference({
+      userId: seed.userId1,
+      globalDishId: seed.globalDishId,
+      kind: 'LIKE',
+    })
+    for (const kind of ['CANNOT_EAT', 'BLACKLIST', 'HISTORY_WHITELIST'] as const) {
+      await drizzlePreferenceRepository.setConstraint({
+        userId: seed.userId1,
+        globalDishId: seed.globalDishId,
+        kind,
+        enabled: true,
+      })
+    }
+
+    await drizzlePreferenceRepository.resetImplicitPreference(seed.userId1)
+
+    // Bốn thứ khai TAY còn nguyên; chỉ thứ hệ thống tự suy ra bị bỏ qua.
+    const prefs = await drizzlePreferenceRepository.findPreferencesByGlobalDish(seed.userId1, [
+      seed.globalDishId,
+    ])
+    expect(prefs.get(seed.globalDishId)).toBe('LIKE')
+
+    for (const kind of ['CANNOT_EAT', 'BLACKLIST', 'HISTORY_WHITELIST'] as const) {
+      const set = await drizzlePreferenceRepository.findConstrainedGlobalDishIds(seed.userId1, kind)
+      expect(set.has(seed.globalDishId)).toBe(true)
+    }
   })
 })

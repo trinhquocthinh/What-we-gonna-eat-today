@@ -62,6 +62,8 @@ function makeDeps(
   )
   const preferences: PreferenceRepository = {
     setConstraint: vi.fn(async () => ({ removedInteraction: false })),
+    resetImplicitPreference: vi.fn(async () => ({ implicitResetAt: '2026-09-06T00:00:00.000Z' })),
+    findImplicitResetAt: vi.fn(async () => null),
     setPreference: vi.fn(async () => undefined),
     findConstrainedGlobalDishIds,
     findCannotEatPairs: vi.fn(async () => new Set<string>()),

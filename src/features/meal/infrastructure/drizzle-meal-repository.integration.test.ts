@@ -218,7 +218,8 @@ describe('SPEC-015/016 — draft và finalize (integration)', () => {
     await drizzlePreferenceRepository.setConstraint({
       userId: seed.otherUserId,
       globalDishId: seed.dish1.globalId,
-      cannotEat: true,
+      kind: 'CANNOT_EAT',
+      enabled: true,
     })
 
     const draft = await saveFinalMealDraft(
