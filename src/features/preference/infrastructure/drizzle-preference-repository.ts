@@ -13,7 +13,7 @@ import {
 } from '@/shared/db/schema'
 
 import type { PreferenceRepository } from '../application/preference-repository'
-import type { PreferenceKind } from '../domain/explicit-preference'
+import type { ConstraintKind, PreferenceKind } from '../domain/explicit-preference'
 
 /**
  * Tìm lượt vuốt đang sống của user này với món này, nếu có. `null` khi user
@@ -91,7 +91,7 @@ async function setConstraint(input: {
       await db.batch([
         db
           .insert(userDishConstraints)
-          .values({ userId: input.userId, globalDishId: input.globalDishId })
+          .values({ userId: input.userId, globalDishId: input.globalDishId, kind: 'CANNOT_EAT' })
           .onConflictDoNothing(),
         db
           .delete(interactions)
@@ -113,7 +113,7 @@ async function setConstraint(input: {
     } else {
       await db
         .insert(userDishConstraints)
-        .values({ userId: input.userId, globalDishId: input.globalDishId })
+        .values({ userId: input.userId, globalDishId: input.globalDishId, kind: 'CANNOT_EAT' })
         .onConflictDoNothing()
     }
 
@@ -121,12 +121,18 @@ async function setConstraint(input: {
   }
 
   // cannotEat === false (DEC-060, TC-115)
+  //
+  // E13-T5 — `kind` trong mệnh đề `where` là BẮT BUỘC. Không có nó, bỏ khai
+  // "không ăn được" cũng xoá luôn Blacklist và Whitelist của cùng món: ba cờ
+  // độc lập biến thành một công tắc chung, và không test nào trước E13 bắt được
+  // vì trước E13 bảng chỉ có một loại dòng.
   await db
     .delete(userDishConstraints)
     .where(
       and(
         eq(userDishConstraints.userId, input.userId),
         eq(userDishConstraints.globalDishId, input.globalDishId),
+        eq(userDishConstraints.kind, 'CANNOT_EAT'),
       ),
     )
 
@@ -169,11 +175,14 @@ async function setPreference(input: {
     })
 }
 
-async function findConstrainedGlobalDishIds(userId: string): Promise<ReadonlySet<string>> {
+async function findConstrainedGlobalDishIds(
+  userId: string,
+  kind: ConstraintKind,
+): Promise<ReadonlySet<string>> {
   const rows = await getDb()
     .select({ globalDishId: userDishConstraints.globalDishId })
     .from(userDishConstraints)
-    .where(eq(userDishConstraints.userId, userId))
+    .where(and(eq(userDishConstraints.userId, userId), eq(userDishConstraints.kind, kind)))
 
   return new Set(rows.map((row) => row.globalDishId))
 }
@@ -204,6 +213,11 @@ async function findCannotEatPairs(
       and(
         inArray(userDishConstraints.userId, [...userIds]),
         inArray(userDishConstraints.globalDishId, [...globalDishIds]),
+        // E13-T5 — BR-056 là ngoại lệ lịch sử ăn dành riêng cho "tôi không ăn
+        // được", một sự thật về cơ thể. Blacklist ("đừng gợi ý nữa") và
+        // Whitelist đều KHÔNG được lọt vào đây: người Blacklist món phở vẫn ăn
+        // phở nếu cả nhà chốt món đó hôm nay.
+        eq(userDishConstraints.kind, 'CANNOT_EAT'),
       ),
     )
 

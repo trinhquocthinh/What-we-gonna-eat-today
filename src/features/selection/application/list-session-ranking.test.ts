@@ -82,6 +82,9 @@ function makeFakeSelectionRepository(options: {
     async findSessionCourses(): Promise<never> {
       throw new Error('không dùng')
     },
+    async findImplicitSwipes(): Promise<never> {
+      throw new Error('không dùng')
+    },
   }
 
   return repository

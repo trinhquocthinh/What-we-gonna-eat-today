@@ -38,7 +38,7 @@ export default async function DishesPage({ params }: DishesPageProps) {
       user.id,
       dishes.map((dish) => dish.globalDishId),
     ),
-    drizzlePreferenceRepository.findConstrainedGlobalDishIds(user.id),
+    drizzlePreferenceRepository.findConstrainedGlobalDishIds(user.id, 'CANNOT_EAT'),
   ])
 
   const dishPreferences = dishes.map((dish) => ({

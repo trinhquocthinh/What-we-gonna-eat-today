@@ -199,14 +199,30 @@ export const groupDishTags = pgTable(
 export type GroupDishTag = typeof groupDishTags.$inferSelect
 
 /**
- * BR-034 — Cannot Eat. Khoá theo `global_dishes.id` chứ KHÔNG theo
+ * SDD §10 — ba cờ cá nhân dùng CHUNG một bảng. `Cannot Eat` (BR-034),
+ * `Blacklist` (BR-035) và `History Whitelist` (BR-036) có cùng hình dạng
+ * `(user, món, có/không)` và chỉ khác nhau ở HỆ QUẢ, không ở cách lưu. Ba bảng
+ * cùng hình dạng là ba đường ghi phải giữ đồng bộ bằng tay.
+ *
+ * Cái giá của việc gộp: MỌI truy vấn đọc bảng này phải nêu rõ `kind`. Bỏ sót
+ * một chỗ thì Blacklist lặng lẽ mang theo hành vi xoá lượt vuốt của Cannot Eat
+ * — thứ BR-035 cấm bằng chữ — hoặc tệ hơn, món Whitelist bị lọc khỏi deck (E13
+ * Guide S1 §1.1).
+ */
+export const constraintKind = pgEnum('constraint_kind', [
+  'CANNOT_EAT',
+  'BLACKLIST',
+  'HISTORY_WHITELIST',
+])
+
+/**
+ * BR-034 / BR-035 / BR-036. Khoá theo `global_dishes.id` chứ KHÔNG theo
  * `group_dishes.id`: người dị ứng tôm thì dị ứng ở mọi nhóm, và DEC-009 đã
  * chốt "thêm lại món là tạo dòng group_dishes mới" — gắn vào đó thì mỗi lần
  * nhóm gỡ rồi thêm lại, người ta phải khai lại.
  *
- * KHÔNG có cột `kind`: `Blacklist` (BR-035) là v1.2 và có ngữ nghĩa khác hẳn
- * (không xoá tương tác đang có). Một cột enum một-giá-trị hôm nay là đoán
- * trước một thiết kế chưa chốt — xem Guide §1.3.
+ * `kind` nằm TRONG khoá chính: một người vừa khai "không ăn được" vừa Blacklist
+ * cùng một món là hợp lệ, và gỡ cái này không đụng cái kia (TC-168).
  */
 export const userDishConstraints = pgTable(
   'user_dish_constraints',
@@ -217,9 +233,12 @@ export const userDishConstraints = pgTable(
     globalDishId: uuid('global_dish_id')
       .notNull()
       .references(() => globalDishes.id),
+    // `default` ở tầng cột CHÍNH LÀ phép backfill của migration 0016: một câu
+    // `ADD COLUMN … NOT NULL DEFAULT` điền sẵn cho mọi dòng cũ, không cần UPDATE.
+    kind: constraintKind('kind').notNull().default('CANNOT_EAT'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [primaryKey({ columns: [table.userId, table.globalDishId] })],
+  (table) => [primaryKey({ columns: [table.userId, table.globalDishId, table.kind] })],
 )
 
 /**
@@ -244,8 +263,27 @@ export const userDishPreferences = pgTable(
   (table) => [primaryKey({ columns: [table.userId, table.globalDishId] })],
 )
 
+/**
+ * SPEC-040 — mốc "quên sở thích đã học". MỘT dòng cho mỗi người ĐÃ TỪNG bấm
+ * Quên; chưa bấm bao giờ là không có dòng, không phải một giá trị sentinel —
+ * cùng khuôn `user_dish_preferences` không có dòng `NEUTRAL`.
+ *
+ * `implicit_reset_at` là một MỐC, không phải lệnh xoá: `SPEC-037` bỏ qua mọi
+ * phiên có `decision_date` trước mốc, còn `interactions` giữ nguyên số dòng.
+ * Xoá thật sẽ phá Session Ranking của các phiên cũ (`SPEC-014` đọc cùng bảng)
+ * và vi phạm BR-061.
+ */
+export const userPreferenceSettings = pgTable('user_preference_settings', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id),
+  implicitResetAt: timestamp('implicit_reset_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export type UserDishConstraint = typeof userDishConstraints.$inferSelect
 export type UserDishPreference = typeof userDishPreferences.$inferSelect
+export type UserPreferenceSetting = typeof userPreferenceSettings.$inferSelect
 
 /**
  * BR-012 — `rule_type` phân biệt Required (chặn Finalize) với Preferred (chỉ
@@ -374,7 +412,13 @@ export const participants = pgTable(
     state: participantState('state').notNull().default('ACTIVE'),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [uniqueIndex('participants_session_user_unique').on(table.sessionId, table.userId)],
+  (table) => [
+    uniqueIndex('participants_session_user_unique').on(table.sessionId, table.userId),
+    // SPEC-037 (E13-T1) — đường đi NGƯỢC với mọi đường hiện có. Index unique ở
+    // trên phục vụ "phiên này có ai", còn `findImplicitSwipes` hỏi "người này
+    // đã dự những phiên nào" và cột dẫn đầu của khoá kia không giúp được gì.
+    index('participants_user_id_idx').on(table.userId),
+  ],
 )
 
 export type SelectionSession = typeof selectionSessions.$inferSelect
@@ -491,6 +535,10 @@ export const interactions = pgTable(
     ),
     // Đường nóng Tech Spec §3.3: SPEC-014 Session Ranking (E4+).
     index('interactions_session_id_idx').on(table.sessionId),
+    // SPEC-037 (E13-T1) — cặp với `participants_user_id_idx`. `findImplicitSwipes`
+    // quét từ người ra participant rồi ra tương tác; không index nào theo
+    // `participant_id` thì bước cuối là seq scan trên bảng lớn nhất hệ thống.
+    index('interactions_participant_id_idx').on(table.participantId),
   ],
 )
 

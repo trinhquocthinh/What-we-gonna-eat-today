@@ -204,6 +204,7 @@ describe('drizzlePreferenceRepository — integration', () => {
 
     const constrainedBefore = await drizzlePreferenceRepository.findConstrainedGlobalDishIds(
       seed.userId1,
+      'CANNOT_EAT',
     )
     expect(constrainedBefore.has(seed.globalDishId)).toBe(true)
 
@@ -218,6 +219,7 @@ describe('drizzlePreferenceRepository — integration', () => {
 
     const constrainedAfter = await drizzlePreferenceRepository.findConstrainedGlobalDishIds(
       seed.userId1,
+      'CANNOT_EAT',
     )
     expect(constrainedAfter.has(seed.globalDishId)).toBe(false)
 
@@ -302,6 +304,7 @@ describe('drizzlePreferenceRepository — integration', () => {
 
     const emptyConstraints = await drizzlePreferenceRepository.findConstrainedGlobalDishIds(
       crypto.randomUUID(),
+      'CANNOT_EAT',
     )
     expect(emptyConstraints.size).toBe(0)
   })

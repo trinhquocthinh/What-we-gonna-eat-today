@@ -19,38 +19,87 @@ function dish(
   daysSinceLastEaten: number | null,
   recencyPenalty: number,
   explicit: number = 0,
+  implicit: number = 0,
 ) {
-  return { dishId, daysSinceLastEaten, recencyPenalty, explicit }
+  return { dishId, daysSinceLastEaten, recencyPenalty, explicit, implicit }
 }
 
 describe('computePersonalScore', () => {
   it('v1.1 có cả explicit và recency: score = 0.3 × E − 0.25 × R', () => {
-    expect(computePersonalScore({ recencyPenalty: 1, explicit: 0 }, RANKING_CONFIG)).toBeCloseTo(
-      -0.25,
-      6,
-    )
-    expect(computePersonalScore({ recencyPenalty: 0, explicit: 0 }, RANKING_CONFIG)).toBe(0)
-    expect(computePersonalScore({ recencyPenalty: 0, explicit: 1 }, RANKING_CONFIG)).toBeCloseTo(
-      0.3,
-      6,
-    )
-    expect(computePersonalScore({ recencyPenalty: 0, explicit: -1 }, RANKING_CONFIG)).toBeCloseTo(
-      -0.3,
-      6,
-    )
+    expect(
+      computePersonalScore({ recencyPenalty: 1, explicit: 0, implicit: 0 }, RANKING_CONFIG),
+    ).toBeCloseTo(-0.25, 6)
+    expect(
+      computePersonalScore({ recencyPenalty: 0, explicit: 0, implicit: 0 }, RANKING_CONFIG),
+    ).toBe(0)
+    expect(
+      computePersonalScore({ recencyPenalty: 0, explicit: 1, implicit: 0 }, RANKING_CONFIG),
+    ).toBeCloseTo(0.3, 6)
+    expect(
+      computePersonalScore({ recencyPenalty: 0, explicit: -1, implicit: 0 }, RANKING_CONFIG),
+    ).toBeCloseTo(-0.3, 6)
   })
 
   it('LIKE (+1) vs Neutral (0) cùng R: LIKE xếp trước; hiệu số điểm đúng bằng 0.3', () => {
-    const liked = computePersonalScore({ recencyPenalty: 0.5, explicit: 1 }, RANKING_CONFIG)
-    const neutral = computePersonalScore({ recencyPenalty: 0.5, explicit: 0 }, RANKING_CONFIG)
+    const liked = computePersonalScore(
+      { recencyPenalty: 0.5, explicit: 1, implicit: 0 },
+      RANKING_CONFIG,
+    )
+    const neutral = computePersonalScore(
+      { recencyPenalty: 0.5, explicit: 0, implicit: 0 },
+      RANKING_CONFIG,
+    )
     expect(liked).toBeGreaterThan(neutral)
     expect(liked - neutral).toBeCloseTo(0.3, 6)
   })
 
   it('R càng lớn điểm càng thấp — món vừa ăn bị đẩy xuống', () => {
-    const justEaten = computePersonalScore({ recencyPenalty: 1, explicit: 0 }, RANKING_CONFIG)
-    const longAgo = computePersonalScore({ recencyPenalty: 0, explicit: 0 }, RANKING_CONFIG)
+    const justEaten = computePersonalScore(
+      { recencyPenalty: 1, explicit: 0, implicit: 0 },
+      RANKING_CONFIG,
+    )
+    const longAgo = computePersonalScore(
+      { recencyPenalty: 0, explicit: 0, implicit: 0 },
+      RANKING_CONFIG,
+    )
     expect(longAgo).toBeGreaterThan(justEaten)
+  })
+
+  it('E13-T3 — số hạng I vào công thức với trọng số 0.25', () => {
+    expect(
+      computePersonalScore({ recencyPenalty: 0, explicit: 0, implicit: 1 }, RANKING_CONFIG),
+    ).toBeCloseTo(0.25, 6)
+    expect(
+      computePersonalScore({ recencyPenalty: 0, explicit: 0, implicit: -1 }, RANKING_CONFIG),
+    ).toBeCloseTo(-0.25, 6)
+  })
+
+  it('E13-T3 — I cộng dồn với E, không loại trừ nhau', () => {
+    // Một người Like món A và cũng hay vuốt phải nó: hai tín hiệu cùng chiều
+    // phải cộng lại, chứ không phải cái này thay cái kia.
+    const both = computePersonalScore(
+      { recencyPenalty: 0, explicit: 1, implicit: 1 },
+      RANKING_CONFIG,
+    )
+    const onlyExplicit = computePersonalScore(
+      { recencyPenalty: 0, explicit: 1, implicit: 0 },
+      RANKING_CONFIG,
+    )
+    expect(both).toBeCloseTo(0.55, 6)
+    expect(both - onlyExplicit).toBeCloseTo(0.25, 6)
+  })
+
+  it('E13-T3 — buildDeck đọc I: món I cao xếp trước món I thấp khi mọi thứ khác bằng nhau', () => {
+    // Ca ghim §1.3 của Guide: nếu `buildDeck` dựng lại object literal mà quên
+    // `implicit`, hàm nhận `undefined`, score thành NaN và thứ tự thành tuỳ ý.
+    const order = buildDeck(
+      {
+        ...SEED,
+        eligible: [dish('A', 10, 0, 0, -0.5), dish('B', 10, 0, 0, 0.5)],
+      },
+      RANKING_CONFIG,
+    )
+    expect(order).toEqual(['B', 'A'])
   })
 })
 

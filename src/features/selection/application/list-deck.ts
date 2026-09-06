@@ -10,6 +10,7 @@ import { err, ok } from '@/shared/result'
 import { capDeck, getDeckPage } from '../domain/deck-page'
 import type { CourseBoundary } from '../domain/course-deck'
 import { deriveCourseBoundaries, splitIntoCourses } from '../domain/course-deck'
+import { computeImplicitPreference } from '../domain/implicit-preference'
 import { blendExploitExplore, buildDeck, isExploreEligible } from '../domain/ranking'
 import { RANKING_CONFIG } from '../domain/ranking-config'
 import type { DishCard, SelectionRepository } from './selection-repository'
@@ -86,39 +87,65 @@ export async function listDeck(
     input.userId,
   )
 
-  // SPEC-020 + SPEC-025 (§4.2): đọc lịch sử ăn, sở thích cá nhân VÀ cấu hình chặng cùng lúc
-  // bằng Promise.all để thoả mãn NFR-01 (≤2.5s)
+  // NHỊP 1 — SPEC-020 + SPEC-025 (§4.2): mọi lần đọc deck đều cần bốn thứ này.
+  // `findMaterializedDeck` được kéo VÀO đây ở E13-T5 (trước nó đứng riêng) để
+  // bù đúng vòng round-trip mà nhịp 2 thêm vào — đường ấm giữ nguyên chi phí cũ.
   const globalDishIds = eligible.map((d) => d.globalDishId)
-  const [eatingRows, preferences, sessionDeckConfig] = await Promise.all([
+  const [eatingRows, preferences, sessionDeckConfig, materializedDeck] = await Promise.all([
     deps.history.findEatingDates(input.userId, globalDishIds),
     deps.preferences.findPreferencesByGlobalDish(input.userId, globalDishIds),
     deps.selection.findSessionCourses(input.sessionId),
+    deps.selection.findMaterializedDeck(input.sessionId, input.userId),
   ])
   const eatingByDish = groupEatingDatesByDish(eatingRows)
 
-  let orderedDishIds = await deps.selection.findMaterializedDeck(input.sessionId, input.userId)
+  let orderedDishIds = materializedDeck
 
   if (orderedDishIds === null) {
     // Chỉ bước TÍNH RANKING + GHI còn nằm trong nhánh điều kiện — không phải
     // việc đọc lịch sử (đã chuyển ra ngoài, ở trên).
     //
     // LƯU Ý BR-048 (Deck Stability) & SPEC-028: Deck được materialize một lần
-    // vào session_decks. Số hạng E chỉ tác động tới thứ tự ở lần dựng đầu tiên
-    // của phiên; đổi Like/Dislike giữa phiên không sắp xếp lại deck đã lưu.
+    // vào session_decks. Số hạng E và I chỉ tác động tới thứ tự ở lần dựng đầu
+    // tiên của phiên; đổi Like/Dislike hay bấm Quên giữa phiên không sắp xếp
+    // lại deck đã lưu (TC-172).
+    //
+    // NHỊP 2 — SPEC-037 + SPEC-039. Hai truy vấn này nằm TRONG nhánh, không ở
+    // nhịp 1: $I$ và Whitelist chỉ dùng lúc DỰNG deck, còn phần tính `lane` ở
+    // cuối hàm (chạy mỗi lần đọc) không cần chúng. Đặt chúng ở nhịp 1 là bắt
+    // mọi lần lật trang trả tiền cho hai truy vấn không ai đọc — đúng rủi ro
+    // "$I$ làm chậm đường tải deck" của Master Plan §17.4.
+    const [implicitSwipes, whitelisted] = await Promise.all([
+      deps.selection.findImplicitSwipes(input.userId, globalDishIds),
+      deps.preferences.findConstrainedGlobalDishIds(input.userId, 'HISTORY_WHITELIST'),
+    ])
+    const implicitByDish = computeImplicitPreference(
+      { swipes: implicitSwipes, referenceDate: input.referenceDate },
+      RANKING_CONFIG,
+    )
+
     const rankingInputs = eligible.map((dish) => {
       const dates = eatingByDish.get(dish.globalDishId) ?? []
       return {
         dishId: dish.dishId,
         explicit: explicitPreferenceScore(preferences.get(dish.globalDishId) ?? null),
+        // Món chưa có lượt vuốt nào không có mặt trong Map — SPEC-037 để người
+        // gọi quyết, và ở đây "chưa biết gì" đúng là trung tính.
+        implicit: implicitByDish.get(dish.globalDishId) ?? 0,
         daysSinceLastEaten: daysSinceLastEaten({
           eatingDates: dates,
           referenceDate: input.referenceDate,
         }),
-        recencyPenalty: computeRecencyPenalty({
-          eatingDates: dates,
-          referenceDate: input.referenceDate,
-          cooldownWindowDays: RANKING_CONFIG.history.cooldownWindowDays,
-        }),
+        // SPEC-039 — Whitelist ÉP $R = 0$. Không lọc, không cộng điểm: nó chỉ
+        // gỡ một hình phạt. Món phở của người ngày nào ăn cũng được thôi bị
+        // Cooldown đẩy xuống, nhưng cũng không vì thế mà nhảy lên đầu.
+        recencyPenalty: whitelisted.has(dish.globalDishId)
+          ? 0
+          : computeRecencyPenalty({
+              eatingDates: dates,
+              referenceDate: input.referenceDate,
+              cooldownWindowDays: RANKING_CONFIG.history.cooldownWindowDays,
+            }),
       }
     })
 

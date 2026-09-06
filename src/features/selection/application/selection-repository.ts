@@ -1,6 +1,7 @@
 import type { SystemTag } from '@/shared/domain/system-tag'
 
 import type { DishCard } from '../domain/dish-card'
+import type { ImplicitSwipe } from '../domain/implicit-preference'
 import type { InteractionAction, InteractionType } from '../domain/interaction'
 
 export type { DishCard }
@@ -114,4 +115,22 @@ export interface SelectionRepository {
   /** $T$ của SPEC-014 và đồng thời tập người để đếm $H$. ACTIVE hoặc
    *  COMPLETED — `REMOVED` không tính (BR-026). */
   listRankingParticipantUserIds(sessionId: string): Promise<string[]>
+
+  /**
+   * SPEC-037 — nguyên liệu thô của $I$: mọi lượt vuốt CÒN HIỆU LỰC của một
+   * người trong các phiên đã `FINALIZED`, gắn theo `global_dishes.id`.
+   *
+   * MỘT truy vấn. Mốc `implicit_reset_at` của SPEC-040 được áp NGAY TRONG câu
+   * này chứ không phải một lượt đọc thứ hai — xem DEC-070.
+   *
+   * Trả `decisionDate` THÔ, không tính trọng số trong SQL: phép toán nằm ở
+   * `computeImplicitPreference` bên `domain/`, nơi `TC-159`→`TC-162` kiểm được
+   * mà không cần DB. Đẩy `POWER(0.5, …)` xuống Postgres là đưa công thức ra
+   * khỏi tầm với của bốn ca đó.
+   *
+   * Chỉ đọc `interactions` (effective state), KHÔNG đọc `interaction_events` —
+   * học từ nhật ký append-only nghĩa là học cả những lượt người dùng đã Undo
+   * (TC-164).
+   */
+  findImplicitSwipes(userId: string, globalDishIds: readonly string[]): Promise<ImplicitSwipe[]>
 }

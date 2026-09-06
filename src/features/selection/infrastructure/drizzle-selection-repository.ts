@@ -13,9 +13,11 @@ import {
   sessionCourses,
   sessionDecks,
   userDishConstraints,
+  userPreferenceSettings,
 } from '@/shared/db/schema'
 import { toSystemTags, type SystemTag } from '@/shared/domain/system-tag'
 
+import type { ImplicitSwipe } from '../domain/implicit-preference'
 import type { InteractionAction, InteractionType } from '../domain/interaction'
 import type {
   DishCard,
@@ -74,8 +76,15 @@ async function listEligibleDishCards(
       and(
         eq(selectionSessions.id, sessionId),
         eq(groupDishes.state, 'ACTIVE'),
-        // BR-034 — Stage 1 Hard Filter. Lọc ở SQL chứ không ở tầng trên: LIMIT
-        // và phân trang chạy SAU phép lọc, cùng lý lẽ DEC-055 mục 3.
+        // BR-034 + BR-035 — Stage 1 Hard Filter. Lọc ở SQL chứ không ở tầng
+        // trên: LIMIT và phân trang chạy SAU phép lọc, cùng lý lẽ DEC-055 mục 3.
+        //
+        // MỆNH ĐỀ `kind` LÀ BẮT BUỘC, không phải trang trí (E13-S1 Guide §1.1).
+        // Trước E13 bảng chỉ có một loại dòng, nên câu hỏi "user có dòng nào cho
+        // món này không" tình cờ trùng với "user có khai Cannot Eat không". Sau
+        // khi có cột `kind` thì không còn trùng: bỏ mệnh đề này đi thì một dòng
+        // `HISTORY_WHITELIST` cũng làm `notExists` trả false, và món được
+        // Whitelist BIẾN MẤT khỏi deck — đúng ngược điều BR-036 muốn.
         notExists(
           getDb()
             .select({ one: sql`1` })
@@ -84,6 +93,7 @@ async function listEligibleDishCards(
               and(
                 eq(userDishConstraints.userId, userId),
                 eq(userDishConstraints.globalDishId, globalDishes.id),
+                inArray(userDishConstraints.kind, ['CANNOT_EAT', 'BLACKLIST']),
               ),
             ),
         ),
@@ -363,6 +373,10 @@ async function countCannotEatByDish(sessionId: string): Promise<Map<string, numb
         inArray(participants.state, ['ACTIVE', 'COMPLETED']),
       ),
     )
+    // $X$ đếm SỐ NGƯỜI khai `Cannot Eat` (BR-034). Blacklist KHÔNG trừ điểm
+    // $X$: nó nói "đừng gợi ý cho tôi nữa", không nói "tôi không ăn được" —
+    // SPEC-038 tách hai chuyện đó bằng chữ, và `TC-166` canh đúng ranh giới này.
+    .where(eq(userDishConstraints.kind, 'CANNOT_EAT'))
     .groupBy(userDishConstraints.globalDishId)
 
   const map = new Map<string, number>()
@@ -411,6 +425,71 @@ async function findSessionCourses(sessionId: string): Promise<{
   }
 }
 
+/**
+ * SPEC-037 — xem doc ở `SelectionRepository.findImplicitSwipes`.
+ *
+ * Đường join đi NGƯỢC mọi đường truy cập cũ của hai bảng này: `interactions` và
+ * `participants` chỉ có index theo `session_id`, hợp với câu hỏi "phiên này có
+ * gì". Câu dưới đây hỏi "NGƯỜI này đã vuốt gì, xuyên mọi phiên" — nên E13-T1
+ * thêm `participants(user_id)` và `interactions(participant_id)`.
+ *
+ * Mốc quên nằm ngay trong `where` thay vì một lượt đọc thứ hai (DEC-070). Phép
+ * so sánh quy `implicit_reset_at` (timestamptz) về `::date` ở UTC để đọ với
+ * `decision_date` (date): sai lệch tối đa một ngày, quanh đúng thời điểm bấm
+ * nút — người bấm "quên" không có kỳ vọng nào về việc phiên lúc 23h hôm qua có
+ * được tính hay không.
+ */
+async function findImplicitSwipes(
+  userId: string,
+  globalDishIds: readonly string[],
+): Promise<ImplicitSwipe[]> {
+  if (globalDishIds.length === 0) {
+    return []
+  }
+
+  const rows = await getDb()
+    .select({
+      globalDishId: groupDishes.globalDishId,
+      type: interactions.type,
+      decisionDate: selectionSessions.decisionDate,
+    })
+    .from(interactions)
+    .innerJoin(
+      participants,
+      and(eq(participants.id, interactions.participantId), eq(participants.userId, userId)),
+    )
+    .innerJoin(
+      selectionSessions,
+      and(
+        eq(selectionSessions.id, interactions.sessionId),
+        // Chỉ phiên đã chốt. Phiên `ACTIVE` đang chạy chưa phải một quyết định
+        // — học từ nó nghĩa là deck tự sắp lại mình theo chính những lượt vừa
+        // vuốt, đúng thứ BR-048 sinh ra để ngăn. Phiên `INVALID` là một quyết
+        // định đã bị huỷ (TC-163).
+        eq(selectionSessions.state, 'FINALIZED'),
+      ),
+    )
+    .innerJoin(
+      groupDishes,
+      and(
+        eq(groupDishes.id, interactions.groupDishId),
+        // Gắn theo `global_dishes.id`, không theo `group_dishes.id`: cùng một
+        // món ở hai Group phải gộp lại (TC-165), cùng lý lẽ SPEC-024 và
+        // `eating_history`.
+        inArray(groupDishes.globalDishId, [...globalDishIds]),
+      ),
+    )
+    .where(
+      sql`${selectionSessions.decisionDate} > coalesce(
+        (select ${userPreferenceSettings.implicitResetAt} at time zone 'UTC'
+           from ${userPreferenceSettings}
+          where ${userPreferenceSettings.userId} = ${userId})::date,
+        '-infinity'::date)`,
+    )
+
+  return rows
+}
+
 export const drizzleSelectionRepository: SelectionRepository = {
   findParticipant,
   listEligibleDishCards,
@@ -424,4 +503,5 @@ export const drizzleSelectionRepository: SelectionRepository = {
   countCannotEatByDish,
   listRankingParticipantUserIds,
   findSessionCourses,
+  findImplicitSwipes,
 }

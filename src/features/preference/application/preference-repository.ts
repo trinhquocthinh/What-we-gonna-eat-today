@@ -1,4 +1,4 @@
-import type { PreferenceKind } from '../domain/explicit-preference'
+import type { ConstraintKind, PreferenceKind } from '../domain/explicit-preference'
 
 /**
  * Port cho E7 (SPEC-024, SPEC-025).
@@ -23,10 +23,16 @@ export interface PreferenceRepository {
   }): Promise<void>
 
   /**
-   * SPEC-024 — tập món MỘT user không ăn được. Trả `Set` chứ không mảng: người
-   * gọi chỉ hỏi "có hay không".
+   * SPEC-024 / SPEC-038 / SPEC-039 — tập món MỘT user đã gắn MỘT loại cờ. Trả
+   * `Set` chứ không mảng: người gọi chỉ hỏi "có hay không".
+   *
+   * `kind` là tham số BẮT BUỘC, và đó là chủ đích. SDD §10 yêu cầu mọi truy vấn
+   * đọc `user_dish_constraints` phải nêu rõ `kind`; một tham số bắt buộc là
+   * phiên bản có trình biên dịch của yêu cầu đó, còn một lời nhắc trong tài
+   * liệu thì không. Bỏ sót một chỗ nghĩa là Blacklist lặng lẽ mang theo hành vi
+   * của Cannot Eat, hoặc món Whitelist bị lọc khỏi deck.
    */
-  findConstrainedGlobalDishIds(userId: string): Promise<ReadonlySet<string>>
+  findConstrainedGlobalDishIds(userId: string, kind: ConstraintKind): Promise<ReadonlySet<string>>
 
   /**
    * BR-056 / M3-T9 — cặp `(user, món)` có khai `Cannot Eat`, cho `finalizeSession`.

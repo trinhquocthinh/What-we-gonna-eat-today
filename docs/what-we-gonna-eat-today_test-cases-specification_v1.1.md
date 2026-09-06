@@ -444,6 +444,15 @@ Toàn bộ **13 SPEC** của v1.1 đều có độ bao phủ kiểm thử:
 
 `SPEC-023` (gợi ý catalog chung, bảo trì sau v1.0) chưa có TC trong tài liệu này — nợ kiểm thử đã ghi nhận, không thuộc phạm vi v1.1.
 
+### 5.3 Phủ sóng SPEC v1.2 $\to$ Test Cases
+
+`SPEC-037` (TC-159→165, 174) • `SPEC-038` (TC-166→168) • `SPEC-039` (TC-169, 170) • `SPEC-040` (TC-171→173) • `SPEC-041` (TC-175→177) • `SPEC-042` (TC-178).
+
+> [!IMPORTANT]
+> **Một ca của `E13-S1` không có mã TC trong tài liệu này, và đó là điều cần biết khi đọc ma trận trên.**
+>
+> *"Món `HISTORY_WHITELIST` **vẫn có mặt** trong deck"* — tầng `I`, sống ở `drizzle-selection-repository.integration.test.ts`. `TC-169` chỉ canh phía tính điểm ($R$ ép về 0) ở tầng `D`, nên nếu mệnh đề `kind` ở Stage 1 bị bỏ sót thì `TC-169` **vẫn xanh** trong khi món Whitelist đã biến khỏi deck. Xem [SDD §10](what-we-gonna-eat-today_sdd_v1.3.md) và [E13-S1 Guide §1.1](plans/E13/what-we-gonna-eat-today_e13-s1-implementation-guide_v0_1.md).
+
 ---
 
 # 6. Lịch sử thay đổi (Change History)

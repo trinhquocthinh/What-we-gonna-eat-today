@@ -6,31 +6,33 @@
  * trung nói về NƠI ĐỊNH NGHĨA, không phải về nơi sử dụng — để một nửa ở đây,
  * một nửa chờ v1.1 rồi thêm sau là đúng cái tình huống nguyên tắc này ngăn.
  *
- * v1.1 đọc năm giá trị:
+ * v1.2 đọc bảy nhóm giá trị:
  * - `personalRanking.wRecency`      → `computePersonalScore` (SDD SPEC-010)
  * - `personalRanking.wExplicit`     → `computePersonalScore` (SPEC-025, E7-T2)
+ * - `personalRanking.wImplicit`     → `computePersonalScore` (SPEC-037, E13-T3)
+ * - `implicit.*`                    → `computeImplicitPreference` (SPEC-037, E13-T2)
  * - `history.cooldownWindowDays`    → `computeRecencyPenalty` (SDD SPEC-020)
  * - `explore.*`                     → `isExploreEligible` + `blendExploitExplore` (BR-047, E8-T2)
  * - `deck.maxCards`                 → `capDeck` + `splitIntoCourses` (BR-062, E8-T1)
  * - `sessionRanking.*`              → `computeSessionScore` (SPEC-014, E5-T6 + E7-T6)
  *
- * Mọi giá trị còn lại là hợp đồng đã duyệt cho v1.2 — đừng xoá, và cũng đừng
- * viết hàm dùng chúng trước khi epic của chúng tới (Implementation Guide §1.1, §1.2).
+ * Mọi giá trị còn lại (`wChef`, `wSource`) là hợp đồng đã duyệt cho v1.3 —
+ * đừng xoá, và cũng đừng viết hàm dùng chúng trước khi epic của chúng tới.
  */
 export type RankingConfig = {
   readonly personalRanking: {
     /** v1.1 — F16 Like/Dislike, `explicitPreferenceScore` (E7-T2). */
     readonly wExplicit: number
-    /** v1.2 — F30 Implicit Preference. Chưa hàm nào đọc. */
+    /** v1.2 — F30 Implicit Preference, `computePersonalScore` (E13-T3). */
     readonly wImplicit: number
     /** v1.0 — SPEC-020. */
     readonly wRecency: number
-    /** v1.2 — F33 Chef Mode. Chưa hàm nào đọc. */
+    /** v1.3 — F33 Chef Mode. Chưa hàm nào đọc. */
     readonly wChef: number
-    /** v1.2 — F36 Purchase Source. Chưa hàm nào đọc. */
+    /** v1.3 — F36 Purchase Source. Chưa hàm nào đọc. */
     readonly wSource: number
   }
-  /** v1.2 — F30. Chưa hàm nào đọc. */
+  /** v1.2 — F30, `computeImplicitPreference` (E13-T2). */
   readonly implicit: {
     readonly halfLifeDays: number
     readonly priorK: number

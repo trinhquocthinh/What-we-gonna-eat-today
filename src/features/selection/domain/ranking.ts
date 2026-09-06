@@ -3,10 +3,10 @@ import type { SystemTag } from '@/shared/domain/system-tag'
 import type { RankingConfig } from './ranking-config'
 
 /**
- * Ranking Spec §2.2 + SDD SPEC-010. Ở v1.1 CÓ HAI số hạng có dữ liệu thật:
- * `recencyPenalty` (từ E4) và `explicit` (từ E7-S2). Ba số hạng còn lại —
- * `implicit` (F30), `chef` (F33), `source` (F36) — vẫn cố ý vắng mặt: thêm
- * một trường mà không hàm nào tính ra được giá trị thật cho nó chỉ tạo ảo
+ * Ranking Spec §2.2 + SDD SPEC-010. Ở v1.2 CÓ BA số hạng có dữ liệu thật:
+ * `recencyPenalty` (từ E4), `explicit` (từ E7-S2) và `implicit` (từ E13-S1).
+ * Hai số hạng còn lại — `chef` (F33) và `source` (F36) — vẫn cố ý vắng mặt:
+ * thêm một trường mà không hàm nào tính ra được giá trị thật cho nó chỉ tạo ảo
  * giác tính năng đã có.
  */
 export type RankingInput = {
@@ -14,22 +14,25 @@ export type RankingInput = {
   readonly recencyPenalty: number
   /** $E \in \{-1, 0, +1\}$ từ `explicitPreferenceScore` (SPEC-025). */
   readonly explicit: number
+  /** $I \in [-1, 1]$ từ `computeImplicitPreference` (SPEC-037). */
+  readonly implicit: number
 }
 
-/** $\text{score} = w_{\text{explicit}} \times E - w_{\text{recency}} \times R$ — SPEC-010, v1.1. */
+/**
+ * $\text{score} = w_{\text{explicit}} \cdot E + w_{\text{implicit}} \cdot I -
+ * w_{\text{recency}} \cdot R$ — SPEC-010 + SPEC-037, v1.2.
+ */
 export function computePersonalScore(input: RankingInput, config: RankingConfig): number {
   return (
-    config.personalRanking.wExplicit * input.explicit -
+    config.personalRanking.wExplicit * input.explicit +
+    config.personalRanking.wImplicit * input.implicit -
     config.personalRanking.wRecency * input.recencyPenalty
   )
 }
 
-export type DishRankingInput = {
+export type DishRankingInput = RankingInput & {
   /** `group_dishes.id` — cùng hệ id với `DishCard.dishId`. */
   readonly dishId: string
-  readonly recencyPenalty: number
-  /** $E \in \{-1, 0, +1\}$ từ `explicitPreferenceScore` (SPEC-025). */
-  readonly explicit: number
   /** `null` = chưa từng ăn ($d = \infty$). Tie-break tầng 2 cần giá trị này. */
   readonly daysSinceLastEaten: number | null
 }
@@ -91,9 +94,12 @@ function daysRank(daysSinceLastEaten: number | null): number {
 export function buildDeck(input: BuildDeckInput, config: RankingConfig): string[] {
   return [...input.eligible]
     .sort((a, b) => {
-      const scoreDiff =
-        computePersonalScore({ recencyPenalty: b.recencyPenalty, explicit: b.explicit }, config) -
-        computePersonalScore({ recencyPenalty: a.recencyPenalty, explicit: a.explicit }, config)
+      // Truyền THẲNG `a`/`b` chứ không dựng lại object literal: `DishRankingInput`
+      // là siêu tập của `RankingInput` (E13-T3). Bản trước liệt kê từng trường,
+      // và mỗi số hạng mới thêm vào công thức là một chỗ nữa phải nhớ sửa — quên
+      // thì `wImplicit * undefined = NaN`, `sort` nhận comparator trả `NaN` và
+      // cho một thứ tự KHÔNG XÁC ĐỊNH theo chuẩn. Xem Guide E13-S1 §1.3.
+      const scoreDiff = computePersonalScore(b, config) - computePersonalScore(a, config)
       if (scoreDiff !== 0) {
         return scoreDiff
       }

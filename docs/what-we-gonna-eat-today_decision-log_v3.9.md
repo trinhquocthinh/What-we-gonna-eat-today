@@ -3,11 +3,11 @@
 > **Document Metadata**
 >
 > - **Version:** `3.9` | **Status:** `Active`
-> - **Created:** `2026-07-23` | **Last Updated:** `2026-09-04`
+> - **Created:** `2026-07-23` | **Last Updated:** `2026-09-05`
 > - **Supersedes:** `v3.8` | **Upstream:** [Problem Definition](what-we-gonna-eat-today_problem-definition_v1.4.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
 > - **Downstream:** [Tech Spec & Architecture](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Master Plan](what-we-gonna-eat-today_master-plan_v2.1.md)
 >
-> 📌 *Decision Log ghi lại 69 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
+> 📌 *Decision Log ghi lại 70 quyết định kiến trúc và nghiệp vụ cốt lõi (ADR), giải thích cặn kẽ bối cảnh, lý do (Rationale), hệ quả (Consequence) và các tài liệu bị ảnh hưởng.*
 
 ---
 
@@ -83,6 +83,7 @@
 | [`DEC-067`](#dec-067--mô-hình-hai-loại-cảnh-báo-và-phân-tách-cấu-hình-luật) | Hai loại cảnh báo; tách cấu hình luật | 2026-09-02 | `Accepted` | `SPEC-031`, `BR-014`, `evaluate.ts` |
 | [`DEC-068`](#dec-068--tự-động-đóng-phiên-quá-hạn--quản-lý-danh-mục-món-vận-hành-tối-thiểu-e11) | Tự động đóng phiên quá hạn; gỡ món khỏi nhóm | 2026-09-04 | `Accepted` | `SPEC-034`, `SPEC-035`, `shared/time/` |
 | [`DEC-069`](#dec-069--cắt-phạm-vi-v12-xuống-7-tính-năng-i-thuộc-selection-quên-là-mốc-thời-gian) | Cắt phạm vi v1.2; $I$ thuộc `selection`; "Quên" là mốc | 2026-09-04 | `Accepted` | PRD §4, SDD §9, TC §3c, Master Plan §13.2 |
+| [`DEC-070`](#dec-070--mốc-quên-áp-trong-sql-kind-là-tham-số-bắt-buộc-hai-nhịp-đọc-ở-list-deck) | Mốc quên áp trong SQL; `kind` bắt buộc; hai nhịp đọc | 2026-09-05 | `Accepted` | SDD §9.1, TC §5, Master Plan §17.2 |
 ---
 
 # DEC-001 — Selection Session Lifecycle
@@ -1909,10 +1910,53 @@ Master Plan §13.2 đặt v1.2 ở 89 giờ / 3 epic / 16 tính năng. Đợt kh
 
 ---
 
+# DEC-070 — Mốc Quên Áp Trong SQL; `kind` Là Tham Số Bắt Buộc; Hai Nhịp Đọc Ở `list-deck`
+
+**Ngày quyết định:** 2026-09-05 | **Trạng thái:** Accepted | **Bối cảnh:** E13-S1 (`E13-T1` → `E13-T5`)
+
+## Bối cảnh
+
+`DEC-069` chốt phạm vi và ranh giới kiến trúc của v1.2; `SPEC-037` → `SPEC-040` mô tả hành vi. Khi thi công slice S1, năm điểm cần quyết ở mức thấp hơn đặc tả — bốn trong số đó lệch khỏi chữ nghĩa của SPEC hoặc khỏi tiền lệ đã có, nên phải ghi lại.
+
+## Quyết định
+
+1. **`implicit_reset_at` (`SPEC-040`) được áp NGAY TRONG truy vấn `findImplicitSwipes`**, không truyền vào hàm thuần như đầu vào `SPEC-037` mô tả. Phép so sánh quy về `::date` ở UTC: `decision_date > coalesce((select implicit_reset_at at time zone 'UTC' …)::date, '-infinity'::date)`.
+2. **`findConstrainedGlobalDishIds` đổi chữ ký thành `(userId, kind)`, `kind` BẮT BUỘC.** `findCannotEatPairs` và `countCannotEatByDish` nhận thêm mệnh đề `kind = 'CANNOT_EAT'` cố định; `setConstraint` cũng vậy ở cả đường ghi lẫn đường xoá.
+3. **`computeImplicitPreference` nhận `config: RankingConfig`**, không nhận `halfLifeDays`/`priorK` rời như `computeRecencyPenalty`.
+4. **Truy vấn trả `decisionDate` thô**; phép tính trọng số nằm ở `selection/domain/`, không ở SQL.
+5. **`list-deck` chia làm HAI nhịp `Promise.all`**; `findMaterializedDeck` chuyển vào nhịp thứ nhất, `findImplicitSwipes` và `findConstrainedGlobalDishIds(_, 'HISTORY_WHITELIST')` nằm trong nhịp thứ hai, bên trong nhánh chưa materialize.
+
+## Rationale
+
+1. DoD của `E13-T4` viết "MỘT truy vấn gộp". Đọc mốc quên riêng là hai lượt round-trip tới Neon trên đường mà `NFR-01` đang canh, để lấy một giá trị chỉ dùng làm mệnh đề `where`. Xấp xỉ `::date` ở UTC sai lệch tối đa một ngày, quanh đúng thời điểm bấm nút — người bấm "quên" không có kỳ vọng nào về việc phiên lúc 23h hôm qua có được tính hay không.
+2. SDD §10 yêu cầu mọi truy vấn đọc `user_dish_constraints` phải nêu rõ `kind`. Một tham số bắt buộc là phiên bản có trình biên dịch của yêu cầu đó; một lời nhắc trong tài liệu thì không. `tsc` liệt kê đủ bốn chỗ gọi, `grep` thì không đảm bảo. Chi phí là một tham số ở mọi chỗ gọi, kể cả những chỗ chỉ có một lựa chọn hợp lý.
+3. `recency.ts` nhận số rời VÌ `history` không được import `selection` — doc-comment của chính nó viết câu đó. Ràng buộc ấy không áp cho một hàm nằm trong `selection`, và hai hàm hàng xóm cùng thư mục (`computePersonalScore`, `computeSessionScore`) đều nhận `config`.
+4. Đẩy `POWER(0.5, …)` xuống Postgres đưa công thức ra khỏi tầm với của `TC-159` → `TC-162` — bốn ca tầng `D` chạy không cần DB, và `TC-160` là ca duy nhất canh hằng số `HALF_LIFE_DAYS`. Chi phí: kéo về lượt vuốt thô thay vì tổng đã gộp, trên một tải đã đo bằng `TC-174`.
+5. $I$ và Whitelist chỉ dùng lúc DỰNG deck; phần tính `lane` chạy mỗi lần đọc thì không cần chúng. Gộp cả năm vào một nhịp là bắt mọi lần lật trang trả tiền cho hai truy vấn không ai đọc — đúng rủi ro *"$I$ làm chậm đường tải deck"* của Master Plan §17.4. Kéo `findMaterializedDeck` lên nhịp một bù lại đúng vòng round-trip mà nhịp hai thêm vào, nên đường ấm giữ nguyên chi phí trước E13.
+
+## Consequence
+
+- `SPEC-037` §9.1 phải ghi lại chữ ký thật: hàm thuần nhận `swipes` đã lọc, không nhận `implicitResetAt`.
+- `ALLOWED_CROSS_FEATURE` giữ nguyên **bảy chiều** — `E13` không mở chiều thứ tám, đúng như SDD §10 tuyên bố là điều kiện chứ không phải may mắn.
+- `user_dish_constraints` đổi khoá chính sang `(user_id, global_dish_id, kind)`. Rollback **bắt buộc** xoá dòng `kind <> 'CANNOT_EAT'` TRƯỚC khi khôi phục khoá cũ; bỏ bước đó thì câu `ADD CONSTRAINT … PRIMARY KEY` đổ và bảng ở lại trạng thái không schema nào mô tả. Khối rollback được ghi thành comment ở đầu `0016_constraint_kind_and_preference_settings.sql`.
+- Migration `0016` viết TAY: bản `drizzle-kit generate` đặt `ADD CONSTRAINT … PRIMARY KEY(…, "kind")` **trước** `ADD COLUMN "kind"` (câu đó đổ), và kéo theo cả nội dung `0014`/`0015` vì chuỗi snapshot trong `meta/` đứt từ `0013`.
+- Hai index mới (`participants(user_id)`, `interactions(participant_id)`) phục vụ một đường truy cập **ngược** với mọi đường hiện có — cả hai bảng trước đó chỉ có index theo `session_id`.
+- Xuất hiện một ca kiểm thử **không có mã TC trong đặc tả**: món `HISTORY_WHITELIST` phải **vẫn có mặt** trong deck. Trước E13, mệnh đề `notExists` ở Stage 1 hỏi "user có dòng nào cho món này không", và câu hỏi đó tình cờ trùng với "user có khai `Cannot Eat` không". Sau khi có cột `kind` thì không còn trùng, và không cổng máy nào bắt được sự lệch ấy.
+
+## Affected Documents
+
+- SDD §9.1 (`SPEC-037`) — chữ ký thật của hàm thuần và của `findImplicitSwipes`
+- Test Cases §5 — ma trận truy vết SPEC v1.2 → TC
+- Master Plan §17.2 — DoD `E13-T5` bổ sung ca Whitelist-vẫn-trong-deck
+- [E13-S1 Implementation Guide](plans/E13/what-we-gonna-eat-today_e13-s1-implementation-guide_v0_1.md)
+
+---
+
 # 📜 Lịch sử thay đổi (Change History)
 
 | Version | Ngày | Nội dung cập nhật |
 | :---: | :---: | :--- |
+| `3.18` | 2026-09-05 | Bổ sung `DEC-070` (Mốc quên áp trong SQL; `kind` là tham số bắt buộc; hai nhịp đọc ở `list-deck`; migration `0016` viết tay) cho E13-S1 |
 | `3.17` | 2026-09-04 | Bổ sung `DEC-069` (Cắt phạm vi v1.2 xuống 7 tính năng; $I$ thuộc `selection`; "Quên" là mốc thời gian; ba cờ cá nhân dùng chung một bảng) — lập kế hoạch v1.2 |
 | `3.16` | 2026-09-04 | Bổ sung `DEC-068` (Tự Động Đóng Phiên Quá Hạn & Quản Lý Danh Mục Món Vận Hành Tối Thiểu) cho E11 |
 | `3.15` | 2026-09-02 | Bổ sung `DEC-067` (Mô Hình Hai Loại Cảnh Báo Và Phân Tách Cấu Hình Luật) cho E10-S1 |

@@ -604,6 +604,14 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 - **Nguồn:** `F30`, [BR-038](what-we-gonna-eat-today_business-rules_v1.8.md), [Ranking Spec §2.2](what-we-gonna-eat-today_ranking-specification_v1.3.md), [DEC-036](what-we-gonna-eat-today_decision-log_v3.9.md)
 - **Đầu vào:** `{ userId, globalDishIds, referenceDate, implicitResetAt: string | null }`
 - **Đầu ra:** `Map<globalDishId, I>` với $I \in [-1, 1]$; món không có lượt vuốt nào **không có mặt** trong Map (người gọi dùng `?? 0`) — cùng khuôn `countRecentEatersByDish` của `SPEC-014`.
+
+> [!NOTE]
+> **Chữ ký thi công thật (E13-T2/T4, [DEC-070](what-we-gonna-eat-today_decision-log_v3.9.md)) tách hợp đồng trên làm hai nửa:**
+>
+> - `findImplicitSwipes(userId, globalDishIds)` — `SelectionRepository`. MỘT truy vấn, và mốc `implicitResetAt` được áp **ngay trong** mệnh đề `where` của nó chứ không đi qua tham số. Trả lượt vuốt **thô** `{ globalDishId, type, decisionDate }`.
+> - `computeImplicitPreference({ swipes, referenceDate }, config)` — `selection/domain/`. Hàm thuần nhận danh sách **đã lọc**, nhận `config: RankingConfig` (không nhận `halfLifeDays`/`priorK` rời như `computeRecencyPenalty`, vì ràng buộc "`history` không import được `selection`" không áp cho một hàm nằm trong `selection`).
+>
+> Phép tính trọng số nằm ở `domain/` chứ không ở SQL: đó là điều giữ cho `TC-159`→`TC-162` chạy được **không cần DB**, và `TC-160` là ca duy nhất canh hằng số `HALF_LIFE_DAYS`.
 - **Quy tắc:**
   - Chỉ học từ phiên `FINALIZED`. Phiên `ACTIVE` đang chạy chưa phải một quyết định; phiên `INVALID` là một quyết định đã bị huỷ.
   - Nguồn dữ liệu là bảng `interactions` (trạng thái **hiệu lực**), **không** phải `interaction_events`. `interaction_events` là nhật ký append-only ghi cả request bị từ chối; học từ nó nghĩa là học cả những lượt vuốt người dùng đã Undo.
@@ -704,6 +712,10 @@ infrastructure ──►  application     : Domain Entities (không rò rỉ ki�
 
 > [!IMPORTANT]
 > **`SPEC-038`, `SPEC-039` và `SPEC-024` dùng CHUNG một bảng.** Ba cờ `Cannot Eat`, `Blacklist`, `History Whitelist` có cùng hình dạng `(user, global dish, có/không)` và chỉ khác nhau ở **hệ quả**, không ở cách lưu. Ba bảng cùng hình dạng là ba đường ghi phải giữ đồng bộ bằng tay. Cái giá của việc gộp: mọi truy vấn hiện đang đọc `user_dish_constraints` phải nêu rõ `kind` — bỏ sót một chỗ thì Blacklist lặng lẽ mang theo hành vi xoá lượt vuốt của `Cannot Eat`, thứ `BR-035` cấm bằng chữ.
+>
+> **Cách E13-T5 ép luật này bằng máy thay vì bằng lời nhắc ([DEC-070](what-we-gonna-eat-today_decision-log_v3.9.md)):** `findConstrainedGlobalDishIds` nhận `kind` như một tham số **bắt buộc**, nên `tsc` liệt kê đủ mọi chỗ gọi thay vì để `grep` làm việc đó.
+>
+> **Và có một chỗ sót nguy hiểm hơn cả Blacklist:** mệnh đề `notExists` của Stage 1 (`listEligibleDishCards`) trước E13 hỏi *"user có dòng nào cho món này không"* — câu hỏi tình cờ trùng với *"user có khai `Cannot Eat` không"* khi bảng chỉ chứa một loại dòng. Sau khi có cột `kind` thì không còn trùng: bỏ mệnh đề `kind` đi thì một dòng `HISTORY_WHITELIST` cũng làm món **biến mất khỏi deck**, đúng ngược điều `BR-036` muốn. `TC-169` không bắt được (nó ở tầng `D`), nên E13-S1 bổ sung một ca tầng `I` không có mã TC trong tài liệu này.
 
 ---
 

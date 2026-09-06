@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { HistoryRepository } from '@/features/history/application/history-repository'
-import type { PreferenceKind } from '@/features/preference/domain/explicit-preference'
+import type {
+  ConstraintKind,
+  PreferenceKind,
+} from '@/features/preference/domain/explicit-preference'
 import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
 import type { SystemTag } from '@/shared/domain/system-tag'
 
+import type { ImplicitSwipe } from '../domain/implicit-preference'
 import { listDeck } from './list-deck'
 import type { DishCard, SelectionRepository } from './selection-repository'
 
@@ -31,9 +35,12 @@ function makeDeps(
       deckMode: 'FREE' | 'COURSE'
       courses: readonly SystemTag[]
     }
+    implicitSwipes?: ImplicitSwipe[]
+    whitelisted?: Set<string>
   } = {},
 ) {
   const materializeDeck = vi.fn(async () => ({ outcome: 'MATERIALIZED' as const }))
+  const findImplicitSwipes = vi.fn(async () => overrides.implicitSwipes ?? [])
   const selection: Partial<SelectionRepository> = {
     findParticipant: vi.fn(async () => ({ id: 'p-1', state: 'ACTIVE' as const })),
     listEligibleDishCards: vi.fn(async () => overrides.eligible ?? [makeDishCard()]),
@@ -42,16 +49,21 @@ function makeDeps(
     findSessionCourses: vi.fn(
       async () => overrides.sessionCourses ?? { deckMode: 'FREE' as const, courses: [] },
     ),
+    findImplicitSwipes,
   }
   const history: HistoryRepository = {
     findEatingDates: vi.fn(async () => overrides.eatingRows ?? []),
     countRecentEatersByDish: vi.fn(async () => new Map()),
     findEatingHistory: vi.fn(async () => []),
   }
+  const findConstrainedGlobalDishIds = vi.fn(
+    async (_userId: string, kind: ConstraintKind): Promise<ReadonlySet<string>> =>
+      kind === 'HISTORY_WHITELIST' ? (overrides.whitelisted ?? new Set()) : new Set(),
+  )
   const preferences: PreferenceRepository = {
     setConstraint: vi.fn(async () => ({ removedInteraction: false })),
     setPreference: vi.fn(async () => undefined),
-    findConstrainedGlobalDishIds: vi.fn(async () => new Set<string>()),
+    findConstrainedGlobalDishIds,
     findCannotEatPairs: vi.fn(async () => new Set<string>()),
     findPreferencesByGlobalDish: vi.fn(async () => overrides.preferencesMap ?? new Map()),
   }
@@ -60,6 +72,8 @@ function makeDeps(
     history,
     preferences,
     materializeDeck,
+    findImplicitSwipes,
+    findConstrainedGlobalDishIds,
   }
 }
 
@@ -430,5 +444,137 @@ describe('listDeck — E4-T3/T4', () => {
       { systemTag: 'MAIN', count: 1 },
       { systemTag: 'SOUP', count: 1 },
     ])
+  })
+})
+
+describe('listDeck — E13-T5: số hạng I và History Whitelist', () => {
+  it('món có lịch sử vuốt phải xếp trên món không có, khi mọi thứ khác bằng nhau', async () => {
+    const quiet = makeDishCard({ dishId: 'gd-quiet', globalDishId: 'gld-quiet' })
+    const loved = makeDishCard({ dishId: 'gd-loved', globalDishId: 'gld-loved' })
+
+    const deps = makeDeps({
+      eligible: [quiet, loved],
+      implicitSwipes: [
+        { globalDishId: 'gld-loved', type: 'SWIPE_RIGHT', decisionDate: BASE_INPUT.referenceDate },
+        { globalDishId: 'gld-loved', type: 'SWIPE_RIGHT', decisionDate: BASE_INPUT.referenceDate },
+      ],
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items.map((d) => d.dishId)).toEqual(['gd-loved', 'gd-quiet'])
+  })
+
+  it('lịch sử vuốt TRÁI đẩy món xuống — I âm là một tín hiệu thật, không phải 0', async () => {
+    const neutral = makeDishCard({ dishId: 'gd-neutral', globalDishId: 'gld-neutral' })
+    const rejected = makeDishCard({ dishId: 'gd-rejected', globalDishId: 'gld-rejected' })
+
+    const deps = makeDeps({
+      eligible: [rejected, neutral],
+      implicitSwipes: [
+        {
+          globalDishId: 'gld-rejected',
+          type: 'SWIPE_LEFT',
+          decisionDate: BASE_INPUT.referenceDate,
+        },
+        {
+          globalDishId: 'gld-rejected',
+          type: 'SWIPE_LEFT',
+          decisionDate: BASE_INPUT.referenceDate,
+        },
+      ],
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items.map((d) => d.dishId)).toEqual(['gd-neutral', 'gd-rejected'])
+  })
+
+  it('TC-169 — món trong Whitelist ăn hôm qua: R ép về 0, không bị Cooldown đẩy xuống', async () => {
+    const whitelistedDish = makeDishCard({ dishId: 'gd-pho', globalDishId: 'gld-pho' })
+    const other = makeDishCard({ dishId: 'gd-bun', globalDishId: 'gld-bun' })
+
+    // Cả hai đều ăn hôm qua ($R = 0.857$), nhưng chỉ `gld-pho` được gỡ phạt.
+    const eatingRows = [
+      { globalDishId: 'gld-pho', eatingDate: '2026-08-18' },
+      { globalDishId: 'gld-bun', eatingDate: '2026-08-18' },
+    ]
+
+    const deps = makeDeps({
+      eligible: [other, whitelistedDish],
+      eatingRows,
+      whitelisted: new Set(['gld-pho']),
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items.map((d) => d.dishId)).toEqual(['gd-pho', 'gd-bun'])
+  })
+
+  it('E13-S1 Guide §1.1 — món Whitelist VẪN CÓ trong deck, Whitelist không phải phép lọc', async () => {
+    // Ca không có mã TC trong đặc tả. Nó canh lỗi im lặng nguy hiểm nhất của
+    // epic: nếu mệnh đề `kind` ở Stage 1 bị bỏ sót, một dòng HISTORY_WHITELIST
+    // cũng làm `notExists` trả false và món biến khỏi deck — đúng ngược BR-036.
+    const whitelistedDish = makeDishCard({ dishId: 'gd-pho', globalDishId: 'gld-pho' })
+
+    const deps = makeDeps({
+      eligible: [whitelistedDish],
+      whitelisted: new Set(['gld-pho']),
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    expect(result.value.items.map((d) => d.dishId)).toEqual(['gd-pho'])
+    // Và `list-deck` phải hỏi ĐÚNG loại cờ — hỏi nhầm `CANNOT_EAT` thì tập
+    // Whitelist luôn rỗng và ba ca trên xanh vì lý do sai.
+    expect(deps.findConstrainedGlobalDishIds).toHaveBeenCalledWith('u1', 'HISTORY_WHITELIST')
+  })
+
+  it('TC-170 — Whitelist và Like trực giao: E = +1 vẫn cộng, R = 0 vẫn gỡ phạt', async () => {
+    const both = makeDishCard({ dishId: 'gd-both', globalDishId: 'gld-both' })
+    const likedOnly = makeDishCard({ dishId: 'gd-liked', globalDishId: 'gld-liked' })
+
+    const deps = makeDeps({
+      eligible: [likedOnly, both],
+      eatingRows: [
+        { globalDishId: 'gld-both', eatingDate: '2026-08-18' },
+        { globalDishId: 'gld-liked', eatingDate: '2026-08-18' },
+      ],
+      preferencesMap: new Map([
+        ['gld-both', 'LIKE' as const],
+        ['gld-liked', 'LIKE' as const],
+      ]),
+      whitelisted: new Set(['gld-both']),
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('unreachable')
+    // Hai hiệu ứng cộng dồn: cùng E = +1, món được gỡ phạt Cooldown xếp trước.
+    expect(result.value.items.map((d) => d.dishId)).toEqual(['gd-both', 'gd-liked'])
+  })
+
+  it('BR-048 — deck đã materialize KHÔNG đọc I: hai truy vấn nhịp 2 không chạy', async () => {
+    // TC-172 ở tầng use case. Bấm Quên giữa phiên không đổi thứ tự deck đang
+    // chạy, và cũng không tốn thêm truy vấn nào trên đường lật trang.
+    const deps = makeDeps({
+      eligible: [makeDishCard({ dishId: 'gd-1' })],
+      materialized: ['gd-1'],
+    })
+
+    const result = await listDeck(deps, BASE_INPUT)
+
+    expect(result.ok).toBe(true)
+    expect(deps.findImplicitSwipes).not.toHaveBeenCalled()
+    expect(deps.findConstrainedGlobalDishIds).not.toHaveBeenCalled()
   })
 })

@@ -113,6 +113,13 @@
       "when": 1788444100000,
       "tag": "0015_finalize_warnings",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1788618348896,
+      "tag": "0016_constraint_kind_and_preference_settings",
+      "breakpoints": true
     }
   ]
 }
