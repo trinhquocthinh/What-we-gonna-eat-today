@@ -1,9 +1,16 @@
-import { and, eq, inArray, ne, sql } from 'drizzle-orm'
+import { and, eq, inArray, lt, ne, sql } from 'drizzle-orm'
 import { uuidv7 } from 'uuidv7'
 
 import { buildSnapshotStatement } from '@/features/rule/infrastructure/drizzle-rule-repository'
 import { getDb } from '@/shared/db/client'
-import { interactions, participants, selectionSessions, users } from '@/shared/db/schema'
+import {
+  interactions,
+  participants,
+  selectionSessions,
+  sessionCourses,
+  users,
+} from '@/shared/db/schema'
+import type { SystemTag } from '@/shared/domain/system-tag'
 
 import type {
   AddParticipantOutcome,
@@ -12,6 +19,7 @@ import type {
   SessionOverview,
   SessionRepository,
   SessionSummary,
+  StartDraftConfig,
   StartDraftOutcome,
 } from '../application/session-repository'
 import type { ParticipantState, SessionState } from '../domain/session'
@@ -19,6 +27,39 @@ import type { ParticipantState, SessionState } from '../domain/session'
 const UNIQUE_VIOLATION = '23505'
 const SESSION_UNIQUENESS_CONSTRAINT = 'selection_sessions_active_per_group_date'
 const PARTICIPANT_UNIQUENESS_CONSTRAINT = 'participants_session_user_unique'
+
+type Database = ReturnType<typeof getDb>
+
+/**
+ * SPEC-029 — snapshot chặng. `INSERT … SELECT` chứ KHÔNG `INSERT … VALUES`:
+ * guard `state = 'DRAFT'` nằm trong SELECT là toàn bộ cơ chế cách ly, y hệt
+ * `buildSnapshotStatement` của feature `rule` (Guide §1.3). Một câu VALUES sẽ
+ * ghi cả khi session không còn DRAFT.
+ *
+ * Tối đa 5 câu (5 System Tag), tất cả tự chứa nên `db.batch()` của driver HTTP
+ * đủ dùng — cùng ràng buộc đã ghi ở `shared/db/client.ts`.
+ */
+function buildCourseSnapshotStatements(
+  db: Database,
+  sessionId: string,
+  courses: readonly SystemTag[],
+) {
+  return courses.map((tag, position) =>
+    db
+      .insert(sessionCourses)
+      .select(
+        db
+          .select({
+            sessionId: selectionSessions.id,
+            position: sql<number>`${position}`.as('position'),
+            systemTag: sql<SystemTag>`${tag}::system_tag`.as('system_tag'),
+          })
+          .from(selectionSessions)
+          .where(and(eq(selectionSessions.id, sessionId), eq(selectionSessions.state, 'DRAFT'))),
+      )
+      .onConflictDoNothing(),
+  )
+}
 
 /**
  * Kiểm tra lỗi vi phạm unique index PostgreSQL.
@@ -47,6 +88,7 @@ const SESSION_SUMMARY_COLUMNS = {
   groupId: selectionSessions.groupId,
   decisionDate: selectionSessions.decisionDate,
   state: selectionSessions.state,
+  targetDishCount: selectionSessions.targetDishCount,
 }
 
 async function findBlockingSessionToday(
@@ -67,7 +109,6 @@ async function findBlockingSessionToday(
       ),
     )
     .limit(1)
-
   return rows[0] ?? null
 }
 
@@ -99,46 +140,56 @@ async function createDraftWithCreatorParticipant(input: NewSessionDraft): Promis
 }
 
 /**
- * SPEC-008 + SPEC-022. HAI câu, MỘT giao dịch, THỨ TỰ CỐ ĐỊNH:
+ * SPEC-008 + SPEC-022 + SPEC-029. Snapshot Group Rule VÀ Session Courses, MỘT giao dịch, THỨ TỰ CỐ ĐỊNH:
  *
  *   1. Snapshot Group Rule → Session Rule, guard `state = 'DRAFT'`.
- *   2. UPDATE state → ACTIVE, guard `state = 'DRAFT'`.
+ *   2. Snapshot Session Courses (nếu deckMode='COURSE'), guard `state = 'DRAFT'`.
+ *   3. UPDATE state → ACTIVE + set deck_mode, guard `state = 'DRAFT'`.
  *
- * Câu 1 PHẢI đứng trước câu 2: nó dựa vào việc state chưa đổi để phân biệt
- * "vừa start ngay bây giờ" với "đã ACTIVE từ trước". Đảo thứ tự làm TC-090 và
- * TC-093 hỏng — xem Implementation Guide E5-S2 §1.3.
+ * Các câu snapshot PHẢI đứng trước câu UPDATE: nó dựa vào việc state chưa đổi để phân biệt
+ * "vừa start ngay bây giờ" với "đã ACTIVE từ trước".
  *
  * `db.batch()` của neon-http LÀ transaction Postgres thật (verify từ E4-S2,
- * `commitFinalize` đang dựa vào cho TC-109). Cả hai câu tự chứa nên KHÔNG cần
- * interactive transaction, tức KHÔNG cần driver WebSocket — ghi chú cũ ở
- * `client.ts` dự đoán ngược, đã sửa lại.
- *
- * Khối `catch` giữ NGUYÊN vai trò từ E1-T7: UPDATE vi phạm partial unique
- * index khi commit (TC-107). Điểm mới là batch rollback kéo theo cả snapshot —
- * đó chính là TC-035.
+ * `commitFinalize` đang dựa vào cho TC-109). Cả các câu tự chứa nên KHÔNG cần
+ * interactive transaction, tức KHÔNG cần driver WebSocket.
  */
-async function startDraft(sessionId: string): Promise<StartDraftOutcome> {
+async function startDraft(
+  sessionId: string,
+  config?: StartDraftConfig,
+): Promise<StartDraftOutcome> {
   const db = getDb()
+  const deckMode = config?.deckMode ?? 'FREE'
+  const courses = deckMode === 'COURSE' ? (config?.courses ?? []) : []
+  const targetDishCount = config?.targetDishCount ?? null
 
   try {
-    const [, rows] = await db.batch([
+    const courseStatements = buildCourseSnapshotStatements(db, sessionId, courses)
+    const results = await db.batch([
       buildSnapshotStatement(db, sessionId),
+      ...courseStatements,
       db
         .update(selectionSessions)
-        .set({ state: 'ACTIVE', startedAt: new Date() })
+        .set({ state: 'ACTIVE', startedAt: new Date(), deckMode, targetDishCount })
         .where(and(eq(selectionSessions.id, sessionId), eq(selectionSessions.state, 'DRAFT')))
         .returning({
           id: selectionSessions.id,
           groupId: selectionSessions.groupId,
           decisionDate: selectionSessions.decisionDate,
+          targetDishCount: selectionSessions.targetDishCount,
         }),
     ])
 
+    const rows = results[results.length - 1] as unknown as {
+      id: string
+      groupId: string
+      decisionDate: string
+      targetDishCount: number | null
+    }[]
     const updated = rows[0]
     if (updated === undefined) {
-      // WHERE không khớp: session không tồn tại HOẶC không còn DRAFT. Câu
+      // WHERE không khớp: session không tồn tại HOẶC không còn DRAFT. Các câu
       // snapshot ở trên cũng không khớp vì cùng điều kiện — không có dòng
-      // session_rules mồ côi nào được tạo.
+      // session_rules / session_courses mồ côi nào được tạo.
       return { outcome: 'NOT_DRAFT' }
     }
 
@@ -318,6 +369,28 @@ async function findSessionOverview(sessionId: string): Promise<SessionOverview |
   }
 }
 
+/**
+ * SPEC-034 / BR-055 — đóng mọi phiên quá hạn của một Group.
+ *
+ * IDEMPOTENT: một câu UPDATE thuần, không đọc-rồi-ghi, không phụ thuộc trạng
+ * thái trước đó. Chạy lần thứ hai không khớp dòng nào. Đó là lý do DUY NHẤT
+ * khiến gọi nó trong render của một Server Component là hợp lệ (Guide §1.4) —
+ * đừng thêm bước đọc nào vào đây.
+ */
+async function invalidateExpiredSessions(groupId: string, referenceDate: string): Promise<void> {
+  const db = getDb()
+  await db
+    .update(selectionSessions)
+    .set({ state: 'INVALID' })
+    .where(
+      and(
+        eq(selectionSessions.groupId, groupId),
+        inArray(selectionSessions.state, ['DRAFT', 'ACTIVE']),
+        lt(selectionSessions.decisionDate, referenceDate),
+      ),
+    )
+}
+
 export const drizzleSessionRepository: SessionRepository = {
   findBlockingSessionToday,
   createDraftWithCreatorParticipant,
@@ -330,4 +403,5 @@ export const drizzleSessionRepository: SessionRepository = {
   findParticipantState,
   setParticipantState,
   findSessionOverview,
+  invalidateExpiredSessions,
 }

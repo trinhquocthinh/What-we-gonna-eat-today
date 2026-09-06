@@ -20,6 +20,7 @@ export type SetGroupRulesInput = {
   readonly groupId: string
   readonly rules: readonly RawGroupRule[]
   readonly requestedByUserId: string
+  readonly targetDishCount?: number | null
 }
 
 const ERROR_BY_DOMAIN: Record<GroupRuleError, Failure['code']> = {
@@ -29,7 +30,7 @@ const ERROR_BY_DOMAIN: Record<GroupRuleError, Failure['code']> = {
 }
 
 /**
- * SPEC-021 — ghi đè toàn bộ Rule Set của một Group.
+ * SPEC-021 — ghi đè toàn bộ Rule Set của một Group cùng với targetDishCount (E10-T3).
  *
  * Thứ tự BẤT BIẾN: quyền → validate thuần → ghi. Hai vòng đầu không chạm dữ
  * liệu, nên mọi nhánh lỗi đều không để lại thay đổi từng phần (SDD §2.4).
@@ -47,6 +48,14 @@ export async function setGroupRules(
     return access
   }
 
+  if (
+    input.targetDishCount !== undefined &&
+    input.targetDishCount !== null &&
+    (!Number.isInteger(input.targetDishCount) || input.targetDishCount < 1)
+  ) {
+    return err(failure('ERR_VALIDATION', { field: 'targetDishCount' }))
+  }
+
   // TC-086, TC-087.
   const parsed = readGroupRules(input.rules)
   if (!parsed.ok) {
@@ -54,7 +63,7 @@ export async function setGroupRules(
   }
 
   // TC-085, TC-088.
-  await deps.rules.replaceGroupRules(input.groupId, parsed.value)
+  await deps.rules.replaceGroupRules(input.groupId, parsed.value, input.targetDishCount)
 
   return ok(undefined)
 }

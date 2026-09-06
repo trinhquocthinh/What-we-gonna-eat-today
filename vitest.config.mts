@@ -19,6 +19,17 @@ export default defineConfig({
       include: [
         'src/features/*/domain/**/*.ts',
         'src/features/*/application/**/*.ts',
+        /**
+         * M3-T8 — `presentation/` vào phép đo.
+         *
+         * Nó nằm ngoài suốt v1.0 và v1.1, và ba trong bốn lỗi mà đợt rà soát
+         * sau v1.1 tìm ra đều ở đây (`deck-screen` gãy bất biến
+         * `marks.length === cursor`, `finalize-bar` khớp luật sai loại,
+         * `handleCannotEat` nuốt lỗi mạng). Con số 98% của `domain/` không nói
+         * gì về lớp đang chứa lỗi — một phép đo không chạm tới chỗ hỏng là một
+         * phép đo đang trấn an nhầm chỗ.
+         */
+        'src/features/*/presentation/**/*.{ts,tsx}',
         'src/shared/time/**/*.ts',
       ],
       /**
@@ -40,6 +51,17 @@ export default defineConfig({
       thresholds: {
         'src/features/*/domain/**': { lines: 80 },
         'src/features/*/application/**': { lines: 80 },
+        /**
+         * Ngưỡng RIÊNG và THẤP HƠN, không gộp vào 80% của hai lớp kia. Cùng lý
+         * lẽ đã tách `domain/` khỏi `application/`: một con số gộp để lớp phủ
+         * dày kéo lớp phủ mỏng lên và che đúng chỗ cần nhìn.
+         *
+         * 70% vì `presentation/` có phần không đáng test và cũng không test nổi
+         * cho ra hồn — chuỗi className, nhánh dựng style. Đặt bằng 80% là mời
+         * người ta viết test giả cho chúng, đúng thứ ghi chú `exclude` bên trên
+         * đã từ chối một lần rồi.
+         */
+        'src/features/*/presentation/**': { lines: 70 },
         'src/shared/time/**': { lines: 80 },
       },
     },

@@ -30,6 +30,7 @@ export default async function RulesPage({ params }: RulesPageProps) {
     <GroupRulesScreen
       groupName={group.name}
       initialRules={rules}
+      initialTargetDishCount={group.targetDishCount ?? null}
       canEdit={admin.ok}
       action={setGroupRulesAction.bind(null, groupId)}
     />

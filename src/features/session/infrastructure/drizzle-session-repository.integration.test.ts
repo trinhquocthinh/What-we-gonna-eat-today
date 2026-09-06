@@ -11,6 +11,7 @@ import {
   interactions,
   participants,
   selectionSessions,
+  sessionCourses,
   sessionRules,
   users,
 } from '@/shared/db/schema'
@@ -57,6 +58,7 @@ async function cleanupGroupAndUser(groupId: string, userIds: string | string[]) 
 
   const sessionIds = sessionRows.map((s) => s.id)
   if (sessionIds.length > 0) {
+    await db.delete(sessionCourses).where(inArray(sessionCourses.sessionId, sessionIds))
     await db.delete(sessionRules).where(inArray(sessionRules.sessionId, sessionIds))
     await db.delete(interactions).where(inArray(interactions.sessionId, sessionIds))
     await db.delete(participants).where(inArray(participants.sessionId, sessionIds))
@@ -101,7 +103,11 @@ describe('SPEC-007 — Tạo Session (integration)', () => {
     )
     if (!first.ok) throw new Error('setup thất bại: không tạo được Session đầu tiên')
     const started = await startSession(
-      { sessions: drizzleSessionRepository, findInvalidParticipants: async () => [] },
+      {
+        sessions: drizzleSessionRepository,
+        findInvalidParticipants: async () => [],
+        findGroupTargetDishCount: async () => null,
+      },
       first.value.id,
       userId,
     )
@@ -312,12 +318,20 @@ describe('BR-025 — race condition khi Start (TC-107)', () => {
         // toàn bộ test fail ở đúng chỗ cần quan sát nhất.
         const [outcomeA, outcomeB] = await Promise.allSettled([
           startSession(
-            { sessions: drizzleSessionRepository, findInvalidParticipants: async () => [] },
+            {
+              sessions: drizzleSessionRepository,
+              findInvalidParticipants: async () => [],
+              findGroupTargetDishCount: async () => null,
+            },
             first.value.id,
             userId,
           ),
           startSession(
-            { sessions: drizzleSessionRepository, findInvalidParticipants: async () => [] },
+            {
+              sessions: drizzleSessionRepository,
+              findInvalidParticipants: async () => [],
+              findGroupTargetDishCount: async () => null,
+            },
             second.value.id,
             userId,
           ),
@@ -633,5 +647,304 @@ describe('SPEC-022 / E5-T4 — Snapshot Session Rules lúc Start (integration)',
       .from(sessionRules)
       .where(eq(sessionRules.sessionId, second))
     expect(orphaned).toEqual([])
+  })
+})
+
+describe('SPEC-029 / E9-T1 — Snapshot Session Courses lúc Start (integration)', () => {
+  it('TC-131: Start COURSE 3 chặng -> session_courses đúng 3 dòng, position 0->2, ghi cùng giao dịch với session_rules', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([
+      { systemTag: 'MAIN', minimumCount: 1 },
+    ])
+
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const outcome = await drizzleSessionRepository.startDraft(draft, {
+      deckMode: 'COURSE',
+      courses: ['STAPLE', 'MAIN', 'SOUP'],
+    })
+
+    expect(outcome.outcome).toBe('STARTED')
+
+    const db = getDb()
+    const sessionRow = await db
+      .select({ deckMode: selectionSessions.deckMode, state: selectionSessions.state })
+      .from(selectionSessions)
+      .where(eq(selectionSessions.id, draft))
+      .limit(1)
+
+    expect(sessionRow[0]?.deckMode).toBe('COURSE')
+    expect(sessionRow[0]?.state).toBe('ACTIVE')
+
+    const courses = await db
+      .select({ position: sessionCourses.position, systemTag: sessionCourses.systemTag })
+      .from(sessionCourses)
+      .where(eq(sessionCourses.sessionId, draft))
+      .orderBy(sessionCourses.position)
+
+    expect(courses).toHaveLength(3)
+    expect(courses).toEqual([
+      { position: 0, systemTag: 'STAPLE' },
+      { position: 1, systemTag: 'MAIN' },
+      { position: 2, systemTag: 'SOUP' },
+    ])
+
+    const rules = await db.select().from(sessionRules).where(eq(sessionRules.sessionId, draft))
+    expect(rules).toHaveLength(1)
+  })
+
+  it('TC-133: Đổi Group Rule sau khi phiên ACTIVE -> session_courses không đổi', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([
+      { systemTag: 'MAIN', minimumCount: 1 },
+    ])
+
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const outcome = await drizzleSessionRepository.startDraft(draft, {
+      deckMode: 'COURSE',
+      courses: ['MAIN', 'SOUP'],
+    })
+    expect(outcome.outcome).toBe('STARTED')
+
+    // Đổi Group Rule
+    const db = getDb()
+    await db.delete(groupRules).where(eq(groupRules.groupId, groupId))
+    await db.insert(groupRules).values({
+      groupId,
+      systemTag: 'SIDE',
+      minimumCount: 2,
+      ruleType: 'REQUIRED',
+    })
+
+    const courses = await db
+      .select({ position: sessionCourses.position, systemTag: sessionCourses.systemTag })
+      .from(sessionCourses)
+      .where(eq(sessionCourses.sessionId, draft))
+      .orderBy(sessionCourses.position)
+
+    expect(courses).toEqual([
+      { position: 0, systemTag: 'MAIN' },
+      { position: 1, systemTag: 'SOUP' },
+    ])
+  })
+
+  it('Guard DRAFT: startDraft trên session đã ACTIVE -> NOT_DRAFT và không dòng session_courses nào được ghi', async () => {
+    const { groupId, decisionDate, userId } = await seedGroupWithRules([])
+
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+    const first = await drizzleSessionRepository.startDraft(draft, {
+      deckMode: 'COURSE',
+      courses: ['MAIN', 'SOUP'],
+    })
+    expect(first.outcome).toBe('STARTED')
+
+    // Lần hai với cấu hình khác
+    const second = await drizzleSessionRepository.startDraft(draft, {
+      deckMode: 'COURSE',
+      courses: ['STAPLE', 'DESSERT'],
+    })
+    expect(second.outcome).toBe('NOT_DRAFT')
+
+    const db = getDb()
+    const courses = await db
+      .select({ position: sessionCourses.position, systemTag: sessionCourses.systemTag })
+      .from(sessionCourses)
+      .where(eq(sessionCourses.sessionId, draft))
+      .orderBy(sessionCourses.position)
+
+    // Vẫn nguyên 2 dòng của lần đầu
+    expect(courses).toEqual([
+      { position: 0, systemTag: 'MAIN' },
+      { position: 1, systemTag: 'SOUP' },
+    ])
+  })
+
+  // E10-T3: Đông cứng Target Dish Count lúc Start phiên (BR-015)
+  it('E10-T3: Đông cứng Target Dish Count lúc Start phiên (BR-015)', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    const db = getDb()
+
+    // Cấu hình target_dish_count = 4 cho Group
+    await db.update(groups).set({ targetDishCount: 4 }).where(eq(groups.id, groupId))
+
+    const decisionDate = '2026-08-20'
+    const draft = await createDraft({ groupId, decisionDate, creatorUserId: userId })
+
+    // Start session với targetDishCount = 4
+    const started = await drizzleSessionRepository.startDraft(draft, {
+      deckMode: 'FREE',
+      targetDishCount: 4,
+    })
+    expect(started.outcome).toBe('STARTED')
+
+    // Admin đổi target_dish_count của Group thành 6
+    await db.update(groups).set({ targetDishCount: 6 }).where(eq(groups.id, groupId))
+
+    // selection_sessions.target_dish_count vẫn là 4 (đông cứng)
+    const sessionRow = await drizzleSessionRepository.findById(draft)
+    expect(sessionRow?.targetDishCount).toBe(4)
+  })
+})
+
+describe('E11-T1 — invalidateExpiredSessions (integration)', () => {
+  it('TC-141: Phiên ACTIVE của hôm qua + quét lười -> phiên chuyển INVALID; tạo phiên mới hôm nay thành công', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    cleanupQueue.push(() => cleanupGroupAndUser(groupId, userId))
+
+    const YESTERDAY = '2026-08-14'
+    const TODAY = '2026-08-15'
+
+    // Tạo phiên hôm qua và start để chuyển sang ACTIVE
+    const draft = await createDraft({ groupId, decisionDate: YESTERDAY, creatorUserId: userId })
+    const startRes = await drizzleSessionRepository.startDraft(draft)
+    expect(startRes.outcome).toBe('STARTED')
+
+    // Quét lười với referenceDate = TODAY
+    await drizzleSessionRepository.invalidateExpiredSessions(groupId, TODAY)
+
+    // Phiên hôm qua phải chuyển INVALID
+    const oldSession = await drizzleSessionRepository.findById(draft)
+    expect(oldSession?.state).toBe('INVALID')
+
+    // Tạo phiên hôm nay -> thành công, không bị ERR_SESSION_EXISTS_TODAY
+    const todayDraft = await drizzleSessionRepository.createDraftWithCreatorParticipant({
+      groupId,
+      decisionDate: TODAY,
+      creatorUserId: userId,
+    })
+    expect(todayDraft.id).toBeDefined()
+    expect(todayDraft.state).toBe('DRAFT')
+  })
+
+  it('Idempotent: gọi invalidateExpiredSessions hai lần liên tiếp -> lần hai không đổi gì', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    cleanupQueue.push(() => cleanupGroupAndUser(groupId, userId))
+
+    const YESTERDAY = '2026-08-14'
+    const TODAY = '2026-08-15'
+
+    const draft = await createDraft({ groupId, decisionDate: YESTERDAY, creatorUserId: userId })
+    await drizzleSessionRepository.startDraft(draft)
+
+    // Chạy lần 1
+    await drizzleSessionRepository.invalidateExpiredSessions(groupId, TODAY)
+    const afterFirst = await drizzleSessionRepository.findById(draft)
+    expect(afterFirst?.state).toBe('INVALID')
+
+    // Chạy lần 2
+    await drizzleSessionRepository.invalidateExpiredSessions(groupId, TODAY)
+    const afterSecond = await drizzleSessionRepository.findById(draft)
+    expect(afterSecond?.state).toBe('INVALID')
+  })
+
+  it('Phiên FINALIZED của hôm qua -> quét KHÔNG đụng tới', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    cleanupQueue.push(() => cleanupGroupAndUser(groupId, userId))
+    const db = getDb()
+
+    const YESTERDAY = '2026-08-14'
+    const TODAY = '2026-08-15'
+
+    const draft = await createDraft({ groupId, decisionDate: YESTERDAY, creatorUserId: userId })
+    await drizzleSessionRepository.startDraft(draft)
+
+    // Chuyển session thành FINALIZED (bữa đã chốt)
+    await db
+      .update(selectionSessions)
+      .set({ state: 'FINALIZED', finalizedAt: new Date() })
+      .where(eq(selectionSessions.id, draft))
+
+    // Quét lười
+    await drizzleSessionRepository.invalidateExpiredSessions(groupId, TODAY)
+
+    // Vẫn là FINALIZED, không bị thành INVALID
+    const session = await drizzleSessionRepository.findById(draft)
+    expect(session?.state).toBe('FINALIZED')
+  })
+
+  it('TC-157: Phiên có interactions -> quét -> state = "INVALID" và interactions vẫn giữ nguyên số dòng (BR-061)', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    cleanupQueue.push(() => cleanupGroupAndUser(groupId, userId))
+    const db = getDb()
+
+    const YESTERDAY = '2026-08-14'
+    const TODAY = '2026-08-15'
+
+    const draft = await createDraft({ groupId, decisionDate: YESTERDAY, creatorUserId: userId })
+    await drizzleSessionRepository.ensureParticipants(draft, [userId])
+    await drizzleSessionRepository.startDraft(draft)
+
+    // Thêm món và participant
+    const globalDishId = crypto.randomUUID()
+    const groupDishId = crypto.randomUUID()
+    await db.insert(globalDishes).values({
+      id: globalDishId,
+      name: 'Món Test',
+      normalizedName: 'mon test',
+      createdByUserId: userId,
+      createdFromGroupId: groupId,
+    })
+    await db.insert(groupDishes).values({
+      id: groupDishId,
+      groupId,
+      globalDishId,
+      state: 'ACTIVE',
+    })
+
+    const participantRows = await db
+      .select({ id: participants.id })
+      .from(participants)
+      .where(eq(participants.sessionId, draft))
+    const participantId = participantRows[0]?.id
+    if (!participantId) throw new Error('Setup thất bại')
+
+    // Thêm 2 dòng interactions
+    await db.insert(interactions).values([
+      {
+        id: crypto.randomUUID(),
+        sessionId: draft,
+        participantId,
+        groupDishId,
+        type: 'SWIPE_RIGHT',
+      },
+    ])
+
+    const countBefore = await db
+      .select()
+      .from(interactions)
+      .where(eq(interactions.sessionId, draft))
+    expect(countBefore).toHaveLength(1)
+
+    // Quét lười
+    await drizzleSessionRepository.invalidateExpiredSessions(groupId, TODAY)
+
+    // Phiên chuyển INVALID
+    const oldSession = await drizzleSessionRepository.findById(draft)
+    expect(oldSession?.state).toBe('INVALID')
+
+    // Bảng interactions VẪN CÒN ĐỦ số dòng (không bị xoá theo cascade)
+    const countAfter = await db.select().from(interactions).where(eq(interactions.sessionId, draft))
+    expect(countAfter).toHaveLength(1)
+  })
+
+  it('TC-028: Có session INVALID hôm nay -> tạo phiên mới thành công', async () => {
+    const { userId, groupId } = await seedGroupAndUser()
+    cleanupQueue.push(() => cleanupGroupAndUser(groupId, userId))
+
+    const YESTERDAY = '2026-08-14'
+    const TODAY = '2026-08-15'
+
+    // Tạo phiên hôm qua treo ACTIVE
+    const draft = await createDraft({ groupId, decisionDate: YESTERDAY, creatorUserId: userId })
+    await drizzleSessionRepository.startDraft(draft)
+
+    // Quét chạy khi mở Group Hub
+    await drizzleSessionRepository.invalidateExpiredSessions(groupId, TODAY)
+
+    // Tạo phiên hôm nay thành công
+    const newDraft = await drizzleSessionRepository.createDraftWithCreatorParticipant({
+      groupId,
+      decisionDate: TODAY,
+      creatorUserId: userId,
+    })
+    expect(newDraft.state).toBe('DRAFT')
+    expect(newDraft.decisionDate).toBe(TODAY)
   })
 })

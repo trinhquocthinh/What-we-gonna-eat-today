@@ -14,3 +14,11 @@ export function getDeckPage<T>(items: readonly T[], cursor: number, pageSize: nu
   const nextCursor = cursor + pageSize < items.length ? cursor + pageSize : null
   return { items: page, nextCursor }
 }
+
+/**
+ * BR-062 — trần số thẻ mỗi người mỗi phiên. Ngắn hơn trần thì trả nguyên
+ * vẹn, KHÔNG đệm thêm.
+ */
+export function capDeck<T>(items: readonly T[], maxCards: number): T[] {
+  return items.slice(0, maxCards)
+}

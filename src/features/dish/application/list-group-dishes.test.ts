@@ -20,10 +20,16 @@ function makeThrowingRepo(overrides: Partial<DishRepository> = {}): DishReposito
     async reactivateGroupDish() {
       throw new Error('không dùng trong test này')
     },
+    async deactivateGroupDish() {
+      throw new Error('không dùng trong test này')
+    },
     async addExistingGlobalDishToGroup() {
       throw new Error('không dùng trong test này')
     },
     async listActiveInGroup() {
+      throw new Error('không dùng trong test này')
+    },
+    async listInactiveInGroup() {
       throw new Error('không dùng trong test này')
     },
     async findActiveGroupDish() {
@@ -53,8 +59,8 @@ describe('listGroupDishes', () => {
 
   it('giữ nguyên thứ tự danh sách món ACTIVE mà repository trả về kèm tag', async () => {
     const dishes: GroupDishListItem[] = [
-      { id: 'dish-1', name: 'Cá basa kho tiêu', systemTags: ['MAIN'] },
-      { id: 'dish-2', name: 'Canh chua cá lóc', systemTags: ['SOUP'] },
+      { id: 'dish-1', globalDishId: 'gld-1', name: 'Cá basa kho tiêu', systemTags: ['MAIN'] },
+      { id: 'dish-2', globalDishId: 'gld-2', name: 'Canh chua cá lóc', systemTags: ['SOUP'] },
     ]
     const fakeRepo = makeThrowingRepo({
       async listActiveInGroup() {

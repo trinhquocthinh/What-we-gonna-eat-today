@@ -4,7 +4,7 @@ import Link from 'next/link'
 import type { ReactElement } from 'react'
 import { useActionState, useMemo, useState } from 'react'
 
-import type { RequiredRule } from '@/features/rule/domain/evaluate'
+import type { SessionRule } from '@/features/rule/domain/evaluate'
 import type { SystemTag } from '@/shared/domain/system-tag'
 import { EmptyStateCard } from '@/shared/ui/empty-state-card'
 import { SYSTEM_TAG_LABELS } from '@/shared/ui/system-tag-label'
@@ -18,6 +18,7 @@ export type SummaryDish = {
   readonly systemTags: readonly SystemTag[]
   readonly proposedCount: number
   readonly rejectedCount: number
+  readonly cannotEatCount: number
   readonly recentEaterCount: number
   /** `null` với món ở mục "Chưa ai chọn" — TC-061: chúng KHÔNG có điểm. */
   readonly score: number | null
@@ -33,7 +34,8 @@ export type FinalizeMealScreenProps = {
   progressCaption: string
   ranked: readonly SummaryDish[]
   untouched: readonly SummaryDish[]
-  rules: readonly RequiredRule[]
+  rules: readonly SessionRule[]
+  targetDishCount?: number | null | undefined
   closeHref: string
   action: (state: FinalizeFormState, formData: FormData) => Promise<FinalizeFormState>
 }
@@ -62,6 +64,7 @@ export function FinalizeMealScreen({
   ranked,
   untouched,
   rules,
+  targetDishCount = null,
   closeHref,
   action,
 }: FinalizeMealScreenProps): ReactElement {
@@ -155,6 +158,7 @@ export function FinalizeMealScreen({
         <FinalizeBar
           selectedDishes={selectedDishes}
           rules={rules}
+          targetDishCount={targetDishCount}
           pending={pending}
           error={state.error}
         />

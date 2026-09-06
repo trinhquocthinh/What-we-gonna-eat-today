@@ -49,6 +49,9 @@ function makeFakeSessionRepository(seed: Row[] = []) {
     async findSessionOverview() {
       return null
     },
+    async invalidateExpiredSessions() {
+      // no-op trong createSession test
+    },
   }
 
   return { repository, rows }

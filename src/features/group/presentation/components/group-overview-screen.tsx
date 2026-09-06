@@ -32,6 +32,8 @@ export type GroupOverviewScreenProps = {
   } | null
   currentUserId: string
   rulesHref: string
+  /** E13-T8 — màn cài đặt cá nhân (SPEC-040). */
+  preferencesHref: string
   ruleCount: number
   historyHref?: string | undefined
 }
@@ -75,6 +77,7 @@ export function GroupOverviewScreen(props: GroupOverviewScreenProps): ReactEleme
     finalizedMeal = null,
     currentUserId,
     rulesHref,
+    preferencesHref,
     ruleCount,
     historyHref,
   } = props
@@ -191,6 +194,13 @@ export function GroupOverviewScreen(props: GroupOverviewScreenProps): ReactEleme
             >
               <span className="text-subtitle font-semibold text-ink">Mời thành viên</span>
               <span className="text-caption font-medium text-ink-muted">Tạo link mời</span>
+            </Link>
+            <Link
+              href={preferencesHref}
+              className="flex min-h-14 items-center justify-between gap-3 rounded-control border border-border bg-surface-raised p-4 text-left hover:border-border-strong active:bg-surface-sunken"
+            >
+              <span className="text-subtitle font-semibold text-ink">Sở thích của bạn</span>
+              <span className="text-caption font-medium text-ink-muted">Riêng bạn thấy</span>
             </Link>
             <Link
               href={rulesHref}

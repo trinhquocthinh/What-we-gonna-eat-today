@@ -5,23 +5,36 @@ import { useState, type ReactElement } from 'react'
 import { SYSTEM_TAGS, type SystemTag } from '@/shared/domain/system-tag'
 import { Button } from '@/shared/ui/button'
 import { Sheet } from '@/shared/ui/sheet'
+import { TAG_IN_SENTENCE } from '@/shared/ui/system-tag-label'
 
 import { ruleSentence } from './rule-sentence'
 
 export type AddRuleSheetProps = {
   usedTags: ReadonlySet<SystemTag>
-  onAdd: (rule: { systemTag: SystemTag; minimumCount: number }) => void
+  ruleType?: 'REQUIRED' | 'PREFERRED'
+  onAdd: (rule: {
+    systemTag: SystemTag
+    minimumCount: number
+    ruleType: 'REQUIRED' | 'PREFERRED'
+  }) => void
   onClose: () => void
 }
 
-export function AddRuleSheet({ usedTags, onAdd, onClose }: AddRuleSheetProps): ReactElement {
+export function AddRuleSheet({
+  usedTags,
+  ruleType = 'REQUIRED',
+  onAdd,
+  onClose,
+}: AddRuleSheetProps): ReactElement {
   const available = SYSTEM_TAGS.filter((tag) => !usedTags.has(tag))
   const [systemTag, setSystemTag] = useState<SystemTag | null>(available[0] ?? null)
   const [minimumCount, setMinimumCount] = useState(1)
 
+  const title = ruleType === 'PREFERRED' ? 'Thêm quy định nên có' : 'Thêm quy định'
+
   return (
-    <Sheet title="Thêm quy định" onClose={onClose}>
-      <h2 className="text-title font-semibold text-ink">Thêm quy định</h2>
+    <Sheet title={title} onClose={onClose}>
+      <h2 className="text-title font-semibold text-ink">{title}</h2>
 
       {systemTag === null ? (
         <p className="text-body text-ink-muted">Mọi nhãn đều đã có quy định rồi.</p>
@@ -47,7 +60,8 @@ export function AddRuleSheet({ usedTags, onAdd, onClose }: AddRuleSheetProps): R
                     onChange={() => setSystemTag(tag)}
                     className="sr-only"
                   />
-                  {ruleSentence({ systemTag: tag, minimumCount }).replace('Phải có ít nhất 1 ', '')}
+                  {/* Guide §1.5: dùng trực tiếp TAG_IN_SENTENCE thay vì string replace */}
+                  {TAG_IN_SENTENCE[tag]}
                 </label>
               ))}
             </div>
@@ -65,12 +79,14 @@ export function AddRuleSheet({ usedTags, onAdd, onClose }: AddRuleSheetProps): R
             />
           </label>
 
-          <p className="text-caption text-ink-muted">{ruleSentence({ systemTag, minimumCount })}</p>
+          <p className="text-caption text-ink-muted">
+            {ruleSentence({ systemTag, minimumCount, ruleType })}
+          </p>
 
           <Button
             type="button"
             muted={!Number.isInteger(minimumCount) || minimumCount < 1}
-            onClick={() => onAdd({ systemTag, minimumCount })}
+            onClick={() => onAdd({ systemTag, minimumCount, ruleType })}
           >
             Thêm vào danh sách
           </Button>

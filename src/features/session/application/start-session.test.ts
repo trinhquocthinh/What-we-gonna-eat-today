@@ -18,6 +18,7 @@ function makeDeps(
   overrides: {
     session?: SessionForStart | null
     invalidParticipants?: { userId: string; displayName: string }[]
+    targetDishCount?: number | null
     startOutcome?: 'STARTED' | 'NOT_DRAFT' | 'ALREADY_EXISTS_TODAY'
   } = {},
 ) {
@@ -37,7 +38,12 @@ function makeDeps(
     }),
   }
   const findInvalidParticipants = vi.fn(async () => overrides.invalidParticipants ?? [])
-  return { sessions: sessions as SessionRepository, findInvalidParticipants }
+  const findGroupTargetDishCount = vi.fn(async () => overrides.targetDishCount ?? null)
+  return {
+    sessions: sessions as SessionRepository,
+    findInvalidParticipants,
+    findGroupTargetDishCount,
+  }
 }
 
 describe('startSession', () => {
@@ -120,5 +126,68 @@ describe('startSession', () => {
     expect(result.ok).toBe(false)
     if (result.ok) throw new Error('unreachable')
     expect(result.error.code).toBe('ERR_SESSION_EXISTS_TODAY')
+  })
+
+  it('TC-132 — COURSE + courses rỗng: ERR_VALIDATION, không chạm DB', async () => {
+    const deps = makeDeps()
+
+    const result = await startSession(deps, 's1', 'creator', {
+      deckMode: 'COURSE',
+      courses: [],
+    })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('unreachable')
+    expect(result.error.code).toBe('ERR_VALIDATION')
+    expect(deps.sessions.findForStart).not.toHaveBeenCalled()
+    expect(deps.sessions.startDraft).not.toHaveBeenCalled()
+  })
+
+  it('COURSE + tag trùng lặp trong courses: ERR_VALIDATION, không chạm DB', async () => {
+    const deps = makeDeps()
+
+    const result = await startSession(deps, 's1', 'creator', {
+      deckMode: 'COURSE',
+      courses: ['MAIN', 'MAIN'],
+    })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('unreachable')
+    expect(result.error.code).toBe('ERR_VALIDATION')
+    expect(deps.sessions.findForStart).not.toHaveBeenCalled()
+    expect(deps.sessions.startDraft).not.toHaveBeenCalled()
+  })
+
+  it('COURSE + courses hợp lệ: truyền đúng config xuống startDraft', async () => {
+    const deps = makeDeps()
+
+    const result = await startSession(deps, 's1', 'creator', {
+      deckMode: 'COURSE',
+      courses: ['MAIN', 'SOUP'],
+    })
+
+    expect(result.ok).toBe(true)
+    expect(deps.sessions.startDraft).toHaveBeenCalledWith('s1', {
+      deckMode: 'COURSE',
+      courses: ['MAIN', 'SOUP'],
+      targetDishCount: null,
+    })
+  })
+
+  it('E10-T3: đọc targetDishCount từ Group và truyền xuống startDraft', async () => {
+    const deps = {
+      ...makeDeps(),
+      findGroupTargetDishCount: vi.fn(async () => 4),
+    }
+
+    const result = await startSession(deps, 's1', 'creator')
+
+    expect(result.ok).toBe(true)
+    expect(deps.findGroupTargetDishCount).toHaveBeenCalledWith('g1')
+    expect(deps.sessions.startDraft).toHaveBeenCalledWith('s1', {
+      deckMode: 'FREE',
+      courses: [],
+      targetDishCount: 4,
+    })
   })
 })

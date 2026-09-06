@@ -50,14 +50,19 @@ export type NewUser = typeof users.$inferInsert
 
 /** Tech Spec §3.1. `timezone` là IANA, KHÔNG có default — SPEC-018 nói rõ
  *  "không có giá trị mặc định ẩn; tạo Group phải set". Ghi ở dạng canonical. */
-export const groups = pgTable('groups', {
-  id: uuid('id')
-    .primaryKey()
-    .$defaultFn(() => uuidv7()),
-  name: text('name').notNull(),
-  timezone: text('timezone').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+export const groups = pgTable(
+  'groups',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    name: text('name').notNull(),
+    timezone: text('timezone').notNull(),
+    targetDishCount: integer('target_dish_count'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check('groups_target_dish_count_positive', sql`${table.targetDishCount} >= 1`)],
+)
 
 export const groupMembers = pgTable(
   'group_members',
@@ -194,6 +199,93 @@ export const groupDishTags = pgTable(
 export type GroupDishTag = typeof groupDishTags.$inferSelect
 
 /**
+ * SDD §10 — ba cờ cá nhân dùng CHUNG một bảng. `Cannot Eat` (BR-034),
+ * `Blacklist` (BR-035) và `History Whitelist` (BR-036) có cùng hình dạng
+ * `(user, món, có/không)` và chỉ khác nhau ở HỆ QUẢ, không ở cách lưu. Ba bảng
+ * cùng hình dạng là ba đường ghi phải giữ đồng bộ bằng tay.
+ *
+ * Cái giá của việc gộp: MỌI truy vấn đọc bảng này phải nêu rõ `kind`. Bỏ sót
+ * một chỗ thì Blacklist lặng lẽ mang theo hành vi xoá lượt vuốt của Cannot Eat
+ * — thứ BR-035 cấm bằng chữ — hoặc tệ hơn, món Whitelist bị lọc khỏi deck (E13
+ * Guide S1 §1.1).
+ */
+export const constraintKind = pgEnum('constraint_kind', [
+  'CANNOT_EAT',
+  'BLACKLIST',
+  'HISTORY_WHITELIST',
+])
+
+/**
+ * BR-034 / BR-035 / BR-036. Khoá theo `global_dishes.id` chứ KHÔNG theo
+ * `group_dishes.id`: người dị ứng tôm thì dị ứng ở mọi nhóm, và DEC-009 đã
+ * chốt "thêm lại món là tạo dòng group_dishes mới" — gắn vào đó thì mỗi lần
+ * nhóm gỡ rồi thêm lại, người ta phải khai lại.
+ *
+ * `kind` nằm TRONG khoá chính: một người vừa khai "không ăn được" vừa Blacklist
+ * cùng một món là hợp lệ, và gỡ cái này không đụng cái kia (TC-168).
+ */
+export const userDishConstraints = pgTable(
+  'user_dish_constraints',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    globalDishId: uuid('global_dish_id')
+      .notNull()
+      .references(() => globalDishes.id),
+    // `default` ở tầng cột CHÍNH LÀ phép backfill của migration 0016: một câu
+    // `ADD COLUMN … NOT NULL DEFAULT` điền sẵn cho mọi dòng cũ, không cần UPDATE.
+    kind: constraintKind('kind').notNull().default('CANNOT_EAT'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.globalDishId, table.kind] })],
+)
+
+/**
+ * SDD §2.2 khuôn `interactions`. KHÔNG có giá trị `NEUTRAL` — "Neutral" là
+ * việc KHÔNG tồn tại row, đúng như `InteractionType` không có `NONE`.
+ */
+export const preferenceKind = pgEnum('preference_kind', ['LIKE', 'DISLIKE'])
+
+/** BR-037 — Explicit Preference. Cùng lý lẽ khoá theo `global_dishes.id`. */
+export const userDishPreferences = pgTable(
+  'user_dish_preferences',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    globalDishId: uuid('global_dish_id')
+      .notNull()
+      .references(() => globalDishes.id),
+    kind: preferenceKind('kind').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.globalDishId] })],
+)
+
+/**
+ * SPEC-040 — mốc "quên sở thích đã học". MỘT dòng cho mỗi người ĐÃ TỪNG bấm
+ * Quên; chưa bấm bao giờ là không có dòng, không phải một giá trị sentinel —
+ * cùng khuôn `user_dish_preferences` không có dòng `NEUTRAL`.
+ *
+ * `implicit_reset_at` là một MỐC, không phải lệnh xoá: `SPEC-037` bỏ qua mọi
+ * phiên có `decision_date` trước mốc, còn `interactions` giữ nguyên số dòng.
+ * Xoá thật sẽ phá Session Ranking của các phiên cũ (`SPEC-014` đọc cùng bảng)
+ * và vi phạm BR-061.
+ */
+export const userPreferenceSettings = pgTable('user_preference_settings', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id),
+  implicitResetAt: timestamp('implicit_reset_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type UserDishConstraint = typeof userDishConstraints.$inferSelect
+export type UserDishPreference = typeof userDishPreferences.$inferSelect
+export type UserPreferenceSetting = typeof userPreferenceSettings.$inferSelect
+
+/**
  * BR-012 — `rule_type` phân biệt Required (chặn Finalize) với Preferred (chỉ
  * cảnh báo). v1.0 CHỈ ghi `REQUIRED`; `PREFERRED` là F22, v1.1.
  *
@@ -252,6 +344,10 @@ export const sessionState = pgEnum('session_state', ['DRAFT', 'ACTIVE', 'FINALIZ
  *  `REMOVED` là F25 (ngoài v1.0, SPEC-009 nói rõ). */
 export const participantState = pgEnum('participant_state', ['ACTIVE', 'COMPLETED', 'REMOVED'])
 
+/** BR-063 — hai chế độ duyệt. `FREE` là mặc định: phiên tạo bằng đường cũ
+ *  chạy y như trước, không migration dữ liệu nào. */
+export const deckMode = pgEnum('deck_mode', ['FREE', 'COURSE'])
+
 /**
  * Tech Spec §3.1, §3.2, §3.3. Hai index KHÁC NHAU trên cùng cặp cột — mỗi cái
  * một việc:
@@ -287,6 +383,8 @@ export const selectionSessions = pgTable(
       .notNull()
       .references(() => users.id),
     state: sessionState('state').notNull().default('DRAFT'),
+    deckMode: deckMode('deck_mode').notNull().default('FREE'),
+    targetDishCount: integer('target_dish_count'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     startedAt: timestamp('started_at', { withTimezone: true }),
     finalizedAt: timestamp('finalized_at', { withTimezone: true }),
@@ -314,7 +412,13 @@ export const participants = pgTable(
     state: participantState('state').notNull().default('ACTIVE'),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [uniqueIndex('participants_session_user_unique').on(table.sessionId, table.userId)],
+  (table) => [
+    uniqueIndex('participants_session_user_unique').on(table.sessionId, table.userId),
+    // SPEC-037 (E13-T1) — đường đi NGƯỢC với mọi đường hiện có. Index unique ở
+    // trên phục vụ "phiên này có ai", còn `findImplicitSwipes` hỏi "người này
+    // đã dự những phiên nào" và cột dẫn đầu của khoá kia không giúp được gì.
+    index('participants_user_id_idx').on(table.userId),
+  ],
 )
 
 export type SelectionSession = typeof selectionSessions.$inferSelect
@@ -356,6 +460,32 @@ export const sessionRules = pgTable(
 export type SessionRule = typeof sessionRules.$inferSelect
 
 /**
+ * SPEC-029 — bản sao đông cứng danh sách chặng tại thời điểm Start, cùng khuôn
+ * `session_rules` (DEC-044): không cột `id`, khoá tự nhiên `(session_id, position)`.
+ *
+ * `position` bắt đầu từ 0 và liên tục — thứ tự Creator sắp, KHÔNG phải thứ tự
+ * chuẩn của SYSTEM_TAGS.
+ */
+export const sessionCourses = pgTable(
+  'session_courses',
+  {
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => selectionSessions.id),
+    position: integer('position').notNull(),
+    systemTag: systemTag('system_tag').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.sessionId, table.position] }),
+    // Một tag không được xuất hiện hai lần trong cùng phiên — nếu không,
+    // quy tắc "chặng đầu tiên khớp" (§1.5) có hai đáp án.
+    uniqueIndex('session_courses_session_tag_unique').on(table.sessionId, table.systemTag),
+  ],
+)
+
+export type SessionCourse = typeof sessionCourses.$inferSelect
+
+/**
  * SDD §2.2. Không có giá trị `NONE` — "None" = không tồn tại row (xem
  * `features/selection/domain/interaction.ts`).
  */
@@ -366,7 +496,12 @@ export const interactionType = pgEnum('interaction_type', ['SWIPE_RIGHT', 'SWIPE
  * enum này. Ba giá trị vì UNDO là một sự kiện audit dù nó xoá row khỏi
  * `interactions`.
  */
-export const interactionAction = pgEnum('interaction_action', ['SWIPE_RIGHT', 'SWIPE_LEFT', 'UNDO'])
+export const interactionAction = pgEnum('interaction_action', [
+  'SWIPE_RIGHT',
+  'SWIPE_LEFT',
+  'UNDO',
+  'CANNOT_EAT',
+])
 
 /**
  * Tech Spec §3.1, §3.2. Bảng EFFECTIVE STATE — luôn upsert, không append.
@@ -400,6 +535,10 @@ export const interactions = pgTable(
     ),
     // Đường nóng Tech Spec §3.3: SPEC-014 Session Ranking (E4+).
     index('interactions_session_id_idx').on(table.sessionId),
+    // SPEC-037 (E13-T1) — cặp với `participants_user_id_idx`. `findImplicitSwipes`
+    // quét từ người ra participant rồi ra tương tác; không index nào theo
+    // `participant_id` thì bước cuối là seq scan trên bảng lớn nhất hệ thống.
+    index('interactions_participant_id_idx').on(table.participantId),
   ],
 )
 
@@ -535,6 +674,40 @@ export const eatingHistory = pgTable(
 export type FinalMeal = typeof finalMeals.$inferSelect
 export type FinalMealItem = typeof finalMealItems.$inferSelect
 export type EatingHistory = typeof eatingHistory.$inferSelect
+
+export const finalizeWarningKind = pgEnum('finalize_warning_kind', [
+  'PREFERRED_SHORTFALL',
+  'TARGET_COUNT',
+])
+
+/**
+ * BR-053 — nhật ký cảnh báo mềm bị bỏ qua lúc chốt bữa. APPEND-ONLY, cùng
+ * tinh thần `interaction_events` (DEC-025): ghi lại cái ĐÃ XẢY RA, không phải
+ * trạng thái để đọc ngược.
+ *
+ * KHÔNG chứa lỗi chặn: `blocking` làm `finalizeSession` dừng ở bước 6, không
+ * bao giờ tới `commitFinalize` (Guide §1.4).
+ *
+ * `systemTag` NULL khi `kind = 'TARGET_COUNT'` — cảnh báo đó nói về cả mâm,
+ * không về một loại món.
+ */
+export const finalizeWarnings = pgTable('finalize_warnings', {
+  id: uuid('id')
+    .primaryKey()
+    .$defaultFn(() => uuidv7()),
+  sessionId: uuid('session_id')
+    .notNull()
+    .references(() => selectionSessions.id),
+  kind: finalizeWarningKind('kind').notNull(),
+  systemTag: systemTag('system_tag'),
+  /** `minimumCount` với PREFERRED_SHORTFALL; `target` với TARGET_COUNT. */
+  expected: integer('expected').notNull(),
+  actual: integer('actual').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type FinalizeWarning = typeof finalizeWarnings.$inferSelect
+export type NewFinalizeWarning = typeof finalizeWarnings.$inferInsert
 
 /** Tech Spec dòng 135. SPEC-003/004 — DB CHỈ lưu hash, không bao giờ lưu token
  *  thô. `usedAt`/`usedByUserId` cùng null (chưa dùng) hoặc cùng khác null (đã

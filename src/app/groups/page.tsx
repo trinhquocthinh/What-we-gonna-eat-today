@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/features/auth/infrastructure/session'
 import { listGroups } from '@/features/group/application/list-groups'
 import { drizzleGroupRepository } from '@/features/group/infrastructure/drizzle-group-repository'
 import { GroupListScreen } from '@/features/group/presentation/components/group-list-screen'
-import { resolveDecisionDate } from '@/features/session/domain/decision-date'
+import { resolveDecisionDate } from '@/shared/time/decision-date'
 import { DISPLAY_TIME_ZONE_FALLBACK } from '@/shared/time/time-zone'
 import { formatVietnameseDate } from '@/shared/time/format-vietnamese-date'
 

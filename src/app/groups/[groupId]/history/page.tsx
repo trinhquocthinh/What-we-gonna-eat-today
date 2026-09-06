@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/features/auth/infrastructure/session'
 import { listEatingHistory } from '@/features/history/application/list-eating-history'
 import { drizzleHistoryRepository } from '@/features/history/infrastructure/drizzle-history-repository'
 import { EatingHistoryScreen } from '@/features/history/presentation/components/eating-history-screen'
-import { resolveDecisionDate } from '@/features/session/domain/decision-date'
+import { resolveDecisionDate } from '@/shared/time/decision-date'
 
 import { requireGroupContext } from '../group-access'
 

@@ -10,6 +10,7 @@ describe('listGroupRules (SPEC-021)', () => {
         id: 'r1',
         systemTag: 'SOUP',
         minimumCount: 1,
+        ruleType: 'REQUIRED',
       },
     ]
 

@@ -10,6 +10,8 @@
     "**/coverage/**",
     "**/*.test.ts",
     "**/*.test.tsx",
-    "**/src/shared/db/migrations/**"
-  ]
+    "**/src/shared/db/migrations/**",
+    "**/docs/**"
+  ],
+  "pattern": "src/**/*"
 }

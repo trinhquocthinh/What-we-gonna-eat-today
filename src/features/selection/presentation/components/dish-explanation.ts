@@ -1,3 +1,4 @@
+import type { DishLane } from '../../domain/dish-card'
 import { RANKING_CONFIG } from '../../domain/ranking-config'
 
 /**
@@ -19,16 +20,27 @@ export function formatLastEatenLabel(daysSinceLastEaten: number | null): string 
 }
 
 /**
- * Chỉ đổi khi R > 0 (vừa ăn trong cửa sổ cooldown) — đúng quyết định đã chốt
- * lúc lên kế hoạch S1. Ngưỡng lấy TRỰC TIẾP từ `RANKING_CONFIG`, không hardcode
- * lại số 7 — một nguồn sự thật duy nhất (Ranking Spec §1 nguyên tắc 4).
+ * E8-T3 — Format câu giải thích lý do cho thẻ dựa vào `daysSinceLastEaten` và `lane`.
+ * Ưu tiên từ cụ thể tới chung:
+ * 1. Cooldown (< 7 ngày): 'Vừa ăn gần đây.'
+ * 2. Explore lane:
+ *    - d === null: 'Nhà mình chưa ăn món này bao giờ.'
+ *    - d !== null: `Đã ${daysSinceLastEaten} ngày chưa ăn — thử đổi vị?`
+ * 3. Default: 'Món này đang có trong danh mục của nhóm.'
+ *
+ * Ngưỡng lấy TRỰC TIẾP từ `RANKING_CONFIG`, không hardcode 7 hay 30 (Ranking Spec §1 nguyên tắc 4).
  */
-export function formatExplanation(daysSinceLastEaten: number | null): string {
+export function formatExplanation(daysSinceLastEaten: number | null, lane: DishLane): string {
   if (
     daysSinceLastEaten !== null &&
     daysSinceLastEaten < RANKING_CONFIG.history.cooldownWindowDays
   ) {
     return 'Vừa ăn gần đây.'
+  }
+  if (lane === 'EXPLORE') {
+    return daysSinceLastEaten === null
+      ? 'Nhà mình chưa ăn món này bao giờ.'
+      : `Đã ${daysSinceLastEaten} ngày chưa ăn — thử đổi vị?`
   }
   return 'Món này đang có trong danh mục của nhóm.'
 }

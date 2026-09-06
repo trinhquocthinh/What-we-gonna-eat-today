@@ -16,12 +16,24 @@ describe('formatLastEatenLabel', () => {
 })
 
 describe('formatExplanation', () => {
-  it('trong cửa sổ cooldown (R > 0): câu "vừa ăn gần đây"', () => {
-    expect(formatExplanation(0)).toBe('Vừa ăn gần đây.')
-    expect(formatExplanation(6)).toBe('Vừa ăn gần đây.')
+  it('trong cửa sổ cooldown (R > 0): câu "vừa ăn gần đây" thắng kể cả khi lane là EXPLORE', () => {
+    expect(formatExplanation(0, 'EXPLOIT')).toBe('Vừa ăn gần đây.')
+    expect(formatExplanation(3, 'EXPLORE')).toBe('Vừa ăn gần đây.')
+    expect(formatExplanation(6, 'EXPLOIT')).toBe('Vừa ăn gần đây.')
   })
-  it('ngoài cửa sổ hoặc chưa từng ăn: câu trung tính', () => {
-    expect(formatExplanation(7)).toBe('Món này đang có trong danh mục của nhóm.')
-    expect(formatExplanation(null)).toBe('Món này đang có trong danh mục của nhóm.')
+
+  it('lane EXPLORE, chưa từng ăn (d = null): "Nhà mình chưa ăn món này bao giờ."', () => {
+    expect(formatExplanation(null, 'EXPLORE')).toBe('Nhà mình chưa ăn món này bao giờ.')
+  })
+
+  it('lane EXPLORE, đã lâu chưa ăn (d >= 7): "Đã N ngày chưa ăn — thử đổi vị?"', () => {
+    expect(formatExplanation(45, 'EXPLORE')).toBe('Đã 45 ngày chưa ăn — thử đổi vị?')
+    expect(formatExplanation(7, 'EXPLORE')).toBe('Đã 7 ngày chưa ăn — thử đổi vị?')
+  })
+
+  it('lane EXPLOIT, ngoài cửa sổ cooldown hoặc chưa từng ăn: câu trung tính', () => {
+    expect(formatExplanation(7, 'EXPLOIT')).toBe('Món này đang có trong danh mục của nhóm.')
+    expect(formatExplanation(45, 'EXPLOIT')).toBe('Món này đang có trong danh mục của nhóm.')
+    expect(formatExplanation(null, 'EXPLOIT')).toBe('Món này đang có trong danh mục của nhóm.')
   })
 })

@@ -15,10 +15,8 @@ export type DishScoreRowProps = {
 }
 
 /**
- * S-10, một thẻ món. BA ô đếm, không phải bốn: ô "không ăn được" trong mockup
- * là $X$ (F15, v1.1) — một ô luôn hiện 0 vĩnh viễn nói dối người dùng rằng
- * "chưa ai báo không ăn được", trong khi sự thật là chưa hỏi ai bao giờ
- * (Guide §1.2).
+ * S-10, một thẻ món. Bốn ô đếm lấp đầy hai hàng lưới (SPEC-014, E7-T6):
+ * đề xuất ($P$), không muốn ($N$), vừa ăn ($H$), không ăn được ($X$).
  *
  * KHÔNG hiện `score`. Điểm là thứ dùng để SẮP XẾP, không phải thứ để đọc:
  * "0.43" không nói gì với người đang chọn bữa tối, còn "3 đề xuất · 1 không
@@ -49,6 +47,7 @@ export function DishScoreRow({
         <Count value={dish.proposedCount} label="đề xuất" tone="yes" />
         <Count value={dish.rejectedCount} label="không muốn" tone="neutral" />
         <Count value={dish.recentEaterCount} label="vừa ăn" tone="neutral" />
+        <Count value={dish.cannotEatCount} label="không ăn được" tone="neutral" />
       </dl>
 
       <p className="text-caption text-ink-muted">{tagLabel}</p>

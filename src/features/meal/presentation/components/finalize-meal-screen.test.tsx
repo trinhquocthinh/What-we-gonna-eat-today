@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { RequiredRule } from '@/features/rule/domain/evaluate'
+import type { SessionRule } from '@/features/rule/domain/evaluate'
 import type { SystemTag } from '@/shared/domain/system-tag'
 
 import { FinalizeMealScreen, type SummaryDish } from './finalize-meal-screen'
@@ -14,6 +14,7 @@ const RANKED_DISHES: readonly SummaryDish[] = [
     systemTags: ['MAIN' as SystemTag],
     proposedCount: 3,
     rejectedCount: 0,
+    cannotEatCount: 0,
     recentEaterCount: 0,
     score: 0.75,
   },
@@ -26,14 +27,15 @@ const UNTOUCHED_DISHES: readonly SummaryDish[] = [
     systemTags: ['SOUP' as SystemTag],
     proposedCount: 0,
     rejectedCount: 0,
+    cannotEatCount: 0,
     recentEaterCount: 0,
     score: null, // TC-061: untouched không có điểm
   },
 ]
 
-const RULES: readonly RequiredRule[] = [
-  { systemTag: 'MAIN', minimumCount: 1 },
-  { systemTag: 'SOUP', minimumCount: 1 },
+const RULES: readonly SessionRule[] = [
+  { systemTag: 'MAIN', minimumCount: 1, ruleType: 'REQUIRED' },
+  { systemTag: 'SOUP', minimumCount: 1, ruleType: 'REQUIRED' },
 ]
 
 describe('FinalizeMealScreen (S-10 Màn tổng hợp và chốt bữa — E5-T7 + E5-T8 + E5-T9)', () => {
