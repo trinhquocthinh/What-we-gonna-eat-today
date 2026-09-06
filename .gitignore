@@ -27,3 +27,6 @@ next-env.d.ts
 .vercel
 *.log
 .claude
+
+# Sinh bởi `yarn arch:probe`, xoá ngay sau đó bằng trap — không thuộc repo.
+.probe-result.json

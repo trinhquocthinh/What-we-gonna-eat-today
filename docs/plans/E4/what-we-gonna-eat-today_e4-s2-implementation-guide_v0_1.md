@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E4-T3`, `E4-T4`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-010`, `SPEC-011`) • [Tech Spec](../what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) (§3.1 `session_decks`, §11 `R-02`) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-041`, `TC-045→047`, `TC-102→104`, `TC-108`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E4-T3`, `E4-T4`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-010`, `SPEC-011`) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) (§3.1 `session_decks`, §11 `R-02`) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-041`, `TC-045→047`, `TC-102→104`, `TC-108`)
 > - **Tiền đề bắt buộc:** `S1` (`E4-T1`, `E4-T2`) đã code — slice này tái dùng nguyên vẹn `buildDeck`, `computeRecencyPenalty`, `daysSinceLastEaten`, `RANKING_CONFIG`.
 >
 > 📦 *Nối ranking (S1) vào đường đọc deck thật: materialize một lần vào bảng mới, lọc lại theo trạng thái hiện tại lúc đọc, cursor/pageSize đúng SPEC-011.*

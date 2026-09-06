@@ -6,28 +6,33 @@
  * trung nói về NƠI ĐỊNH NGHĨA, không phải về nơi sử dụng — để một nửa ở đây,
  * một nửa chờ v1.1 rồi thêm sau là đúng cái tình huống nguyên tắc này ngăn.
  *
- * v1.0 CHỈ đọc ba giá trị:
+ * v1.2 đọc bảy nhóm giá trị:
  * - `personalRanking.wRecency`      → `computePersonalScore` (SDD SPEC-010)
+ * - `personalRanking.wExplicit`     → `computePersonalScore` (SPEC-025, E7-T2)
+ * - `personalRanking.wImplicit`     → `computePersonalScore` (SPEC-037, E13-T3)
+ * - `implicit.*`                    → `computeImplicitPreference` (SPEC-037, E13-T2)
  * - `history.cooldownWindowDays`    → `computeRecencyPenalty` (SDD SPEC-020)
- * - `deck.pageSize`                 → phân trang (E4-T4, slice S2)
+ * - `explore.*`                     → `isExploreEligible` + `blendExploitExplore` (BR-047, E8-T2)
+ * - `deck.maxCards`                 → `capDeck` + `splitIntoCourses` (BR-062, E8-T1)
+ * - `sessionRanking.*`              → `computeSessionScore` (SPEC-014, E5-T6 + E7-T6)
  *
- * Mọi giá trị còn lại là hợp đồng đã duyệt cho v1.1/v1.2 — đừng xoá, và cũng
- * đừng viết hàm dùng chúng ở E4 (xem Implementation Guide §1.1, §1.2).
+ * Mọi giá trị còn lại (`wChef`, `wSource`) là hợp đồng đã duyệt cho v1.3 —
+ * đừng xoá, và cũng đừng viết hàm dùng chúng trước khi epic của chúng tới.
  */
 export type RankingConfig = {
   readonly personalRanking: {
-    /** v1.1 — F16 Like/Dislike. Chưa hàm nào đọc. */
+    /** v1.1 — F16 Like/Dislike, `explicitPreferenceScore` (E7-T2). */
     readonly wExplicit: number
-    /** v1.2 — F30 Implicit Preference. Chưa hàm nào đọc. */
+    /** v1.2 — F30 Implicit Preference, `computePersonalScore` (E13-T3). */
     readonly wImplicit: number
-    /** v1.0 — SỐ HẠNG DUY NHẤT đang dùng. */
+    /** v1.0 — SPEC-020. */
     readonly wRecency: number
-    /** v1.2 — F33 Chef Mode. Chưa hàm nào đọc. */
+    /** v1.3 — F33 Chef Mode. Chưa hàm nào đọc. */
     readonly wChef: number
-    /** v1.2 — F36 Purchase Source. Chưa hàm nào đọc. */
+    /** v1.3 — F36 Purchase Source. Chưa hàm nào đọc. */
     readonly wSource: number
   }
-  /** v1.2 — F30. Chưa hàm nào đọc. */
+  /** v1.2 — F30, `computeImplicitPreference` (E13-T2). */
   readonly implicit: {
     readonly halfLifeDays: number
     readonly priorK: number
@@ -36,17 +41,20 @@ export type RankingConfig = {
   readonly history: {
     readonly cooldownWindowDays: number
   }
-  /** v1.1 — F18 Explore Lane. Chưa hàm nào đọc. */
+  /** v1.1 — F18 Explore Lane, BR-047 (E8-T2). */
   readonly explore: {
     readonly ratio: number
     readonly blockSize: number
     readonly staleDays: number
   }
-  /** `pageSize` dùng từ S2 (E4-T4, SPEC-011). */
   readonly deck: {
-    readonly pageSize: number
+    /**
+     * BR-062 + Ranking Spec §5 — Trần 30 thẻ mỗi người mỗi phiên.
+     * Chia hết cho `blockSize = 5` => đúng 24 Exploit + 6 Explore, không có khối cụt ở cuối.
+     */
+    readonly maxCards: number
   }
-  /** E5-T6 — SPEC-014 Session Ranking. Chưa hàm nào đọc ở E4. */
+  /** E5-T6 + E7-T6 — SPEC-014 Session Ranking. */
   readonly sessionRanking: {
     readonly aSwipeRight: number
     readonly bSwipeLeft: number
@@ -76,7 +84,7 @@ export const RANKING_CONFIG: RankingConfig = {
     staleDays: 30,
   },
   deck: {
-    pageSize: 20,
+    maxCards: 30,
   },
   sessionRanking: {
     aSwipeRight: 1.0,

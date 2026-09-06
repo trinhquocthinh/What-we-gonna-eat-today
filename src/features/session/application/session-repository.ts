@@ -1,14 +1,19 @@
+import type { SystemTag } from '@/shared/domain/system-tag'
+
 import type { ParticipantState, SessionState } from '../domain/session'
 
 export type SessionSummary = {
   readonly id: string
   readonly groupId: string
   readonly decisionDate: string
-  // Rộng hơn 'DRAFT' | 'ACTIVE' có chủ ý: `findById` (thêm ở S5 — xem
-  // Implementation Guide S5 §…) có thể trả về Session ở bất kỳ state nào,
-  // không chỉ hai state mà `createDraftWithCreatorParticipant`/`startDraft`
-  // tự tạo ra. Dùng chung một type thay vì tách `SessionRecord` riêng.
   readonly state: SessionState
+  readonly targetDishCount?: number | null
+}
+
+export type StartDraftConfig = {
+  readonly deckMode?: 'FREE' | 'COURSE'
+  readonly courses?: readonly SystemTag[]
+  readonly targetDishCount?: number | null
 }
 
 export type SessionForStart = {
@@ -70,12 +75,10 @@ export interface SessionRepository {
   createDraftWithCreatorParticipant(input: NewSessionDraft): Promise<SessionSummary>
 
   /**
-   * SPEC-008 rút gọn — một UPDATE có điều kiện `WHERE id=$1 AND state='DRAFT'`.
-   * Dựa vào `selection_sessions_active_per_group_date` để bắt race (TC-107),
-   * KHÔNG tự SELECT rồi so sánh state trước (Tech Spec §3.2 — race condition
-   * ngay cả với hai người dùng).
+   * SPEC-008 rút gọn + SPEC-029. Snapshot session_rules và session_courses
+   * (nếu deckMode='COURSE') trong cùng batch có guard state='DRAFT'.
    */
-  startDraft(sessionId: string): Promise<StartDraftOutcome>
+  startDraft(sessionId: string, config?: StartDraftConfig): Promise<StartDraftOutcome>
 
   /**
    * THÊM Ở S5 — trang deck (`app/sessions/[sessionId]/page.tsx`) cần
@@ -151,4 +154,17 @@ export interface SessionRepository {
 
   /** MỚI — E3-T6. Một câu JOIN, không round-trip riêng cho từng participant. */
   findSessionOverview(sessionId: string): Promise<SessionOverview | null>
+
+  /**
+   * SPEC-034 / BR-055 — đóng mọi phiên quá hạn của một Group.
+   *
+   * IDEMPOTENT: một câu UPDATE thuần, không đọc-rồi-ghi, không phụ thuộc trạng
+   * thái trước đó. Chạy lần thứ hai không khớp dòng nào. Đó là lý do DUY NHẤT
+   * khiến gọi nó trong render của một Server Component là hợp lệ (Guide §1.4) —
+   * đừng thêm bước đọc nào vào đây.
+   *
+   * `referenceDate` do người gọi quy đổi qua `resolveDecisionDate(now, group.timezone)`;
+   * hàm này không tự biết timezone, cùng kỷ luật đã áp cho `computeRecencyPenalty`.
+   */
+  invalidateExpiredSessions(groupId: string, referenceDate: string): Promise<void>
 }

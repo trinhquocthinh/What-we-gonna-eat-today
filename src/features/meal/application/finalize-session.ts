@@ -1,10 +1,12 @@
 import { buildDefaultEatingHistory } from '@/features/history/domain/default-eating-history'
+import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
 import type { RuleRepository } from '@/features/rule/application/rule-repository'
-import { evaluateRequired } from '@/features/rule/domain/evaluate'
+import { evaluateRules } from '@/features/rule/domain/evaluate'
 import type { Failure } from '@/shared/errors'
 import { failure } from '@/shared/errors'
 import type { Result } from '@/shared/result'
 import { err, ok } from '@/shared/result'
+import { resolveDecisionDate } from '@/shared/time/decision-date'
 
 import type { MealRepository } from './meal-repository'
 
@@ -13,6 +15,8 @@ export type FinalizeSessionDeps = {
   /** `meal → rule` đã nằm sẵn trong `ALLOWED_CROSS_FEATURE` từ E0-T2 —
    *  chiều này được dự trù đúng cho khoảnh khắc này. */
   readonly rules: RuleRepository
+  /** `meal → preference` đã nằm trong `ALLOWED_CROSS_FEATURE` từ E7-S1 (E7-T7). */
+  readonly preferences: PreferenceRepository
 }
 
 export type FinalizeSessionInput = {
@@ -31,9 +35,13 @@ export async function finalizeSession(
   input: FinalizeSessionInput,
 ): Promise<Result<{ finalMealId: string }, Failure>> {
   /* jscpd:ignore-start */
-  // Bước 1: Session ACTIVE.
+  // Bước 1: Session ACTIVE và không quá hạn (DEC-068 / TC-156).
   const session = await deps.meal.findSessionForMeal(input.sessionId)
   if (session === null || session.state !== 'ACTIVE') {
+    return err(failure('ERR_SESSION_NOT_ACTIVE', { sessionId: input.sessionId }))
+  }
+  const today = resolveDecisionDate(new Date(), session.groupTimeZone)
+  if (session.decisionDate < today) {
     return err(failure('ERR_SESSION_NOT_ACTIVE', { sessionId: input.sessionId }))
   }
 
@@ -65,13 +73,14 @@ export async function finalizeSession(
   // thời điểm một cách CÓ CHỦ Ý: "nhà này đòi mâm cơm có gì" đã chốt lúc Start;
   // "món này là món gì" thì sự thật mới nhất là sự thật đúng.
   const tagsByDish = await deps.meal.findSystemTagsByGroupDish(draft.groupDishIds)
-  const evaluation = evaluateRequired({
+  const evaluation = evaluateRules({
     rules,
     dishes: draft.groupDishIds.map((groupDishId) => ({
       systemTags: tagsByDish.get(groupDishId) ?? [],
     })),
+    targetDishCount: session.targetDishCount ?? null,
   })
-  if (!evaluation.satisfied) {
+  if (evaluation.blocking.length > 0) {
     // TC-072 — phiên GIỮ NGUYÊN `ACTIVE`. Không có lệnh ghi nào đã chạy tới
     // đây, nên "giữ nguyên" là hệ quả của thứ tự bước, không phải của một lệnh
     // rollback nào.
@@ -80,27 +89,48 @@ export async function finalizeSession(
         sessionId: input.sessionId,
         // E5-T9 in "Còn thiếu: 1 món canh" ngay trên nút chốt — chi tiết phải
         // đi kèm mã lỗi, không phải để presentation tự tra lại.
-        shortfalls: evaluation.shortfalls,
+        shortfalls: evaluation.blocking,
       }),
     )
   }
 
   // Bước 7 — chuẩn bị dữ liệu TRƯỚC transaction, đúng nguyên tắc "đọc trước,
   // ghi nguyên tử sau" đã dùng xuyên suốt S2-S5.
-  const participantUserIds = await deps.meal.listActiveParticipantUserIds(input.sessionId)
-  const globalDishIdByGroupDishId = await deps.meal.resolveGlobalDishIds(draft.groupDishIds)
+  const [participantUserIds, globalDishIdByGroupDishId] = await Promise.all([
+    deps.meal.listActiveParticipantUserIds(input.sessionId),
+    deps.meal.resolveGlobalDishIds(draft.groupDishIds),
+  ])
   const globalDishIds = draft.groupDishIds
     .map((id) => globalDishIdByGroupDishId.get(id))
     .filter((id): id is string => id !== undefined)
+
+  // M3-T9 — MỘT truy vấn cho cả nhóm. Bản trước gọi
+  // `findConstrainedGlobalDishIds` một lần cho mỗi participant (N+1), đúng lối
+  // viết mà E7-S3 Guide §4.2 cấm bằng chữ khi dựng `countCannotEatByDish`.
+  const cannotEatPairs = await deps.preferences.findCannotEatPairs(
+    participantUserIds,
+    globalDishIds,
+  )
 
   const eatingHistoryRows = buildDefaultEatingHistory({
     participantUserIds,
     globalDishIds,
     decisionDate: session.decisionDate,
     finalMealId: draft.finalMealId,
+    cannotEatPairs,
   })
 
-  await deps.meal.commitFinalize({ sessionId: input.sessionId, eatingHistoryRows })
+  const warningRows = evaluation.warnings.map((w) =>
+    w.kind === 'PREFERRED_SHORTFALL'
+      ? { kind: w.kind, systemTag: w.systemTag, expected: w.minimumCount, actual: w.actual }
+      : { kind: w.kind, systemTag: null, expected: w.target, actual: w.actual },
+  )
+
+  await deps.meal.commitFinalize({
+    sessionId: input.sessionId,
+    eatingHistoryRows,
+    warningRows,
+  })
 
   return ok({ finalMealId: draft.finalMealId })
 }

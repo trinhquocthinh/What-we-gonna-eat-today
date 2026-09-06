@@ -63,6 +63,7 @@ export default async function SummaryPage({ params }: SummaryPageProps) {
     systemTags: dish.systemTags,
     proposedCount: dish.proposedCount,
     rejectedCount: dish.rejectedCount,
+    cannotEatCount: dish.cannotEatCount,
     recentEaterCount: dish.recentEaterCount,
     score,
   })
@@ -74,6 +75,7 @@ export default async function SummaryPage({ params }: SummaryPageProps) {
       ranked={ranking.value.ranked.map((d) => toSummaryDish(d, d.score))}
       untouched={ranking.value.untouched.map((d) => toSummaryDish(d, null))}
       rules={rules}
+      targetDishCount={session.targetDishCount}
       closeHref={`/groups/${session.groupId}`}
       action={finalizeMealAction.bind(null, sessionId)}
     />

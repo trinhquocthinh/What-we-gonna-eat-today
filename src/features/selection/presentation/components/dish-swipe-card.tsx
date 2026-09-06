@@ -2,6 +2,8 @@
 
 import type { ReactElement } from 'react'
 
+import { SYSTEM_TAG_LABELS } from '@/shared/ui/system-tag-label'
+
 import type { DishCard } from '../../domain/dish-card'
 import { useSwipeGesture } from './use-swipe-gesture'
 import type { SwipeDirection } from '../../domain/swipe-gesture'
@@ -15,6 +17,7 @@ export type DishSwipeCardProps = {
   /** Tên hai món kế tiếp trong deck — "Trong chồng". */
   upcomingNames: readonly string[]
   onCommit: (direction: SwipeDirection, dishId: string) => void
+  onCannotEat?: (dish: DishCard) => void
 }
 
 export const DIRECTION_STYLES: Record<
@@ -42,8 +45,8 @@ export const DIRECTION_STYLES: Record<
 }
 
 /**
- * Thẻ chính của S-09. `reason` chip đổi màu theo explore lane là F18/v1.1 —
- * BỎ ở S5, luôn dùng màu trung tính (`--surface-sunken`/`--ink-muted`).
+ * Thẻ chính của S-09. Nút "Tôi không ăn được món này" (BR-043, DEC-062)
+ * nằm ở nửa dưới card, dừng propagation của pointer để không xung đột gesture.
  */
 export function DishSwipeCard({
   dish,
@@ -51,6 +54,7 @@ export function DishSwipeCard({
   explanation,
   upcomingNames,
   onCommit,
+  onCannotEat,
 }: DishSwipeCardProps): ReactElement {
   const gesture = useSwipeGesture((direction) => onCommit(direction, dish.dishId))
   const tone = DIRECTION_STYLES[gesture.previewDirection]
@@ -69,9 +73,16 @@ export function DishSwipeCard({
       className={`relative flex h-full touch-none select-none flex-col gap-4 rounded-card border p-6 shadow-lift ${tone.background} ${tone.border}`}
     >
       <div className="flex min-h-7.5 items-start justify-between gap-3">
-        <span className="rounded-chip bg-surface-sunken px-3 py-1.5 text-caption font-medium text-ink-muted">
-          {dish.systemTags[0] ?? 'Trong danh mục'}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-chip bg-surface-sunken px-3 py-1.5 text-caption font-medium text-ink-muted">
+            {dish.systemTags[0] ? SYSTEM_TAG_LABELS[dish.systemTags[0]] : 'Trong danh mục'}
+          </span>
+          {dish.lane === 'EXPLORE' ? (
+            <span className="rounded-full bg-accent-soft px-3 py-1.5 text-caption font-medium text-accent">
+              Đổi vị
+            </span>
+          ) : null}
+        </div>
         {tone.label === '' ? null : (
           <span
             className={`flex-none rounded-chip px-3 py-1.5 text-caption font-semibold text-on-accent ${tone.dragLabelBackground}`}
@@ -90,13 +101,24 @@ export function DishSwipeCard({
               key={tag}
               className="rounded-full bg-surface-sunken px-3 py-1.5 text-caption font-medium text-ink-muted"
             >
-              {tag}
+              {SYSTEM_TAG_LABELS[tag]}
             </span>
           ))}
         </div>
       )}
 
       <div className="flex-1" />
+
+      {onCannotEat === undefined ? null : (
+        <button
+          type="button"
+          onClick={() => onCannotEat(dish)}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="min-h-11 w-full rounded-button text-caption font-medium text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Tôi không ăn được món này
+        </button>
+      )}
 
       <div className="flex flex-col gap-2 border-t border-border pt-4">
         <span className="tabular text-caption font-medium text-ink-muted">{lastEatenLabel}</span>

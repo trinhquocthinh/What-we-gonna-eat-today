@@ -1,64 +1,39 @@
+import { sendJsonWithRetry, type SendStatus } from '@/shared/http/send-json-with-retry'
+
 import type { InteractionAction, InteractionType } from '../../domain/interaction'
 
-export type SendInteractionStatus = 'idle' | 'retrying' | 'failed'
-
-/** NFR-05: 3 lần retry, backoff 1s/2s/4s. Chưa có đặc tả số chính xác — đây
- *  là lựa chọn hợp lý cho quy mô <10 người dùng, không phải hằng số bất biến. */
-const RETRY_DELAYS_MS = [1000, 2000, 4000]
+export type SendInteractionStatus = SendStatus
 
 export type SendInteractionResult =
   { ok: true; effectiveInteraction: InteractionType | null } | { ok: false }
 
 /**
- * Gửi một lượt vuốt tới Route Handler, tự retry khi lỗi MẠNG (không retry lỗi
- * 4xx — đó là lỗi logic/quyền, gửi lại không giúp gì). Gọi `onStatusChange` để
- * component điều khiển dải "Đang thử gửi lại".
+ * Gửi một lượt vuốt tới Route Handler. Vòng retry nằm ở
+ * `shared/http/send-json-with-retry` từ M3-T7 — hàm này chỉ còn giữ phần RIÊNG
+ * của lượt vuốt: đường dẫn, và `clientTimestamp`.
  *
- * Hàm THUẦN theo nghĩa không phụ thuộc React — test được bằng cách mock
- * `fetch`, không cần render component nào.
+ * `clientTimestamp` capture MỘT LẦN, TRƯỚC vòng retry — mọi lần thử lại gửi lại
+ * ĐÚNG mốc thời gian gốc. Retry là gửi lại CÙNG một hành động đã xảy ra, không
+ * phải tạo ra một hành động mới mỗi lần thử: nếu mỗi lần retry tự lấy
+ * `new Date()` mới, một request bị delay 4 giây (qua cả 3 lần retry) sẽ tự báo
+ * cáo thời điểm SAI, làm hỏng chính cơ chế mà E4-T5 vừa dựng. Đây là lý do
+ * hàm này không tan hẳn vào hàm dùng chung.
  */
 export async function sendInteractionWithRetry(
   sessionId: string,
   input: { dishId: string; action: InteractionAction },
   onStatusChange: (status: SendInteractionStatus) => void,
 ): Promise<SendInteractionResult> {
-  // Capture MỘT LẦN, TRƯỚC vòng lặp retry — mọi lần thử lại gửi lại ĐÚNG mốc
-  // thời gian gốc. Retry là gửi lại CÙNG một hành động đã xảy ra, không phải
-  // tạo ra một hành động mới mỗi lần thử — nếu mỗi lần retry tự lấy
-  // `new Date()` mới, một request bị delay 4 giây (qua cả 3 lần retry) sẽ tự
-  // báo cáo thời điểm SAI, làm hỏng chính cơ chế mà E4-T5 vừa dựng.
   const clientTimestamp = new Date().toISOString()
 
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
-    try {
-      const response = await fetch(`/api/sessions/${sessionId}/interactions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...input, clientTimestamp }),
-      })
+  const result = await sendJsonWithRetry<{ effectiveInteraction: InteractionType | null }>({
+    url: `/api/sessions/${sessionId}/interactions`,
+    method: 'POST',
+    body: { ...input, clientTimestamp },
+    onStatusChange,
+  })
 
-      if (response.ok) {
-        onStatusChange('idle')
-        const body = (await response.json()) as { effectiveInteraction: InteractionType | null }
-        return { ok: true, effectiveInteraction: body.effectiveInteraction }
-      }
-
-      // 4xx: lỗi quyền/validate — KHÔNG retry, gửi lại không đổi kết quả.
-      if (response.status < 500) {
-        onStatusChange('failed')
-        return { ok: false }
-      }
-    } catch {
-      // Lỗi mạng thật — rơi xuống nhánh retry bên dưới.
-    }
-
-    const delay = RETRY_DELAYS_MS[attempt]
-    if (delay !== undefined) {
-      onStatusChange('retrying')
-      await new Promise((resolve) => setTimeout(resolve, delay))
-    }
-  }
-
-  onStatusChange('failed')
-  return { ok: false }
+  return result.ok
+    ? { ok: true, effectiveInteraction: result.data.effectiveInteraction }
+    : { ok: false }
 }

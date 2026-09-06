@@ -1,18 +1,26 @@
 import type { HistoryRepository } from '@/features/history/application/history-repository'
 import { computeRecencyPenalty, daysSinceLastEaten } from '@/features/history/domain/recency'
+import type { PreferenceRepository } from '@/features/preference/application/preference-repository'
+import { explicitPreferenceScore } from '@/features/preference/domain/explicit-preference'
 import type { Failure } from '@/shared/errors'
 import { failure } from '@/shared/errors'
 import type { Result } from '@/shared/result'
 import { err, ok } from '@/shared/result'
 
-import { getDeckPage } from '../domain/deck-page'
-import { buildDeck } from '../domain/ranking'
+import { capDeck, getDeckPage } from '../domain/deck-page'
+import type { CourseBoundary } from '../domain/course-deck'
+import { deriveCourseBoundaries, splitIntoCourses } from '../domain/course-deck'
+import { computeImplicitPreference } from '../domain/implicit-preference'
+import { blendExploitExplore, buildDeck, isExploreEligible } from '../domain/ranking'
 import { RANKING_CONFIG } from '../domain/ranking-config'
 import type { DishCard, SelectionRepository } from './selection-repository'
+
+export type { CourseBoundary }
 
 export type ListDeckDeps = {
   readonly selection: SelectionRepository
   readonly history: HistoryRepository
+  readonly preferences: PreferenceRepository
 }
 
 export type ListDeckInput = {
@@ -33,6 +41,11 @@ export type ListDeckInput = {
 export type ListDeckResult = {
   readonly items: DishCard[]
   readonly nextCursor: number | null
+  /**
+   * `null` khi `deck_mode = FREE` — người gọi không phải rẽ nhánh, chỉ cần
+   * kiểm `=== null` một lần ở tầng presentation (TC-137).
+   */
+  readonly courses: readonly CourseBoundary[] | null
 }
 
 const ACCEPTED_PARTICIPANT_STATES = ['ACTIVE', 'COMPLETED'] as const
@@ -68,41 +81,113 @@ export async function listDeck(
     return err(failure('ERR_NOT_PARTICIPANT', { sessionId: input.sessionId }))
   }
 
-  const eligible = await deps.selection.listEligibleDishCards(input.sessionId, participant.id)
-
-  // SỬA (S4): đọc lịch sử ăn ở MỌI lần gọi — cần cho lastEatenLabel bất kể
-  // deck đã materialize hay chưa. Xem Implementation Guide §2.
-  const eatingRows = await deps.history.findEatingDates(
+  const eligible = await deps.selection.listEligibleDishCards(
+    input.sessionId,
+    participant.id,
     input.userId,
-    eligible.map((d) => d.globalDishId),
   )
+
+  // NHỊP 1 — SPEC-020 + SPEC-025 (§4.2): mọi lần đọc deck đều cần bốn thứ này.
+  // `findMaterializedDeck` được kéo VÀO đây ở E13-T5 (trước nó đứng riêng) để
+  // bù đúng vòng round-trip mà nhịp 2 thêm vào — đường ấm giữ nguyên chi phí cũ.
+  const globalDishIds = eligible.map((d) => d.globalDishId)
+  const [eatingRows, preferences, sessionDeckConfig, materializedDeck] = await Promise.all([
+    deps.history.findEatingDates(input.userId, globalDishIds),
+    deps.preferences.findPreferencesByGlobalDish(input.userId, globalDishIds),
+    deps.selection.findSessionCourses(input.sessionId),
+    deps.selection.findMaterializedDeck(input.sessionId, input.userId),
+  ])
   const eatingByDish = groupEatingDatesByDish(eatingRows)
 
-  let orderedDishIds = await deps.selection.findMaterializedDeck(input.sessionId, input.userId)
+  let orderedDishIds = materializedDeck
 
   if (orderedDishIds === null) {
     // Chỉ bước TÍNH RANKING + GHI còn nằm trong nhánh điều kiện — không phải
     // việc đọc lịch sử (đã chuyển ra ngoài, ở trên).
+    //
+    // LƯU Ý BR-048 (Deck Stability) & SPEC-028: Deck được materialize một lần
+    // vào session_decks. Số hạng E và I chỉ tác động tới thứ tự ở lần dựng đầu
+    // tiên của phiên; đổi Like/Dislike hay bấm Quên giữa phiên không sắp xếp
+    // lại deck đã lưu (TC-172).
+    //
+    // NHỊP 2 — SPEC-037 + SPEC-039. Hai truy vấn này nằm TRONG nhánh, không ở
+    // nhịp 1: $I$ và Whitelist chỉ dùng lúc DỰNG deck, còn phần tính `lane` ở
+    // cuối hàm (chạy mỗi lần đọc) không cần chúng. Đặt chúng ở nhịp 1 là bắt
+    // mọi lần lật trang trả tiền cho hai truy vấn không ai đọc — đúng rủi ro
+    // "$I$ làm chậm đường tải deck" của Master Plan §17.4.
+    const [implicitSwipes, whitelisted] = await Promise.all([
+      deps.selection.findImplicitSwipes(input.userId, globalDishIds),
+      deps.preferences.findConstrainedGlobalDishIds(input.userId, 'HISTORY_WHITELIST'),
+    ])
+    const implicitByDish = computeImplicitPreference(
+      { swipes: implicitSwipes, referenceDate: input.referenceDate },
+      RANKING_CONFIG,
+    )
+
     const rankingInputs = eligible.map((dish) => {
       const dates = eatingByDish.get(dish.globalDishId) ?? []
       return {
         dishId: dish.dishId,
+        explicit: explicitPreferenceScore(preferences.get(dish.globalDishId) ?? null),
+        // Món chưa có lượt vuốt nào không có mặt trong Map — SPEC-037 để người
+        // gọi quyết, và ở đây "chưa biết gì" đúng là trung tính.
+        implicit: implicitByDish.get(dish.globalDishId) ?? 0,
         daysSinceLastEaten: daysSinceLastEaten({
           eatingDates: dates,
           referenceDate: input.referenceDate,
         }),
-        recencyPenalty: computeRecencyPenalty({
-          eatingDates: dates,
-          referenceDate: input.referenceDate,
-          cooldownWindowDays: RANKING_CONFIG.history.cooldownWindowDays,
-        }),
+        // SPEC-039 — Whitelist ÉP $R = 0$. Không lọc, không cộng điểm: nó chỉ
+        // gỡ một hình phạt. Món phở của người ngày nào ăn cũng được thôi bị
+        // Cooldown đẩy xuống, nhưng cũng không vì thế mà nhảy lên đầu.
+        recencyPenalty: whitelisted.has(dish.globalDishId)
+          ? 0
+          : computeRecencyPenalty({
+              eatingDates: dates,
+              referenceDate: input.referenceDate,
+              cooldownWindowDays: RANKING_CONFIG.history.cooldownWindowDays,
+            }),
       }
     })
 
-    const built = buildDeck(
+    const ordered = buildDeck(
       { sessionId: input.sessionId, userId: input.userId, eligible: rankingInputs },
       RANKING_CONFIG,
     )
+
+    // BR-047 — chia hai luồng TỪ danh sách đã sắp, giữ nguyên thứ tự tương đối.
+    // Hai luồng CHỒNG NHAU (Guide §1.1) — `blendExploitExplore` khử trùng bằng Set.
+    const byId = new Map(rankingInputs.map((r) => [r.dishId, r]))
+    const explore = ordered.filter((id) => isExploreEligible(byId.get(id)!, RANKING_CONFIG))
+
+    const tagsByDishId = new Map(eligible.map((d) => [d.dishId, d.systemTags]))
+
+    // DEC-066 / Guide §1.2 & §5.2 — Pipeline rẽ nhánh theo deckMode:
+    // - FREE: blendExploitExplore → capDeck(30)
+    // - COURSE: splitIntoCourses (cắt hạn mức TRONG TỪNG CHẶNG) → blendExploitExplore trong từng chặng → flatMap
+    const built =
+      sessionDeckConfig.deckMode === 'COURSE'
+        ? splitIntoCourses({
+            orderedDishIds: ordered,
+            tagsByDishId,
+            courses: sessionDeckConfig.courses,
+            maxCards: RANKING_CONFIG.deck.maxCards,
+          }).flatMap((course) =>
+            blendExploitExplore({
+              exploit: course.dishIds,
+              explore: course.dishIds.filter((id) =>
+                isExploreEligible(byId.get(id)!, RANKING_CONFIG),
+              ),
+              blockSize: RANKING_CONFIG.explore.blockSize,
+            }),
+          )
+        : capDeck(
+            blendExploitExplore({
+              exploit: ordered,
+              explore,
+              blockSize: RANKING_CONFIG.explore.blockSize,
+            }),
+            RANKING_CONFIG.deck.maxCards,
+          )
 
     const materialized = await deps.selection.materializeDeck(input.sessionId, input.userId, built)
     orderedDishIds =
@@ -115,15 +200,37 @@ export async function listDeck(
   const orderedCards = orderedDishIds
     .map((dishId) => eligibleById.get(dishId))
     .filter((dish): dish is DishCard => dish !== undefined)
-    .map((dish) => ({
-      ...dish,
-      // MỚI — S4. Tính từ CÙNG `eatingByDish` đã đọc ở trên, không query thêm.
-      daysSinceLastEaten: daysSinceLastEaten({
+    .map((dish) => {
+      const d = daysSinceLastEaten({
         eatingDates: eatingByDish.get(dish.globalDishId) ?? [],
         referenceDate: input.referenceDate,
-      }),
-    }))
+      })
+      const explicit = explicitPreferenceScore(preferences.get(dish.globalDishId) ?? null)
+      return {
+        ...dish,
+        daysSinceLastEaten: d,
+        lane: isExploreEligible({ daysSinceLastEaten: d, explicit }, RANKING_CONFIG)
+          ? ('EXPLORE' as const)
+          : ('EXPLOIT' as const),
+      }
+    })
+
+  // E9-T4 / SPEC-030 / TC-137 — Suy ranh giới chặng ở read time:
+  // - FREE: null, presentation dùng tiến trình tổng
+  // - COURSE: cắt khối trên `orderedCards` (mảng phẳng đã lọc món Cannot Eat)
+  //
+  // M3-T4 — cắt theo THỨ TỰ ĐÃ ĐÔNG CỨNG, không đếm theo tag hiện tại: xem
+  // `deriveCourseBoundaries`. Deck đông cứng trong `session_decks` còn tag thì
+  // Admin sửa được giữa phiên, nên đếm theo tag làm tổng ranh giới lệch khỏi
+  // số thẻ và `currentCourse` mất dấu chặng ở giữa deck.
+  const courses: readonly CourseBoundary[] | null =
+    sessionDeckConfig.deckMode === 'COURSE'
+      ? deriveCourseBoundaries({
+          orderedDishTags: orderedCards.map((dish) => dish.systemTags),
+          courses: sessionDeckConfig.courses,
+        })
+      : null
 
   const page = getDeckPage(orderedCards, input.cursor, input.pageSize)
-  return ok({ items: [...page.items], nextCursor: page.nextCursor })
+  return ok({ items: [...page.items], nextCursor: page.nextCursor, courses })
 }

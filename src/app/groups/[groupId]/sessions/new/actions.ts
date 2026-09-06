@@ -4,18 +4,23 @@ import { redirect } from 'next/navigation'
 
 import { createSession } from '@/features/session/application/create-session'
 import { startSession } from '@/features/session/application/start-session'
-import { resolveDecisionDate } from '@/features/session/domain/decision-date'
+import { resolveDecisionDate } from '@/shared/time/decision-date'
 import { drizzleDishRepository } from '@/features/dish/infrastructure/drizzle-dish-repository'
 import { drizzleSessionRepository } from '@/features/session/infrastructure/drizzle-session-repository'
-import { drizzleMembershipRepository } from '@/features/group/infrastructure/drizzle-group-repository'
+import {
+  drizzleGroupRepository,
+  drizzleMembershipRepository,
+} from '@/features/group/infrastructure/drizzle-group-repository'
 import type { StartSessionFormState } from '@/features/session/presentation/components/start-session-screen'
 import { messageFor } from '@/shared/errors'
+import { isSystemTag, type SystemTag } from '@/shared/domain/system-tag'
 
 import { requireGroupContext } from '../../group-access'
 
 export async function openSessionAction(
   groupId: string,
   _previousState: StartSessionFormState,
+  formData?: FormData,
 ): Promise<StartSessionFormState> {
   const { group, user } = await requireGroupContext(groupId)
   const decisionDate = resolveDecisionDate(new Date(), group.timezone)
@@ -59,14 +64,25 @@ export async function openSessionAction(
     members.map((m) => m.userId),
   )
 
+  const deckMode = formData?.get('deckMode') === 'COURSE' ? 'COURSE' : 'FREE'
+  const rawCourses = formData?.getAll('courses') ?? []
+  const courses: SystemTag[] = rawCourses
+    .filter((c): c is string => typeof c === 'string')
+    .filter(isSystemTag)
+
   const result = await startSession(
     {
       sessions: drizzleSessionRepository,
       findInvalidParticipants: ({ groupId: gid, userIds }) =>
         drizzleMembershipRepository.findInvalidMembers(gid, userIds),
+      findGroupTargetDishCount: async (gid) => {
+        const found = await drizzleGroupRepository.findById(gid)
+        return found?.targetDishCount ?? null
+      },
     },
     sessionId,
     user.id,
+    { deckMode, courses },
   )
 
   if (!result.ok) {

@@ -1,3 +1,4 @@
+import type { SystemTag } from '@/shared/domain/system-tag'
 import type { Failure } from '@/shared/errors'
 import { failure } from '@/shared/errors'
 import type { Result } from '@/shared/result'
@@ -8,6 +9,11 @@ import type { SessionRepository, SessionSummary } from './session-repository'
 export type InvalidParticipant = {
   readonly userId: string
   readonly displayName: string
+}
+
+export type StartSessionConfig = {
+  readonly deckMode?: 'FREE' | 'COURSE'
+  readonly courses?: readonly SystemTag[]
 }
 
 export type StartSessionDeps = {
@@ -22,6 +28,15 @@ export type StartSessionDeps = {
     readonly groupId: string
     readonly userIds: readonly string[]
   }) => Promise<readonly InvalidParticipant[]>
+  /**
+   * M3-T11 — BẮT BUỘC, không còn optional.
+   *
+   * `E10-T3` đông cứng `groups.target_dish_count` vào phiên ngay trong
+   * `startDraft`. Khi dependency này optional, một caller quên truyền nó vẫn
+   * biên dịch được và phiên lặng lẽ mở với `targetDishCount = null` — tức
+   * `F23` tự tắt cho đường mở phiên đó, và không test nào ở tầng trên bắt được.
+   */
+  readonly findGroupTargetDishCount: (groupId: string) => Promise<number | null>
 }
 
 /**
@@ -46,9 +61,23 @@ export async function startSession(
   deps: StartSessionDeps,
   sessionId: string,
   callerId: string,
+  config?: StartSessionConfig,
 ): Promise<Result<SessionSummary, Failure>> {
+  const deckMode = config?.deckMode ?? 'FREE'
+  const courses = config?.courses ?? []
+
+  if (deckMode === 'COURSE') {
+    if (courses.length === 0) {
+      return err(failure('ERR_VALIDATION', { field: 'courses' }))
+    }
+    if (new Set(courses).size !== courses.length) {
+      return err(failure('ERR_VALIDATION', { field: 'courses' }))
+    }
+  }
+
   const session = await deps.sessions.findForStart(sessionId)
 
+  let targetDishCount: number | null = null
   if (session !== null) {
     if (session.state !== 'DRAFT') {
       return err(failure('ERR_SESSION_NOT_DRAFT', { sessionId }))
@@ -65,9 +94,15 @@ export async function startSession(
     if (invalid.length > 0) {
       return err(failure('ERR_PARTICIPANT_NOT_MEMBER', { invalidParticipants: invalid }))
     }
+
+    targetDishCount = await deps.findGroupTargetDishCount(session.groupId)
   }
 
-  const outcome = await deps.sessions.startDraft(sessionId)
+  const outcome = await deps.sessions.startDraft(sessionId, {
+    deckMode,
+    courses: deckMode === 'COURSE' ? courses : [],
+    targetDishCount,
+  })
 
   if (outcome.outcome === 'NOT_DRAFT') {
     return err(failure('ERR_SESSION_NOT_DRAFT', { sessionId }))

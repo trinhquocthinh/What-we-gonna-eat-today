@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  blendExploitExplore,
   buildDeck,
   computePersonalScore,
   computeSessionScore,
+  isExploreEligible,
   rankSession,
   stableHash,
   type SessionDishInput,
@@ -12,20 +14,92 @@ import { RANKING_CONFIG } from './ranking-config'
 
 const SEED = { sessionId: 'sess-1', userId: 'user-1' }
 
-function dish(dishId: string, daysSinceLastEaten: number | null, recencyPenalty: number) {
-  return { dishId, daysSinceLastEaten, recencyPenalty }
+function dish(
+  dishId: string,
+  daysSinceLastEaten: number | null,
+  recencyPenalty: number,
+  explicit: number = 0,
+  implicit: number = 0,
+) {
+  return { dishId, daysSinceLastEaten, recencyPenalty, explicit, implicit }
 }
 
 describe('computePersonalScore', () => {
-  it('v1.0 chỉ có số hạng recency: score = −0.25 × R', () => {
-    expect(computePersonalScore({ recencyPenalty: 1 }, RANKING_CONFIG)).toBeCloseTo(-0.25, 6)
-    expect(computePersonalScore({ recencyPenalty: 0 }, RANKING_CONFIG)).toBe(-0)
+  it('v1.1 có cả explicit và recency: score = 0.3 × E − 0.25 × R', () => {
+    expect(
+      computePersonalScore({ recencyPenalty: 1, explicit: 0, implicit: 0 }, RANKING_CONFIG),
+    ).toBeCloseTo(-0.25, 6)
+    expect(
+      computePersonalScore({ recencyPenalty: 0, explicit: 0, implicit: 0 }, RANKING_CONFIG),
+    ).toBe(0)
+    expect(
+      computePersonalScore({ recencyPenalty: 0, explicit: 1, implicit: 0 }, RANKING_CONFIG),
+    ).toBeCloseTo(0.3, 6)
+    expect(
+      computePersonalScore({ recencyPenalty: 0, explicit: -1, implicit: 0 }, RANKING_CONFIG),
+    ).toBeCloseTo(-0.3, 6)
+  })
+
+  it('LIKE (+1) vs Neutral (0) cùng R: LIKE xếp trước; hiệu số điểm đúng bằng 0.3', () => {
+    const liked = computePersonalScore(
+      { recencyPenalty: 0.5, explicit: 1, implicit: 0 },
+      RANKING_CONFIG,
+    )
+    const neutral = computePersonalScore(
+      { recencyPenalty: 0.5, explicit: 0, implicit: 0 },
+      RANKING_CONFIG,
+    )
+    expect(liked).toBeGreaterThan(neutral)
+    expect(liked - neutral).toBeCloseTo(0.3, 6)
   })
 
   it('R càng lớn điểm càng thấp — món vừa ăn bị đẩy xuống', () => {
-    const justEaten = computePersonalScore({ recencyPenalty: 1 }, RANKING_CONFIG)
-    const longAgo = computePersonalScore({ recencyPenalty: 0 }, RANKING_CONFIG)
+    const justEaten = computePersonalScore(
+      { recencyPenalty: 1, explicit: 0, implicit: 0 },
+      RANKING_CONFIG,
+    )
+    const longAgo = computePersonalScore(
+      { recencyPenalty: 0, explicit: 0, implicit: 0 },
+      RANKING_CONFIG,
+    )
     expect(longAgo).toBeGreaterThan(justEaten)
+  })
+
+  it('E13-T3 — số hạng I vào công thức với trọng số 0.25', () => {
+    expect(
+      computePersonalScore({ recencyPenalty: 0, explicit: 0, implicit: 1 }, RANKING_CONFIG),
+    ).toBeCloseTo(0.25, 6)
+    expect(
+      computePersonalScore({ recencyPenalty: 0, explicit: 0, implicit: -1 }, RANKING_CONFIG),
+    ).toBeCloseTo(-0.25, 6)
+  })
+
+  it('E13-T3 — I cộng dồn với E, không loại trừ nhau', () => {
+    // Một người Like món A và cũng hay vuốt phải nó: hai tín hiệu cùng chiều
+    // phải cộng lại, chứ không phải cái này thay cái kia.
+    const both = computePersonalScore(
+      { recencyPenalty: 0, explicit: 1, implicit: 1 },
+      RANKING_CONFIG,
+    )
+    const onlyExplicit = computePersonalScore(
+      { recencyPenalty: 0, explicit: 1, implicit: 0 },
+      RANKING_CONFIG,
+    )
+    expect(both).toBeCloseTo(0.55, 6)
+    expect(both - onlyExplicit).toBeCloseTo(0.25, 6)
+  })
+
+  it('E13-T3 — buildDeck đọc I: món I cao xếp trước món I thấp khi mọi thứ khác bằng nhau', () => {
+    // Ca ghim §1.3 của Guide: nếu `buildDeck` dựng lại object literal mà quên
+    // `implicit`, hàm nhận `undefined`, score thành NaN và thứ tự thành tuỳ ý.
+    const order = buildDeck(
+      {
+        ...SEED,
+        eligible: [dish('A', 10, 0, 0, -0.5), dish('B', 10, 0, 0, 0.5)],
+      },
+      RANKING_CONFIG,
+    )
+    expect(order).toEqual(['B', 'A'])
   })
 })
 
@@ -90,8 +164,141 @@ describe('buildDeck', () => {
     expect(eligible.map((d) => d.dishId)).toEqual(snapshot)
   })
 
+  it('TC-119 — hai món cùng R, một DISLIKE một Neutral: DISLIKE vẫn có mặt nhưng xếp sau', () => {
+    const order = buildDeck(
+      {
+        ...SEED,
+        eligible: [dish('disliked', null, 0, -1), dish('neutral', null, 0, 0)],
+      },
+      RANKING_CONFIG,
+    )
+
+    expect(order).toEqual(['neutral', 'disliked'])
+    expect(order).toContain('disliked')
+  })
+
+  it('LIKE (+1) vs Neutral (0) cùng R: LIKE xếp trước', () => {
+    const order = buildDeck(
+      {
+        ...SEED,
+        eligible: [dish('neutral', null, 0, 0), dish('liked', null, 0, 1)],
+      },
+      RANKING_CONFIG,
+    )
+
+    expect(order).toEqual(['liked', 'neutral'])
+  })
+
+  it('DISLIKE (E = -1, R = 0) vs Neutral vừa ăn hôm qua (E = 0, R = 0.86): món vừa ăn xếp trước (DISLIKE xếp sau)', () => {
+    // score(disliked) = 0.3 * (-1) - 0.25 * 0 = -0.3
+    // score(justEaten) = 0.3 * 0 - 0.25 * 0.86 = -0.215
+    // -0.215 > -0.3 => món vừa ăn xếp trước
+    const order = buildDeck(
+      {
+        ...SEED,
+        eligible: [dish('disliked', null, 0, -1), dish('just-eaten', 1, 0.86, 0)],
+      },
+      RANKING_CONFIG,
+    )
+
+    expect(order).toEqual(['just-eaten', 'disliked'])
+  })
+
   it('danh sách rỗng: trả mảng rỗng, không ném (TC-102 ở tầng D)', () => {
     expect(buildDeck({ ...SEED, eligible: [] }, RANKING_CONFIG)).toEqual([])
+  })
+})
+
+describe('isExploreEligible', () => {
+  it('TC-128 — d = 30 đúng mốc staleDays: đủ điều kiện (biên đóng)', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: 30, explicit: 0 }, RANKING_CONFIG)).toBe(true)
+  })
+
+  it('d = 29 < staleDays (30) và explicit = 0: không đủ điều kiện', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: 29, explicit: 0 }, RANKING_CONFIG)).toBe(false)
+  })
+
+  it('chưa từng ăn (daysSinceLastEaten = null): đủ điều kiện Explore', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: null, explicit: 0 }, RANKING_CONFIG)).toBe(true)
+  })
+
+  it('món chưa từng ăn nhưng explicit = -1 (DISLIKE): KHÔNG vào luồng Explore (BR-047 loại trừ)', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: null, explicit: -1 }, RANKING_CONFIG)).toBe(
+      false,
+    )
+  })
+
+  it('món d = 35 nhưng explicit = -1 (DISLIKE): KHÔNG vào luồng Explore', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: 35, explicit: -1 }, RANKING_CONFIG)).toBe(false)
+  })
+
+  it('món d = 30 và explicit = 1 (LIKE): đủ điều kiện Explore', () => {
+    expect(isExploreEligible({ daysSinceLastEaten: 30, explicit: 1 }, RANKING_CONFIG)).toBe(true)
+  })
+})
+
+describe('blendExploitExplore', () => {
+  it('TC-125 — Deck 30 thẻ, cả hai luồng đều dư món: vị trí #5, #10, ..., #30 là thẻ explore-eligible', () => {
+    const exploit = Array.from({ length: 50 }, (_, i) => `exploit-${i}`)
+    const explore = Array.from({ length: 20 }, (_, i) => `explore-${i}`)
+
+    const blended = blendExploitExplore({ exploit, explore, blockSize: 5 })
+
+    // Vị trí 5, 10, 15, 20, 25, 30 (chỉ số 4, 9, 14, 19, 24, 29)
+    for (let k = 1; k <= 6; k += 1) {
+      const idx = k * 5 - 1
+      expect(blended[idx]).toBe(`explore-${k - 1}`)
+    }
+    // Các vị trí còn lại là exploit
+    expect(blended[0]).toBe('exploit-0')
+    expect(blended[1]).toBe('exploit-1')
+    expect(blended[2]).toBe('exploit-2')
+    expect(blended[3]).toBe('exploit-3')
+    expect(blended[5]).toBe('exploit-4')
+  })
+
+  it('TC-126 — 150 món, cắt còn 30: đúng 6/30 thẻ đến từ luồng Explore (§1.2)', () => {
+    // 150 món: 120 món exploit thuần, 30 món explore thuần
+    const exploit = Array.from({ length: 120 }, (_, i) => `dish-exploit-${i}`)
+    const explore = Array.from({ length: 30 }, (_, i) => `dish-explore-${i}`)
+
+    const blended = blendExploitExplore({ exploit, explore, blockSize: 5 })
+    const capped = blended.slice(0, 30)
+
+    const exploreSet = new Set(explore)
+    const exploreCount = capped.filter((id) => exploreSet.has(id)).length
+
+    expect(capped).toHaveLength(30)
+    expect(exploreCount).toBe(6)
+  })
+
+  it('TC-127 — Luồng Explore cạn (mọi món đều vừa ăn): khối lấy trọn từ Exploit, đủ 30 thẻ, không vị trí trống', () => {
+    const exploit = Array.from({ length: 40 }, (_, i) => `exploit-${i}`)
+    const explore: string[] = []
+
+    const blended = blendExploitExplore({ exploit, explore, blockSize: 5 })
+    const capped = blended.slice(0, 30)
+
+    expect(capped).toHaveLength(30)
+    expect(capped).toEqual(exploit.slice(0, 30))
+  })
+
+  it('hai luồng chồng nhau (món chưa từng ăn có mặt ở cả hai luồng): KHÔNG id nào xuất hiện hai lần (§1.1)', () => {
+    // Giả lập exploit và explore chia sẻ các món chưa ăn đầu bảng
+    const shared = ['dish-new-1', 'dish-new-2', 'dish-new-3', 'dish-new-4', 'dish-new-5']
+    const exploitOnly = Array.from({ length: 20 }, (_, i) => `exploit-only-${i}`)
+    const exploreOnly = Array.from({ length: 10 }, (_, i) => `explore-only-${i}`)
+
+    const exploit = [...shared, ...exploitOnly]
+    const explore = [...shared, ...exploreOnly]
+
+    const blended = blendExploitExplore({ exploit, explore, blockSize: 5 })
+
+    expect(new Set(blended).size).toBe(blended.length)
+  })
+
+  it('danh sách rỗng: trả mảng rỗng, không ném', () => {
+    expect(blendExploitExplore({ exploit: [], explore: [], blockSize: 5 })).toEqual([])
   })
 })
 
@@ -121,6 +328,7 @@ const makeSessionDish = (over: Partial<SessionDishInput> = {}): SessionDishInput
   systemTags: [],
   proposedCount: 0,
   rejectedCount: 0,
+  cannotEatCount: 0,
   recentEaterCount: 0,
   ...over,
 })
@@ -129,7 +337,7 @@ describe('computeSessionScore', () => {
   // TC-058 — T=4, P=3, N=0, H=0 → 3/4.
   it('TC-058', () => {
     const score = computeSessionScore(
-      { proposedCount: 3, rejectedCount: 0, recentEaterCount: 0 },
+      { proposedCount: 3, rejectedCount: 0, cannotEatCount: 0, recentEaterCount: 0 },
       4,
       RANKING_CONFIG,
     )
@@ -139,7 +347,7 @@ describe('computeSessionScore', () => {
   // TC-059 — (3 - 0.7 - 0.6) / 4 = 0.425.
   it('TC-059', () => {
     const score = computeSessionScore(
-      { proposedCount: 3, rejectedCount: 1, recentEaterCount: 2 },
+      { proposedCount: 3, rejectedCount: 1, cannotEatCount: 0, recentEaterCount: 2 },
       4,
       RANKING_CONFIG,
     )
@@ -149,17 +357,27 @@ describe('computeSessionScore', () => {
   // TC-060 — thêm người thứ 5, cùng P=3 → 0.6.
   it('TC-060 — chuẩn hoá theo T', () => {
     const score = computeSessionScore(
-      { proposedCount: 3, rejectedCount: 0, recentEaterCount: 0 },
+      { proposedCount: 3, rejectedCount: 0, cannotEatCount: 0, recentEaterCount: 0 },
       5,
       RANKING_CONFIG,
     )
     expect(score).toBeCloseTo(0.6, 5)
   })
 
+  // TC-121 — T=4, P=2, N=0, X=2, H=0 → (2 - 2)/4 = 0.
+  it('TC-121 — X = 2 trừ điểm đúng trọng số cCannotEat (1.0)', () => {
+    const score = computeSessionScore(
+      { proposedCount: 2, rejectedCount: 0, cannotEatCount: 2, recentEaterCount: 0 },
+      4,
+      RANKING_CONFIG,
+    )
+    expect(score).toBe(0)
+  })
+
   // TC-111 — T=1, P=1 → 1.0, không chia cho 0.
   it('TC-111 — T = 1', () => {
     const score = computeSessionScore(
-      { proposedCount: 1, rejectedCount: 0, recentEaterCount: 0 },
+      { proposedCount: 1, rejectedCount: 0, cannotEatCount: 0, recentEaterCount: 0 },
       1,
       RANKING_CONFIG,
     )
@@ -168,7 +386,7 @@ describe('computeSessionScore', () => {
 
   it('T = 0 trả 0, không NaN', () => {
     const score = computeSessionScore(
-      { proposedCount: 1, rejectedCount: 0, recentEaterCount: 0 },
+      { proposedCount: 1, rejectedCount: 0, cannotEatCount: 0, recentEaterCount: 0 },
       0,
       RANKING_CONFIG,
     )
@@ -194,6 +412,19 @@ describe('rankSession', () => {
     expect(result.ranked.map((d) => d.dishId)).toEqual(['a'])
     expect(result.untouched.map((d) => d.dishId)).toEqual(['b'])
     expect(result.untouched[0]).not.toHaveProperty('score')
+  })
+
+  it('món có người khai không ăn được nhưng chưa ai vuốt vẫn là untouched (chỉ xét P, N)', () => {
+    const result = rankSession(
+      {
+        dishes: [makeSessionDish({ dishId: 'a', cannotEatCount: 2 })],
+        participantCount: 3,
+      },
+      RANKING_CONFIG,
+    )
+
+    expect(result.untouched.map((d) => d.dishId)).toEqual(['a'])
+    expect(result.ranked).toEqual([])
   })
 
   it('món chỉ bị vuốt trái VẪN nằm trong ranked', () => {

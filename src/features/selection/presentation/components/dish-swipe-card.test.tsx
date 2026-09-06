@@ -11,6 +11,7 @@ const DISH: DishCard = {
   systemTags: [],
   effectiveInteraction: null,
   daysSinceLastEaten: null,
+  lane: 'EXPLOIT',
 }
 
 describe('DishSwipeCard', () => {
@@ -43,6 +44,74 @@ describe('DishSwipeCard', () => {
     )
 
     expect(screen.queryByText('Trong chồng')).not.toBeInTheDocument()
+  })
+
+  it('render nút "Tôi không ăn được món này" khi có onCannotEat và gọi onCannotEat khi click', () => {
+    const onCannotEat = vi.fn()
+    render(
+      <DishSwipeCard
+        dish={DISH}
+        lastEatenLabel="Chưa từng ăn"
+        explanation="..."
+        upcomingNames={[]}
+        onCommit={vi.fn()}
+        onCannotEat={onCannotEat}
+      />,
+    )
+
+    const btn = screen.getByRole('button', { name: 'Tôi không ăn được món này' })
+    expect(btn).toBeInTheDocument()
+    btn.click()
+    expect(onCannotEat).toHaveBeenCalledWith(DISH)
+  })
+
+  it('E8-T3: thẻ có lane EXPLORE hiện chip "Đổi vị", thẻ EXPLOIT không hiện', () => {
+    const exploreDish: DishCard = {
+      ...DISH,
+      lane: 'EXPLORE',
+    }
+    const { rerender } = render(
+      <DishSwipeCard
+        dish={exploreDish}
+        lastEatenLabel="Chưa từng ăn"
+        explanation="Nhà mình chưa ăn món này bao giờ."
+        upcomingNames={[]}
+        onCommit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Đổi vị')).toBeInTheDocument()
+
+    rerender(
+      <DishSwipeCard
+        dish={DISH}
+        lastEatenLabel="Chưa từng ăn"
+        explanation="Món này đang có trong danh mục của nhóm."
+        upcomingNames={[]}
+        onCommit={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText('Đổi vị')).not.toBeInTheDocument()
+  })
+
+  it('E9-T0: thẻ có systemTags: ["SOUP"] hiện nhãn "Canh", không hiện "Trong danh mục"', () => {
+    const soupDish: DishCard = {
+      ...DISH,
+      systemTags: ['SOUP'],
+    }
+    render(
+      <DishSwipeCard
+        dish={soupDish}
+        lastEatenLabel="Chưa từng ăn"
+        explanation="Món này đang có trong danh mục của nhóm."
+        upcomingNames={[]}
+        onCommit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getAllByText('Canh').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Trong danh mục')).not.toBeInTheDocument()
   })
 })
 

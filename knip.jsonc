@@ -67,6 +67,9 @@
     // GỠ Ở E5-T7 (S4): listSessionRanking và rankSession tạo ở E5-S3, E5-S4 (màn S-10) sẽ import và sử dụng.
     "src/features/selection/application/list-session-ranking.ts",
     "src/features/selection/domain/ranking.ts",
+
+    // GỠ Ở E7-S3: InteractionEventAction mở rộng cho audit log CANNOT_EAT (DEC-063).
+    "src/features/selection/domain/interaction.ts",
   ],
 
   // Plugin drizzle nạp drizzle.config.ts, mà file đó cố tình ném lỗi khi thiếu

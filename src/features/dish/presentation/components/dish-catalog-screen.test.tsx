@@ -180,4 +180,173 @@ describe('DishCatalogScreen (S-05)', () => {
     expect(screen.getByRole('status')).toBeDefined()
     expect(screen.getByText('Dùng lại Canh chua cá lóc — đã có trong danh mục.')).toBeDefined()
   })
+
+  it('canEdit = false: không có nút "Gỡ", không có nút "Thêm lại", không mở được sheet sửa nhãn', async () => {
+    const inactiveDishes = [{ id: 'in1', name: 'Thịt kho hột vịt', systemTags: [] }]
+
+    render(
+      <DishCatalogScreen
+        groupId="g1"
+        groupName="Nhà Bảy Hiền"
+        dishes={DISHES}
+        inactiveDishes={inactiveDishes}
+        canEdit={false}
+        action={vi.fn()}
+      />,
+    )
+
+    // Không có nút "Gỡ"
+    expect(screen.queryByRole('button', { name: 'Gỡ' })).toBeNull()
+
+    // Không có mục "Đã gỡ khỏi nhóm" và không có nút "Thêm lại"
+    expect(screen.queryByText('Đã gỡ khỏi nhóm')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Thêm lại' })).toBeNull()
+
+    // Tên món không phải button tương tác (không mở sheet sửa nhãn)
+    expect(screen.queryByRole('button', { name: 'Canh chua cá lóc' })).toBeNull()
+    // Nhưng tên món vẫn đọc được
+    expect(screen.getByText('Canh chua cá lóc')).toBeDefined()
+  })
+
+  it('canEdit = true: có nút "Gỡ", bấm gọi removeAction và hiện toast', async () => {
+    const removeAction = vi.fn(async () => ({ error: null }))
+
+    render(
+      <DishCatalogScreen
+        groupId="g1"
+        groupName="Nhà Bảy Hiền"
+        dishes={DISHES}
+        canEdit={true}
+        action={vi.fn()}
+        removeAction={removeAction}
+      />,
+    )
+
+    const removeButtons = screen.getAllByRole('button', { name: 'Gỡ' })
+    expect(removeButtons.length).toBe(3)
+
+    await userEvent.click(removeButtons[0]!)
+    expect(removeAction).toHaveBeenCalledWith('1')
+    expect(await screen.findByRole('status')).toBeDefined()
+    expect(screen.getByText('Đã gỡ Cá basa kho tiêu khỏi nhóm.')).toBeDefined()
+  })
+
+  it('canEdit = true và có inactiveDishes: mục "Đã gỡ khỏi nhóm" hiện, bấm "Thêm lại" gọi reAddAction', async () => {
+    const reAddAction = vi.fn(async () => ({ error: null }))
+    const inactiveDishes = [{ id: 'in1', name: 'Thịt kho tàu', systemTags: [] }]
+
+    render(
+      <DishCatalogScreen
+        groupId="g1"
+        groupName="Nhà Bảy Hiền"
+        dishes={DISHES}
+        inactiveDishes={inactiveDishes}
+        canEdit={true}
+        action={vi.fn()}
+        reAddAction={reAddAction}
+      />,
+    )
+
+    expect(screen.getByText('Đã gỡ khỏi nhóm')).toBeDefined()
+    expect(screen.getByText('Thịt kho tàu')).toBeDefined()
+
+    const reAddButton = screen.getByRole('button', { name: 'Thêm lại' })
+    await userEvent.click(reAddButton)
+
+    expect(reAddAction).toHaveBeenCalledWith('in1')
+    expect(await screen.findByRole('status')).toBeDefined()
+    expect(screen.getByText('Đã thêm lại Thịt kho tàu vào nhóm.')).toBeDefined()
+  })
+
+  describe('M3-T6 — khai báo sở thích cá nhân ở màn danh mục', () => {
+    const PREFS = [
+      {
+        groupDishId: '1',
+        globalDishId: 'gld-1',
+        preference: 'LIKE' as const,
+        cannotEat: false,
+        blacklisted: false,
+        historyWhitelisted: false,
+      },
+      {
+        groupDishId: '2',
+        globalDishId: 'gld-2',
+        preference: null,
+        cannotEat: true,
+        blacklisted: false,
+        historyWhitelisted: false,
+      },
+      {
+        groupDishId: '3',
+        globalDishId: 'gld-3',
+        preference: null,
+        cannotEat: false,
+        blacklisted: false,
+        historyWhitelisted: false,
+      },
+    ]
+
+    it('mỗi món có đủ năm nút, mang trạng thái từ server', () => {
+      render(
+        <DishCatalogScreen
+          groupId="g1"
+          groupName="Nhà Bảy Hiền"
+          dishes={DISHES}
+          dishPreferences={PREFS}
+          action={vi.fn()}
+        />,
+      )
+
+      expect(screen.getByRole('button', { name: 'Thích Cá basa kho tiêu' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+      expect(
+        screen.getByRole('button', { name: 'Không ăn được — Canh chua cá lóc' }),
+      ).toHaveAttribute('aria-pressed', 'true')
+      // E13-T7 — hai nút mới có mặt trên MỌI hàng món, mặc định chưa bật.
+      expect(screen.getByRole('button', { name: 'Đừng gợi ý — Canh chua cá lóc' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      )
+      expect(
+        screen.getByRole('button', { name: 'Ăn hoài không chán — Canh chua cá lóc' }),
+      ).toHaveAttribute('aria-pressed', 'false')
+      expect(screen.getByRole('button', { name: 'Thích Gà chiên nước mắm' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      )
+    })
+
+    // BR-043 — khai báo cá nhân là của MỌI Member, khác hẳn `canEdit` (sửa nhãn,
+    // gỡ món) vốn chỉ của Admin. Trộn hai quyền này là lỗi E11-T2 vừa sửa xong.
+    it('Member không phải Admin vẫn khai báo được, dù không thấy nút "Gỡ"', () => {
+      render(
+        <DishCatalogScreen
+          groupId="g1"
+          groupName="Nhà Bảy Hiền"
+          dishes={DISHES}
+          dishPreferences={PREFS}
+          canEdit={false}
+          action={vi.fn()}
+        />,
+      )
+
+      expect(screen.getByRole('button', { name: 'Thích Cá basa kho tiêu' })).toBeDefined()
+      expect(screen.queryByRole('button', { name: 'Gỡ' })).toBeNull()
+    })
+
+    it('không truyền dishPreferences: màn hình y hệt trước M3, không có nút nào', () => {
+      render(
+        <DishCatalogScreen
+          groupId="g1"
+          groupName="Nhà Bảy Hiền"
+          dishes={DISHES}
+          action={vi.fn()}
+        />,
+      )
+
+      expect(screen.queryByRole('button', { name: /^Thích / })).toBeNull()
+    })
+  })
 })

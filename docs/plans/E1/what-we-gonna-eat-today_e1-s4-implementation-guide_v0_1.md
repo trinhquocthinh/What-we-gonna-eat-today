@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Completed`
 > - **Created:** `2026-08-17` | **Last Updated:** `2026-08-18`
-> - **Upstream:** [Master Plan](what-we-gonna-eat-today_master-plan_v1_0.md) (`E1-T6, E1-T7`) • [SDD](what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-007, SPEC-008`) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) • [Test Cases Spec](what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-026→029, TC-107`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E1-T6, E1-T7`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-007, SPEC-008`) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [Test Cases Spec](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-026→029, TC-107`)
 > - **Tiền đề:** `E1-S1` và `E1-S2` đã hoàn thành.
 >
 > 📌 *Hướng dẫn kỹ thuật thi công TDD cho Slice S4: Schema `selection_sessions`, `participants`, Partial Unique Index chống race condition khi Start phiên và tích hợp Integration Tests.*
@@ -30,7 +30,7 @@
 
 # 1. Đính chính một quyết định đã ghi sai — đọc trước khi gõ
 
-`docs/what-we-gonna-eat-today_decision-log_v1.1.md` **DEC-015** (viết lúc làm S2) kết luận:
+`docs/what-we-gonna-eat-today_decision-log_v3.9.md` **DEC-015** (viết lúc làm S2) kết luận:
 
 > *"E1-T7 and E1-T11 need read-then-write inside the same transaction... Those slices must add the `neon-serverless` (WebSocket) driver instead of trying to force it through `batch()`."*
 

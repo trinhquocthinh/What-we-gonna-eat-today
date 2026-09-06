@@ -12,6 +12,10 @@ export type GroupDishSummary = {
  */
 export type GroupDishListItem = GroupDishSummary & {
   readonly systemTags: readonly SystemTag[]
+  /** M3-T5 — Sở thích và ràng buộc cá nhân khoá theo `global_dishes.id`, không
+   *  theo `group_dishes.id`: chúng theo NGƯỜI qua mọi nhóm (SPEC-024/025). Màn
+   *  Danh mục cần id này để tra trạng thái Like/Dislike/Cannot Eat của từng dòng. */
+  readonly globalDishId: string
 }
 
 /** E2-T4 cần biết state để phân biệt ACTIVE (lỗi TC-099) và INACTIVE
@@ -61,11 +65,21 @@ export interface DishRepository {
   }): Promise<GlobalDishCandidate[]>
   createGlobalDishAndAddToPool(input: NewDishInGroup): Promise<GroupDishSummary>
   reactivateGroupDish(groupDishId: string): Promise<void>
+  /** BR-005 — gỡ món khỏi nhóm. KHÔNG xoá dòng: lịch sử ăn và tương tác cũ vẫn
+   *  phải tra ngược được (DEC-009). Chiều ngược đã có sẵn: `reactivateGroupDish`. */
+  deactivateGroupDish(groupDishId: string): Promise<void>
   addExistingGlobalDishToGroup(input: {
     readonly groupId: string
     readonly globalDishId: string
   }): Promise<GroupDishSummary>
   listActiveInGroup(groupId: string): Promise<GroupDishListItem[]>
+  /** BR-005 — món đã gỡ, cho mục "Đã gỡ khỏi nhóm" của S-05.
+   *
+   *  RIÊNG method chứ không thêm tham số vào `listActiveInGroup`: tên hàm đó nói
+   *  đúng thứ nó làm, và mọi chỗ gọi hiện tại đều muốn đúng tập ACTIVE. Hai truy
+   *  vấn thay vì một `WHERE state = ANY(...)` là chuyện không đo được ở quy mô
+   *  một nhóm gia đình. */
+  listInactiveInGroup(groupId: string): Promise<GroupDishListItem[]>
 
   /**
    * Xác nhận món ĐANG ACTIVE trong ĐÚNG group này.

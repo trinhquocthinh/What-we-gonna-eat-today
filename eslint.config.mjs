@@ -10,10 +10,20 @@ import next from 'eslint-config-next'
  * phải luật sai — xem bảng rủi ro ở Master Plan §11.
  */
 
-const FEATURES = ['auth', 'group', 'dish', 'rule', 'session', 'selection', 'meal', 'history']
+const FEATURES = [
+  'auth',
+  'group',
+  'dish',
+  'rule',
+  'session',
+  'selection',
+  'meal',
+  'history',
+  'preference',
+]
 
 /**
- * §2.3 — đúng năm chiều được phép (DEC-043).
+ * §2.3 — đúng bảy chiều được phép (DEC-043, DEC-060).
  * Mọi chiều khác bị cấm, kể cả những chiều "hiển nhiên tiện".
  *
  * Guard phân quyền (SPEC-019) KHÔNG nằm ở đây: nó được lắp ở `app/` trước khi
@@ -22,8 +32,8 @@ const FEATURES = ['auth', 'group', 'dish', 'rule', 'session', 'selection', 'meal
  * hay không trước đã.
  */
 const ALLOWED_CROSS_FEATURE = {
-  selection: ['history', 'dish'],
-  meal: ['rule', 'history'],
+  selection: ['history', 'dish', 'preference'],
+  meal: ['rule', 'history', 'preference'],
   session: ['rule'],
 }
 
@@ -74,7 +84,7 @@ const CROSS_FEATURE_ZONES = FEATURES.map((feature) => ({
   target: `./src/features/${feature}`,
   from: './src/features',
   except: [feature, ...(ALLOWED_CROSS_FEATURE[feature] ?? [])].map((allowed) => `./${allowed}`),
-  message: `Feature "${feature}" không được import feature này. Năm chiều hợp lệ ghi ở Tech Spec §2.3.`,
+  message: `Feature "${feature}" không được import feature này. Bảy chiều hợp lệ ghi ở Tech Spec §2.3.`,
 }))
 
 export default tseslint.config(

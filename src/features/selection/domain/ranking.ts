@@ -3,25 +3,36 @@ import type { SystemTag } from '@/shared/domain/system-tag'
 import type { RankingConfig } from './ranking-config'
 
 /**
- * Ranking Spec §2.2 + SDD SPEC-010. Ở v1.0 chỉ số hạng recency có dữ liệu —
- * xem Implementation Guide §1.1. Kiểu `RankingInput` cố ý CHƯA có `explicit`,
- * `implicit`, `chef`, `source`: thêm một trường mà không hàm nào tính ra được
- * giá trị thật cho nó chỉ tạo ảo giác tính năng đã có.
+ * Ranking Spec §2.2 + SDD SPEC-010. Ở v1.2 CÓ BA số hạng có dữ liệu thật:
+ * `recencyPenalty` (từ E4), `explicit` (từ E7-S2) và `implicit` (từ E13-S1).
+ * Hai số hạng còn lại — `chef` (F33) và `source` (F36) — vẫn cố ý vắng mặt:
+ * thêm một trường mà không hàm nào tính ra được giá trị thật cho nó chỉ tạo ảo
+ * giác tính năng đã có.
  */
 export type RankingInput = {
   /** $R \in [0, 1]$ từ `computeRecencyPenalty` (SPEC-020). */
   readonly recencyPenalty: number
+  /** $E \in \{-1, 0, +1\}$ từ `explicitPreferenceScore` (SPEC-025). */
+  readonly explicit: number
+  /** $I \in [-1, 1]$ từ `computeImplicitPreference` (SPEC-037). */
+  readonly implicit: number
 }
 
-/** $\text{score} = -w_{\text{recency}} \times R$ — SDD SPEC-010, v1.0. */
+/**
+ * $\text{score} = w_{\text{explicit}} \cdot E + w_{\text{implicit}} \cdot I -
+ * w_{\text{recency}} \cdot R$ — SPEC-010 + SPEC-037, v1.2.
+ */
 export function computePersonalScore(input: RankingInput, config: RankingConfig): number {
-  return -config.personalRanking.wRecency * input.recencyPenalty
+  return (
+    config.personalRanking.wExplicit * input.explicit +
+    config.personalRanking.wImplicit * input.implicit -
+    config.personalRanking.wRecency * input.recencyPenalty
+  )
 }
 
-export type DishRankingInput = {
+export type DishRankingInput = RankingInput & {
   /** `group_dishes.id` — cùng hệ id với `DishCard.dishId`. */
   readonly dishId: string
-  readonly recencyPenalty: number
   /** `null` = chưa từng ăn ($d = \infty$). Tie-break tầng 2 cần giá trị này. */
   readonly daysSinceLastEaten: number | null
 }
@@ -83,9 +94,12 @@ function daysRank(daysSinceLastEaten: number | null): number {
 export function buildDeck(input: BuildDeckInput, config: RankingConfig): string[] {
   return [...input.eligible]
     .sort((a, b) => {
-      const scoreDiff =
-        computePersonalScore({ recencyPenalty: b.recencyPenalty }, config) -
-        computePersonalScore({ recencyPenalty: a.recencyPenalty }, config)
+      // Truyền THẲNG `a`/`b` chứ không dựng lại object literal: `DishRankingInput`
+      // là siêu tập của `RankingInput` (E13-T3). Bản trước liệt kê từng trường,
+      // và mỗi số hạng mới thêm vào công thức là một chỗ nữa phải nhớ sửa — quên
+      // thì `wImplicit * undefined = NaN`, `sort` nhận comparator trả `NaN` và
+      // cho một thứ tự KHÔNG XÁC ĐỊNH theo chuẩn. Xem Guide E13-S1 §1.3.
+      const scoreDiff = computePersonalScore(b, config) - computePersonalScore(a, config)
       if (scoreDiff !== 0) {
         return scoreDiff
       }
@@ -106,12 +120,80 @@ export function buildDeck(input: BuildDeckInput, config: RankingConfig): string[
 }
 
 /**
+ * BR-047 — điều kiện vào luồng Explore. Dùng ở HAI chỗ và phải là CÙNG một
+ * hàm: `list-deck` chia luồng lúc dựng deck, và gắn `lane` cho từng thẻ ở mỗi
+ * lần đọc. Hai bản sao của cùng một vị từ là chỗ chúng sẽ lệch nhau.
+ */
+export function isExploreEligible(
+  input: { readonly daysSinceLastEaten: number | null; readonly explicit: number },
+  config: RankingConfig,
+): boolean {
+  if (input.explicit < 0) return false // Dislike — BR-047 loại trừ
+  return input.daysSinceLastEaten === null || input.daysSinceLastEaten >= config.explore.staleDays
+}
+
+/**
+ * BR-047 — mỗi khối `blockSize` vị trí: (blockSize - 1) thẻ Exploit + 1 thẻ
+ * Explore ở vị trí cuối khối.
+ *
+ * HAI LUỒNG CHỒNG NHAU (Guide §1.1): món chưa từng ăn có R = 0 nên vừa đứng
+ * đầu Exploit vừa đứng đầu Explore. `used` là thứ giữ cho mỗi món chỉ vào deck
+ * một lần — bỏ nó đi thì deck có món lặp và không test nào ở tầng trên bắt được.
+ *
+ * Luồng nào cạn thì vị trí đó lấy từ luồng còn lại — không để trống.
+ */
+export function blendExploitExplore(input: {
+  readonly exploit: readonly string[]
+  readonly explore: readonly string[]
+  readonly blockSize: number
+}): string[] {
+  const blockSize = Math.max(1, input.blockSize)
+  const used = new Set<string>()
+  let exploitIdx = 0
+  let exploreIdx = 0
+
+  function nextExploit(): string | null {
+    while (exploitIdx < input.exploit.length) {
+      const id = input.exploit[exploitIdx++]!
+      if (!used.has(id)) {
+        used.add(id)
+        return id
+      }
+    }
+    return null
+  }
+
+  function nextExplore(): string | null {
+    while (exploreIdx < input.explore.length) {
+      const id = input.explore[exploreIdx++]!
+      if (!used.has(id)) {
+        used.add(id)
+        return id
+      }
+    }
+    return null
+  }
+
+  const result: string[] = []
+  while (true) {
+    const isExplorePos = (result.length + 1) % blockSize === 0
+    const candidate = isExplorePos
+      ? (nextExplore() ?? nextExploit())
+      : (nextExploit() ?? nextExplore())
+
+    if (candidate === null) {
+      break
+    }
+    result.push(candidate)
+  }
+
+  return result
+}
+
+/**
  * SPEC-014 — số đếm thô của MỘT món trong MỘT phiên.
  *
- * KHÔNG có `cannotEatCount` ($X$): F15 là v1.1, mọi giá trị đều sẽ là 0 —
- * cùng lý lẽ đã áp cho `RankingInput` ở đầu file. Trọng số `cCannotEat` vẫn
- * nằm trong RANKING_CONFIG vì hằng số tập trung nói về nơi ĐỊNH NGHĨA
- * (Ranking Spec §1 nguyên tắc 4).
+ * `cannotEatCount` ($X$): SỐ NGƯỜI trong phiên đã khai `Cannot Eat` món này (BR-034).
  *
  * `recentEaterCount` ($H$) là SỐ NGƯỜI trong phiên đã ăn món này trong cửa sổ
  * cooldown — KHÁC hẳn `recencyPenalty` của SPEC-020 ($R \in [0,1]$ của MỘT
@@ -121,11 +203,13 @@ export function buildDeck(input: BuildDeckInput, config: RankingConfig): string[
 export type SessionScoreInput = {
   readonly proposedCount: number
   readonly rejectedCount: number
+  /** $X$ — SỐ NGƯỜI trong phiên đã khai `Cannot Eat` món này (BR-034). */
+  readonly cannotEatCount: number
   readonly recentEaterCount: number
 }
 
 /**
- * $$\text{Score} = \frac{a P - b N - d H}{T}$$
+ * $$\text{Score} = \frac{a P - b N - c X - d H}{T}$$
  *
  * Chuẩn hoá theo $T$ để điểm so sánh được giữa các phiên có số người khác nhau
  * (TC-060: thêm người thứ 5 thì cùng $P=3$ phải cho điểm thấp hơn).
@@ -144,11 +228,12 @@ export function computeSessionScore(
     return 0
   }
 
-  const { aSwipeRight, bSwipeLeft, dRecent } = config.sessionRanking
+  const { aSwipeRight, bSwipeLeft, cCannotEat, dRecent } = config.sessionRanking
 
   return (
     (aSwipeRight * input.proposedCount -
       bSwipeLeft * input.rejectedCount -
+      cCannotEat * input.cannotEatCount -
       dRecent * input.recentEaterCount) /
     participantCount
   )

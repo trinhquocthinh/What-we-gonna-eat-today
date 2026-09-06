@@ -1,0 +1,901 @@
+# 🗺️ Master Plan — What We Gonna Eat Today
+
+> **Document Metadata**
+>
+> - **Version:** `2.3` | **Status:** `Active (v1.2 — M4 xong, E13/E14 chờ thi công)` | **Release:** `R3`
+> - **Created:** `2026-08-14` | **Last Updated:** `2026-09-04`
+> - **Supersedes:** `v2.1` | **Upstream:** [PRD](what-we-gonna-eat-today_prd_v1.5.md) • [Tech Spec](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) • [SDD](what-we-gonna-eat-today_sdd_v1.3.md) • [Business Rules](what-we-gonna-eat-today_business-rules_v1.8.md)
+>
+> 📌 *Tài liệu này là cẩm nang thực thi hằng ngày. **v1.0 đã phát hành:** 56 subtask, 121 giờ cơ sở. **v1.1 đã xong:** 45 subtask, 96.5 giờ cơ sở ([§16](#16-v11--chi-tiết-thi-công)) — 33 subtask kế hoạch cộng 12 subtask của `M3` sinh ra từ đợt rà soát khép phiên bản. Mỗi subtask được thiết kế để hoàn thành trong một buổi ngồi (1 đến 4 giờ).*
+
+---
+
+## 📑 Mục lục (Table of Contents)
+
+1. [Bảng tiến độ tổng quan](#1-bảng-tiến-độ-tổng-quan)
+2. [E0 — Scaffold](#2-e0--scaffold)
+3. [E1 — Walking Skeleton](#3-e1--walking-skeleton)
+4. [E2 — Group và Dish hoàn chỉnh](#4-e2--group-và-dish-hoàn-chỉnh)
+5. [E3 — Phiên và người tham gia](#5-e3--phiên-và-người-tham-gia)
+6. [E4 — Deck và Ranking](#6-e4--deck-và-ranking)
+7. [E5 — Rule và chốt bữa](#7-e5--rule-và-chốt-bữa)
+8. [E6 — Hoàn thiện](#8-e6--hoàn-thiện)
+8b. [M1 — Bảo trì sau v1.0: Danh mục món](#8b-m1--bảo-trì-sau-v10-danh-mục-món)
+9. [Đường găng (Critical Path)](#9-đường-găng-critical-path)
+10. [Lịch theo quỹ giờ (Workload Scenarios)](#10-lịch-theo-quỹ-giờ-workload-scenarios)
+11. [Bảng rủi ro & Phương án xử lý](#11-bảng-rủi-ro--phương-án-xử-lý)
+12. [Điểm kiểm tra Scope (Checkpoints)](#12-điểm-kiểm-tra-scope-checkpoints)
+13. [Sau v1.0 — Lộ trình v1.1 & v1.2](#13-sau-v10--lộ-trình-v11-và-v12)
+14. [Ngoài phạm vi (Out of Scope)](#14-ngoài-phạm-vi-out-of-scope)
+15. [Lịch sử thay đổi (Change History)](#15-lịch-sử-thay-đổi-change-history)
+16. [v1.1 — Chi tiết thi công](#16-v11--chi-tiết-thi-công)
+    - [16.1 M2 — Vá cross-link tài liệu](#161-m2--vá-cross-link-tài-liệu)
+    - [16.2 E7 — Ràng buộc và sở thích cá nhân](#162-e7--ràng-buộc-và-sở-thích-cá-nhân)
+    - [16.3 E8 — Deck ngắn và có nhịp](#163-e8--deck-ngắn-và-có-nhịp)
+    - [16.4 E9 — Chế độ vuốt theo chặng](#164-e9--chế-độ-vuốt-theo-chặng)
+    - [16.5 E10 — Chốt bữa có hướng dẫn mềm](#165-e10--chốt-bữa-có-hướng-dẫn-mềm)
+    - [16.6 E11 — Vận hành tối thiểu](#166-e11--vận-hành-tối-thiểu)
+    - [16.7 Đường găng và rủi ro v1.1](#167-đường-găng-và-rủi-ro-v11)
+    - [16.8 M3 — Khép v1.1](#168-m3--khép-v11)
+17. [v1.2 — Chi tiết thi công](#17-v12--chi-tiết-thi-công)
+    - [17.1 M4 — Vá khoảng trống đặc tả](#171-m4--vá-khoảng-trống-đặc-tả)
+    - [17.2 E13 — Học sở thích tự động](#172-e13--học-sở-thích-tự-động)
+    - [17.3 E14 — Ba món nợ của v1.1](#173-e14--ba-món-nợ-của-v11)
+    - [17.4 Đường găng và rủi ro v1.2](#174-đường-găng-và-rủi-ro-v12)
+
+---
+
+# 1. Bảng tiến độ tổng quan
+
+| Epic | Nội dung | Subtask | Giờ cơ sở | Trạng thái |
+| :--- | :--- | :---: | :---: | :---: |
+| **E0** | Scaffold & Hạ tầng kỹ thuật | 7 | 10 | `[x]` ✅ Xong |
+| **E1** | Walking skeleton (End-to-End thô) | 12 | 24 | `[x]` ✅ Xong |
+| **E2** | Group và Dish hoàn chỉnh | 7 | 16 | `[x]` ✅ Xong |
+| **E3** | Phiên và người tham gia | 6 | 14 | `[x]` ✅ Xong — Cột mốc M3 |
+| **E4** | Deck vuốt và thuật toán Ranking | 9 | 21 | `[x]` ✅ Xong — Cột mốc M4 |
+| **E5** | Rule engine và chốt bữa (Final Meal) | 10 | 23 | `[x]` ✅ Xong — Cột mốc M5 |
+| **E6** | Hoàn thiện UX, Coverage & NFRs | 8 | 20.5 | `[x]` ✅ Xong — Cột mốc M6 |
+| **M1** | Bảo trì sau v1.0 — Danh mục món | 5 | 9 | `[x]` ✅ Xong |
+| | **— Kết thúc v1.0 —** | **56** | **121** | |
+| **M2** | Vá cross-link tài liệu | 4 | 2 | `[x]` ✅ Xong |
+| **E7** | Ràng buộc và sở thích cá nhân | 8 | 19.25 | `[x]` ✅ Xong |
+| **E8** | Deck ngắn và có nhịp | 8 | 17.25 | `[x]` ✅ Xong |
+| **E9** | Chế độ vuốt theo chặng | 6 | 18 | `[x]` ✅ Xong |
+| **E10** | Chốt bữa có hướng dẫn mềm | 5 | 16 | `[x]` ✅ Xong |
+| **E11** | Vận hành tối thiểu | 2 | 8.5 | `[x]` ✅ Xong |
+| **M3** | Khép v1.1 — vá lỗi rà soát & `F16` | 12 | 15.5 | `[x]` ✅ Xong |
+| | **— Tổng v1.1 —** | **45** | **96.5** | |
+| **M4** | Vá khoảng trống đặc tả v1.2 | 4 | 6 | `[x]` ✅ Xong |
+| **E13** | Học sở thích tự động | 8 | 20.5 | `[x]` Xong (S1 + S2) |
+| **E14** | Ba món nợ của v1.1 | 4 | 14 | `[ ]` Chưa bắt đầu |
+| | **— Tổng v1.2 —** | **16** | **40.5** | |
+
+> [!TIP]
+> Cột trạng thái dùng để theo dõi tiến độ. Nếu sau ba tuần chưa có ô nào được tick, vấn đề không nằm ở kế hoạch mà ở nhịp độ thực thi.
+
+> [!NOTE]
+> Chi tiết subtask của v1.1 nằm ở [§16](#16-v11--chi-tiết-thi-công). Phạm vi v1.1 đã được re-scope ngày 2026-08-26 theo phản hồi dùng thật — xem [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md).
+
+---
+
+# 2. E0 — Scaffold
+
+> [!IMPORTANT]
+> **Yêu cầu tiên quyết:** Phải xong trước mọi thứ khác. Không có ngoại lệ.
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `E0-T1` | Khởi tạo repo, yarn Berry, Next.js, TS strict | [Tech §1](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) | 2 | — | `yarn dev` chạy, `tsc --noEmit` xanh, `.nvmrc` ghim Node 24 | `package.json`, `tsconfig.json`, `.nvmrc` |
+| `E0-T2` | Dựng khung thư mục và ESLint chặn luật tầng | [Tech §2.1, §2.2](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) | 2 | `E0-T1` | Import từ `domain/` sang `application/` bị ESLint chặn | `eslint.config.mjs`, `src/features/*/` |
+| `E0-T3` | Husky, lint-staged, Prettier, commitlint | [Tech §8.1](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) | 1.5 | `E0-T1` | Commit sai Conventional Commits bị chặn | `.husky/`, `commitlint.config.js` |
+| `E0-T4` | jscpd, knip, gộp `yarn verify` | [Tech §8.1](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) | 0.5 | `E0-T3` | `yarn verify` chạy đủ 6 công cụ | `package.json`, `.jscpd.json`, `knip.json` |
+| `E0-T5` | Vitest và test mẫu ở `domain/` | [Tech §8.2](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) | 1 | `E0-T2` | `yarn test` xanh, coverage in ra được | `vitest.config.ts` |
+| `E0-T6` | Neon project, Drizzle, migration đầu tiên, 3 DB branch | [Tech §6.1, §6.2](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) | 2 | `E0-T1` | `yarn db:migrate` tạo được bảng thật trên branch `dev` | `drizzle.config.ts`, `src/shared/db/` |
+| `E0-T7` | GitHub Actions và Vercel, deploy trang trắng | [Tech §8.1](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) | 1 | `E0-T4`, `E0-T6` | CI xanh, preview URL mở được trên điện thoại — **Cột mốc M1** | `.github/workflows/ci.yml` |
+
+> [!WARNING]
+> **Scope Checkpoint sau E0:** Nếu E0 vượt 15 giờ, nguyên nhân gần như luôn là cấu hình dựng lại từ đầu thay vì chép từ starter kit. Dừng và chép từ starter template.
+
+---
+
+# 3. E1 — Walking skeleton
+
+Một luồng mỏng nhất chạy suốt: `UI` → `application` → `domain` → `infrastructure` → `DB` → quay lại `UI`. Không đẹp, không đủ tính năng, nhưng chạy thật và deploy được.
+
+> [!NOTE]
+> Cố ý bỏ qua ở epic này: Link mời, chuẩn hoá tên món, System Tag, revalidate lúc Start, cooldown, rule engine.
+
+### S1 — Đăng nhập
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `E1-T1` | Auth.js Google, bảng `users` | [SPEC-001](what-we-gonna-eat-today_sdd_v1.3.md), `TC-001→003` | 3 | `E0-T7` | Đăng nhập được trên preview; `TC-001→003` pass | `src/features/auth/**` |
+
+### S2 — Group tối thiểu
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `E1-T2` | Schema `groups`, `group_members`, use case tạo Group | [SPEC-002](what-we-gonna-eat-today_sdd_v1.3.md), `TC-008→010` | 2 | `E1-T1` | Tạo Group được, người tạo là Admin; `TC-008→010` pass | `src/features/group/**` |
+| `E1-T3` | Authorization guard | [SPEC-019](what-we-gonna-eat-today_sdd_v1.3.md), `TC-006`, `TC-007` | 1 | `E1-T2` | Gọi thao tác Group khi không phải Member trả `ERR_NOT_GROUP_MEMBER` | `src/features/group/application/assert-group-access.ts` |
+| `E1-T4` | Decision Date theo timezone Group | [SPEC-018](what-we-gonna-eat-today_sdd_v1.3.md), `TC-004`, `TC-005` | 1 | `E1-T2` | Hàm thuần, nhận `now` làm tham số, không mock `Date`; `TC-004`, `TC-005` pass | `src/features/session/domain/decision-date.ts` |
+
+### S3 — Dish thô
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `E1-T5` | Schema `global_dishes`, `group_dishes`, thêm món không chuẩn hoá | [SPEC-005](what-we-gonna-eat-today_sdd_v1.3.md) rút gọn | 2 | `E1-T2` | Thêm được món và thấy trong danh sách | `src/features/dish/**` |
+
+### S4 — Session tối thiểu
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `E1-T6` | Schema `selection_sessions`, `participants`, partial unique index | [SPEC-007](what-we-gonna-eat-today_sdd_v1.3.md), `BR-025` | 2 | `E1-T4` | Migration tạo được index một phần; kiểm tra bằng `\d+` trong psql | `src/shared/db/schema.ts` |
+| `E1-T7` | Tạo và Start Session, bắt lỗi unique violation | [SPEC-007](what-we-gonna-eat-today_sdd_v1.3.md), `TC-026→029`, `TC-107` | 2 | `E1-T6` | Hai Start đồng thời: đúng một thành công — **`TC-107` phải chạy 2 transaction song song thật** | `src/features/session/**` |
+
+### S5 — Deck và swipe thô
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `E1-T8` | Deck liệt kê không ranking, phân trang | [SPEC-010](what-we-gonna-eat-today_sdd_v1.3.md) rút gọn, [SPEC-011](what-we-gonna-eat-today_sdd_v1.3.md) | 2 | `E1-T5`, `E1-T7` | Mở phiên thấy danh sách món, cuộn hết được | `src/features/selection/**` |
+| `E1-T9` | Route Handler ghi Interaction, optimistic UI | [SPEC-012](what-we-gonna-eat-today_sdd_v1.3.md), `TC-048→053` | 3 | `E1-T8` | Vuốt 10 món liên tiếp không bị chặn xếp hàng; `TC-048→053` pass | `src/app/api/sessions/[id]/interactions/route.ts` |
+
+### S6 — Chốt bữa thô
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `E1-T10` | Chọn món và finalize, chưa có rule | [SPEC-015](what-we-gonna-eat-today_sdd_v1.3.md), [SPEC-016](what-we-gonna-eat-today_sdd_v1.3.md) rút gọn | 2 | `E1-T9` | Session chuyển `FINALIZED`, không reopen được | `src/features/meal/**` |
+| `E1-T11` | Sinh Default Eating History trong cùng transaction | [SPEC-017](what-we-gonna-eat-today_sdd_v1.3.md), `TC-076→078`, `TC-109` | 2 | `E1-T10` | `TC-109` pass: `INSERT` thất bại giữa chừng thì Session **không** `FINALIZED` | `src/features/history/**` |
+
+### S7 — Đo kiểm thực tế
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `E1-T12` | Deploy production, đo cold start trên 4G | `R-01`, `MS-05` | 2 | `E1-T11` | Có con số thật ghi vào Setup Guide; chạy sau ≥10 phút idle — **Cột mốc M2** | — |
+
+> [!CAUTION]
+> **Scope Checkpoint sau E1 (Quan trọng nhất):**
+>
+> - Nếu quá 35 giờ mà chưa xong E1 → Ước lượng toàn bộ phần còn lại cũng sai theo cùng tỉ lệ. Cắt theo [Plan & Scope §7](what-we-gonna-eat-today_plan-and-scope_v1.0.md).
+> - Cold start đo được vượt 2 giây → NFR-01 không cứu được bằng tối ưu frontend. Quyết định lại: nới ngưỡng, hoặc đổi cơ sở dữ liệu.
+
+---
+
+# 4. E2 — Group và Dish hoàn chỉnh
+
+### S1 — Link mời & Tham gia nhóm (Đã xong)
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E2-T1` | Tạo link mời, lưu hash, hạn 7 ngày | [SPEC-003](what-we-gonna-eat-today_sdd_v1.3.md), `TC-011`, `TC-012` | 2 | `E1-T3` | DB chỉ chứa hash, không chứa token thô | `src/features/group/**` |
+| `[x] E2-T2` | Tham gia bằng link, transaction, trường hợp âm | [SPEC-004](what-we-gonna-eat-today_sdd_v1.3.md), `TC-013→016`, `TC-112` | 2 | `E2-T1` | `TC-015` pass: Member cũ dùng token thì token **vẫn dùng được** cho người khác | `src/features/group/application/join-by-invite.ts` |
+
+### S2 — Chuẩn hoá tên món & Phát hiện trùng lặp (Đã xong)
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E2-T3` | Chuẩn hoá tên món bỏ dấu, hàm thuần | [SPEC-005](what-we-gonna-eat-today_sdd_v1.3.md), `TC-098` | 2 | — | `Ca kho` và `Cá kho` cùng `normalized_name`; test dùng tiếng Việt có dấu thật | `src/features/dish/domain/normalize-name.ts` |
+| `[x] E2-T4` | Phát hiện trùng, `forceCreate`, khôi phục Dish Inactive | [SPEC-005](what-we-gonna-eat-today_sdd_v1.3.md), `TC-017→021`, `TC-097→099` | 3 | `E2-T3` | Thêm lại Dish Inactive chuyển `ACTIVE`, không tạo Global Dish mới | `src/features/dish/application/**` |
+
+### S3 — System Tag (Đã xong)
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E2-T5` | Gán System Tag, ghi đè toàn bộ, cách ly theo Group | [SPEC-006](what-we-gonna-eat-today_sdd_v1.3.md), `TC-021→025`, `TC-100`, `TC-101` | 3 | `E1-T5` | Đổi tag ở Group A không ảnh hưởng Group B | `src/features/dish/**` |
+
+### S4 — UI Danh mục món & Phát hiện trùng lặp (Đã xong)
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E2-T6` | Màn hình danh mục món | `S-05`, `S-06` | 2 | `E2-T4` | Thêm, sửa tag, tìm kiếm được trên điện thoại | `src/features/dish/presentation/**` |
+| `[x] E2-T7` | Trạng thái phát hiện trùng trên UI | `S-06` | 2 | `E2-T6` | Nút "Dùng món này" **nổi bật hơn** "vẫn tạo mới" | `src/features/dish/presentation/duplicate-sheet.tsx` |
+
+---
+
+# 5. E3 — Phiên và người tham gia
+
+### S1 — Bắt đầu phiên (Đã xong)
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E3-T1` | Revalidate 5 bước lúc Start | [SPEC-008](what-we-gonna-eat-today_sdd_v1.3.md), `TC-030→035` | 3 | `E1-T7` | Dừng ở lỗi đầu tiên, trả đúng mã lỗi tương ứng từng bước | `src/features/session/application/start-session.ts` |
+| `[x] E3-T2` | Hiện Participant không hợp lệ ngay tại hàng | `S-08`, `TC-031` | 1 | `E3-T1` | Thấy tên người cụ thể, không phải thông báo chung | `src/features/session/presentation/**` |
+
+### S2 — Thêm Participant (Đã xong)
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E3-T3` | Thêm Participant khi Draft | [SPEC-009](what-we-gonna-eat-today_sdd_v1.3.md), `TC-036`, `TC-037` | 1.5 | `E3-T1` | Participant mới có 0 Interaction | `src/features/session/application/add-participant.ts` |
+| `[x] E3-T4` | Thêm Participant khi Active | [SPEC-009](what-we-gonna-eat-today_sdd_v1.3.md), `TC-038`, `TC-039` | 1.5 | `E3-T3` | `TC-038` pass: Thêm trùng trả `ERR_PARTICIPANT_EXISTS` | Như trên |
+
+### S3 — Tiến trình & Giao diện (Đã xong)
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E3-T5` | Completed và mở lại | [SPEC-013](what-we-gonna-eat-today_sdd_v1.3.md), `TC-054→057` | 3 | `E1-T9` | `TC-055` pass: Participant `COMPLETED` **vẫn vuốt được tiếp** | `src/features/session/**` |
+| `[x] E3-T6` | Màn hình phiên cho Creator | `S-04`, `S-08` | 4 | `E3-T5` | Thấy ai xong ai chưa, vào phiên được — **Cột mốc M3** | `src/features/session/presentation/**` |
+
+---
+
+# 6. E4 — Deck và Ranking
+
+> [!NOTE]
+> Giai đoạn quyết định sản phẩm có khác một danh sách món ăn thông thường hay không.
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E4-T1` | `computeRecencyPenalty`, hàm thuần | [SPEC-020](what-we-gonna-eat-today_sdd_v1.3.md), `TC-079→084` | 3 | `E1-T11` | Không mock gì, nhận `referenceDate` làm tham số; `TC-084` pass | `src/features/history/domain/recency.ts` |
+| `[x] E4-T2` | `computePersonalScore` & `buildDeck` kèm tie-break | [SPEC-010](what-we-gonna-eat-today_sdd_v1.3.md), `TC-040→044` | 3 | `E4-T1` | `RankingConfig` nằm ở **một** module hằng số duy nhất | `src/features/selection/domain/ranking.ts` |
+| `[x] E4-T3` | Lưu `session_decks`, thứ tự bất biến trong phiên | [SPEC-010](what-we-gonna-eat-today_sdd_v1.3.md), `TC-041` | 2 | `E4-T2` | Mở lại deck lần hai thứ tự giống hệt | `src/features/selection/infrastructure/**` |
+| `[x] E4-T4` | Phân trang và lọc theo `group_dishes.state` | [SPEC-011](what-we-gonna-eat-today_sdd_v1.3.md), `TC-045→047`, `TC-102→104`, `TC-108` | 3 | `E4-T3` | `TC-108` pass: Dish bị gỡ sau khi deck materialize không xuất hiện | `src/features/selection/application/**` |
+| `[x] E4-T5` | Upsert Interaction chống ghi đè sai thứ tự | [SPEC-012](what-we-gonna-eat-today_sdd_v1.3.md), `TC-106` | 2.5 | `E1-T9` | `TC-106` pass: Record đến muộn có timestamp cũ hơn bị bỏ qua | `src/features/selection/application/record-interaction.ts` |
+| `[x] E4-T6` | Retry khi mất mạng, không chặn thao tác | `NFR-05`, `S-09` | 1.5 | `E4-T5` | Tắt mạng vẫn vuốt tiếp được, có dải thông báo ở đỉnh | `src/features/selection/presentation/**` |
+| `[x] E4-T7` | Thẻ món và cử chỉ vuốt | `S-09`, [Design §4](designs/README.md) | 3 | `E4-T4` | Nghiêng tối đa 8°, lớp phủ theo hướng, **vuốt trái không dùng màu đỏ** | `src/features/selection/presentation/components/dish-swipe-card.tsx` |
+| `[x] E4-T8` | Nút vuốt và khả năng tiếp cận | [Design §7](designs/README.md), `NFR-03` | 2 | `E4-T7` | Mọi cử chỉ có nút tương đương; nhãn screen reader đầy đủ; vùng chạm ≥44px | `src/features/selection/presentation/components/swipe-controls.tsx` |
+| `[x] E4-T9` | Chỉ báo tiến độ và lối vào Completed | `S-09` | 1 | `E4-T8` | Hết deck hiện gợi ý "Tôi chọn xong" — **Cột mốc M4** | `src/features/selection/presentation/components/deck-screen.tsx` |
+
+---
+
+# 7. E5 — Rule và chốt bữa
+
+> [!NOTE]
+> **Bốn slice, bốn Implementation Guide** — đọc guide tương ứng trước khi gõ dòng code đầu tiên:
+>
+> | Slice | Subtask | Giờ | Guide |
+> | :---: | :--- | :---: | :--- |
+> | `S1` | `E5-T1`, `E5-T1b`, `E5-T2` | 6 | [E5-S1 — Quy định mâm cơm của nhóm](plans/E5/what-we-gonna-eat-today_e5-s1-implementation-guide_v0_1.md) |
+> | `S2` | `E5-T3`, `E5-T4` | 5 | [E5-S2 — Rule engine và Snapshot lúc Start](plans/E5/what-we-gonna-eat-today_e5-s2-implementation-guide_v0_1.md) |
+> | `S3` | `E5-T5`, `E5-T6` | 6.5 | [E5-S3 — Finalize đầy đủ và Session Score](plans/E5/what-we-gonna-eat-today_e5-s3-implementation-guide_v0_1.md) |
+> | `S4` | `E5-T7`, `E5-T8`, `E5-T9` | 5.5 | [E5-S4 — Màn tổng hợp và chốt bữa](plans/E5/what-we-gonna-eat-today_e5-s4-implementation-guide_v0_1.md) |
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E5-T1` | Schema `group_rules` và CRUD | [SPEC-021](what-we-gonna-eat-today_sdd_v1.3.md), `TC-085`, `TC-088` | 2 | `E2-T5` | Lưu danh sách rỗng thì Group không còn rule nào | `src/features/rule/**` |
+| `[x] E5-T1b` | Màn hình S-07 "Quy định bữa ăn" | `S-07`, [Design §4](designs/README.md) | 2 | `E5-T1` | Admin đặt được rule trên điện thoại; Member chỉ xem, không thấy nút sửa | `src/features/rule/presentation/**`, `src/app/groups/[groupId]/rules/**` |
+| `[x] E5-T2` | Invariant của rule ép ở tầng DB | [SPEC-021](what-we-gonna-eat-today_sdd_v1.3.md), `TC-086`, `TC-087`, `TC-089` | 2 | `E5-T1` | `unique(group_id, rule_type, system_tag)` và `check(minimum_count >= 1)` là ràng buộc thật trong DB | `src/features/rule/infrastructure/schema.ts` |
+| `[x] E5-T3` | `evaluateRequired`, independent tag counting | [SPEC-016](what-we-gonna-eat-today_sdd_v1.3.md), `TC-072`, `TC-073`, `TC-110` | 3 | `E5-T1` | **Viết `TC-073` trước khi viết hàm:** Dish mang cả `MAIN` và `SOUP` thoả cả hai rule | `src/features/rule/domain/evaluate.ts` |
+| `[x] E5-T4` | Snapshot Session Rule trong transaction Start | [SPEC-022](what-we-gonna-eat-today_sdd_v1.3.md), `TC-091→094` | 2 | `E5-T2`, `E3-T1` | `TC-035` pass: Start thất bại thì không có Session Rule nào được tạo | `src/features/rule/infrastructure/drizzle-rule-repository.ts` |
+| `[x] E5-T5` | Finalize revalidate đầy đủ trong transaction | [SPEC-016](what-we-gonna-eat-today_sdd_v1.3.md), `TC-067→075` | 4 | `E5-T3`, `E5-T4`, `E1-T11` | `TC-074` và `TC-075` pass: Rule theo snapshot, System Tag theo hiện tại | `src/features/meal/application/finalize-session.ts` |
+| `[x] E5-T6` | `computeSessionScore` chuẩn hoá theo $T$ | [SPEC-014](what-we-gonna-eat-today_sdd_v1.3.md), `TC-058→062`, `TC-111` | 2.5 | `E4-T5` | `TC-111` pass: $T = 1$ không chia cho 0 | `src/features/selection/domain/ranking.ts` |
+| `[x] E5-T7` | Màn hình tổng hợp kèm số đếm thô | `S-10`, [Design §4](designs/README.md) | 2.5 | `E5-T6` | Dùng `tabular-nums`; số 0 hiện mờ chứ không ẩn | `src/features/meal/presentation/**` (đổi khỏi `selection` — [DEC-046](what-we-gonna-eat-today_decision-log_v3.9.md)) |
+| `[x] E5-T8` | Khay chọn món và dựng Final Meal | [SPEC-015](what-we-gonna-eat-today_sdd_v1.3.md), `S-10`, `TC-063→066` | 2 | `E5-T7` | Chọn được cả món trong mục "Chưa ai chọn" | `src/features/meal/presentation/**` |
+| `[x] E5-T9` | Hiện Required Rule chưa đạt ngay trên nút chốt | `S-10`, `TC-072` | 1 | `E5-T5`, `E5-T8` | Ghi rõ `Còn thiếu: 1 món Canh`, không dùng modal — **Cột mốc M5** | Như trên |
+
+---
+
+# 8. E6 — Hoàn thiện
+
+> [!NOTE]
+> **Bốn slice, bốn Implementation Guide** — đọc guide tương ứng trước khi gõ dòng code đầu tiên:
+>
+> | Slice | Subtask | Giờ | Guide |
+> | :---: | :--- | :---: | :--- |
+> | `S1` | `E6-T7`, `E6-T8` | 5.5 | [E6-S1 — Bữa đã chốt và lịch sử ăn](plans/E6/what-we-gonna-eat-today_e6-s1-implementation-guide_v0_1.md) |
+> | `S2` | `E6-T2` | 2 | [E6-S2 — Bảng dịch mã lỗi và lỗi tại chỗ](plans/E6/what-we-gonna-eat-today_e6-s2-implementation-guide_v0_1.md) |
+> | `S3` | `E6-T1`, `E6-T4` | 6 | [E6-S3 — Trạng thái rỗng và chặn mở phiên](plans/E6/what-we-gonna-eat-today_e6-s3-implementation-guide_v0_1.md) |
+> | `S4` | `E6-T5`, `E6-T6`, `E6-T3` | 7 | [E6-S4 — Cổng chất lượng: Coverage, a11y, NFR](plans/E6/what-we-gonna-eat-today_e6-s4-implementation-guide_v0_1.md) |
+>
+> **Thứ tự slice lệch bảng phụ thuộc dưới đây có chủ ý:** `E6-T7`/`E6-T8` đi trước `E6-T1` và
+> `E6-T6` vì cả hai việc sau là thao tác **quét toàn bộ màn hình** — quét khi tập màn hình chưa
+> đủ thì phải quét lại lần hai, mà `E6-T6` chính là mốc M6. Xem [DEC-047](what-we-gonna-eat-today_decision-log_v3.9.md).
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Phụ thuộc | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `[x] E6-T7` | Màn S-11 "Bữa ăn hôm nay" + trạng thái "đã chốt" của S-04 | `S-11`, `S-04`, `MS-01` | 3 | `E5-T9` | Chốt xong quay về Group Hub thấy ngay mâm cơm | `src/features/meal/**` |
+| `[x] E6-T8` | Màn S-12 "Lịch sử ăn" | `S-12`, `MS-01` | 2.5 | `E6-T7` | 30 ngày gần đây, nhóm theo ngày | `src/features/history/**` |
+| `[x] E6-T1` | Toàn bộ trạng thái rỗng (Empty States) | [Design Criteria §4](what-we-gonna-eat-today_design-criteria_v1.0.md) | 4 | `E5-T9` | Mỗi trạng thái rỗng nêu **việc cần làm tiếp**, không để trống trơn | Mọi `presentation/` |
+| `[x] E6-T2` | Bảng dịch mã lỗi và lỗi tại chỗ | [SDD §2.5](what-we-gonna-eat-today_sdd_v1.3.md), [Design Criteria §5](what-we-gonna-eat-today_design-criteria_v1.0.md) | 2 | `E6-T1` | Một bảng tra duy nhất; không popup modal cho lỗi form | `src/shared/errors/messages.ts` |
+| `[x] E6-T3` | Đo NFR-01 đến NFR-05 bằng số thật | [Tech §9](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md), `MS-01→05` | 3 | `E6-T2` | Có con số định lượng cho từng NFR | — |
+| `[x] E6-T4` | Chặn mở phiên khi nhóm chưa có món | `S-04`, [Design Criteria §4](what-we-gonna-eat-today_design-criteria_v1.0.md) | 2 | `E6-T1` | Nhóm mới thấy "Thêm món" thay vì "Mở phiên" — **và server cũng từ chối** | `src/features/session/**`, `src/features/group/presentation/**` |
+| `[x] E6-T5` | Rà coverage `domain/` và `application/` đạt 80% | [Tech §8.2](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) | 3 | `E6-T3` | CI ép ngưỡng kiểm thử, không chỉ báo cáo | `vitest.config.mts` |
+| `[x] E6-T6` | Rà khả năng tiếp cận: Tương phản, focus, nhãn | [Design Criteria §8, §10](what-we-gonna-eat-today_design-criteria_v1.0.md) | 1 | `E6-T4` | Không thông tin nào chỉ truyền tải bằng màu sắc — **Cột mốc M6** | Mọi `presentation/` |
+
+---
+
+# 8b. M1 — Bảo trì sau v1.0: Danh mục món
+
+> [!NOTE]
+> Slice này KHÔNG thuộc v1.0 (đã phát hành, mốc M6) và cũng không thuộc v1.1. Nó phát sinh
+> từ ba nghi vấn khi dùng thật, trong đó **hai nghi vấn có tiền đề sai** nhưng vẫn lộ ra
+> lỗi thật:
+>
+> - *"Check trùng chỉ trong nhóm"* — **sai**, `findGlobalCandidatesByNormalizedName` vốn đã
+>   ở phạm vi toàn cục. Nhưng nó chỉ khớp tên **chính xác** và chỉ chạy **sau khi bấm lưu**,
+>   nên trên thực tế không ai tìm thấy món của catalog chung. Đây là khoảng trống thật.
+> - *"Chưa có cách thêm món vào global"* — **sai**, mọi món mới đều tạo một Global Dish kèm
+>   provenance từ E2. Chỉ là không có lối vào nhìn thấy được.
+> - *"Bún bị tag là cơm"* — **không phải lỗi phân loại**: `BR-003` ghi rõ `STAPLE` =
+>   *"Món tinh bột / Cơm, bún"*. Lỗi nằm ở **nhãn hiển thị** trái với chính `BR-003`.
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] M1-T1` | Sửa nhãn `STAPLE` và hợp đồng dấu nối | [DEC-052](what-we-gonna-eat-today_decision-log_v3.9.md), `BR-003` | 1 | Nhãn hiện "Cơm · Bún · Phở"; xoá bảng nhãn trùng ở `finalize-meal-screen`; có test canh bất biến dấu nối | `src/shared/ui/system-tag-label.ts` |
+| `[x] M1-T2` | Dùng lại món phải ghi tag đã chọn | [DEC-053](what-we-gonna-eat-today_decision-log_v3.9.md) | 1 | Chọn nhãn rồi "Dùng món này" → món vào pool **kèm nhãn**, không rơi vào "Chưa phân nhãn" | `src/features/dish/application/add-existing-dish-to-group.ts` |
+| `[x] M1-T3` | Sheet thêm món cho chọn nhiều nhãn | [DEC-054](what-we-gonna-eat-today_decision-log_v3.9.md), `BR-012` | 1.5 | "Bún chả" gán được `STAPLE`+`MAIN` ngay lúc tạo; hai sheet dùng chung `SystemTagField` | `src/features/dish/presentation/components/**` |
+| `[x] M1-T4` | Sửa 2 lỗi phân loại của `inferSystemTag` | [DEC-052](what-we-gonna-eat-today_decision-log_v3.9.md) | 1.5 | "Cà pháo"→`SIDE`, "Canh gà"→`SOUP`; hàm chuyển sang `domain/` để nằm trong phạm vi coverage; có script `retag:dishes` | `src/features/dish/domain/infer-system-tag.ts`, `scripts/retag-dishes.ts` |
+| `[x] M1-T5` | Gợi ý món từ catalog chung khi đang gõ | [SPEC-023](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-055](what-we-gonna-eat-today_decision-log_v3.9.md) | 4 | Nhóm 0 món gõ "bún" thấy ngay gợi ý từ catalog đã seed; chọn một gợi ý không tạo Global Dish mới | `src/app/api/groups/[groupId]/dishes/search/route.ts` |
+
+> [!IMPORTANT]
+> `M1-T5` là khoản trả trước cho `F29` ("UI phát hiện trùng", v1.1/E10) — nhưng KHÔNG thay
+> thế nó: `F29` là polish panel trùng lặp *phản ứng*, còn đây là ô gợi ý *chủ động*.
+
+---
+
+# 9. Đường găng (Critical Path)
+
+Chuỗi subtask dài nhất quyết định ngày hoàn thành toàn bộ v1.0:
+
+```text
+E0-T1 ──► E0-T2 ──► E0-T6 ──► E0-T7                 [ 7 giờ ]
+  └──► E1-T1 ──► E1-T2 ──► E1-T4 ──► E1-T6
+         └──► E1-T7 ──► E1-T8 ──► E1-T9
+                └──► E1-T10 ──► E1-T11 ──► E1-T12   [ 21 giờ ]
+                       └──► E4-T1 ──► E4-T2 ──► E4-T3 ──► E4-T4 [ 11 giờ ]
+                              └──► E5-T3 ──► E5-T4 ──► E5-T5     [ 9 giờ ]
+                                     └──► E6-T3                  [ 3 giờ ]
+──────────────────────────────────────────────────────────────────────────
+                                                  TỔNG ĐƯỜNG GĂNG: 51 giờ
+```
+
+> [!NOTE]
+> **51 trong tổng số 121 giờ nằm trên đường găng.** 70 giờ còn lại có thể đảo thứ tự hoặc cắt giảm mà không đẩy lùi ngày release — đây chính là danh sách ứng viên ưu tiên khi cần cắt giảm scope.
+> **E2 và E3 nằm ngoài đường găng:** Nếu bị nghẽn thời gian, có thể hoãn chúng và đi thẳng từ E1 sang E4.
+
+---
+
+# 10. Lịch theo quỹ giờ (Workload Scenarios)
+
+| Quỹ thời gian / tuần | Thời gian tới M2 (Skeleton) | Tới M4 (Deck/Ranking) | Tới M6 (Hoàn thiện v1.0) |
+| :---: | :---: | :---: | :---: |
+| **6 giờ / tuần** | 6 tuần | 17 tuần | **26 tuần ≈ 6 tháng** |
+| **10 giờ / tuần** | 4 tuần | 10 tuần | **16 tuần ≈ 4 tháng** |
+| **15 giờ / tuần** | 2.5 tuần | 7 tuần | **11 tuần ≈ 2.5 tháng** |
+
+*(Tính toán trên 157 giờ đã bao gồm 30% dự phòng)*
+
+---
+
+# 11. Bảng rủi ro & Phương án xử lý
+
+| Rủi ro kỹ thuật / quy trình | Dấu hiệu nhận biết sớm | Phương án xử lý (Mitigation) |
+| :--- | :--- | :--- |
+| **Cold start Neon vượt NFR-01** | `E1-T12` đo được > 2 giây | Render shell tĩnh trước, stream dữ liệu sau. Nếu vẫn vượt, nới NFR-01 lên 4 giây thay vì đổi database |
+| **Ước lượng sai lệch toàn cục** | `E0` vượt 15h, hoặc `E1` vượt 35h | Cắt giảm scope theo §10 ngay lập tức, không đợi tới E4 |
+| **Rò rỉ kiến trúc qua ranh giới tầng** | Xuất hiện ý định `import` từ `domain/` sang `infrastructure/` | ESLint đã chặn ở `E0-T2`. Không tắt rule mà tái cấu trúc code đúng tầng |
+| **Independent tag counting sai logic** | Viết `evaluateRequired` trước khi có `TC-073` | Bắt buộc viết test case `TC-073` trước theo TDD |
+| **Dữ liệu Eating History sai lệch do thiếu `Cannot Eat`** | Người nhà than phiền liên tục về món không ăn được | Đã nằm trong dự tính (`R-05`). Ưu tiên tính năng `F15` lên đầu phiên bản v1.1 |
+| **Mất động lực giữa chừng** | Hai tuần liên tiếp không có subtask nào hoàn thành | Rút ngắn khoảng cách giữa các milestone, tập trung đưa bản demo chạy thật đến tay người thân |
+
+---
+
+# 12. Điểm kiểm tra Scope (Checkpoints)
+
+Sau mỗi Epic, hãy tự đánh giá dựa trên 3 câu hỏi:
+
+1. **Tổng thời gian thực tế so với ước lượng lệch bao nhiêu %?** Nếu vượt quá 40%, áp dụng cùng tỉ lệ đó cho phần còn lại và tái cân đối scope ngay.
+2. **Có tính năng nào ở các Epic sau mà tuần vừa rồi tôi hoàn toàn không nghĩ tới không?** Nếu có, đó là ứng viên hàng đầu để loại bỏ.
+3. **Nếu phải dừng dự án ngay ngày mai, phần đã làm có dùng được không?** Kế hoạch này được cấu trúc để từ sau E1 trở đi, câu trả lời luôn là **CÓ**.
+
+---
+
+# 13. Sau v1.0 — Lộ trình v1.1 và v1.2
+
+### 13.1 v1.1 — 11 tính năng (Mục tiêu: Khẩu vị cá nhân & Deck có điểm dừng)
+
+> [!IMPORTANT]
+> Bảng dưới đây **thay thế** lộ trình 12 tính năng của `v2.0`. Chi tiết subtask ở [§16](#16-v11--chi-tiết-thi-công); lý do re-scope ở [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md).
+
+| Epic | Nội dung | Danh sách tính năng | Ước lượng |
+| :--- | :--- | :--- | :---: |
+| **M2** | Tiền đề — vá cross-link tài liệu | — | 2h |
+| **E7** | Ràng buộc và sở thích cá nhân | `F15` Cannot Eat, `F16` Like/Dislike | 19.25h |
+| **E8** | Deck ngắn và có nhịp | **`F49` Trần 30 thẻ**, `F18` Explore Lane 20%, `F19` Deck ổn định, **`F51` Tiếp tục đúng chỗ** | 17.25h |
+| **E9** | Chế độ vuốt theo chặng | **`F50` Guided Course Mode** | 18h |
+| **E10** | Chốt bữa có hướng dẫn mềm | `F22` Preferred Rule, `F23` Target Dish Count, `F24` Lưu vết cảnh báo | 16h |
+| **E11** | Vận hành tối thiểu | `F26` Phiên hết hạn, `F27` Gỡ Dish | 8.5h |
+| | | **Tổng kế hoạch** | **81h** |
+| **M3** | Khép v1.1 — vá lỗi rà soát & phần còn thiếu của `F16` | — (xem [§16.8](#168-m3--khép-v11)) | 15.5h |
+| | | **Tổng v1.1 thực tế** | **96.5h** |
+
+**Ba thay đổi so với kế hoạch cũ:**
+
+1. **Thêm `F49` và `F50`** — từ phản hồi dùng thật v1.0, không có mã trong `F01`→`F48`.
+2. **Hoãn `F25`, `F28`, `F29`** sang v1.2.
+3. **Thêm `M2`** — nợ kỹ thuật tài liệu phải trả trước khi viết thêm tài liệu mới.
+
+### 13.2 v1.2 — 16 tính năng (Mục tiêu: Học hành vi & Thích ứng linh hoạt)
+
+> [!NOTE]
+> Epic đánh số lại theo [DEC-061](what-we-gonna-eat-today_decision-log_v3.9.md): `E11`→`E12`, `E12`→`E13`, `E13`→`E14`.
+
+| Epic | Nội dung | Danh sách tính năng | Ước lượng |
+| :--- | :--- | :--- | :---: |
+| **M4** | Vá khoảng trống đặc tả | — (`SPEC-037`→`042`, `TC-159`→`178`, PRD §4) | 6h |
+| **E13** | Học sở thích tự động | `F30` Implicit Preference, `F31` Blacklist, `F32` Whitelist, `F39` Quên sở thích đã học | 20.5h |
+| **E14** | Ba món nợ của v1.1 | **`F25` Gỡ Participant**, **`F28` Sửa lịch sử ăn**, **`F29` polish phát hiện trùng** | 14h |
+| | | **Tổng v1.2** | **40.5h** |
+
+> [!IMPORTANT]
+> **Phạm vi v1.2 cắt ngày 2026-09-04 — từ 89h/16 tính năng còn 40.5h/7 tính năng** ([DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md)). Chi tiết subtask ở [§17](#17-v12--chi-tiết-thi-công). Chín tính năng hoãn sang v1.3, mỗi cái kèm lý do:
+>
+> | Hoãn | Vì sao |
+> | :--- | :--- |
+> | `E12` — `F33` Chef Role, `F34` Khả năng nấu, `F42` Gán/gỡ Chef | Số hạng $C$ chỉ có nghĩa khi ranking đã đủ tín hiệu. Đặt SAU `F30` thì nó cộng vào một công thức đã học được gì đó |
+> | `F35` Override Session Rule | [DEC-042](what-we-gonna-eat-today_decision-log_v3.9.md) — bắt dời snapshot rule từ Start về Draft cộng một bước làm mới; mổ vào `startDraft` và đánh thức `group_rules.overridable` |
+> | `F36` Nguồn mua | Số hạng $S$ — cùng lý lẽ hoãn với $C$ |
+> | `F37` Descriptive Tag, `F38` Phản hồi trực tiếp | **Chưa được đặc tả** — chỉ có tên trong một ô bảng. Lập lịch cho một cái tên là lập lịch cho một ẩn số |
+> | `F40` Sửa Final Meal, `F41` Huỷ phiên | `F41` kéo theo migration `invalid_reason` mà `E11` đã cố ý không làm ([Diagrams §312](what-we-gonna-eat-today_diagrams_v1.1.md)) |
+>
+> **`E12` cố ý để trống, không đánh số lại.** Đánh số lại lần thứ hai (sau `DEC-061`) chỉ tạo churn và làm gãy link chéo; một `E12` bỏ trống chờ v1.3 là trạng thái trung thực.
+
+> [!NOTE]
+> **Hai thứ v1.1 để lại làm đầu vào cho v1.2** (đợt rà soát `2026-09-04`, xem [§16.8](#168-m3--khép-v11)):
+>
+> - **`finalize_warnings` là bảng chỉ ghi, chưa ai đọc.** `E10-T4` cố ý dựng nó không kèm phía
+>   đọc, và từ đó nó vẫn đang tích dữ liệu không ai xem được. Ứng viên tự nhiên cho `E14` —
+>   ghép cùng `F40` Sửa Final Meal, nơi câu hỏi *"tối đó nhà mình lệch chuẩn ở đâu"* mới có chỗ
+>   để hỏi.
+> - **Màn tổng hợp liệt kê TRỌN danh mục dưới mục "Chưa ai chọn",** trong khi từ `E8` deck chặn
+>   ở 30 thẻ. Nhóm 150 món ⇒ 120+ dòng món chưa ai từng nhìn thấy trong phiên. Đây là **quyết
+>   định sản phẩm**, không phải lỗi: trần deck giới hạn thứ được ĐỀ XUẤT, còn Creator lúc chốt
+>   bữa vẫn có quyền chọn bất cứ món nào trong nhà. Chốt lại ở `E14` cùng `F40`, không sửa vội
+>   trong một slice bảo trì.
+
+---
+
+# 14. Ngoài phạm vi (Out of Scope)
+
+| Tính năng | Lý do loại bỏ khỏi phạm vi cốt lõi |
+| :--- | :--- |
+| `F43` Một User thuộc nhiều Group | Hoãn theo quyết định [DEC-004](what-we-gonna-eat-today_decision-log_v3.9.md). Schema đã sẵn sàng `group_id` |
+| `F44` Giao diện System Admin | Quy mô nhỏ (< 10 người dùng), thao tác trực tiếp qua DB |
+| `F45` Logical Merge món trùng phức tạp | Tác động lớn tới quan hệ pool, tương tác, phiên chạy. Chi phí vượt quá lợi ích ở giai đoạn đầu |
+| `F46` Khôi phục metadata khi thêm lại Dish | Trạng thái phức tạp, giá trị mang lại thấp |
+| `F47` Deadline tuỳ chỉnh cho phiên | Kết thúc ngày theo timezone của Group là đủ |
+| `F48` Sửa lịch sử ăn của ngày cũ | Chỉ hỗ trợ điều chỉnh trong ngày hiện tại |
+
+> [!CAUTION]
+> **Nhắc lại các ranh giới bất biến:**
+>
+> - **Quản lý dị ứng y tế:** `Cannot Eat` là khai báo cá nhân, **không phải chứng nhận an toàn y tế**.
+> - **Tối ưu dinh dưỡng:** Không thuộc phạm vi hệ thống.
+> - **Tự động quyết định thay con người:** Creator luôn là người nắm quyền chốt thực đơn cuối cùng.
+
+---
+
+# 15. Lịch sử thay đổi (Change History)
+
+| Version | Ngày | Phần tác động | Nội dung thay đổi | Cơ sở / Quyết định |
+| :---: | :---: | :--- | :--- | :--- |
+| `2.3` | 2026-09-04 | §1, §13.2, §17 | Chốt kế hoạch v1.2: cắt phạm vi từ 89h/16 tính năng còn **40.5h/7 tính năng**; bổ sung §17 với `M4` + `E13` + `E14` (16 subtask); `E12` Chef cố ý để trống chờ v1.3. `M4` đã thi công — `SPEC-037`→`042`, `TC-159`→`178`, PRD §4 tách dòng gộp | [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md) |
+| `2.2` | 2026-09-04 | §1, §13.1, §16.8 | Thi công `M3` — slice khép v1.1 sinh từ đợt rà soát toàn bộ E7→E11: 4 lỗi logic (`marks` gãy bất biến khi quay chặng, khớp luật sai loại sau khi `E10-T1` cho một tag hai loại luật, `limit(1)` không `ORDER BY` khi hai phiên cùng `ACTIVE`, ranh giới chặng đếm theo tag hiện tại), phần còn thiếu của `E7-T5` (`F16` chưa có đường vào từ giao diện nên số hạng $E$ chết trên production), bỏ N+1 lúc chốt bữa, chặn ngõ cụt phiên quá hạn, và đưa `presentation/` vào phép đo coverage. v1.1: 81h kế hoạch → 96.5h thực tế | Rà soát v1.1 `2026-09-04` |
+| `2.2` | 2026-09-04 | §1 | Đánh dấu `E10` và `E11` đã xong — hai epic đã commit từ `2026-09-02`/`2026-09-04` nhưng §1 còn ghi "Chưa bắt đầu" trong khi §16.5/§16.6 đã tick đủ `[x]`; sửa tổng giờ ở §13.1 cho khớp §1 | `DEC-067`, `DEC-068` |
+| `2.1` | 2026-09-01 | §1, §13, §16.4 | Chốt kế hoạch thi công E9: chia 2 slice kèm 2 Implementation Guide; bổ sung `E9-T0` (deck chưa bao giờ mang System Tag — tiền đề của `E9-T3`, đồng thời sửa lỗi nhãn trên thẻ vuốt sống từ E1); `E9-T3` cắt trần TRONG TỪNG CHẶNG chứ không cắt chung rồi chia; `E9-T4` bỏ tham số `courseIndex`; E9 17h → 18h, tổng v1.1 80.5h | E9-S1/S2 Guide, `DEC-066` |
+| `2.1` | 2026-08-26 | §1, §13, §16.3 | Chốt kế hoạch thi công E8: chia 2 slice kèm 2 Implementation Guide; `E8-T4` từ 6h còn 2h (deck vốn đã đóng băng toàn phần — `DEC-064`); bổ sung `E8-T7` (`F51` tiếp tục đúng chỗ đang vuốt) và `E8-T0`; E8 19h → 17.25h, tổng v1.1 79.5h; đánh dấu E7 đã xong | E8-S1/S2 Guide, `DEC-064`, `DEC-065` |
+| `2.1` | 2026-08-26 | §1, §13, §16.2 | Chốt kế hoạch thi công E7: chia 3 slice kèm 3 Implementation Guide; bổ sung `E7-T0` (vá 64 link gãy sau khi guide E6 chuyển thư mục); ghi rõ thứ tự `T4→T3` ở S2 và `T7→T6→T5` ở S3 | E7-S1/S2/S3 Guide |
+| `2.1` | 2026-08-26 | §1, §13, §16 | Mở phạm vi v1.1: re-scope theo phản hồi dùng thật (thêm `F49` trần 30 thẻ, `F50` vuốt theo chặng; hoãn `F25`/`F28`/`F29`); bổ sung §16 với 29 subtask chi tiết `M2`→`E11`; đánh số lại epic v1.2 | Quyết định DEC-056 đến DEC-061 |
+| `2.0` | 2026-08-25 | §8b | Bổ sung slice bảo trì sau v1.0 (`M1-T1`→`M1-T5`): sửa nhãn `STAPLE`, dùng lại món giữ tag, sheet thêm đa nhãn, sửa 2 lỗi `inferSystemTag`, gợi ý catalog chung (SPEC-023) | Quyết định DEC-052 đến DEC-055 |
+| `1.9` | 2026-08-21 | §1, §8 | Hoàn tất thi công Slice S4 của Epic E6 (E6-T5, E6-T6, E6-T3: Coverage, a11y, NFR) — Hoàn tất toàn bộ Epic E6, Đạt cột mốc M6 và sẵn sàng phát hành v1.0 | Quyết định DEC-051 |
+| `1.8` | 2026-08-21 | §1, §8 | Hoàn tất thi công Slice S3 của Epic E6 (E6-T1, E6-T4: Trạng thái rỗng và chặn mở phiên khi nhóm chưa có món) | Quyết định DEC-050 |
+| `1.7` | 2026-08-20 | §1, §7 | Hoàn tất thi công toàn bộ Epic E5 (S1→S4, E5-T1 đến E5-T9: Rule engine, Snapshot lúc Start, Màn tổng hợp S-10 & Chốt bữa) — Đạt cột mốc M5 | Quyết định DEC-040 đến DEC-046 |
+| `1.7` | 2026-08-21 | §1, §8 | Chốt kế hoạch thi công E6: chia 4 slice kèm 4 Implementation Guide; bổ sung `E6-T7` (màn S-11 + trạng thái "đã chốt" của S-04) và `E6-T8` (màn S-12 Lịch sử ăn) — không có chúng thì `MS-01` không pass được; sửa 4 tham chiếu Design trỏ sai file sang `design-criteria_v0_1.md` | Quyết định DEC-047 đến DEC-051 |
+| `1.6` | 2026-08-20 | §1, §7 | Chốt kế hoạch thi công E5: chia 4 slice kèm 4 Implementation Guide; bổ sung subtask `E5-T1b` (màn hình S-07 Quy định bữa ăn); đổi File tác động của `E5-T7` sang `features/meal`; đồng bộ bảng tiến độ §1 với thực tế E2/E3/E4 đã xong | Quyết định DEC-040 đến DEC-046 |
+| `1.5` | 2026-08-20 | §6 | Hoàn tất thi công toàn bộ Epic E4 (S1→S4, E4-T1 đến E4-T9: Deck vuốt & Thuật toán Ranking cá nhân) — Đạt cột mốc M4 | Quyết định DEC-036 đến DEC-039 |
+| `1.4` | 2026-08-19 | §5 | Hoàn tất thi công Slice S3 của Epic E3 (E3-T5, E3-T6: Completed & Màn hình Creator) — Đạt cột mốc M3 | Quyết định DEC-035 |
+| `1.3` | 2026-08-18 | §4 | Hoàn tất thi công Slice S2 của Epic E2 (E2-T3, E2-T4: Chuẩn hoá tên món & Phát hiện trùng lặp) | Quyết định DEC-029, DEC-030 |
+| `1.2` | 2026-08-18 | §4 | Hoàn tất thi công Slice S1 của Epic E2 (E2-T1, E2-T2: Link mời & Tham gia nhóm) | Quyết định DEC-027, DEC-028 |
+| `1.1` | 2026-08-18 | §1, §3 | Hoàn tất thi công toàn bộ Epic E1 (S1→S6, E1-T1 đến E1-T12), cập nhật trạng thái các subtasks | Đạt cột mốc M2 (Walking Skeleton) |
+| `1.0` | 2026-08-14 | Header & Baseline | Phát hành chính thức baseline R1 | Hoàn tất review toàn bộ 11 tài liệu |
+| `0.1` | 2026-08-14 | Toàn bộ | Bản thảo đầu tiên: 7 epic, 56 subtask, đường găng 51h | Khởi tạo kế hoạch thực thi |
+
+---
+
+# 16. v1.1 — Chi tiết thi công
+
+> [!NOTE]
+> **Mục tiêu v1.1:** gợi ý đúng người, và deck có điểm dừng.
+>
+> v1.0 chốt được bữa từ đầu tới cuối, nhưng nó đối xử với mọi người trong nhà như nhau và
+> đưa ra một danh sách không có đáy. v1.1 sửa đúng hai chuyện đó. Phạm vi chốt theo
+> [DEC-056](what-we-gonna-eat-today_decision-log_v3.9.md); mọi subtask dưới đây tuân thủ cùng
+> một khuôn với §3–§8b: một buổi ngồi làm xong một dòng.
+
+**Thứ tự thi công cố định:**
+
+```text
+M2 ──► E7 ──► E8 ──► E9 ──► E10 ──► E11
+       │       │      │
+       │       │      └─ E9 cần trần thẻ của E8 để phân bổ hạn mức theo chặng
+       │       └─ E8 cần E7 vì Cannot Eat phải lọc TRƯỚC khi cắt trần
+       └─ E7 mở khoá hai số hạng E và X đã nằm sẵn trong RANKING_CONFIG từ E4
+```
+
+---
+
+## 16.1 M2 — Vá cross-link tài liệu
+
+> [!NOTE]
+> Slice này không tạo giá trị người dùng nào. Nó tồn tại vì đợt bump version ngày 2026-08-26
+> làm gãy **357** liên kết nội bộ, và v1.1 sắp sinh thêm 9 tài liệu nữa link dày đặc vào
+> đúng những file đó. Trả nợ trước khi vay thêm.
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] M2-T1` | Ghi nhận 14 file đổi tên là rename trong git | — | 0.5 | `git show --stat -M` hiện đủ 14 dòng dạng `{cũ => mới}`; `git log --follow` trên tên mới vẫn thấy lịch sử cũ | — |
+| `[x] M2-T2` | Thay 13 tên file cũ trong toàn bộ tài liệu | [DEC-057](what-we-gonna-eat-today_decision-log_v3.9.md) | 1 | Không còn tham chiếu nào tới tên file cũ trong `docs/`, `README.md` | `docs/**`, `README.md` |
+| `[x] M2-T3` | Vá đường dẫn trong comment mã nguồn | [DEC-057](what-we-gonna-eat-today_decision-log_v3.9.md) | 0.25 | Không comment nào trong `src/` trỏ tới file tài liệu không tồn tại | `src/features/**`, `src/app/**` |
+| `[x] M2-T4` | Cổng kiểm link trong `yarn verify` | [DEC-057](what-we-gonna-eat-today_decision-log_v3.9.md) | 0.25 | `yarn docs:links` xanh; cố tình phá một link thì đỏ và `exit 1` | `scripts/check-doc-links.sh`, `package.json` |
+
+> [!IMPORTANT]
+> `M2-T4` lộ thêm **120 link gãy có từ trước** đợt đổi tên — các guide ở `docs/plans/E1..E5/`
+> lùi thiếu một cấp, `docs/designs/README.md` thiếu hẳn `../`, một link `file:///Users/...`
+> tuyệt đối. Đã sửa trong cùng slice.
+
+---
+
+## 16.2 E7 — Ràng buộc và sở thích cá nhân
+
+**19.25 giờ · `F15`, `F16` · [SPEC-024, SPEC-025](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-034`, `BR-037`, `BR-056`**
+
+Chia ba slice, mỗi slice một Implementation Guide:
+
+| Slice | Subtask | Giờ | Guide |
+| :--- | :--- | :---: | :--- |
+| **S1 — Nền tảng** | `E7-T1`, `E7-T2` | 5.5 | [e7-s1](plans/E7/what-we-gonna-eat-today_e7-s1-implementation-guide_v0_1.md) |
+| **S2 — Luồng dữ liệu** | `E7-T4`, `E7-T3` | 6 | [e7-s2](plans/E7/what-we-gonna-eat-today_e7-s2-implementation-guide_v0_1.md) |
+| **S3 — Hiển thị & hệ quả** | `E7-T7`, `E7-T6`, `E7-T5` | 7.5 | [e7-s3](plans/E7/what-we-gonna-eat-today_e7-s3-implementation-guide_v0_1.md) |
+
+> [!NOTE]
+> **Thứ tự trong S2 và S3 ngược số thứ tự subtask, có chủ đích.** `T3` cần một use case đã tồn tại để gọi, nên `T4` đi trước. Trong S3, `T7` đi đầu vì nó là subtask vá rủi ro `R-05` — hết thời gian giữa chừng thì thứ đã xong phải là nó chứ không phải một cái nút.
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] E7-T0` | Vá 64 link gãy sau khi guide E6 chuyển vào `docs/plans/E6/` | [DEC-057](what-we-gonna-eat-today_decision-log_v3.9.md) | 0.25 | `yarn docs:links` xanh; `yarn verify` xanh trọn — điều kiện của mọi subtask còn lại | `docs/plans/E6/**`, `docs/what-we-gonna-eat-today_master-plan_v2.1.md` |
+| `[x] E7-T1` | Schema ràng buộc & sở thích cá nhân | [SPEC-024](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md) | 2.5 | Hai bảng `user_dish_constraints` và `user_dish_preferences` khoá `(user_id, global_dish_id)`; enum `preference_kind`; migration chạy được cả chiều lên | `src/shared/db/schema.ts`, `src/shared/db/migrations/**` |
+| `[x] E7-T2` | Domain sở thích và số hạng $E$ | [SPEC-025](what-we-gonna-eat-today_sdd_v1.3.md), `BR-037` | 3 | `computePersonalScore` đọc `wExplicit` đã có sẵn; `LIKE`→$+1$, không đặt→$0$, `DISLIKE`→$-1$; test canh mốc `DISLIKE` KHÔNG lọc món khỏi deck | `src/features/preference/domain/**`, `src/features/selection/domain/ranking.ts` |
+| `[x] E7-T3` | Lọc cứng Cannot Eat và xoá tương tác cũ | [SPEC-024](what-we-gonna-eat-today_sdd_v1.3.md), `BR-034` | 3 | Đánh dấu Cannot Eat giữa phiên → món biến khỏi deck VÀ tương tác Swipe cũ bị xoá; có test khẳng định $P$ giảm đúng 1 | `src/features/selection/application/list-deck.ts`, `src/features/preference/application/**` |
+| `[x] E7-T4` | Use case + Route Handler cho hai hành động | [SPEC-024](what-we-gonna-eat-today_sdd_v1.3.md), [SPEC-025](what-we-gonna-eat-today_sdd_v1.3.md) | 3 | `setDishConstraint` / `setDishPreference` chạy qua Route Handler (không phải Server Action — cùng lý lẽ `DEC-055`); chặn người không phải chính chủ | `src/features/preference/application/**`, `src/app/api/preferences/**` |
+| `[x] E7-T5` | Giao diện khai báo trên thẻ vuốt và danh mục | [Design Criteria](what-we-gonna-eat-today_design-criteria_v1.0.md), `NFR-03` | 4 | Nút "Tôi không ăn được món này" trên thẻ vuốt; màn danh mục hiện trạng thái Like/Dislike/Cannot Eat mỗi món; vùng chạm ≥ 44px ở nửa dưới màn hình | `src/features/selection/presentation/components/dish-swipe-card.tsx`, `src/features/dish/presentation/components/**` |
+| `[x] E7-T6` | Số hạng $X$ trong Session Ranking | [SPEC-014](what-we-gonna-eat-today_sdd_v1.3.md), `BR-049` | 2.5 | `computeSessionScore` trừ $1.0 \times X$ (trọng số `cCannotEat` đã có sẵn); màn tổng hợp hiện cột $X$ — cột này chỉ xuất hiện từ v1.1, v1.0 cố ý không có | `src/features/selection/domain/ranking.ts`, `src/features/meal/presentation/components/dish-score-row.tsx` |
+| `[x] E7-T7` | Lịch sử ăn mặc định bỏ qua người không ăn được | `BR-056`, [DEC-060](what-we-gonna-eat-today_decision-log_v3.9.md), rủi ro `R-05` | 1 | Chốt bữa có món X mà người B khai Cannot Eat → KHÔNG sinh bản ghi lịch sử ăn cho B; Cooldown của B với món X không đổi | `src/features/history/domain/default-eating-history.ts` |
+
+> [!IMPORTANT]
+> **`E7-T7` là lý do thật sự khiến `E7` đứng đầu v1.1.** Không có nó, hệ thống ghi rằng người
+> ta đã ăn món họ không ăn được, rồi Cooldown 7 ngày trừ điểm món ấy cho chính họ — hệ thống
+> tự bịa ra một dữ kiện rồi tin vào nó. Đây đúng là rủi ro `R-05` mà [§11](#11-bảng-rủi-ro--phương-án-xử-lý) đã dự báo.
+
+> [!NOTE]
+> **`preference` là feature thứ chín.** Trước khi viết dòng code đầu tiên của `E7-T2`, đã khai
+> **hai** chiều mới trong `ALLOWED_CROSS_FEATURE` của `eslint.config.mjs` và bổ sung probe tương
+> ứng — hiện có đúng 7 chiều được phép:
+>
+> - `selection → preference` (cho `E7-T2`, `E7-T3`)
+> - `meal → preference` (cho `E7-T7` — `finalizeSession` phải đọc tập `Cannot Eat`)
+>
+> Chiều thứ hai dễ bị bỏ sót vì lịch sử ăn nằm ở feature `history`; nhưng hàm thuần
+> `defaultEatingHistory` **nhận** tập ngoại lệ qua tham số, nên chỗ đọc dữ liệu là `meal`.
+> Bỏ qua bước này thì ESLint chặn đúng lúc code đã viết xong.
+
+---
+
+## 16.3 E8 — Deck ngắn và có nhịp
+
+**17.25 giờ · `F49`, `F18`, `F19`, `F51` · [SPEC-026 → SPEC-028, SPEC-036](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-047`, `BR-048`, `BR-062`**
+
+Chia hai slice, mỗi slice một Implementation Guide:
+
+| Slice | Subtask | Giờ | Guide |
+| :--- | :--- | :---: | :--- |
+| **S1 — Thuật toán** | `E8-T0`, `E8-T1`, `E8-T2`, `E8-T4` | 9.25 | [e8-s1](plans/E8/what-we-gonna-eat-today_e8-s1-implementation-guide_v0_1.md) |
+| **S2 — Trải nghiệm** | `E8-T3`, `E8-T5`, `E8-T7`, `E8-T6` | 8 | [e8-s2](plans/E8/what-we-gonna-eat-today_e8-s2-implementation-guide_v0_1.md) |
+
+> [!NOTE]
+> **E8 giảm 19h → 17.25h.** `F19` từ 6h còn 2h vì deck vốn đã đóng băng toàn phần từ E4, mạnh hơn `BR-048` đòi hỏi ([DEC-064](what-we-gonna-eat-today_decision-log_v3.9.md)). Bốn giờ dư đi vào `F51` (`E8-T7`, 2h) và phần dự phòng.
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] E8-T0` | Bỏ theo dõi `.probe-result.json` | — | 0.25 | `yarn arch:probe` chạy xong thì `git status` sạch — hiện mỗi lần chạy probe để lại một dòng ` D` | `.gitignore` |
+| `[x] E8-T1` | Trần số thẻ mỗi phiên | [SPEC-026](what-we-gonna-eat-today_sdd_v1.3.md), `BR-062`, [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md) | 2 | `RANKING_CONFIG.deck.maxCards = 30`; hàm thuần `capDeck`; nhóm 150 món cho deck đúng 30 thẻ | `src/features/selection/domain/ranking-config.ts`, `src/features/selection/domain/deck-page.ts` |
+| `[x] E8-T2` | Trộn luồng Exploit / Explore theo khối | [SPEC-027](what-we-gonna-eat-today_sdd_v1.3.md), `BR-047` | 5 | Khối 5 vị trí = 4 Exploit + 1 Explore; tập Explore là món chưa ăn hoặc $d \ge 30$; **test khẳng định đúng 6/30 thẻ đến từ luồng Explore** | `src/features/selection/domain/ranking.ts` |
+| `[x] E8-T3` | Chip lý do đổi màu cho thẻ Explore | [Design Criteria](what-we-gonna-eat-today_design-criteria_v1.0.md), `NFR` a11y | 2 | Thẻ Explore có chip `reason` khác màu VÀ khác chữ — không thông tin nào chỉ truyền tải bằng màu sắc (ràng buộc từ `E6-T6`) | `src/features/selection/presentation/components/dish-swipe-card.tsx` |
+| `[x] E8-T4` | Ghim bất biến đóng băng deck | [SPEC-028](what-we-gonna-eat-today_sdd_v1.3.md), `BR-048`, [DEC-064](what-we-gonna-eat-today_decision-log_v3.9.md) | 2 | Test ghim: gọi `listDeck` hai lần cho thứ tự giống hệt; món thêm giữa phiên không chen vào; `BR-048` sửa lại cho khớp hành vi thật (đóng băng **toàn bộ**, không chỉ `index < cursor`) | `src/features/selection/infrastructure/*.integration.test.ts`, `docs/what-we-gonna-eat-today_business-rules_v1.8.md` |
+| `[x] E8-T5` | Tiến trình `x/30` và màn hình hết thẻ | [Design §3](designs/README.md) | 2 | `total` lấy từ `dishes.length` **không** từ `maxCards` (deck co lại được); màn hết thẻ nói "N món được chọn cho hôm nay", không ngụ ý đã xem hết danh mục | `src/features/selection/presentation/components/deck-screen.tsx` |
+| `[x] E8-T7` | Tiếp tục đúng chỗ đang vuốt | [SPEC-036](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-065](what-we-gonna-eat-today_decision-log_v3.9.md) | 2 | Vuốt 12 thẻ, đóng app, mở lại → tiếp tục ở thẻ 13. Suy từ `effectiveInteraction` đã có sẵn, không thêm cột DB | `src/features/selection/presentation/components/resume-position.ts`, `deck-screen.tsx` |
+| `[x] E8-T6` | Đo lại NFR sau khi deck đổi | `NFR-01`, `NFR-02` | 2 | Deck tải lần đầu ≤ 2.5s trên 4G; độ trễ vuốt ≤ 100ms — đo lại chứ không suy đoán từ số của `E1-T12` | — |
+
+> [!CAUTION]
+> **`E8-T1` phải chạy SAU `E8-T2` trong pipeline, dù số thứ tự subtask ngược lại.** Thẻ Explore
+> là món lâu chưa ăn, tức nằm ở đuôi bảng xếp hạng. Cắt trần trước khi trộn thì tập nguồn của
+> Explore đã bị xoá sạch: deck vẫn chạy, vẫn đủ 30 thẻ, chỉ là **không bao giờ có món lạ**.
+> Không test nào ở tầng trên bắt được — đó là lý do DoD của `E8-T2` bắt buộc có test đếm đúng
+> 6/30. Xem [Ranking Spec §2.4](what-we-gonna-eat-today_ranking-specification_v1.3.md) và [DEC-058](what-we-gonna-eat-today_decision-log_v3.9.md).
+
+---
+
+## 16.4 E9 — Chế độ vuốt theo chặng
+
+**18 giờ · `F50` · [SPEC-029, SPEC-030](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-003`, `BR-063`**
+
+Chia hai slice, mỗi slice một Implementation Guide:
+
+| Slice | Subtask | Giờ | Guide |
+| :--- | :--- | :---: | :--- |
+| **S1 — Dữ liệu & thuật toán** | `E9-T0`, `E9-T1`, `E9-T3` | 8 | [e9-s1](plans/E9/what-we-gonna-eat-today_e9-s1-implementation-guide_v0_1.md) |
+| **S2 — Giao diện** | `E9-T2`, `E9-T4`, `E9-T5` | 10 | [e9-s2](plans/E9/what-we-gonna-eat-today_e9-s2-implementation-guide_v0_1.md) |
+
+> [!NOTE]
+> **E9 tăng 17h → 18h** vì `E9-T0`: deck chưa bao giờ mang System Tag (`listEligibleDishCards` hardcode `systemTags: []`), nên `E9-T3` đang định chia chặng trên một trường luôn rỗng. `E9-T0` cũng sửa một lỗi giao diện sống từ E1 — mọi thẻ vuốt hiện "Trong danh mục" thay vì nhãn món.
+>
+> **S2 bắt đầu sau khi E8-S2 commit** — cả hai sửa `deck-screen.tsx`.
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] E9-T0` | Deck mang System Tag | `BR-003`, [SPEC-010](what-we-gonna-eat-today_sdd_v1.3.md) | 1 | `listEligibleDishCards` join `group_dish_tags` theo khuôn `json_agg` đã có trong cùng file; `DishCard.systemTags: readonly SystemTag[]`; **thẻ vuốt hiện đúng nhãn món**, không còn "Trong danh mục" cho mọi thẻ | `src/features/selection/infrastructure/drizzle-selection-repository.ts`, `src/features/selection/domain/dish-card.ts` |
+| `[x] E9-T1` | Schema chặng và snapshot lúc Start | [SPEC-029](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md), [DEC-044](what-we-gonna-eat-today_decision-log_v3.9.md) | 3 | Cột `deck_mode` trên `selection_sessions`; bảng `session_courses` khoá `(session_id, position)` không cột `id`; snapshot nằm TRONG cùng giao dịch `startDraft` với `session_rules` | `src/shared/db/schema.ts`, `src/features/session/infrastructure/drizzle-session-repository.ts` |
+| `[x] E9-T2` | Màn chọn và sắp thứ tự chặng lúc mở phiên | [SPEC-029](what-we-gonna-eat-today_sdd_v1.3.md), `BR-063` | 4 | Creator tích tag và kéo sắp thứ tự; chọn `COURSE` mà không chọn chặng nào thì chặn kèm lỗi rõ nghĩa; mặc định vẫn là `FREE` | `src/features/session/presentation/**` |
+| `[x] E9-T3` | Chia chặng và phân bổ hạn mức | [SPEC-030](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-066](what-we-gonna-eat-today_decision-log_v3.9.md), `BR-063` | 4 | Hàm thuần; **trần cắt TRONG TỪNG CHẶNG**, không cắt chung rồi chia; 3 chặng → 10 thẻ mỗi chặng; chặng chỉ có 4 món thì 26 thẻ dư chia lại; món đa tag chỉ vào **một** chặng; `TC-152` xanh | `src/features/selection/domain/course-deck.ts`, `src/features/selection/application/list-deck.ts` |
+| `[x] E9-T4` | `listDeck` trả ranh giới chặng | [SPEC-030](what-we-gonna-eat-today_sdd_v1.3.md) | 3 | `ListDeckResult` mang `courses: CourseBoundary[] \| null`, suy ở read time — **KHÔNG** thêm tham số `courseIndex` (deck vốn tải trọn một lần, thêm nó là một round-trip mỗi lần chuyển chặng); `FREE` trả `null` | `src/features/selection/application/list-deck.ts`, `selection-repository.ts` |
+| `[x] E9-T5` | Giao diện duyệt theo chặng | [Design §3](designs/README.md), `NFR-03` | 3 | Tiêu đề chặng hiện rõ ("Chặng 2/3 — Canh"); hết chặng thì chuyển tiếp; quay lại chặng trước vẫn được | `src/features/selection/presentation/components/deck-screen.tsx` |
+
+> [!IMPORTANT]
+> **Ranh giới không được vượt:** `rankSession`, `finalizeSession`, `BR-049` và `BR-050`
+> **không đổi một dòng nào** trong cả Epic này. Chặng chỉ chia màn hình lúc vuốt; tổng hợp và
+> chốt bữa vẫn diễn ra đúng một lần ở cuối như v1.0. Nếu thấy mình đang sửa `finalize-session.ts`,
+> nghĩa là đã đi lạc — xem [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md) mục 4.
+
+> [!NOTE]
+> **Vì sao món đa tag chỉ vào một chặng** (`E9-T3`): quy tắc Independent Tag Counting của
+> [SDD §9](what-we-gonna-eat-today_sdd_v1.3.md) cho phép một món đóng góp vào nhiều Required Rule cùng lúc — nhưng đó là
+> phép cộng trên một tập đã chốt. Chia chặng là phép phân hoạch trên danh sách sắp được vuốt.
+> Cho "Bún chả" vào cả chặng `STAPLE` lẫn `MAIN` nghĩa là người dùng vuốt nó hai lần và $P$
+> bị đếm trùng.
+
+---
+
+## 16.5 E10 — Chốt bữa có hướng dẫn mềm
+
+**16 giờ · `F22`, `F23`, `F24` · [SPEC-031 → SPEC-033](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-011`, `BR-014`, `BR-053`**
+
+Chia hai slice, mỗi slice một Implementation Guide:
+
+| Slice | Subtask | Giờ | Guide |
+| :--- | :--- | :---: | :--- |
+| **S1 — Luật mềm và đánh giá** | `E10-T1`, `E10-T2`, `E10-T3` | 10 | [e10-s1](plans/E10/what-we-gonna-eat-today_e10-s1-implementation-guide_v0_1.md) |
+| **S2 — Hệ quả lúc chốt bữa** | `E10-T4`, `E10-T5` | 6 | [e10-s2](plans/E10/what-we-gonna-eat-today_e10-s2-implementation-guide_v0_1.md) |
+
+> [!NOTE]
+> Lệch 10/6 là có chủ đích: cả ba subtask của S1 trả lời cùng một câu — *"mâm cơm chuẩn của nhà này là gì"*. S2 trả lời câu khác — *"tối nay lệch chuẩn thì sao"*.
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] E10-T1` | Bật Preferred Rule ở màn Luật | [SPEC-021](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-067](what-we-gonna-eat-today_decision-log_v3.9.md), `BR-014` | 4 | `setGroupRules` ghi được `PREFERRED`; **một tag mang được cả hai loại luật** (khoá khử trùng đổi sang cặp `(ruleType, systemTag)`); màn Luật hiện hai nhóm; `listSessionRules` bỏ lọc `REQUIRED`. **Không** migration — `buildSnapshotStatement` vốn không lọc `ruleType` nên Preferred đông cứng miễn phí | `src/features/rule/**`, `src/app/groups/[groupId]/rules/actions.ts` |
+| `[x] E10-T2` | Tách cảnh báo mềm khỏi chặn cứng | [SPEC-031](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-067](what-we-gonna-eat-today_decision-log_v3.9.md), `BR-052` | 3 | `evaluateRules` trả `{ blocking, warnings }`, **`satisfied` bị xoá**; `RuleWarning` là union có thẻ vì thiếu Preferred gắn tag còn lệch Target Count thì không; Independent Tag Counting áp cho cả hai loại | `src/features/rule/domain/evaluate.ts` |
+| `[x] E10-T3` | Target Dish Count | [SPEC-032](what-we-gonna-eat-today_sdd_v1.3.md), `BR-011`, `BR-015` | 3 | **Hai cột nullable**: `groups.target_dish_count` để cấu hình, `selection_sessions.target_dish_count` đông cứng lúc Start (cùng câu UPDATE đã có của `startDraft`); chưa đặt (`NULL`) thì im lặng; lệch cả hai chiều đều cảnh báo | `src/shared/db/schema.ts`, `src/features/rule/**`, `src/features/session/**` |
+| `[x] E10-T4` | Lưu vết cảnh báo bị bỏ qua | [SPEC-033](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-025](what-we-gonna-eat-today_decision-log_v3.9.md), `BR-053` | 3 | `finalize_warnings` ghi TRONG cùng `db.batch()` của `commitFinalize` — mảng rỗng thì **bỏ hẳn câu lệnh** khỏi batch; server tự tính `warnings`, client **không** gửi gì thêm; `TC-109` vẫn xanh | `src/features/meal/**`, `src/shared/db/schema.ts` |
+| `[x] E10-T5` | Giao diện cảnh báo mềm và xác nhận hai nhịp | [Design §4](designs/README.md), `E6-T6` | 3 | Ba mức phân biệt bằng **chữ** ("Còn thiếu" / "Nên có thêm" / "đã đủ"), không chỉ bằng màu; xác nhận **hai nhịp trên chính nút chốt**, không modal; cờ xác nhận **reset khi tập món đổi** | `src/features/meal/presentation/components/finalize-bar.tsx` |
+
+> [!NOTE]
+> Enum `groupRuleType` **đã có sẵn** giá trị `'PREFERRED'` từ v1.0, kèm ghi chú "v1.1 bật
+> Preferred Rule chỉ cần ghi giá trị, không cần migration". `E10-T1` không sinh migration cho
+> enum này — nếu thấy `drizzle-kit generate` đòi tạo, nghĩa là đã sửa nhầm chỗ.
+
+> [!CAUTION]
+> **Cột `group_rules.overridable` không ai đọc — đừng đánh thức nó.** Nó thuộc `F35` Override
+> Session Rule (v1.2) và trả lời một câu KHÁC `ruleType`: *"Creator có được bỏ qua luật này
+> trong MỘT phiên cụ thể không"*. Dùng nó để biểu diễn loại luật là làm hỏng cả hai khái niệm,
+> và một `overridable = true` trên luật `REQUIRED` vốn chặn cứng là mâu thuẫn đang ngủ.
+> [Tech Spec §3.1](what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) đã cố ý bỏ cột này
+> khỏi `session_rules` với đúng lý lẽ đó.
+
+---
+
+## 16.6 E11 — Vận hành tối thiểu
+
+**8.5 giờ · `F26`, `F27` · [SPEC-034, SPEC-035](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-005`, `BR-008`, `BR-055`, `BR-061`**
+
+Một Implementation Guide duy nhất: [e11](plans/E11/what-we-gonna-eat-today_e11-implementation-guide_v0_1.md). Hai subtask độc lập nhau (phiên vs món) nhưng cùng một chủ đề, và 8.5 giờ không đủ để tách slice mà mỗi slice vẫn ra được một commit có nghĩa. Vẫn commit hai lần.
+
+| ID | Tiêu đề | Nguồn tham chiếu | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] E11-T1` | Tự động đóng phiên quá hạn | [SPEC-034](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-068](what-we-gonna-eat-today_decision-log_v3.9.md), `BR-055`, `BR-061` | 5.5 | **Hai điểm xét**: quét lười idempotent ở Group Hub, **và** một chốt chặn trong `finalizeSession` — phiên hôm qua **không chốt được** dù quét chưa chạy (nếu không, `eating_history` mang ngày hôm qua và Cooldown tin vào nó 7 ngày). `resolveDecisionDate` chuyển sang `shared/time/` để `meal` dùng được. Tương tác cũ giữ nguyên số dòng (`BR-061`). `TC-028` chạy lại **qua giao diện thật** | `src/shared/time/decision-date.ts`, `src/features/session/**`, `src/features/meal/**`, `src/app/groups/[groupId]/page.tsx` |
+| `[x] E11-T2` | Gỡ Dish khỏi danh mục nhóm | [SPEC-035](what-we-gonna-eat-today_sdd_v1.3.md), `BR-005`, `BR-008` | 3 | Món chuyển `ACTIVE`→`INACTIVE`, KHÔNG xoá dòng; **chỉ Admin** gỡ được (`DishCatalogScreen` nhận `canEdit` — nó chưa có prop quyền nào, nên sheet sửa nhãn đang hiện cho mọi Member dù action đòi Admin); mục "Đã gỡ khỏi nhóm" có nút "Thêm lại" gọi `reactivateGroupDish` đã tồn tại sẵn; `TC-020` chạy lại **qua giao diện thật** | `src/features/dish/**`, `src/app/groups/[groupId]/dishes/**` |
+
+> [!NOTE]
+> Cả `sessionState.INVALID` lẫn `groupDishState.INACTIVE` **đã có sẵn trong enum** từ v1.0.
+> Epic này không sinh migration enum nào; nó chỉ làm cho hai giá trị vốn không tới được trở
+> nên tới được.
+
+> [!IMPORTANT]
+> **"Không tới được" đúng theo nghĩa đen: không dòng code nào trong `src/` ghi `'INACTIVE'` hay
+> `'INVALID'`.** Hai hệ quả:
+>
+> - Mọi mệnh đề `where(state = 'ACTIVE')` rải khắp codebase hiện là **no-op** — đúng, nhưng chưa
+>   từng lọc bỏ dòng nào.
+> - `TC-020` và `TC-028` **không dựng được tiền điều kiện qua ứng dụng**; chúng chỉ chạy nếu test
+>   tự `INSERT` trạng thái đó vào DB. Nghĩa là chúng kiểm được truy vấn, nhưng không kiểm được
+>   rằng ứng dụng có đường nào **tạo ra** trạng thái ấy. E11 đóng khoảng trống đó — nên DoD của
+>   cả hai subtask bắt buộc chạy lại chúng qua giao diện thật.
+>
+> Chiều `INACTIVE → ACTIVE` **đã xây xong** (`reactivateGroupDish`); `F27` là nửa còn lại của một
+> cơ chế đã có một nửa.
+
+---
+
+## 16.7 Đường găng và rủi ro v1.1
+
+```text
+M2-T4 ──► E7-T1 ──► E7-T2 ──► E7-T3 ──► E7-T6            [ 11 giờ ]
+                       └──► E8-T2 ──► E8-T1 ──► E8-T4     [ 13 giờ ]
+                                        └──► E9-T1 ──► E9-T3 ──► E9-T4 [ 10 giờ ]
+──────────────────────────────────────────────────────────────────────────
+                                              TỔNG ĐƯỜNG GĂNG: 34 giờ
+```
+
+**34 trong tổng số 81 giờ nằm trên đường găng.** `E10` và `E11` hoàn toàn nằm ngoài — nếu hết
+thời gian, cắt chúng trước, và v1.1 vẫn giao được đúng hai lời hứa chính (gợi ý đúng người,
+deck có điểm dừng).
+
+| Rủi ro | Dấu hiệu nhận biết sớm | Phương án xử lý |
+| :--- | :--- | :--- |
+| **Cắt trần trước khi trộn Explore** | Vuốt vài phiên liền không thấy món nào lạ | Test đếm 6/30 ở `E8-T2` phải viết TRƯỚC phần thi công, không phải sau |
+| **`E9` lan vào luồng chốt bữa** | Xuất hiện ý định sửa `finalize-session.ts` hoặc `rankSession` | Dừng lại, đọc [DEC-059](what-we-gonna-eat-today_decision-log_v3.9.md) mục 4. Chặng KHÔNG đụng `BR-050` |
+| **Món đa tag vuốt hai lần** | $P$ của một món lớn hơn tổng số người tham gia | `E9-T3` phải có test cho món mang hai tag thuộc hai chặng khác nhau |
+| **`preference` phá luật tầng** | ESLint đỏ ở `E7-T2` sau khi code đã viết xong | Khai `ALLOWED_CROSS_FEATURE` và chạy `yarn arch:probe` NGAY ở đầu `E7-T1` |
+| **Trần 30 thẻ khiến nhóm lớn thấy thiếu** | Người dùng than "sao không thấy món X bao giờ" | Đây là hành vi đúng theo `BR-062`. Lối thoát là `F18` Explore, không phải nới trần |
+
+> [!TIP]
+> **Điểm kiểm tra sau `E8`:** vuốt thật ba phiên liên tiếp trên máy thật. Nếu không phiên nào
+> đưa ra một món bạn quên mất là nhà mình có, thì `F18` chưa chạy đúng — và không có `F18`
+> chạy đúng thì `F49` chỉ là một cái trần chặn người dùng khỏi chính danh mục của họ.
+
+---
+
+## 16.8 M3 — Khép v1.1
+
+**15.5 giờ · 3 slice · 12 subtask**
+
+> [!NOTE]
+> `M3` ở đây là **slice bảo trì thứ ba**, tiếp nối `M1` (danh mục món, sau v1.0) và `M2`
+> (cross-link tài liệu). Nó KHÔNG phải "Cột mốc M3" của [§9](#9-đường-găng-critical-path) —
+> mốc đó là lúc `E3` xong. Hai cách dùng chữ `M` này đã sống cạnh nhau từ `M1`; đọc theo ngữ
+> cảnh "slice" hay "cột mốc".
+
+Sinh ra từ đợt rà soát toàn bộ v1.1 ngày `2026-09-04`. Mọi cổng chất lượng khi đó **đều xanh**
+(612 test, coverage 98.46%, `knip`/`jscpd`/`arch:probe` sạch) — và đúng vì thế mà slice này
+tồn tại: cái nó tìm ra là những thứ cổng chất lượng **không với tới**.
+
+| ID | Tiêu đề | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :---: | :--- | :--- |
+| `[x] M3-T1` | Giữ bất biến `marks.length === cursor` | 2 | "Quay lại chặng trước" cắt `marks` cùng lúc với `cursor`; vuốt tiếp sau khi quay chặng KHÔNG đếm trùng số món đề xuất | `src/features/selection/presentation/components/deck-screen.tsx` |
+| `[x] M3-T2` | Khớp luật ↔ cảnh báo theo `(ruleType, systemTag)` | 2 | `RuleShortfall` mang `ruleType`; một tag có cả `REQUIRED` lẫn `PREFERRED` thì hai dòng nói hai chuyện khác nhau | `src/features/rule/domain/evaluate.ts`, `src/features/meal/presentation/components/finalize-bar.tsx` |
+| `[x] M3-T3` | `findActiveSwipeForGlobalDish` chọn đúng phiên | 1.5 | `ORDER BY decision_date DESC`; hai phiên `ACTIVE` cùng lúc (ca `E11` mở ra) thì chỉ tương tác của phiên mới nhất bị xoá; `BR-061` giữ nguyên phiên cũ | `src/features/preference/infrastructure/drizzle-preference-repository.ts` |
+| `[x] M3-T4` | Ranh giới chặng suy từ thứ tự đã đông cứng | 1 | `deriveCourseBoundaries` cắt khối theo thứ tự đã ghim, không đếm theo tag hiện tại; tổng ranh giới LUÔN bằng số thẻ dù Admin sửa nhãn giữa phiên | `src/features/selection/domain/course-deck.ts`, `list-deck.ts` |
+| `[x] M3-T5` | Nạp trạng thái sở thích cho màn Danh mục | 1.5 | `GroupDishListItem` mang `globalDishId`; `dishes/page.tsx` đọc sở thích + ràng buộc ở `app/`, KHÔNG khai chiều `dish → preference` — `arch:probe` vẫn đúng 7 chiều | `src/app/groups/[groupId]/dishes/page.tsx`, `src/features/dish/**` |
+| `[x] M3-T6` | Nút Like / Dislike / Cannot Eat trên từng dòng món | 2.5 | `DishPreferenceControls` với `aria-pressed` + nhãn chữ (`E6-T6`); mọi Member khai được dù không phải Admin; bấm lại nút đang bật ⇒ Neutral (`BR-037`) | `src/features/dish/presentation/components/dish-preference-controls.tsx`, `dish-row.tsx` |
+| `[x] M3-T7` | Gửi có retry, không fire-and-forget | 1 | Vòng retry rút về `shared/http/send-json-with-retry.ts`; `handleCannotEat` thôi nuốt lỗi — thất bại thì toast nói thật (`R-05`) | `src/shared/http/**`, `deck-screen.tsx`, `send-interaction.ts` |
+| `[x] M3-T8` | `presentation/` vào phép đo coverage | 1 | `coverage.include` thêm `src/features/*/presentation/**`; ngưỡng RIÊNG 70% (thấp hơn 80% của `domain`/`application`); đã kiểm cổng đỏ được | `vitest.config.mts` |
+| `[x] M3-T9` | Bỏ N+1 lúc chốt bữa | 1 | `findCannotEatPairs` — MỘT truy vấn cho cả nhóm, đúng khuôn `countCannotEatByDish` mà E7-S3 Guide §4.2 đã chỉ định; `TC-122` vẫn xanh | `src/features/preference/**`, `src/features/meal/application/finalize-session.ts` |
+| `[x] M3-T10` | Chặn ngõ cụt phiên quá hạn | 1 | `sessionClosedReason` (hàm thuần, nhận `today` làm tham số) + `ClosedSessionScreen`; `/sessions/[id]` KHÔNG dựng deck cho phiên đã đóng. Chỉ ĐỌC, không thêm lượt ghi vào đường tải deck (`NFR-01`) | `src/features/session/**`, `src/app/sessions/[sessionId]/page.tsx` |
+| `[x] M3-T11` | Siết kiểu và dọn mã chết | 0.5 | `SessionRule.ruleType` và `findGroupTargetDishCount` bỏ `?`; xoá `listSessionCourses` và `RANKING_CONFIG.deck.pageSize`; alias `RequiredRule` → `SessionRule` | nhiều file |
+| `[x] M3-T12` | Đồng bộ tài liệu với mã | 0.5 | §1 tick `E10`/`E11`; §13.1, §15 và §16.8 khớp nhau; `yarn docs:links` xanh | `docs/**` |
+
+> [!IMPORTANT]
+> **Vì sao `M3-T6` là subtask quan trọng nhất của slice.** `E7-T5` được tick `[x]` từ 2026-08-26
+> với DoD *"màn danh mục hiện trạng thái Like/Dislike/Cannot Eat mỗi món"*, nhưng màn danh mục
+> chưa bao giờ có nút nào. `setDishPreference` và `/api/preferences/preferences` không có caller
+> production — nên `explicitPreferenceScore` luôn trả `0`, và số hạng $E$ (trọng số `0.3`, LỚN
+> NHẤT trong ranking cá nhân) chết trên production suốt v1.1. `F16` là một nửa lời hứa *"gợi ý
+> đúng người"*; nó chỉ thật sự được giao ở đây.
+
+> [!CAUTION]
+> **Ba trong bốn lỗi logic nằm ở `presentation/` — lớp duy nhất không được đo.** Đó là lý do
+> `M3-T8` không phải việc dọn dẹp mà là việc phòng ngừa: một phép đo không chạm tới chỗ hỏng
+> là một phép đo đang trấn an nhầm chỗ.
+
+---
+
+# 17. v1.2 — Chi tiết thi công
+
+> [!NOTE]
+> **Mục tiêu v1.2:** hệ thống học được khẩu vị nhà mình, và trả ba món nợ của v1.1.
+>
+> v1.1 làm cho gợi ý *đúng người* dựa trên thứ người ta **khai** ra. v1.2 thêm thứ hệ thống
+> **quan sát** được. Phạm vi chốt theo [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md);
+> đặc tả ở [SDD §9](what-we-gonna-eat-today_sdd_v1.3.md) và [Test Cases §3c](what-we-gonna-eat-today_test-cases-specification_v1.1.md).
+
+**Thứ tự thi công:**
+
+```text
+M4 ──► E13-T1 ──► E13-T2 ──► E13-T3 ──► E13-T4 ──► E13-T5 ──► E13-T6/T7/T8
+   └─► E14 (độc lập, chạy song song được sau M4)
+```
+
+## 17.1 M4 — Vá khoảng trống đặc tả
+
+> [!NOTE]
+> Slice tiền đề, cùng lý lẽ `M2` đã viết: **trả nợ trước khi vay thêm**. v1.1 code được ngay
+> vì `SPEC-024`→`036` đã viết TRƯỚC `E7`. Khi mở phạm vi v1.2, SDD **không có SPEC nào**
+> (max `SPEC-036`) và Test Cases **không có TC nào** (max `TC-158`).
+
+| ID | Tiêu đề | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :---: | :--- | :--- |
+| `[x] M4-T1` | PRD §4 — tách dòng gộp `F30→42` | 1 | Mỗi tính năng trong phạm vi có một dòng riêng kèm BR; 9 tính năng hoãn ghi rõ "v1.3" kèm lý do | `docs/..._prd_v1.5.md` (`v1.6`) |
+| `[x] M4-T2` | SDD `SPEC-037`→`SPEC-042` | 3 | Sáu SPEC cho 7 tính năng (`F29` polish `SPEC-005`, không có SPEC riêng); hai lưu ý kiến trúc mới ở §10 | `docs/..._sdd_v1.3.md` (`v1.4`) |
+| `[x] M4-T3` | Test Cases `TC-159`→`TC-178` | 1.5 | 20 TC, 5 ca **then chốt**; `TC-160` canh mốc phân rã 60 ngày, `TC-166` canh ranh giới Blacklist ↔ Cannot Eat | `docs/..._test-cases-specification_v1.1.md` (`v1.2`) |
+| `[x] M4-T4` | Decision Log + Master Plan + Ranking Spec | 0.5 | `DEC-069`; §13.2 và §17 phản ánh phạm vi thật; Ranking Spec §2.6 bỏ `DECK_PAGE_SIZE` cho khớp `M3-T11`; bảng tra cứu DEC vá đủ 7 entry còn thiếu | `docs/**` |
+
+## 17.2 E13 — Học sở thích tự động
+
+**20.5 giờ · `F30`, `F31`, `F32`, `F39` · [SPEC-037 → SPEC-040](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-035`, `BR-036`, `BR-038`**
+
+| ID | Tiêu đề | Nguồn | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[x] E13-T1` | Schema cờ món cá nhân + mốc quên | [SPEC-038](what-we-gonna-eat-today_sdd_v1.3.md), [DEC-069](what-we-gonna-eat-today_decision-log_v3.9.md) | 3.5 | `user_dish_constraints` thêm cột `kind`, khoá chính đổi sang `(user_id, global_dish_id, kind)`, migration backfill dòng cũ thành `'CANNOT_EAT'` **chạy được cả hai chiều**; bảng `user_preference_settings`; index `participants(user_id)` và `interactions(participant_id)` | `src/shared/db/schema.ts`, `migrations/**` |
+| `[x] E13-T2` | Hàm thuần `computeImplicitPreference` | [SPEC-037](what-we-gonna-eat-today_sdd_v1.3.md), `BR-038` | 2.5 | Nguyên văn Ranking Spec §2.2; nhận `referenceDate` qua THAM SỐ; `TC-159`→`TC-162` xanh. Nằm ở `selection/domain/`, **không** phải `preference` — chạy `yarn arch:probe` trước dòng code đầu tiên | `src/features/selection/domain/implicit-preference.ts` |
+| `[x] E13-T3` | Mở rộng `RankingInput` + `computePersonalScore` | [DEC-036](what-we-gonna-eat-today_decision-log_v3.9.md) | 1.5 | Thêm $w_{\text{implicit}} \cdot I$; `TC-125`→`TC-127` (blend Explore) vẫn xanh | `src/features/selection/domain/ranking.ts` |
+| `[x] E13-T4` | Truy vấn lịch sử vuốt cho $I$ | [SPEC-037](what-we-gonna-eat-today_sdd_v1.3.md) | 3 | MỘT truy vấn gộp; chỉ phiên `FINALIZED`; tôn trọng `implicit_reset_at`; `TC-163`→`TC-165`, `TC-174` xanh | `src/features/selection/infrastructure/drizzle-selection-repository.ts` |
+| `[x] E13-T5` | Nối vào `list-deck` | [SPEC-038](what-we-gonna-eat-today_sdd_v1.3.md), [SPEC-039](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | Stage 1 lọc thêm `BLACKLIST`; Stage 2 cộng $I$; `HISTORY_WHITELIST` ép $R = 0$ **và VẪN CÓ MẶT trong deck** (ca không mã TC — [E13-S1 Guide §1.1](plans/E13/what-we-gonna-eat-today_e13-s1-implementation-guide_v0_1.md)). **Không khai chiều cross-feature mới** | `src/features/selection/application/list-deck.ts` |
+| `[x] E13-T6` | Use case + Route Handler | [SPEC-038](what-we-gonna-eat-today_sdd_v1.3.md)→[SPEC-040](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | `setDishConstraint` nhận `kind`; `resetImplicitPreference`. Route Handler chứ không Server Action (`DEC-055`); `TC-166`, `TC-168` xanh | `src/features/preference/application/**`, `src/app/api/preferences/**` |
+| `[x] E13-T7` | Mở rộng khai báo ở màn Danh mục | `E6-T6`, `NFR-03` | 2.5 | `DishPreferenceControls` (M3-T6) thêm hai nút; trạng thái đọc được bằng **chữ**; dùng lại `sendJsonWithRetry` — không fire-and-forget | `src/features/dish/presentation/components/dish-preference-controls.tsx` |
+| `[x] E13-T8` | Màn cài đặt cá nhân + nút Quên | [SPEC-040](what-we-gonna-eat-today_sdd_v1.3.md) | 2.5 | Xác nhận **hai nhịp trên chính nút** (khuôn `armed` của `finalize-bar.tsx`, không modal); nói rõ khai báo tự tay được giữ; `TC-171`→`TC-173` xanh. **Kèm đường vào từ Group Hub** — `GroupOverviewScreen` thêm `preferencesHref`, không có nó thì màn mới không tới được ([E13-S2 Guide §5.4](plans/E13/what-we-gonna-eat-today_e13-s2-implementation-guide_v0_1.md)) | `src/features/preference/presentation/**`, `src/app/groups/[groupId]/preferences/**`, `src/features/group/presentation/**` |
+
+> [!IMPORTANT]
+> **`E13-T2` là chỗ dễ đặt nhầm feature nhất của cả v1.2.** Tên `BR-038` ("Implicit Preference")
+> kéo người đọc về `preference`, nhưng $I$ suy từ `interactions` — bảng của `selection` — rồi
+> tiêu thụ ngay bởi ranking của `selection`. Đặt ở `preference` sinh ra chiều
+> `preference → selection` chưa từng có. ESLint sẽ bắt, nhưng bắt **sau khi** code đã viết xong.
+
+> [!CAUTION]
+> **`E13-T1` đổi KHOÁ CHÍNH của một bảng đang có dữ liệu thật.** `findConstrainedGlobalDishIds`
+> và `findCannotEatPairs` (M3-T9) phải lọc `kind = 'CANNOT_EAT'` — bỏ sót một chỗ thì Blacklist
+> lặng lẽ mang theo hành vi xoá lượt vuốt của Cannot Eat, thứ `BR-035` cấm bằng chữ. `TC-166`
+> là ca canh đúng chuyện đó.
+
+## 17.3 E14 — Ba món nợ của v1.1
+
+**14 giờ · `F25`, `F28`, `F29` · [SPEC-041, SPEC-042](what-we-gonna-eat-today_sdd_v1.3.md) · `BR-026`, `BR-057`, `BR-060`, `BR-061`**
+
+| ID | Tiêu đề | Nguồn | Giờ | Điều kiện hoàn thành (DoD) | File tác động |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| `[ ] E14-T1` | `F25` Gỡ Participant giữa phiên | [SPEC-041](what-we-gonna-eat-today_sdd_v1.3.md), `BR-020`, `BR-061` | 4 | Creator gỡ được → `state = 'REMOVED'`; **không gỡ được chính Creator**; tương tác cũ giữ nguyên số dòng; `TC-175`→`TC-177` xanh, chạy **qua giao diện thật** | `src/features/session/**`, `src/app/groups/[groupId]/page.tsx` |
+| `[ ] E14-T2` | `F28` Schema lịch sử ăn sửa được | [SPEC-042](what-we-gonna-eat-today_sdd_v1.3.md) | 3 | `source_final_meal_id` chuyển **nullable**; thêm cột `origin`; **dựng lại chỉ mục duy nhất** thành partial index tách hai nhánh — với `NULL`, Postgres coi mọi dòng là khác nhau | `src/shared/db/schema.ts`, `migrations/**` |
+| `[ ] E14-T3` | `F28` Use case + giao diện | `BR-057`, `BR-060` | 5 | Sửa lịch sử **của chính mình**, **chỉ hôm nay**; chốt lại bữa **không ghi đè** dòng `MANUAL`; `TC-178` xanh | `src/features/history/**`, `src/app/groups/[groupId]/history/**` |
+| `[ ] E14-T4` | `F29` Polish phát hiện trùng tên | `BR-001`, `SPEC-005` | 2 | Rà `add-dish-sheet` + `duplicate-sheet` với dữ liệu thật; **không viết bộ chuẩn hoá thứ hai** — `normalizeDishName` là chỗ duy nhất | `src/features/dish/presentation/components/**` |
+
+> [!CAUTION]
+> **`E14-T2` đụng bảng mà Cooldown tin vào.** `computeRecencyPenalty` đọc `eating_history`; một
+> dòng `MANUAL` sai ngày trừ điểm món đó bảy ngày cho chính người vừa gõ nhầm. `BR-057` cho cá
+> nhân *"quyền hạn tối cao"* — nghĩa là không có chốt chặn nghiệp vụ nào phía sau, nên phạm vi
+> phải hẹp bằng **thiết kế** (chỉ chọn từ danh mục, chỉ hôm nay), không bằng lời nhắc.
+
+> [!NOTE]
+> **Phía đọc của `F25` đã đúng từ v1.0.** `'REMOVED'` được lọc đúng ở `countInteractionsByDish`,
+> `listRankingParticipantUserIds`, `listActiveParticipantUserIds` và `recordInteraction`, nhưng
+> chưa dòng production nào **ghi** giá trị đó — đúng khuôn `INACTIVE`/`INVALID` mà `E11` vừa
+> đóng. `E14-T1` chỉ mở đường ghi; `TC-175` là lần đầu phía đọc được kiểm với dữ liệu do ứng
+> dụng tạo ra thay vì do test `INSERT` vào.
+
+## 17.4 Đường găng và rủi ro v1.2
+
+```text
+M4 (6h) ──► E13-T1 ──► E13-T2 ──► E13-T3 ──► E13-T4 ──► E13-T5   [ 18.5 giờ ]
+──────────────────────────────────────────────────────────────────────────
+                                       TỔNG ĐƯỜNG GĂNG: 26.5 giờ
+```
+
+**26.5 trong tổng số 40.5 giờ nằm trên đường găng.** `E14` hoàn toàn nằm ngoài — nếu hết thời
+gian, cắt nó trước, và v1.2 vẫn giao được lời hứa chính là *"hệ thống học được khẩu vị nhà mình"*.
+
+| Rủi ro | Dấu hiệu nhận biết sớm | Phương án xử lý |
+| :--- | :--- | :--- |
+| Đổi khoá chính làm rơi `Cannot Eat` | Sau migration, món đã khai "không ăn được" hiện lại trong deck | Test tích hợp chạy TRƯỚC migration, khẳng định số dòng `kind = 'CANNOT_EAT'` bằng đúng số dòng cũ |
+| $I$ đặt nhầm feature | ESLint đỏ ở `E13-T2` sau khi code đã viết xong | Chạy `yarn arch:probe` NGAY đầu `E13-T2`, trước dòng code đầu tiên |
+| $I$ làm chậm đường tải deck | Deck lần đầu vượt 2.5s trên 4G (`NFR-01`) | Index nằm trong `E13-T1`, không để tới lúc đo mới thêm; `TC-174` canh |
+| Blacklist mang hành vi của Cannot Eat | $P$ giảm khi ai đó bấm Blacklist giữa phiên | `setConstraint` rẽ nhánh theo `kind`; `TC-166` khẳng định $P$ KHÔNG đổi |
+| Học từ phiên đang chạy | Thẻ nhảy thứ tự dưới tay giữa lượt vuốt | `TC-163` — chỉ phiên `FINALIZED`; `BR-048` vẫn đóng băng deck |
+| `F28` sinh dòng sai ngày | Cooldown trừ điểm món cả nhà chưa ăn | Giao diện chỉ chọn món từ danh mục, chỉ hôm nay; không có ô nhập ngày tự do |
+
+> [!TIP]
+> **Điểm kiểm tra sau `E13`:** vuốt phải cùng một món qua ba phiên liên tiếp rồi mở phiên thứ
+> tư **mà không đặt `Like` cho nó**. Nếu món ấy không nổi lên đầu deck thì `F30` chưa chạy
+> đúng — và một `F30` không chạy đúng chỉ là một truy vấn tốn thời gian trên đường tải deck.

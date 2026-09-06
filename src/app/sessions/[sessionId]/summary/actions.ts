@@ -7,6 +7,7 @@ import { finalizeSession } from '@/features/meal/application/finalize-session'
 import { saveFinalMealDraft } from '@/features/meal/application/save-final-meal-draft'
 import { drizzleMealRepository } from '@/features/meal/infrastructure/drizzle-meal-repository'
 import type { FinalizeFormState } from '@/features/meal/presentation/components/finalize-meal-screen'
+import { drizzlePreferenceRepository } from '@/features/preference/infrastructure/drizzle-preference-repository'
 import { drizzleRuleRepository } from '@/features/rule/infrastructure/drizzle-rule-repository'
 import { messageFor } from '@/shared/errors'
 
@@ -39,7 +40,11 @@ export async function finalizeMealAction(
   }
 
   const finalized = await finalizeSession(
-    { meal: drizzleMealRepository, rules: drizzleRuleRepository },
+    {
+      meal: drizzleMealRepository,
+      rules: drizzleRuleRepository,
+      preferences: drizzlePreferenceRepository,
+    },
     { sessionId, userId: user.id },
   )
   if (!finalized.ok) {

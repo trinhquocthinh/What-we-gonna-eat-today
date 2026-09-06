@@ -4,7 +4,7 @@
 >
 > - **Version:** `0.1` | **Status:** `Ready to code (TDD)`
 > - **Created:** `2026-08-19`
-> - **Upstream:** [Master Plan](../what-we-gonna-eat-today_master-plan_v1_0.md) (`E4-T5`, `E4-T6`) • [SDD](../what-we-gonna-eat-today_sdd_v0_1.md) (`SPEC-012`) • [Tech Spec](../what-we-gonna-eat-today_tech-spec-architecture_v0_1.md) (§11 `R-04`, NFR-05) • [Test Cases](../what-we-gonna-eat-today_test-cases-specification_v0_1.md) (`TC-106`)
+> - **Upstream:** [Master Plan](../../what-we-gonna-eat-today_master-plan_v2.1.md) (`E4-T5`, `E4-T6`) • [SDD](../../what-we-gonna-eat-today_sdd_v1.3.md) (`SPEC-012`) • [Tech Spec](../../what-we-gonna-eat-today_tech-spec-architecture_v1.2.md) (§11 `R-04`, NFR-05) • [Test Cases](../../what-we-gonna-eat-today_test-cases-specification_v1.1.md) (`TC-106`)
 > - **Tiền đề:** `E1-T9` đã code (`applyInteraction`, `sendInteractionWithRetry`, dải báo offline).
 >
 > 🔒 *Chặn ghi đè sai thứ tự khi hai lượt vuốt cùng món tới server không đúng thứ tự người dùng bấm. E4-T6 hoá ra gần như đã xong từ E1-T9 — chỉ cần xuyên một tham số mới qua.*
@@ -511,7 +511,7 @@ Tắt Wi-Fi giữa lúc vuốt (đã kiểm được từ E1-T9, nhắc lại �
 
 ---
 
-# 14. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v1.1.md`
+# 14. Decision Log — thêm vào `docs/what-we-gonna-eat-today_decision-log_v3.9.md`
 
 ```markdown
 # DEC-038 — Interaction Ordering Uses Client-Reported Timestamp, Not Server Arrival Order

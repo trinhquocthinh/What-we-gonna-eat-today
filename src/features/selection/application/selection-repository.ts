@@ -1,6 +1,7 @@
 import type { SystemTag } from '@/shared/domain/system-tag'
 
 import type { DishCard } from '../domain/dish-card'
+import type { ImplicitSwipe } from '../domain/implicit-preference'
 import type { InteractionAction, InteractionType } from '../domain/interaction'
 
 export type { DishCard }
@@ -25,7 +26,11 @@ export interface SelectionRepository {
    * - E1-T8: chưa có bảng `interactions` → `effectiveInteraction` hardcode `null`.
    * - E1-T9: sửa lại thân hàm, thêm LEFT JOIN `interactions` để đọc giá trị thật.
    */
-  listEligibleDishCards(sessionId: string, participantId: string): Promise<DishCard[]>
+  listEligibleDishCards(
+    sessionId: string,
+    participantId: string,
+    userId: string,
+  ): Promise<DishCard[]>
 
   /** SPEC-012. Session phải đang ACTIVE mới ghi được interaction. */
   findSessionState(sessionId: string): Promise<'DRAFT' | 'ACTIVE' | 'FINALIZED' | 'INVALID' | null>
@@ -92,7 +97,40 @@ export interface SelectionRepository {
     }[]
   >
 
+  /**
+   * $X$ của SPEC-014 — với mỗi món, ĐẾM SỐ NGƯỜI trong phiên đã khai Cannot
+   * Eat. Món không ai khai KHÔNG có mặt trong Map; người gọi dùng `?? 0`.
+   */
+  countCannotEatByDish(sessionId: string): Promise<Map<string, number>>
+
+  /**
+   * SPEC-029 — chặng đã đóng băng của phiên, theo `position` tăng dần kèm `deckMode`.
+   * Mảng `courses` rỗng khi phiên `FREE`.
+   */
+  findSessionCourses(sessionId: string): Promise<{
+    readonly deckMode: 'FREE' | 'COURSE'
+    readonly courses: readonly SystemTag[]
+  }>
+
   /** $T$ của SPEC-014 và đồng thời tập người để đếm $H$. ACTIVE hoặc
    *  COMPLETED — `REMOVED` không tính (BR-026). */
   listRankingParticipantUserIds(sessionId: string): Promise<string[]>
+
+  /**
+   * SPEC-037 — nguyên liệu thô của $I$: mọi lượt vuốt CÒN HIỆU LỰC của một
+   * người trong các phiên đã `FINALIZED`, gắn theo `global_dishes.id`.
+   *
+   * MỘT truy vấn. Mốc `implicit_reset_at` của SPEC-040 được áp NGAY TRONG câu
+   * này chứ không phải một lượt đọc thứ hai — xem DEC-070.
+   *
+   * Trả `decisionDate` THÔ, không tính trọng số trong SQL: phép toán nằm ở
+   * `computeImplicitPreference` bên `domain/`, nơi `TC-159`→`TC-162` kiểm được
+   * mà không cần DB. Đẩy `POWER(0.5, …)` xuống Postgres là đưa công thức ra
+   * khỏi tầm với của bốn ca đó.
+   *
+   * Chỉ đọc `interactions` (effective state), KHÔNG đọc `interaction_events` —
+   * học từ nhật ký append-only nghĩa là học cả những lượt người dùng đã Undo
+   * (TC-164).
+   */
+  findImplicitSwipes(userId: string, globalDishIds: readonly string[]): Promise<ImplicitSwipe[]>
 }
